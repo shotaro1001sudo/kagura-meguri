@@ -1,0 +1,10 @@
+[
+ {"id":"t-full","name":"高千穂夜神楽(テスト)","kagura":"高千穂神楽","prefecture":"宮崎県","city":"西臼杵郡高千穂町","venue":"高千穂神社 神楽殿","start":"2026-11-20T20:00","end":"2026-11-20T21:00","fee":"1,000円","url":"https://example.com/a","description":"通年の観光神楽。テスト用データです。","lat":32.70545,"lng":131.29994,"status":"published"},
+ {"id":"t-timeunknown","name":"第54回高宮神楽まつり(テスト)","kagura":"安芸高田神楽","prefecture":"広島県","city":"安芸高田市","venue":"高宮ハーモニー広場","start":"2026-10-10T00:00","timeUnknown":true,"url":"https://example.com/b","description":"","lat":34.65,"lng":132.7,"geoPrecision":"city","status":"published"},
+ {"id":"t-past","name":"終了した神楽(テスト)","kagura":"石見神楽","prefecture":"島根県","city":"浜田市","venue":"浜田会場","start":"2026-09-01T19:00","end":"2026-09-01T21:00","fee":"無料","url":"https://example.com/c","description":"終了済みのテスト。","lat":34.8999,"lng":132.08,"status":"published"},
+ {"id":"t-xss","name":"<script>alert(1)</script> & \"引用\" '単'","kagura":"石見神楽","prefecture":"島根県","city":"益田市","venue":"会場 </script><b>太字</b>","start":"2026-12-05T18:30","end":"2026-12-05T20:00","fee":"500円, 学生 \\ 無料; 備考","url":"https://example.com/d?x=1&y=2","description":"説明に </script> や <img src=x onerror=alert(1)> を含む。","lat":34.67,"lng":131.84,"status":"published"},
+ {"id":"t-long","name":"とても長い名前の神楽公演のテストデータで、画面幅が狭いスマートフォンでも折り返して読めること、はみ出さないことを確認するための名称です","kagura":"石見神楽","prefecture":"島根県","city":"大田市","venue":"会場名もたいへん長く設定して、折り返しとはみ出しの両方を確認する神社の神楽殿","start":"2026-12-12T13:00","url":"https://example.com/e","description":"長い文字列のテスト。","status":"published"},
+ {"id":"t-minimal","name":"最小項目のテスト","kagura":"","prefecture":"広島県","city":"","venue":"","start":"2026-11-03T10:00","status":"published"},
+ {"id":"t-ongoing","name":"開催中のテスト","kagura":"備中神楽","prefecture":"岡山県","city":"岡山市","venue":"岡山後楽園","start":"2026-10-09T10:00","url":"https://example.com/f","description":"終了時刻なし。開始から3時間は開催中扱い。","lat":34.667,"lng":133.936,"status":"published"},
+ {"id":"t-pending","name":"承認前のため出てはいけない","kagura":"石見神楽","prefecture":"島根県","city":"津和野町","venue":"x","start":"2026-11-30T20:00","status":"pending"}
+]

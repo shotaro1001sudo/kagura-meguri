@@ -86,3 +86,8 @@ main>*{animation:in .9s ease both}main>*:nth-child(2){animation-delay:.1s}main>*
 
 /* 固定ページ */
 .prose{max-width:680px}.prose h2{font-size:1.02rem;margin:40px 0 10px}.prose ul{padding-left:1.4em}.prose li{margin:4px 0}
+
+/* 補助 */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.empty{color:var(--mut);padding:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+.taglist{display:flex;flex-wrap:wrap;gap:2px 0}
