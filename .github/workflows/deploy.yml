@@ -11,7 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      # テストに失敗したら公開しない(不正なデータや表示崩れを、サイトに出さないため)
+      - run: npm test
+      # データに誤りがあれば、ここでビルドが止まる
       - run: node scripts/build.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

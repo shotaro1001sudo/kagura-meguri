@@ -111,7 +111,10 @@ for (const f of htmls) {
     ok(j, `${rel(f)}: JSON-LD が壊れていない`);
   });
 }
-const ldOf = (id) => JSON.parse(cheerio.load(read(join(OUT, `events/${id}.html`)))('script[type="application/ld+json"]').text());
+const ldOf = (id) => { const j = JSON.parse(cheerio.load(read(join(OUT, `events/${id}.html`)))('script[type="application/ld+json"]').text()); return Array.isArray(j) ? j.find((x) => x["@type"] === "Event") : j; };
+const bc = JSON.parse(cheerio.load(read(join(OUT, "events/t-full.html")))('script[type="application/ld+json"]').text()).find((x) => x["@type"] === "BreadcrumbList");
+ok(bc && bc.itemListElement.length === 3 && bc.itemListElement[1].name === "宮崎県", "詳細ページにパンくず(BreadcrumbList)");
+ok(JSON.parse(cheerio.load(read(join(OUT, "index.html")))('script[type="application/ld+json"]').text())["@type"] === "WebSite", "トップに WebSite 構造化データ");
 const lf = ldOf("t-full");
 ok(lf["@type"] === "Event" && lf.name && lf.startDate === "2026-11-20T20:00+09:00" && lf.endDate === "2026-11-20T21:00+09:00", "Event の日時に +09:00 が付く");
 ok(lf.location.geo?.latitude === 32.70545, "Event に緯度経度が入る");
@@ -158,6 +161,66 @@ for (const f of htmls) {
   $("select").each((_, el) => ok($(`label[for='${$(el).attr("id")}']`).length === 1, `${name}: select にラベル`));
 }
 ok(cheerio.load(read(join(OUT, "map.html")))("nav a[aria-current='page']").text() === "地図", "現在のページに aria-current");
+// ---------- 10. 検索・速度・外部ライブラリ ----------
+section("検索(noindex)・外部ライブラリ(SRI)・速度");
+const robotsMeta = (p) => cheerio.load(read(join(OUT, p)))('meta[name="robots"]').attr("content");
+ok(robotsMeta("events/t-past.html") === "noindex,follow", "終了したイベントは noindex");
+ok(robotsMeta("events/t-full.html") === undefined, "開催前のイベントは index される");
+ok(robotsMeta("404.html") === "noindex,follow", "404 は noindex");
+ok(robotsMeta("pref/島根県.html") === undefined, "開催予定のある県ページは index される");
+ok(!locs.some((u) => u.includes("t-past")), "終了したイベントはサイトマップに入れない");
+ok(locs.some((u) => u.includes("t-full")), "開催前のイベントはサイトマップに入れる");
+for (const f of ["map.html", "events/t-full.html"]) {
+  const $ = cheerio.load(read(join(OUT, f)));
+  const ext = $("script[src^='https://unpkg.com'], link[href^='https://unpkg.com']");
+  ok(ext.length === 2, `${f}: 外部ライブラリは地図の2ファイルだけ`);
+  ext.each((_, el) => ok(/^sha384-/.test($(el).attr("integrity") ?? "") && $(el).attr("crossorigin") === "anonymous", `${f}: SRI(改ざん検知)が付く`, $(el).attr("src") ?? $(el).attr("href")));
+  ok(/@1\.9\.4\//.test($("script[src^='https://unpkg.com']").attr("src")), `${f}: バージョン固定`);
+  ok($("script[src^='https://unpkg.com']").attr("defer") !== undefined, `${f}: 描画を止めない(defer)`);
+}
+for (const f of htmls) {
+  const $ = cheerio.load(read(f));
+  const fontLink = $("link[href*='fonts.googleapis.com/css2']").first();
+  ok(fontLink.attr("media") === "print" && /media\s*=\s*.all./.test(fontLink.attr("onload") ?? ""), `${rel(f)}: Webフォントが表示を止めない`);
+}
+ok(read(join(OUT, "index.html")).includes('rel="icon"'), "ファビコンがある(404 を出さない)");
+
+// ---------- 11. 収集処理(単体テスト) ----------
+section("収集処理: 日付の読み取り・robots.txt・アダプタ");
+const { parseJaDate, findPrefecture, robotsAllows } = await import("../scripts/lib/util.mjs");
+const base = new Date("2026-10-09T00:00:00+09:00");
+const eq = (a, b, n) => ok(JSON.stringify(a) === JSON.stringify(b), n, JSON.stringify(a));
+eq(parseJaDate("2026年11月20日(金) 20:00", base), { start: "2026-11-20T20:00", end: null, hasTime: true }, "日付: 年月日+時刻");
+eq(parseJaDate("２０２６年１１月２０日　１９：３０～２１：００", base), { start: "2026-11-20T19:30", end: "2026-11-20T21:00", hasTime: true }, "日付: 全角数字と時間範囲");
+eq(parseJaDate("令和8年11月3日", base).start, "2026-11-03T00:00", "日付: 令和");
+eq(parseJaDate("令和元年5月1日", base).start, "2019-05-01T00:00", "日付: 令和元年");
+eq(parseJaDate("11月20日", base).start, "2026-11-20T00:00", "日付: 年なしは今年");
+eq(parseJaDate("1月5日", base).start, "2027-01-05T00:00", "日付: 年なしで過去になる月は翌年");
+eq(parseJaDate("2026.11.20 18:00", base).start, "2026-11-20T18:00", "日付: ドット区切り");
+eq(parseJaDate("未定", base), null, "日付: 読めなければ null");
+eq(parseJaDate("2026年13月40日", base), null, "日付: 範囲外は null");
+eq(findPrefecture("島根県大田市"), "島根県", "都道府県: 正式名");
+eq(findPrefecture("京都市内の神社"), "京都府", "都道府県: 略称から補完");
+const robots = (txt) => async () => ({ ok: true, text: async () => txt });
+const UA = "KaguraMeguriBot/1.0 (+https://example.com)";
+eq((await robotsAllows("https://x.test/private/a", UA, robots("User-agent: *\nDisallow: /private/"))).ok, false, "robots: Disallow を守る");
+eq((await robotsAllows("https://x.test/public/a", UA, robots("User-agent: *\nDisallow: /private/"))).ok, true, "robots: 無関係のパスは許可");
+eq((await robotsAllows("https://x.test/private/open/a", UA, robots("User-agent: *\nDisallow: /private/\nAllow: /private/open/"))).ok, true, "robots: 長い一致の Allow が優先");
+eq((await robotsAllows("https://x.test/a", UA, robots("User-agent: kagurameguribot\nDisallow: /\nUser-agent: *\nAllow: /"))).ok, false, "robots: 自分のUA指定が * より優先");
+eq((await robotsAllows("https://x.test/a", UA, robots("User-agent: *\nDisallow: /"))).ok, false, "robots: 全面禁止を守る");
+eq((await robotsAllows("https://x.test/a", UA, async () => { throw new Error("net"); })).ok, true, "robots: 取得できなければ許可(取得側で別途失敗する)");
+const sel = await import("../scripts/adapters/selectors.mjs");
+const got = sel.parse(read("tests/fixtures/list.html"), { url: "http://x.test/list.html", selectors: { item: ".ev li", name: "a", date: ".d", place: ".p", link: "a" } });
+eq(got.map((x) => x.name), ["秋の大神楽", "冬至祭神楽", "過去の神楽"], "セレクタ: 日付が読めない行を捨てる");
+eq([got[0].prefecture, got[0].city, got[0].venue], ["島根県", "大田市", "〇〇神社"], "セレクタ: 県/市/会場に分ける");
+eq(got[0].url, "http://x.test/d/1", "セレクタ: 相対リンクを絶対URLにする");
+const filtered = sel.parse(read("tests/fixtures/list.html"), { url: "http://x.test/", filter: "冬至", selectors: { item: ".ev li", name: "a", date: ".d", place: ".p" } });
+eq(filtered.map((x) => x.name), ["冬至祭神楽"], "セレクタ: filter で絞れる");
+const ld = await import("../scripts/adapters/jsonld.mjs");
+const lj = ld.parse(read("tests/fixtures/jsonld.html"), { url: "http://x.test/" });
+eq([lj.length, lj[0].name, lj[0].start, lj[0].prefecture], [1, "テスト神楽奉納", "2026-12-05T18:30", "広島県"], "JSON-LD: Event を読む");
+const period = ld.parse('<script type="application/ld+json">{"@type":"Event","name":"期間","startDate":"2025-09-14","endDate":"2027-03-14"}</script>', { url: "http://x.test/" });
+eq([period.length, period.skippedPeriod], [0, 1], "JSON-LD: 複数日をまとめた期間型は除外して件数を数える");
 // ---------- 8. 0件・不正データ ----------
 section("0件のサイト / 不正データ");
 r = build("tests/fixtures/events.empty.json", "dist-test-empty");
