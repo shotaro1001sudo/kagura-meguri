@@ -13,7 +13,7 @@ jobs:
       - run: npm ci
       - run: node scripts/collect.mjs
       - run: node scripts/geocode.mjs
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v8
         with:
           branch: collect/auto
           title: "開催情報の自動収集(確認待ち)"
