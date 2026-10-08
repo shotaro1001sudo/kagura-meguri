@@ -1,0 +1,7 @@
+[
+ {"id":"r-nightly","name":"毎晩の神楽(テスト)","kagura":"高千穂神楽","badge":"毎晩","prefecture":"宮崎県","city":"西臼杵郡高千穂町","venue":"高千穂神社 神楽殿","schedule":"毎晩 20:00〜21:00","closed":"12月31日・1月1日","fee":"大人1,000円","booking":"インターネット予約と当日受付があります。","url":"https://example.com/r1","description":"通年の定期公演のテスト。","lat":32.71167,"lng":131.30778,"geoPrecision":"city","source":"テスト協会","checked":"2026-10-09","status":"published"},
+ {"id":"r-weekly","name":"毎週水曜の神楽(テスト)","kagura":"広島神楽","badge":"毎水","prefecture":"広島県","city":"広島市中区","venue":"テスト文化センター","schedule":"毎週水曜 19:00開演","season":"令和8年4月〜12月","until":"2026-12-31","url":"https://example.com/r2","description":"期間つきの定期公演のテスト。","lat":34.39442,"lng":132.45598,"status":"published"},
+ {"id":"r-expired","name":"期間が終わった定期公演(出てはいけない)","kagura":"石見神楽","badge":"毎土","prefecture":"島根県","city":"益田市","schedule":"毎週土曜","until":"2026-09-30","status":"published"},
+ {"id":"r-pending","name":"承認前の定期公演(出てはいけない)","kagura":"石見神楽","badge":"毎土","prefecture":"島根県","city":"益田市","schedule":"毎週土曜","status":"pending"},
+ {"id":"r-xss","name":"<img src=x onerror=alert(2)> 定期","kagura":"備中神楽","badge":"毎月","prefecture":"岡山県","city":"岡山市","venue":"会場 </script>","schedule":"毎月第2日曜 <b>11:00</b>","url":"https://example.com/r3?a=1&b=2","description":"<script>alert(3)</script>","status":"published"}
+]

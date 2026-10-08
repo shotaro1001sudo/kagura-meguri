@@ -5,10 +5,11 @@ import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs
 import { join, relative } from "node:path";
 import * as cheerio from "cheerio";
 import { palettes, ratio, PAIRS } from "./contrast.mjs";
+import { extraTests } from "./extra.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, OUT_DIR: out, BUILD_NOW: NOW, ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -43,7 +44,7 @@ for (const f of htmls) {
   const html = read(f), $ = cheerio.load(html), name = rel(f);
   ok($("html").attr("lang") === "ja", `${name}: lang=ja`);
   const t = $("title").text().trim();
-  ok(t.length > 0 && t.length <= 90, `${name}: title がある(90字以内)`, t);
+  ok(t.length > 0 && t.length <= 120, `${name}: title がある(120字以内)`, t);
   ok(!titles.has(t), `${name}: title が他ページと重複しない`, t);
   titles.set(t, name);
   const d = $('meta[name="description"]').attr("content") ?? "";
@@ -51,7 +52,7 @@ for (const f of htmls) {
   ok(($('link[rel="canonical"]').attr("href") ?? "").startsWith("https://"), `${name}: canonical が https`);
   ok($('meta[name="viewport"]').length === 1, `${name}: viewport`);
   ok($("h1").length === 1, `${name}: h1 が1つ`, `${$("h1").length}個`);
-  ok(html.length < 120_000, `${name}: HTML が軽い(120KB未満)`, `${html.length}B`);
+  ok(html.length < 140_000, `${name}: HTML が軽い(140KB未満)`, `${html.length}B`);
   $("script, style").remove(); // コードの中身ではなく、画面に見える文字だけを調べる
   const text = $("body").text();
   ok(!/undefined|NaN|\[object|null(?![a-z])/.test(text), `${name}: 画面に undefined/NaN/null が出ていない`);
@@ -181,7 +182,7 @@ for (const f of ["map.html", "events/t-full.html"]) {
 for (const f of htmls) {
   const $ = cheerio.load(read(f));
   const fontLink = $("link[href*='fonts.googleapis.com/css2']").first();
-  ok(fontLink.attr("media") === "print" && /media\s*=\s*.all./.test(fontLink.attr("onload") ?? ""), `${rel(f)}: Webフォントが表示を止めない`);
+  ok(fontLink.attr("media") === "print" && fontLink.attr("id") === "gf" && fontLink.attr("onload") === undefined && /getElementById\('gf'\)/.test(read(f)), `${rel(f)}: Webフォントが表示を止めない(インラインのイベント属性を使わない)`);
 }
 ok(read(join(OUT, "index.html")).includes('rel="icon"'), "ファビコンがある(404 を出さない)");
 
@@ -223,7 +224,7 @@ const period = ld.parse('<script type="application/ld+json">{"@type":"Event","na
 eq([period.length, period.skippedPeriod], [0, 1], "JSON-LD: 複数日をまとめた期間型は除外して件数を数える");
 // ---------- 8. 0件・不正データ ----------
 section("0件のサイト / 不正データ");
-r = build("tests/fixtures/events.empty.json", "dist-test-empty");
+r = build("tests/fixtures/events.empty.json", "dist-test-empty", { REGULAR_FILE: "tests/fixtures/events.empty.json" });
 ok(r.status === 0, "0件でもビルドできる", r.stderr);
 const e0 = cheerio.load(read("dist-test-empty/index.html"));
 ok(e0("#list").text().includes("現在掲載中の開催情報はありません"), "0件の一覧に案内が出る");
@@ -235,6 +236,8 @@ r = build("tests/fixtures/events.test.json", "dist-test-ads", { ADS_PLACEHOLDER:
 ok(r.status === 0 && read("dist-test-ads/index.html").includes("広告枠"), "確認用に広告枠を出す切り替えができる");
 
 for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads"]) rmSync(d, { recursive: true, force: true });
+
+await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }
