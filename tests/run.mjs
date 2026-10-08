@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
 import * as cheerio from "cheerio";
+import { palettes, ratio, PAIRS } from "./contrast.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -141,6 +142,22 @@ ok(/<lastmod>2026-10-09<\/lastmod>/.test(sm), "サイトマップに lastmod");
 ok(read(join(OUT, "robots.txt")).includes("Sitemap: https://"), "robots.txt に Sitemap");
 ok(read(join(OUT, "CNAME")).trim() === JSON.parse(read("config.json")).domain, "CNAME が config の domain と一致");
 
+// ---------- 9. アクセシビリティ ----------
+section("アクセシビリティ(色・操作しやすさ・ナビ)");
+for (const [theme, pal] of Object.entries(palettes()))
+  for (const [a, b] of PAIRS) ok(ratio(pal[a], pal[b]) >= 4.5, `配色(${theme}): ${a} / ${b} のコントラスト比が4.5以上`, ratio(pal[a], pal[b]).toFixed(2));
+const css = read("scripts/style.css");
+ok(/:focus-visible/.test(css), "キーボードのフォーカス表示がある");
+ok(/min-height:44px/.test(css), "ボタン・メニューは44px以上の押しやすさ");
+ok(/prefers-reduced-motion/.test(css), "動きを減らす設定に対応");
+for (const f of htmls) {
+  const $ = cheerio.load(read(f)), name = rel(f);
+  ok($("a.skip[href='#main']").length === 1 && $("main#main").length === 1, `${name}: 「本文へ移動」リンクと main`);
+  ok($("nav[aria-label]").length === 1, `${name}: nav にラベル`);
+  $("img").each((_, el) => ok($(el).attr("alt") !== undefined, `${name}: img に alt`));
+  $("select").each((_, el) => ok($(`label[for='${$(el).attr("id")}']`).length === 1, `${name}: select にラベル`));
+}
+ok(cheerio.load(read(join(OUT, "map.html")))("nav a[aria-current='page']").text() === "地図", "現在のページに aria-current");
 // ---------- 8. 0件・不正データ ----------
 section("0件のサイト / 不正データ");
 r = build("tests/fixtures/events.empty.json", "dist-test-empty");

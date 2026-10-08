@@ -80,8 +80,9 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "" }) => `<!d
 <style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
 ${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
-<header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav>${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on"' : ""}>${t}</a>`).join("")}</nav></div></header>
-<div class="wrap"><main>${body}</main>
+<a class="skip" href="#main">本文へ移動</a>
+<header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
+<div class="wrap"><main id="main">${body}</main>
 <footer><a href="${esc(cfg.submitFormUrl)}">開催情報を掲載する(無料)</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a><br>© ${esc(cfg.siteName)}</footer></div></body></html>`;
 
@@ -156,7 +157,8 @@ write("dist/calendar.html", layout({
   body: `${hero("開催カレンダー", "")}
 <div class="calhead"><button id="pv" type="button" aria-label="前の月">‹ 前月</button><h2 id="ttl" aria-live="polite"></h2><button id="nx" type="button" aria-label="次の月">次月 ›</button></div>
 <div class="cal" id="cal" role="grid" aria-labelledby="ttl"></div>
-<p class="empty" id="calmsg" aria-live="polite"></p>${adSlot(cfg.adsense.slotList)}
+<p class="empty" id="calmsg" aria-live="polite"></p>
+<ol class="monthlist" id="mlist" aria-label="この月の開催一覧"></ol>${adSlot(cfg.adsense.slotList)}
 <script>
 (function(){
 var list=[],loaded=false,failed=false,cur=new Date();cur.setDate(1);
@@ -172,9 +174,12 @@ function draw(){
     var key=y+'-'+p2(m+1)+'-'+p2(d);
     var ev=list.filter(function(x){return x.start.slice(0,10)===key});count+=ev.length;
     var t=today.getFullYear()==y&&today.getMonth()==m&&today.getDate()==d;
-    h+='<div role="gridcell" class="d'+(t?' t':'')+((first+d-1)%7==0?' sun':'')+'"><i>'+d+'</i>'+ev.map(function(x){return '<a href="/events/'+esc(x.id)+'.html" title="'+esc(x.name)+'">'+esc(x.name)+'</a>'}).join('')+'</div>';
+    h+='<div role="gridcell" class="d'+(t?' t':'')+(ev.length?' has':'')+((first+d-1)%7==0?' sun':'')+'"><i>'+d+'</i>'+ev.map(function(x){return '<a href="/events/'+esc(x.id)+'.html" title="'+esc(x.name)+'">'+esc(x.name)+'</a>'}).join('')+'</div>';
   }
   cal.innerHTML=h;
+  var pre=y+'-'+p2(m+1);
+  document.getElementById('mlist').innerHTML=list.filter(function(x){return x.start.slice(0,7)===pre}).map(function(x){
+    return '<li><span class="md">'+(+x.start.slice(5,7))+'月'+(+x.start.slice(8,10))+'日</span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><br><span class="meta">'+esc(x.prefecture)+' '+esc(x.city)+(x.timeUnknown?'':' ・ '+x.start.slice(11,16)+'〜')+'</span></span></li>'}).join('');
   msg.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':(loaded&&count===0?'この月の開催予定は、いまのところありません。':'');
 }
 document.getElementById('pv').onclick=function(){cur.setMonth(cur.getMonth()-1);draw()};
@@ -250,7 +255,7 @@ for (const e of events) {
     head: e.lat != null ? `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>` : "",
     body: `${hero(esc(e.name), `${kaguraTag(e.kagura)}<a class="tag" href="/pref/${encodeURIComponent(e.prefecture)}.html">${esc(e.prefecture)}</a>${isUpcoming(e) ? "" : '<span class="tag">終了しました</span>'}`)}
 <table class="info"><tr><th>日時</th><td>${e.timeUnknown ? fmt(e.start).replace(/ \d\d:\d\d$/, "") + "(時間は公式情報をご確認ください)" : fmt(e.start) + (e.end ? " 〜 " + fmt(e.end) : "")}</td></tr><tr><th>会場</th><td>${esc(e.venue)}</td></tr>
-<tr><th>場所</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${esc(e.fee || "")}</td></tr></table>
+<tr><th>場所</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table>
 <p>${esc(e.description)}</p>
 <p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="/events/${e.id}.ics">カレンダーに追加</a> <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
 ${e.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>(function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${e.lat},${e.lng}],${e.geoPrecision === "city" ? 11 : 14});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${e.lat},${e.lng}]).addTo(m)})()</script>${e.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : ""}` : ""}
