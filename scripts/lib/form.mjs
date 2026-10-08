@@ -73,10 +73,13 @@ ${consent(cfg)}
 <noscript><p class="empty">このフォームの送信には、JavaScriptが必要です。お手数ですが、JavaScriptを有効にしてください。</p></noscript>`;
 }
 
+// フォームの送信先が、使える状態か(Web3Forms は、アクセスキーがないと使えない)
+export const formReady = (cfg) => { const f = cfg.form ?? {}; return !!f.endpoint && (!/web3forms/i.test(f.endpoint) || !!f.accessKey); };
+
 // ブラウザ側の処理(インライン。CSPのハッシュで許可される)。設定値は data 属性ではなく、ここに埋め込む
 export function formScript(cfg) {
   const f = cfg.form ?? {};
-  const ready = !!f.endpoint && (!/web3forms/i.test(f.endpoint) || !!f.accessKey);
+  const ready = formReady(cfg);
   const conf = JSON.stringify({ endpoint: ready ? f.endpoint : "", accessKey: ready ? f.accessKey || "" : "", site: cfg.siteName }).replace(/</g, "\\u003c");
   return `(function(){
 var C=${conf};
