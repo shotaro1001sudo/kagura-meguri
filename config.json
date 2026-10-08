@@ -20,5 +20,9 @@
     "accessKey": "",
     "providerName": ""
   },
+  "seo": {
+    "googleVerification": "",
+    "bingVerification": ""
+  },
   "analyticsId": ""
 }

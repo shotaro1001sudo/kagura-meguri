@@ -6,6 +6,7 @@ import { join, relative } from "node:path";
 import * as cheerio from "cheerio";
 import { palettes, ratio, PAIRS } from "./contrast.mjs";
 import { extraTests } from "./extra.mjs";
+import { seoTests } from "./seo.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -115,7 +116,8 @@ for (const f of htmls) {
 const ldOf = (id) => { const j = JSON.parse(cheerio.load(read(join(OUT, `events/${id}.html`)))('script[type="application/ld+json"]').text()); return Array.isArray(j) ? j.find((x) => x["@type"] === "Event") : j; };
 const bc = JSON.parse(cheerio.load(read(join(OUT, "events/t-full.html")))('script[type="application/ld+json"]').text()).find((x) => x["@type"] === "BreadcrumbList");
 ok(bc && bc.itemListElement.length === 3 && bc.itemListElement[1].name === "宮崎県", "詳細ページにパンくず(BreadcrumbList)");
-ok(JSON.parse(cheerio.load(read(join(OUT, "index.html")))('script[type="application/ld+json"]').text())["@type"] === "WebSite", "トップに WebSite 構造化データ");
+const homeLd = JSON.parse(cheerio.load(read(join(OUT, "index.html")))('script[type="application/ld+json"]').text());
+ok(homeLd.some((x) => x["@type"] === "WebSite" && x.publisher?.name) && homeLd.some((x) => x["@type"] === "ItemList"), "トップに WebSite と ItemList の構造化データ");
 const lf = ldOf("t-full");
 ok(lf["@type"] === "Event" && lf.name && lf.startDate === "2026-11-20T20:00+09:00" && lf.endDate === "2026-11-20T21:00+09:00", "Event の日時に +09:00 が付く");
 ok(lf.location.geo?.latitude === 32.70545, "Event に緯度経度が入る");
@@ -157,7 +159,7 @@ ok(/prefers-reduced-motion/.test(css), "動きを減らす設定に対応");
 for (const f of htmls) {
   const $ = cheerio.load(read(f)), name = rel(f);
   ok($("a.skip[href='#main']").length === 1 && $("main#main").length === 1, `${name}: 「本文へ移動」リンクと main`);
-  ok($("nav[aria-label]").length === 1, `${name}: nav にラベル`);
+  ok($("nav[aria-label='メインメニュー']").length === 1 && $("nav:not([aria-label])").length === 0, `${name}: nav にラベル`);
   $("img").each((_, el) => ok($(el).attr("alt") !== undefined, `${name}: img に alt`));
   $("select").each((_, el) => ok($(`label[for='${$(el).attr("id")}']`).length === 1, `${name}: select にラベル`));
 }
@@ -166,9 +168,9 @@ ok(cheerio.load(read(join(OUT, "map.html")))("nav a[aria-current='page']").text(
 section("検索(noindex)・外部ライブラリ(SRI)・速度");
 const robotsMeta = (p) => cheerio.load(read(join(OUT, p)))('meta[name="robots"]').attr("content");
 ok(robotsMeta("events/t-past.html") === "noindex,follow", "終了したイベントは noindex");
-ok(robotsMeta("events/t-full.html") === undefined, "開催前のイベントは index される");
+ok(/^index,follow/.test(robotsMeta("events/t-full.html")), "開催前のイベントは index される");
 ok(robotsMeta("404.html") === "noindex,follow", "404 は noindex");
-ok(robotsMeta("pref/島根県.html") === undefined, "開催予定のある県ページは index される");
+ok(/^index,follow/.test(robotsMeta("pref/島根県.html")), "開催予定のある県ページは index される");
 ok(!locs.some((u) => u.includes("t-past")), "終了したイベントはサイトマップに入れない");
 ok(locs.some((u) => u.includes("t-full")), "開催前のイベントはサイトマップに入れる");
 for (const f of ["map.html", "events/t-full.html"]) {
@@ -238,6 +240,7 @@ ok(r.status === 0 && read("dist-test-ads/index.html").includes("広告枠"), "�
 for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads"]) rmSync(d, { recursive: true, force: true });
 
 await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW });
+seoTests({ ok, section, OUT, build });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }
