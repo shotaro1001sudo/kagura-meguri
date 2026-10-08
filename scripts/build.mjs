@@ -1,7 +1,8 @@
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
-import { submitForm, contactForm, formScript } from "./lib/form.mjs";
+import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
+import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -11,7 +12,9 @@ const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
-if (process.env.TEST_FORM_ENDPOINT) cfg.form = { ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT };
+if (process.env.TEST_FORM_ENDPOINT) cfg.form = { ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };
+if (process.env.TEST_GA) cfg.analyticsId = process.env.TEST_GA;
+if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -74,6 +77,7 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 
 // ---------- 収益化 ----------
 const a = cfg.affiliate;
+const hasAffiliate = !!(a.rakutenAffiliateId || a.valueCommerceSid || a.amazonTag); // 報酬の出るリンクがあるか(未設定の間は、ふつうのリンク)
 const rakuten = (url) => (a.rakutenAffiliateId ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}` : url);
 const vc = (url) => (a.valueCommerceSid ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&vc_url=${encodeURIComponent(url)}` : url);
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${a.amazonTag ? `&tag=${a.amazonTag}` : ""}`;
@@ -86,8 +90,8 @@ function affiliateBlock(e) {
     ["📚", "神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽")],
   ];
   return `<aside class="aff"><h2>${esc(e.prefecture)}への旅支度</h2><div class="afflist">${links
-    .map(([i, t, s, u]) => `<a href="${esc(u)}" rel="sponsored noopener" target="_blank"><span class="ico">${i}</span><b>${t}</b><small>${s}</small></a>`)
-    .join("")}</div><small class="meta">※ 広告・アフィリエイトリンクを含みます</small></aside>`;
+    .map(([i, t, s, u]) => `<a href="${esc(u)}" rel="${hasAffiliate ? "sponsored " : ""}noopener" target="_blank"><span class="ico">${i}</span><b>${t}</b><small>${s}</small></a>`)
+    .join("")}</div><small class="meta">${hasAffiliate ? "※ 広告・アフィリエイトリンクを含みます。" : "※ 外部のサービスへのリンクです。"}内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small></aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -145,7 +149,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 <header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <div class="wrap"><main id="main">${body}</main>
 <footer><a href="/submit.html">開催情報を掲載する(無料)</a><br>
-<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a><br>© ${esc(cfg.siteName)}</footer></div>
+<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
 ${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
@@ -180,7 +184,7 @@ const lastmodOf = (list) => list.map((x) => x.checked).filter(Boolean).sort().po
 const crumbsLd = (items) => ({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items.map(([name, p], i) => ({ "@type": "ListItem", position: i + 1, name, ...(p ? { item: `${cfg.baseUrl}${p}` } : {}) })) });
 const prefHref = (p) => `/pref/${encodeURIComponent(p)}.html`;
 const listNames = (arr, n = 3) =>arr.slice(0, n).map((x) => x.name.replace(/\s*[(〈].*$/, "")).join("、");
-const sourceNote = (x) => (x.source || x.checked ? `<p class="meta">情報の出典: ${esc(x.source ?? "")}${x.checked ? ` ・ 確認日 ${jpDate(x.checked)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください。</p>` : "");
+const sourceNote = (x) => (x.source || x.checked ? `<p class="meta">情報の出典: ${esc(x.source ?? "")}${x.checked ? ` ・ 確認日 ${jpDate(x.checked)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項・情報の取り扱い</a>)。</p>` : "");
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
@@ -452,7 +456,8 @@ doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報`, `
 <p>開催情報は、主催者からの投稿および公開されている情報をもとに掲載しています。各ページに、情報の出典と確認日を載せています。日時・会場・料金は変更・中止になることがあります。お出かけの前に、必ず主催者の公式情報をご確認ください。</p>
 <p>掲載内容の訂正・削除のご依頼は、お問い合わせからご連絡ください。</p>
 <h2>収益について</h2>
-<p>当サイトは、広告(Google AdSenseなど)およびアフィリエイトプログラムによる収益で運営しています。</p>`);
+<p>${cfg.adsense.client || hasAffiliate ? `当サイトは、${[cfg.adsense.client ? "広告(Google AdSense)" : "", hasAffiliate ? "アフィリエイトプログラム" : ""].filter(Boolean).join("および")}による収益で運営しています。` : "現在、当サイトは、広告・アフィリエイトによる収益を、得ていません。今後、導入する場合は、開始の前に、この記載と、プライバシーポリシーを更新します。"}</p>
+<p>情報の集め方や、免責については、<a href="/disclaimer.html">免責事項・情報の取り扱い</a>をご覧ください。</p>`);
 
 doc("/contact.html", "お問い合わせ", "掲載・訂正・削除のご連絡", `
 <p>次のご連絡は、下のフォームで受け付けています。</p>
@@ -461,42 +466,23 @@ doc("/contact.html", "お問い合わせ", "掲載・訂正・削除のご連絡
 ${contactForm(cfg)}
 <p class="meta">フォームを使えない場合は、${mailLink()}までメールでお知らせください。</p>`, { layout: { withForm: true } });
 
-doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}の個人情報・Cookie・広告に関する方針`, `
-<p>${esc(op.name)}(以下「運営者」)は、${esc(cfg.siteName)}(以下「当サイト」)における利用者の情報を、以下の方針に基づいて取り扱います。</p>
-<h2>1. 取得する情報</h2>
-<p>当サイトは、閲覧時にアクセスログ(IPアドレス、ブラウザの種類、閲覧ページ、日時など)が記録されることがあります。投稿フォームやお問い合わせフォームをご利用になる際には、ご入力いただいた氏名または団体名、メールアドレス、投稿内容などを取得します。</p>
-<h2>2. 利用目的</h2>
-<ul><li>投稿・お問い合わせへの対応と、内容の確認のためのご連絡</li><li>掲載情報の確認・訂正・削除</li><li>サイトの利用状況の把握と改善</li><li>不正利用(迷惑投稿など)の防止</li></ul>
-<h2>3. 投稿フォーム・お問い合わせフォームについて</h2>
-<p>フォームに入力された内容は、${esc(cfg.form?.providerName || "外部のフォーム送信サービス")}を通じて、運営者のメールアドレスに送られます。入力内容が、このサービスの事業者のサーバーを経由する場合があります。メールアドレスなどの連絡先は、サイトには掲載しません。投稿いただいた開催情報(名称・日時・会場など)は、確認のうえ、サイトに掲載することがあります。対応が終わった連絡先の情報は、必要な期間の保管のあと、削除します。</p>
-<p>迷惑投稿の防止のため、フォームには自動投稿を見分ける仕組みと、短時間での連続送信を制限する仕組みを設けています。</p>
-<h2>4. 広告の配信について</h2>
-<p>当サイトは、第三者配信の広告サービス「Google AdSense」を利用する場合があります。Googleを含む第三者配信事業者は、Cookieを使用して、利用者が当サイトや他のサイトに過去にアクセスした際の情報に基づいて広告を配信します。</p>
-<p>利用者は、<a href="https://myadcenter.google.com/" rel="noopener" target="_blank">Googleの広告設定</a>で、パーソナライズ広告を無効にできます。また、<a href="https://optout.aboutads.info/" rel="noopener" target="_blank">www.aboutads.info</a>で、第三者配信事業者のCookieによるパーソナライズ広告を無効にできる場合があります。Googleによる情報の取り扱いについては、<a href="https://policies.google.com/technologies/ads?hl=ja" rel="noopener" target="_blank">Googleのポリシーと規約</a>をご確認ください。</p>
-<h2>5. アクセス解析について</h2>
-<p>当サイトは、Googleによるアクセス解析ツール「Googleアナリティクス」を利用する場合があります。このツールはCookieを使用してトラフィックデータを収集しますが、個人を特定する情報は含まれません。Cookieは、ブラウザの設定で無効にできます。詳しくは、<a href="https://marketingplatform.google.com/about/analytics/terms/jp/" rel="noopener" target="_blank">Googleアナリティクス利用規約</a>をご確認ください。</p>
-<h2>6. アフィリエイトプログラムについて</h2>
-<p>当サイトは、楽天アフィリエイト、バリューコマース、Amazonアソシエイト・プログラムなどのアフィリエイトプログラムに参加する場合があります。リンク先で商品・サービスをご利用いただくと、運営者に報酬が支払われることがあります。該当するリンクの近くに、その旨を表示しています。</p>
-<p>Amazonのアソシエイトとして、${esc(cfg.siteName)}は適格販売により収入を得ています。</p>
-<h2>7. 外部サービスの利用について</h2>
-<p>当サイトは、地図の表示に Leaflet と OpenStreetMap のタイル、Webフォントの表示に Google Fonts を利用しています。これらの読み込みの際、利用者のIPアドレスなどが、各サービスの事業者に送られます。</p>
-<h2>8. 個人情報の第三者提供</h2>
-<p>法令に基づく場合を除き、ご本人の同意なく、個人情報を第三者に提供しません。</p>
-<h2>9. 免責事項</h2>
-<p>当サイトの掲載情報の正確性には注意していますが、内容を保証するものではありません。日時・会場・料金は変更や中止になることがあるため、最新の情報は主催者の公式情報をご確認ください。当サイトの情報を利用して生じた損害について、運営者は責任を負いません。リンク先のサイトで提供される情報やサービスについても同様です。</p>
-<h2>10. 著作権</h2>
-<p>当サイトの文章・デザインの著作権は運営者に帰属します。掲載している開催情報の事実(日時・場所など)の権利は、各主催者に属します。権利を侵害する掲載があった場合は、お問い合わせからご連絡ください。速やかに対応します。</p>
-<h2>11. 方針の変更</h2>
-<p>この方針は、必要に応じて見直し、変更することがあります。変更後の内容は、このページに掲載した時点から効力を持ちます。</p>
-<p class="meta">最終更新: ${esc(op.updated)}</p>`);
-
+// プライバシーポリシー・免責事項: 設定(広告・アクセス解析・アフィリエイト・フォーム送信先・自動取得)に合わせて、本文が変わる
+const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
+const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
+const policyCtx = {
+  cfg, op, mailLink, auto: autoSources,
+  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasAffil: hasAffiliate,
+  form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
+};
+doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}の個人情報・外部サービス・Cookieの取り扱い方針`, privacyHtml(policyCtx));
+doc("/disclaimer.html", "免責事項・情報の取り扱い", `${cfg.siteName}の免責事項と、掲載情報の集め方・自動処理についての説明`, disclaimerHtml(policyCtx));
 // ---------- sitemap / robots / ads.txt / security.txt / 404 ----------
 // lastmod は「そのページの中身が変わった日」(出典の確認日)にする。ビルドした日を全ページに入れると、検索エンジンに信頼されなくなる
 const staticDay = (() => { const m = String(op.updated ?? "").match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : nowJst.slice(0, 10); })();
 const allDay = lastmodOf([...upcoming, ...regular]);
 const sm = [
   ["/", allDay], ["/map.html", allDay], ["/calendar.html", allDay], ["/kagura/", allDay],
-  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay],
+  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [`/kagura/${encodeURIComponent(k)}.html`, lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
   ...prefs.map((p) => [prefHref(p), lastmodOf([...upcoming, ...regular].filter((x) => x.prefecture === p))]),

@@ -1,0 +1,5 @@
+[
+  { "id": "a1", "name": "テスト観光協会", "adapter": "selectors", "url": "https://example.com/", "termsChecked": "2026-10-09", "enabled": true },
+  { "id": "a2", "name": "停止中の収集元", "adapter": "selectors", "url": "https://example.com/2", "termsChecked": "2026-10-09", "enabled": false },
+  { "id": "a3", "name": "規約未確認の収集元", "adapter": "selectors", "url": "https://example.com/3", "termsChecked": "", "enabled": true }
+]

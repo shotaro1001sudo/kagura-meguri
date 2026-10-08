@@ -150,3 +150,10 @@ footer a{color:var(--mut);padding:8px 2px}
 .venuelist{list-style:none;margin:0;padding:0}.venuelist li{padding:10px 0;border-top:1px solid var(--line)}.venuelist li:last-child{border-bottom:1px solid var(--line)}
 .venuelist a{color:var(--fg)}.venuelist a:hover{color:var(--ac)}
 @media(max-width:560px){.crumbs{margin-bottom:-18px}}
+
+/* 表(外部サービスの一覧など) */
+.tblwrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch}
+.tbl{border-collapse:collapse;width:100%;min-width:560px;font-size:.88rem;line-height:1.7}
+.tbl th,.tbl td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+.tbl thead th{background:var(--card);font-weight:500;color:var(--mut);letter-spacing:.1em;white-space:nowrap}
+.prose h3{font-family:var(--serif);font-weight:500;font-size:.98rem;margin:28px 0 8px}
