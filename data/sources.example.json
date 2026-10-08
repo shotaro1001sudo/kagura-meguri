@@ -1,0 +1,22 @@
+[
+  {
+    "id": "example-jsonld",
+    "name": "(例)JSON-LDを載せている公式サイト",
+    "adapter": "jsonld",
+    "url": "https://example.com/events",
+    "kagura": "石見神楽",
+    "termsChecked": "",
+    "enabled": false
+  },
+  {
+    "id": "example-selectors",
+    "name": "(例)一覧ページをセレクタで読む公式サイト",
+    "adapter": "selectors",
+    "url": "https://example.com/kagura/schedule",
+    "kagura": "高千穂神楽",
+    "prefecture": "宮崎県",
+    "selectors": { "item": ".event-list li", "name": "a", "date": ".date", "place": ".place", "link": "a" },
+    "termsChecked": "",
+    "enabled": false
+  }
+]

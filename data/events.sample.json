@@ -1,0 +1,34 @@
+[
+  {
+    "id": "sample-takachiho-yokagura",
+    "name": "高千穂夜神楽(サンプル)",
+    "kagura": "高千穂神楽",
+    "prefecture": "宮崎県",
+    "city": "西臼杵郡高千穂町",
+    "venue": "高千穂神社 神楽殿",
+    "start": "2026-11-20T20:00",
+    "end": "2026-11-20T21:00",
+    "fee": "1,000円",
+    "url": "https://example.com",
+    "description": "毎晩開催される高千穂神社の観光神楽。サンプルデータです。",
+    "status": "published",
+    "lat": 32.7089,
+    "lng": 131.3045
+  },
+  {
+    "id": "sample-iwami-kagura",
+    "name": "石見神楽 定期公演(サンプル)",
+    "kagura": "石見神楽",
+    "prefecture": "島根県",
+    "city": "浜田市",
+    "venue": "浜田市内 公演会場",
+    "start": "2026-11-14T19:00",
+    "end": "2026-11-14T20:30",
+    "fee": "無料",
+    "url": "https://example.com",
+    "description": "大蛇などの演目で知られる石見神楽の公演。サンプルデータです。",
+    "status": "published",
+    "lat": 34.8999,
+    "lng": 132.08
+  }
+]
