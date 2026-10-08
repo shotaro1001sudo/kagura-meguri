@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # npm の依存パッケージ(cheerio / jsdom など)の更新を、毎週、提案する。提案のプルリクエストも、テストを通る
+  - package-ecosystem: npm
+    directory: "/"
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+  # GitHub Actions(checkout / setup-node / deploy-pages など)の更新
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5

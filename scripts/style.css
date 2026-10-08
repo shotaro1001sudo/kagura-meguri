@@ -118,3 +118,26 @@ main>*{animation:in .9s ease both}main>*:nth-child(2){animation-delay:.1s}main>*
 
 /* 印刷: ナビ・広告・旅の案内を省く */
 @media print{.top,footer,.adwrap,.adph,.aff,.filters,.skip,.enso,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}main>*{animation:none}}
+
+/* フォーム */
+.form{max-width:640px}
+.form fieldset{border:0;border-top:1px solid var(--line);margin:28px 0 0;padding:14px 0 0;min-width:0}
+.form legend{font-family:var(--serif);letter-spacing:.1em;padding:0 10px 0 0;color:var(--fg)}
+.f{margin:18px 0}
+.f label{display:flex;align-items:center;gap:8px;font-size:.92rem;margin-bottom:6px}
+.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:1rem;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:2px;min-height:44px}
+.f textarea{resize:vertical;line-height:1.7}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--ac)}
+.f [aria-invalid="true"]{border-color:var(--ac);border-width:2px}
+.req,.opt{font-style:normal;font-size:.72rem;padding:0 7px;border-radius:2px;line-height:1.7}
+.req{background:var(--ac);color:var(--onac)}.opt{border:1px solid var(--line);color:var(--mut)}
+.hint{display:block;color:var(--mut);font-size:.8rem;margin-top:4px}
+.err{display:block;color:var(--ac);font-size:.85rem;min-height:0}.err:empty{display:none}
+.consent label{display:flex;gap:10px;align-items:flex-start}.consent input{width:auto;min-height:0;margin-top:6px}
+.hp{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.status{margin-top:14px;min-height:1.6em}.status.ok{color:var(--fg);border-left:3px solid var(--ac2);padding-left:10px}.status.bad{color:var(--ac);border-left:3px solid var(--ac);padding-left:10px}
+.form .btn[disabled]{opacity:.5;cursor:wait}
+
+/* 定期公演 */
+.reg .date b{font-size:1.15rem;letter-spacing:.05em;padding-top:.3em}
+.reglist .card:first-child{border-top:1px solid var(--line)}
