@@ -7,6 +7,7 @@ import * as cheerio from "cheerio";
 import { palettes, ratio, PAIRS } from "./contrast.mjs";
 import { extraTests } from "./extra.mjs";
 import { seoTests } from "./seo.mjs";
+import { motionTests } from "./motion.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -155,7 +156,7 @@ for (const [theme, pal] of Object.entries(palettes()))
 const css = read("scripts/style.css");
 ok(/:focus-visible/.test(css), "キーボードのフォーカス表示がある");
 ok(/min-height:44px/.test(css), "ボタン・メニューは44px以上の押しやすさ");
-ok(/prefers-reduced-motion/.test(css), "動きを減らす設定に対応");
+ok(/prefers-reduced-motion/.test(css + read("scripts/motion.css")), "動きを減らす設定に対応");
 for (const f of htmls) {
   const $ = cheerio.load(read(f)), name = rel(f);
   ok($("a.skip[href='#main']").length === 1 && $("main#main").length === 1, `${name}: 「本文へ移動」リンクと main`);
@@ -241,7 +242,9 @@ for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads"]) rmSyn
 
 await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW });
 seoTests({ ok, section, OUT, build });
+await motionTests({ ok, section, OUT });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }
 console.log("すべて成功しました");
+process.exit(0); // jsdom のウィンドウが残す内部のタイマーで、終了が遅れないようにする

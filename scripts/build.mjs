@@ -105,7 +105,22 @@ const mailLink = () => (mailUser ? `<a class="mail" data-u="${esc(mailUser)}" da
 const MAIL_SCRIPT = `document.querySelectorAll('a.mail').forEach(function(a){var m=a.dataset.u+'@'+a.dataset.d;a.href='mailto:'+m;a.textContent=m})`;
 
 // ---------- 共通レイアウト ----------
-const css = readFileSync("scripts/style.css", "utf8").replace(/\r\n?/g, "\n");
+// ---------- 動き(出現・視差・ホバー・導入演出) ----------
+// スクロールで現れる要素。ビルド時に静的に出力されるものだけ(カレンダーのように、JSが後から作る要素は含めない。
+// 含めると、観察されないまま、隠れたままになるため)。CSSとJSで、同じ一覧を使う。
+const REVEAL_SEL = "main>h2:not(.sr), main .lead, main .about, main table.info, main .aff, main .card, main .taglist, main .venuelist li, main .prose>h2";
+const SPARKS = 12; // 篝火の火の粉の数。位置・大きさ・速さは、決まった乱数で作る(毎回、同じ出力になる)
+let seed = 20261009; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+const sparkCss = Array.from({ length: SPARKS }, (_, i) => `.sparks i:nth-child(${i + 1}){--x:${(5 + rnd() * 90).toFixed(1)}%;--s:${(2 + rnd() * 2.2).toFixed(1)}px;--t:${(8 + rnd() * 6).toFixed(1)}s;--d:${(rnd() * 7).toFixed(1)}s;--dx:${Math.round(-40 + rnd() * 80)}px}`).join("\n");
+const sparksHtml = `<div class="sparks" aria-hidden="true">${"<i></i>".repeat(SPARKS)}</div>`;
+const lf = (s) => s.replace(/\r\n?/g, "\n");
+const motionCss = lf(readFileSync("scripts/motion.css", "utf8")).replaceAll("%%SEL%%", REVEAL_SEL) + "\n" + sparkCss;
+const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8")).replace("%%SEL_JSON%%", JSON.stringify(REVEAL_SEL));
+// 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
+const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
+
+// ---------- デザイン ----------
+const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
 const NAV = [["/", "一覧"], ["/map.html", "地図"], ["/calendar.html", "カレンダー"], ["/kagura/", "神楽の種類"]];
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
@@ -114,6 +129,7 @@ const OG_URL = `${cfg.baseUrl}/og.png`;
 const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex = false, withForm = false, ogType = "website" }) => {
   const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
+<script>${HEAD_MOTION}</script>
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
@@ -130,7 +146,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 <div class="wrap"><main id="main">${body}</main>
 <footer><a href="/submit.html">開催情報を掲載する(無料)</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a><br>© ${esc(cfg.siteName)}</footer></div>
-${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}</body></html>`;
+${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -186,7 +202,7 @@ write("dist/index.html", layout({
   ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: { "@type": "Organization", name: cfg.operator.name, url: `${cfg.baseUrl}/about.html` } },
     itemListLd("これからの神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   body: `<section class="hero home-hero">
-<svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>
+<svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>${sparksHtml}
 <div class="copy"><h1>神々へ捧ぐ舞を、<br>訪ねる旅へ。</h1><p>全国の神楽の開催情報を、静かに、ひとつの場所に。</p></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <h2>これからの神楽</h2>
