@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "site", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs"], "port": 4173 }
+    { "name": "site", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs"], "port": 4173 },
+    { "name": "site-test", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "dist-test", "4175"], "port": 4175 }
   ]
 }
