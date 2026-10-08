@@ -1,7 +1,7 @@
 {
   "siteName": "神楽めぐり",
-  "baseUrl": "https://example.com",
-  "domain": "",
+  "baseUrl": "https://kagurameguri.jp",
+  "domain": "kagurameguri.jp",
   "description": "全国の神楽の開催情報をまとめた検索プラットフォーム",
   "adsense": { "client": "", "slotList": "", "slotDetail": "" },
   "affiliate": {
