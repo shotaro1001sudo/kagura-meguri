@@ -1,0 +1,2 @@
+﻿import { createServer } from "node:http"; import { readFile } from "node:fs/promises";
+createServer(async (q, r) => { try { const p = new URL(q.url, "http://x").pathname; const b = await readFile("tests/fixtures" + (p === "/" ? "/ok.html" : p.startsWith("/private/") ? "/ok.html" : p)); r.writeHead(200, { "content-type": p.endsWith(".txt") ? "text/plain" : "text/html; charset=utf-8" }); r.end(b); } catch { r.writeHead(404); r.end(); } }).listen(4174, () => console.log("up"));

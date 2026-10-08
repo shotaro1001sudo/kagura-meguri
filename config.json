@@ -1,0 +1,20 @@
+{
+  "siteName": "神楽めぐり",
+  "baseUrl": "https://example.com",
+  "domain": "",
+  "description": "全国の神楽の開催情報をまとめた検索プラットフォーム",
+  "adsense": { "client": "", "slotList": "", "slotDetail": "" },
+  "affiliate": {
+    "rakutenAffiliateId": "",
+    "valueCommerceSid": "",
+    "amazonTag": ""
+  },
+  "operator": {
+    "name": "神楽日和編集部",
+    "contact": "",
+    "established": "2026年10月",
+    "updated": "2026年10月8日"
+  },
+  "submitFormUrl": "https://forms.gle/REPLACE_ME",
+  "analyticsId": ""
+}

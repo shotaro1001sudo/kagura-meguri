@@ -1,0 +1,18 @@
+name: build-and-deploy
+on:
+  push: { branches: [main] }
+  schedule: [{ cron: "0 18 * * *" }] # 毎日3:00 JST: 終了イベントの整理・再生成
+  workflow_dispatch:
+permissions: { contents: read, pages: write, id-token: write }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: { name: github-pages }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/build.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+      - uses: actions/deploy-pages@v4
