@@ -17,7 +17,8 @@
 | **フォームの悪用対策** | ハニーポット(ボットだけが埋める隠し欄)、送信までの時間チェック、30秒の連続送信制限、文字数の上限、入力検査、同意の確認。送信にCookie・リファラを付けない | jsdomと実ブラウザで操作して確認 |
 | **データの検査** | 不正なデータ(id重複、日付の形式、範囲外の座標、危険なURL)があると、**公開前にビルドが止まる** | `tests/fixtures/*.invalid.json` |
 | **公開前のテスト** | GitHub Actions が、テストに失敗すると公開しない | `.github/workflows/deploy.yml` |
-| **依存パッケージの更新** | Dependabot が、毎週、更新の提案を出す(提案もテストを通る) | `.github/dependabot.yml` |
+| **依存パッケージの更新** | Dependabot が、毎週、更新の提案を出す(提案もテストを通る)。公開から14日たった版だけを提案し、小さな更新は1つにまとめる | `.github/dependabot.yml` |
+| **外部のアクションの固定** | GitHub Actions のアクションは、タグではなく、コミットSHA(40桁)で固定し、版はコメントに残す。タグの付け替えによる、すり替えを防ぐ(テストで確認) | `.github/workflows/*.yml` |
 | **セキュリティ連絡先** | `/.well-known/security.txt`(RFC 9116) | `tests/extra.mjs` |
 
 ## 限界(GitHub Pages のため)

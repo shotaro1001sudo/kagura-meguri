@@ -1,12 +1,20 @@
 version: 2
 updates:
-  # npm の依存パッケージ(cheerio / jsdom など)の更新を、毎週、提案する。提案のプルリクエストも、テストを通る
+  # npm の依存パッケージ(cheerio / jsdom / nodemailer など)の更新を、毎週、提案する。提案のプルリクエストも、テストを通る
   - package-ecosystem: npm
     directory: "/"
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
-  # GitHub Actions(checkout / setup-node / deploy-pages など)の更新
+    # 公開から14日たった版だけを提案する(公開直後に見つかる不具合・乗っ取られた版を、避ける)
+    cooldown: { default-days: 14 }
+    # 小さな更新(マイナー・パッチ)は、1つのプルリクエストにまとめる
+    groups:
+      minor-and-patch: { patterns: ["*"], update-types: [minor, patch] }
+  # GitHub Actions(checkout / setup-node / deploy-pages など)の更新。SHA で固定していても、版のコメントごと更新される
   - package-ecosystem: github-actions
     directory: "/"
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
+    cooldown: { default-days: 14 }
+    groups:
+      actions: { patterns: ["*"] }

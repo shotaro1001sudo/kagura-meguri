@@ -206,6 +206,16 @@ export async function collectTests({ ok, section }) {
     const d = YAML.parseDocument(read(f));
     ok(d.errors.length === 0, `${f} が、YAML として正しく読める`, d.errors.map((e) => e.message.split("\n")[0]).join(" / "));
   }
+  // 外部のアクションは、コミットSHA(40桁)で固定し、版をコメントで残す(タグの付け替えによる、すり替えを防ぐ)
+  for (const f of [".github/workflows/collect.yml", ".github/workflows/deploy.yml"]) {
+    const uses = [...read(f).matchAll(/uses:\s*(\S+)(.*)/g)];
+    ok(uses.length > 0 && uses.every(([, u, rest]) => /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/.test(u) && /#\s*v\d+\.\d+\.\d+/.test(rest)), `${f}: 外部のアクションは、すべてコミットSHAで固定し、版をコメントで残している`, uses.map((m) => m[1]).join(", "));
+  }
+  const dy = YAML.parse(read(".github/workflows/deploy.yml"));
+  const upload = dy.jobs.build.steps.find((s) => /upload-pages-artifact/.test(s.uses ?? ""));
+  ok(upload?.with?.path === "dist" && upload.with["include-hidden-files"] === true, "公開の成果物に、「.」で始まるファイル(/.well-known/security.txt)を含める");
+  const dep = YAML.parse(read(".github/dependabot.yml"));
+  ok(dep.updates.length === 2 && dep.updates.every((u) => u.cooldown?.["default-days"] >= 14), "更新の提案(Dependabot)は、公開から14日以上たった版だけにする");
   const wy = YAML.parse(wf);
   const steps = wy.jobs?.collect?.steps ?? [];
   ok(wy.name === "weekly-collect" && wy.on?.schedule?.[0]?.cron === "0 20 * * 0" && wy.on?.workflow_dispatch?.inputs?.dry_run?.type === "boolean", "読み込んだ結果: 名前・毎週の予定・手動実行(dry_run)が、意図どおり");

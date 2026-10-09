@@ -9,17 +9,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
+      # 外部のアクションは、版の名前(タグ)ではなく、中身を指す番号(コミットSHA)で固定する(タグの付け替えによる、すり替えを防ぐ)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24, cache: npm }
       - run: npm ci
       # テストに失敗したら公開しない(不正なデータや表示崩れを、サイトに出さないため)
       - run: npm test
       # データに誤りがあれば、ここでビルドが止まる
       - run: node scripts/build.mjs
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: dist }
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # v4 以降は、名前が「.」で始まるファイルを、既定で除外する。/.well-known/security.txt を公開するため、含める
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with: { path: dist, include-hidden-files: true }
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -28,4 +30,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
