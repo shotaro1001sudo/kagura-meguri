@@ -28,18 +28,18 @@ export function identityTests({ ok, section, OUT, build }) {
   ok(pv.includes("運営者: 神楽日和編集部") && pv.includes("運営者の氏名・住所は、ご請求があれば、遅滞なくお知らせします") && !pv.includes("神楽日和編集部"), "プライバシーポリシー: 運営者名と、氏名・住所は請求に応じて知らせる旨");
 
   section("メールアドレスを公開しない");
-  const [user, domain] = cfg.operator.contact.split("@");
+  // 本番の設定: フォームの送信先(Web3Forms)があり、運営者のアドレスは、リポジトリの設定にも置かない
+  ok(cfg.operator.contact === "" && /^https:\/\/api\.web3forms\.com\//.test(cfg.form.endpoint) && /^[0-9a-f-]{36}$/.test(cfg.form.accessKey), "本番の設定: 送信先は Web3Forms。運営者のアドレスは、設定ファイルにも書かない");
   // アドレスの一部(@ の前)、または、一般のメールアドレス(フリーメール)が、ファイルに入っているか
   // (フォームのスクリプトの「mailto:」という処理名や、入力欄の形式チェックの「@」は、アドレスではないので、数えない)
-  const leaks = (dir) => walk(dir).filter((f) => !/\.png$/.test(f)).filter((f) => { const t = read(f); return (user && t.includes(user)) || (domain && t.includes(`@${domain}`)) || /[A-Za-z0-9._%+-]+@(gmail|yahoo|icloud|outlook|hotmail)\./i.test(t); });
-  // 送信先(フォーム)を設定した状態: どのファイルにも、アドレスの一部すら出ない
-  const D = "dist-test-identity";
-  const r = build("tests/fixtures/events.test.json", D, { TEST_FORM_ENDPOINT: "https://forms.example.test/submit" });
-  ok(r.status === 0 && leaks(D).length === 0, "フォームの送信先を設定すると、公開されるどのファイルにも、運営者のアドレス(分割したものも)が出ない", leaks(D).join(", "));
+  const leaksOf = (address) => { const [user, domain] = address.split("@"); return (dir) => walk(dir).filter((f) => !/\.png$/.test(f)).filter((f) => { const t = read(f); return (user && t.includes(user)) || (domain && t.includes(`@${domain}`)) || /[A-Za-z0-9._%+-]+@(gmail|yahoo|icloud|outlook|hotmail|example)\./i.test(t); }); };
+  ok(leaksOf("")(OUT).length === 0, "本番の設定: 公開されるどのファイルにも、メールアドレスが出ない", leaksOf("")(OUT).join(", "));
+  // 送信先が未設定の場合(予備のメール作成): アドレスは、フォームのページに限って入る
+  const D = "dist-test-identity", TEST_ADDR = "owner@example.com";
+  const r = build("tests/fixtures/events.test.json", D, { TEST_FORM_OFF: "1", TEST_CONTACT: TEST_ADDR });
+  const fallback = leaksOf(TEST_ADDR)(D).map((f) => f.replace(/\\/g, "/").replace(`${D}/`, ""));
+  ok(r.status === 0 && fallback.length === 2 && fallback.every((f) => ["submit.html", "contact.html"].includes(f)), "送信先が未設定の間、アドレスの一部が入るのは、フォームのページ(予備のメール作成用)だけ", fallback.join(", "));
+  for (const f of ["about.html", "privacy.html", "disclaimer.html", "organizers.html", "guide.html"]) ok(!read(join(D, f)).includes("owner"), `${f}: 送信先が未設定でも、アドレスを載せない(連絡はお問い合わせフォームへ)`);
   rmSync(D, { recursive: true, force: true });
-  // 送信先が未設定の間: アドレスは、フォームの予備(メール作成)のためだけに、フォームのあるページに限って入る
-  const fallback = leaks(OUT).map((f) => f.replace(/\\/g, "/").replace(`${OUT}/`, ""));
-  ok(fallback.every((f) => ["submit.html", "contact.html"].includes(f)), "送信先が未設定の間、アドレスの一部が入るのは、フォームのページ(予備のメール作成用)だけ", fallback.join(", "));
-  for (const f of ["about.html", "privacy.html", "disclaimer.html", "organizers.html", "guide.html"]) ok(!read(join(OUT, f)).includes(user), `${f}: アドレスを載せない(連絡はお問い合わせフォームへ)`);
   ok(!/@/.test(read("scripts/collect.mjs").match(/const UA = `([^`]*)`/)?.[1] ?? "@"), "自動収集で名乗る名前(User-Agent)に、メールアドレスを入れない");
 }

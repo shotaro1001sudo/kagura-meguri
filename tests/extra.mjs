@@ -57,7 +57,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
     $("script[src]").each((_, el) => { const u = $(el).attr("src"); ok(u.startsWith("/") || sc.some((t) => t !== "'self'" && u.startsWith(t)), `${name}: 外部script が許可リスト内`, u); });
     $("link[rel=stylesheet]").each((_, el) => { const u = $(el).attr("href"); ok(u.startsWith("/") || dir(csp, "style-src").some((t) => u.startsWith(t)), `${name}: 外部CSS が許可リスト内`, u); });
     ok($("script").first().html().includes("window.top!==window.self"), `${name}: 最初のscriptが、埋め込み(クリックジャッキング)対策`);
-    ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(html) && !/<a\b[^>]*href=["']mailto:/.test(html) && !html.includes(cfg.operator.contact), `${name}: メールアドレスがHTMLに直接書かれていない`);
+    ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(html) && !/<a\b[^>]*href=["']mailto:/.test(html) && !(cfg.operator.contact && html.includes(cfg.operator.contact)), `${name}: メールアドレスがHTMLに直接書かれていない`);
   }
   for (const f of htmls) for (const m of read(f).matchAll(/<script(?![^>]*\bsrc=)(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g)) {
     let err = ""; try { new vm.Script(m[1]); } catch (e) { err = e.message; }
@@ -76,9 +76,11 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
   ok(!cspOf(rd("index.html")).includes("googlesyndication"), "広告を設定しない間は、Google広告用の許可がない");
   r = build("tests/fixtures/events.test.json", "dist-test-form", { TEST_FORM_ENDPOINT: "https://forms.example.test/submit" });
   ok(r.status === 0 && dir(cspOf(read("dist-test-form/submit.html")), "connect-src").includes("https://forms.example.test"), "フォーム送信先を設定すると、その送信先だけ connect-src に追加される", r.stderr);
-  r = build("tests/fixtures/events.test.json", "dist-test-key", { TEST_FORM_ENDPOINT: "https://api.web3forms.com/submit" });
+  r = build("tests/fixtures/events.test.json", "dist-test-key", { TEST_FORM_OFF: "1", TEST_FORM_ENDPOINT: "https://api.web3forms.com/submit" });
   ok(r.status === 0 && read("dist-test-key/submit.html").includes('"endpoint":""'), "Web3Forms はアクセスキーがないと有効にならず、メール作成の方式のままになる", r.stderr);
-  ok(dir(cspOf(rd("submit.html")), "connect-src").join() === "'self'", "送信先を設定しない間は、自サイト以外へ通信できない");
+  r = build("tests/fixtures/events.test.json", "dist-test-noform", { TEST_FORM_OFF: "1", TEST_CONTACT: "owner@example.com" });
+  ok(r.status === 0 && dir(cspOf(read("dist-test-noform/submit.html")), "connect-src").join() === "'self'", "送信先を設定しない間は、自サイト以外へ通信できない", r.stderr);
+  ok(dir(cspOf(rd("submit.html")), "connect-src").includes("https://api.web3forms.com"), "本番の設定: フォームの送信先(Web3Forms)だけが、connect-src に追加されている");
   for (const [file, label] of [["tests/fixtures/events.badurl.json", "events の javascript: URL"]]) {
     r = build(file, "dist-test-bad");
     ok(r.status !== 0 && /url は http\(s\):\/\//.test(r.stderr), `${label}を拒否する`);
@@ -194,7 +196,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
     ok(!t.d.querySelector("a[href^='mailto:']") && !t.d.querySelector("main").textContent.includes("@"), "スクリプトが動いても、メールのリンク・アドレスは現れない");
   }
   { // 11. 送信先が未設定なら、メール作成にフォールバックする(送信先なしのビルド)
-    const t = await run("submit.html", { endpointDir: OUT }); fillSubmit(t); t.advance(5000); await t.submit();
+    const t = await run("submit.html", { endpointDir: "dist-test-noform" }); fillSubmit(t); t.advance(5000); await t.submit();
     ok(t.calls.length === 0 && t.status().includes("メールの作成画面を開きます"), "送信先が未設定でも、メール作成の案内が出る(通信はしない)");
   }
 
@@ -215,7 +217,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
       if (kind === "events") ok(!!e.description, `${w}: 説明がある`);
     }
   }
-  for (const d of ["dist-test-ads", "dist-test-form", "dist-test-key", "dist-test-bad", "dist-test-real"]) rmSync(d, { recursive: true, force: true });
+  for (const d of ["dist-test-ads", "dist-test-form", "dist-test-key", "dist-test-noform", "dist-test-bad", "dist-test-real"]) rmSync(d, { recursive: true, force: true });
 }
 
 // 本番データは、テスト用のデータ指定(EVENTS_FILE など)を外してビルドする

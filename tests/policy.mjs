@@ -43,7 +43,7 @@ export function policyTests({ ok, section, OUT, build }) {
 
   section("ポリシー: 実際の動作との一致");
   // (1) 通信できる外部は、すべてポリシーに載っている
-  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts" };
+  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms" };
   const origins = new Set();
   for (const f of walk(OUT).filter((x) => x.endsWith(".html"))) for (const d of ["script-src", "style-src", "img-src", "font-src", "connect-src", "frame-src"]) for (const tok of (cspOf(f).split(";").map((s) => s.trim()).find((s) => s.startsWith(d + " ")) ?? "").split(/\s+/).slice(1)) if (/^https:\/\//.test(tok)) origins.add(new URL(tok).hostname);
   ok(origins.size >= 3, "通信できる外部が、CSPから読み取れる", [...origins].join(","));
@@ -92,7 +92,9 @@ export function policyTests({ ok, section, OUT, build }) {
     const d = sub("form", { TEST_FORM_ENDPOINT: "https://forms.example.test/submit", TEST_FORM_PROVIDER: "テスト送信サービス" }); const p = text(join(d, "privacy.html"));
     ok(p.includes("テスト送信サービス") && /フォームを送信したとき/.test(p) && p.includes("委託しています"), "フォームの送信先を設定すると、サービス名・外部送信の行・委託の記載が現れる");
     ok(!p.includes("メールの作成画面が開きます"), "フォームの送信先を設定すると、「メール作成画面が開く」という記載は消える");
-    ok(pv.includes("メールの作成画面が開きます") && !pv.includes("委託しています"), "送信先が未設定の間は、「メールの作成画面が開く」と書き、委託とは書かない");
+    const off = text(join(sub("noform", { TEST_FORM_OFF: "1" }), "privacy.html"));
+    ok(off.includes("メールの作成画面が開きます") && !off.includes("委託しています"), "送信先が未設定の間は、「メールの作成画面が開く」と書き、委託とは書かない");
+    ok(pv.includes("Web3Forms") && pv.includes("委託しています") && !pv.includes("メールの作成画面が開きます"), "本番の設定: 送信先(Web3Forms)と委託が書かれ、「メール作成画面が開く」とは書かない");
   }
   { // 自動取得
     const d = sub("auto", { SOURCES_FILE: "tests/fixtures/sources.auto.json" }); const s = text(join(d, "disclaimer.html"));
@@ -112,5 +114,5 @@ export function policyTests({ ok, section, OUT, build }) {
     ? ds.includes("プログラムによる自動取得") && active.every((x) => ds.includes(x.name)) && real.filter((x) => !active.includes(x)).every((x) => !ds.includes(x.name)) && !ds.includes("行っていません")
     : ds.includes("自動で取得して掲載することは、行っていません"),
   `本番の収集元の設定と、免責事項の記載が、一致している(有効な収集元 ${active.length} 件が、すべて載り、無効なものは載らない)`);
-  for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
+  for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none", "noform"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
 }

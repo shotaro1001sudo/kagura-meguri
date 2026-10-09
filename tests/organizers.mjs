@@ -33,10 +33,10 @@ export function organizersTests({ ok, section, OUT, build }) {
   const row = (th) => $("table.info tr").filter((_, tr) => $(tr).find("th").text() === th).find("td").text();
   ok(req.length === 6 && req.every((l) => row("必須").includes(l)), `必須の項目(${req.join("・")})が、説明と一致している`, row("必須"));
   ok(opt.length >= 5 && ["番地までの住所", "料金", "公式情報のURL", "ひとこと説明"].every((l) => opt.includes(l) && row("任意").includes(l)) && opt.every((l) => !row("必須").includes(l)), "任意の項目が、「任意」に入り、「必須」には入っていない", opt.join("・"));
-  ok(text.includes("メールの作成画面が開きます"), "フォームの送信先が未設定の間は、「メールの作成画面が開く」と案内する");
+  ok(!text.includes("メールの作成画面"), "本番の設定(送信先あり): 「メールの作成画面が開く」とは案内しない");
   const D = "dist-test-organizers";
-  const r = build("tests/fixtures/events.test.json", D, { TEST_FORM_ENDPOINT: "https://forms.example.test/submit", TEST_FORM_PROVIDER: "テスト送信サービス" });
-  ok(r.status === 0 && !cheerio.load(read(join(D, "organizers.html")))("main").text().includes("メールの作成画面"), "送信先を設定すると、その案内は消える");
+  const r = build("tests/fixtures/events.test.json", D, { TEST_FORM_OFF: "1" });
+  ok(r.status === 0 && cheerio.load(read(join(D, "organizers.html")))("main").text().includes("メールの作成画面が開きます"), "送信先が未設定の間は、「メールの作成画面が開く」と案内する");
   rmSync(D, { recursive: true, force: true });
 
   // 方針が、免責事項・プライバシーポリシーと食い違わない
