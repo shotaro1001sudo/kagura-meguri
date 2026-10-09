@@ -52,6 +52,13 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .afflist a{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:12px 14px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background .3s}
 .afflist a:first-child{border-left:0;padding-left:0}.afflist a:hover{background:var(--card)}
 .afflist .ico{grid-row:span 2;font-size:1.3rem;filter:grayscale(1) sepia(.4);opacity:.8}.afflist b{font-weight:500;font-size:.92rem}.afflist small{color:var(--mut);font-size:.78rem}
+/* 今週末・今月への入口(トップ) */
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background .3s}
+.quick a:first-child{border-left:0}.quick a:hover{background:var(--card)}
+.quick b{font-family:var(--serif);font-weight:500;font-size:1.05rem}.quick b::after{content:" ›";color:var(--ac)}
+.quick small{color:var(--mut);font-size:.8rem}
+@media(max-width:560px){.quick a{border-left:0;border-top:1px solid var(--line);padding-left:0;padding-right:0}.quick a:first-child{border-top:0}}
 .adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:.72rem;color:var(--mut);letter-spacing:.3em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
 .adwrap{margin:28px 0;min-height:0}
 

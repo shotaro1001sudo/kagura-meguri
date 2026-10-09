@@ -4,6 +4,7 @@ import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
+import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -47,6 +48,11 @@ function validateCommon(rows, ids) {
   for (const r of rawRegular) {
     if (!r.schedule) errs.push(`[${r.id}] schedule(いつ開催されるか)が空です`);
     if (r.until && !/^\d{4}-\d{2}-\d{2}$/.test(r.until)) errs.push(`[${r.id}] until は YYYY-MM-DD 形式にしてください`);
+    // 公演日の計算に使う(今週末・今月のページ)。schedule の文章と、食い違わないように
+    const ints = (v, lo, hi) => Array.isArray(v) && v.length > 0 && v.every((n) => Number.isInteger(n) && n >= lo && n <= hi);
+    if (r.weekdays != null && !ints(r.weekdays, 0, 6)) errs.push(`[${r.id}] weekdays は、曜日の番号(0=日曜〜6=土曜)の配列にしてください`);
+    if (r.months != null && !ints(r.months, 1, 12)) errs.push(`[${r.id}] months は、月(1〜12)の配列にしてください`);
+    if (r.closedDates != null && !(Array.isArray(r.closedDates) && r.closedDates.every((d) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)))) errs.push(`[${r.id}] closedDates は "MM-DD" の配列にしてください`);
   }
   if (errs.length) { console.error("データエラー:\n" + errs.map((x) => "  " + x).join("\n")); process.exit(1); }
 }
@@ -126,7 +132,7 @@ const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.Int
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
-const NAV = [["/", "一覧"], ["/map.html", "地図"], ["/calendar.html", "カレンダー"], ["/kagura/", "神楽の種類"]];
+const NAV = [["/", "一覧"], ["/weekend.html", "今週末"], ["/map.html", "地図"], ["/calendar.html", "カレンダー"], ["/kagura/", "神楽の種類"]];
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
@@ -193,6 +199,30 @@ const sourceNote = (x) => {
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
+// ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
+const today = nowJst.slice(0, 10);
+const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
+const timeOf = (r) => (r.schedule.match(/\d{1,2}:\d{2}/)?.[0] ?? "99:99").padStart(5, "0");
+const daysBetween = (a, b) => { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; };
+const maxDay = (...xs) => xs.flat().filter(Boolean).sort().pop();
+// 毎週などの定期公演の、期間中の公演日。毎日の公演は、別に扱う(一覧が、同じ公演で埋まらないように)
+const regularDates = (days) => regular.filter((r) => !isDaily(r)).map((r) => ({ r, dates: days.filter((d) => regularOn(r, d)) })).filter((x) => x.dates.length);
+const dailyIn = (days) => regular.filter((r) => isDaily(r) && days.some((d) => regularOn(r, d))).map((r) => ({ r, closed: days.filter((d) => !regularOn(r, d)) }));
+const wk = weekendRange(today);
+const wkLabel = rangeLabel(wk.start, wk.end);
+const wkHolidays = [...new Set(wk.days.map(holidayName).filter(Boolean))];
+const wkRenkyu = wk.days.length >= 3 ? `${wk.days.length}連休` : "";
+const wkEvents = upcoming.filter((e) => wk.days.some((d) => onDay(e, d)));
+const wkRegs = regularDates(wk.days), wkDaily = dailyIn(wk.days);
+const wkCount = wkEvents.length + wkRegs.reduce((n, x) => n + x.dates.length, 0);
+const mk = today.slice(0, 7), tmLabel = monthLabel(mk);
+const monthEnd = addDays(`${addDays(`${mk}-28`, 4).slice(0, 7)}-01`, -1);
+const monthDays = daysBetween(today, monthEnd);
+const tmEvents = upcoming.filter((e) => e.start.slice(0, 7) <= mk);
+const tmRegs = regularDates(monthDays), tmDaily = dailyIn(monthDays);
+const nextMk = addDays(monthEnd, 1).slice(0, 7);
+const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
+
 rmSync(OUT, { recursive: true, force: true });
 
 // クライアント用の軽量データ (地図・カレンダー)
@@ -214,6 +244,7 @@ write("dist/index.html", layout({
 <svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>${sparksHtml}
 <div class="copy"><h1>神々へ捧ぐ舞を、<br>訪ねる旅へ。</h1><p>全国の神楽の開催情報を、静かに、ひとつの場所に。</p></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
+<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
 <h2>これからの神楽</h2>
 <div class="filters">${upcoming.length ? `<label class="sr" for="f">都道府県で絞り込む</label><select id="f"><option value="">全国</option>${[...new Set(upcoming.map((e) => e.prefecture))].map((p) => `<option>${esc(p)}</option>`).join("")}</select>` : ""}
 <a class="btn ghost" href="/submit.html">開催情報を投稿する</a></div>
@@ -447,6 +478,57 @@ ${regular.length ? `<h2>この月も観られる定期公演</h2>${regular.map(r
   }));
 });
 
+// ---------- 今週末の神楽・今月の神楽(「神楽 今週末」「今月 神楽」のような検索と、ブックマークに当てる。URLは固定で、中身が日付で変わる) ----------
+const occCard = (r, d) => {
+  const p = parts(`${d}T00:00`);
+  return `<div class="card reg"><div class="date"><small>${p.mo}月 ${WD[p.wd]}</small><b>${p.d}</b></div><div>
+<h3><a href="/regular/${r.id}.html">${esc(r.name)}</a></h3>
+<div class="meta">定期公演 ・ ${esc(r.schedule)} ・ ${esc(r.prefecture)} ${esc(r.city ?? "")}</div>
+${kaguraTag(r.kagura)}</div></div>`;
+};
+const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${list.map(({ r, closed }) => regCard(r) + (closed.length ? `<p class="meta">※ ${closed.map(mdLabel).join("・")}は、休演です。</p>` : "")).join("")}` : "");
+const REG_NOTE = `<p class="meta">※ 定期公演は、臨時の休演や、日程の変更があります。公式の日程表で、公演日をご確認ください。</p>`;
+const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[["/weekend.html", "今週末の神楽"], ["/this-month.html", "今月の神楽"], ["/calendar.html", "カレンダー"], ["/map.html", "地図から探す"]].filter(([h]) => h !== self).map(([h, t]) => `<a class="tag" href="${h}">${t}</a>`).join("")}${months.slice(0, 3).map((m) => `<a class="tag" href="/month/${m}.html">${monthLabel(m)}</a>`).join("")}</div>`;
+
+{
+  const items = [...wkEvents.map((e) => ({ k: e.start, html: card(e) })), ...wkRegs.flatMap(({ r, dates }) => dates.map((d) => ({ k: `${d}T${timeOf(r)}`, html: occCard(r, d) })))].sort((a, b) => a.k.localeCompare(b.k));
+  const after = upcoming.filter((e) => e.start.slice(0, 10) > wk.end).slice(0, 5);
+  const names = [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)];
+  const sub = [wkRenkyu, wkHolidays.join("・")].filter(Boolean).join("・");
+  write("dist/weekend.html", layout({
+    title: `今週末の神楽(${wkLabel}) | ${cfg.siteName}`,
+    desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に観られる神楽の開催と定期公演を、日付順にまとめています。${names.length ? `${listNames(names)}${names.length > 3 ? "など" : ""}。` : "開催情報がない週は、このあとの開催を案内します。"}毎日、自動で更新しています。`)),
+    path: "/weekend.html", active: "/weekend.html",
+    ld: [crumbsLd([["ホーム", "/"], ["今週末の神楽"]]), itemListLd(`今週末の神楽(${wkLabel})`, [...wkEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...wkRegs, ...wkDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
+    body: `${crumbNav([["ホーム", "/"], ["今週末の神楽"]])}${hero("今週末の神楽", `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
+<p class="lead">${esc(wkLabel)}に観られる神楽を、日付順にまとめています(${jpDate(today)}時点)。このページは、毎日、自動で更新しています。日時・会場は変更されることがあるため、お出かけの前に、各ページの公式情報をご確認ください。</p>
+${adSlot(cfg.adsense.slotList)}<h2>開催・公演${items.length ? `(${items.length}件)` : ""}</h2>
+${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "下の、毎晩の定期公演は、観られます。" : ""}`)}
+${dailyBlock(wkDaily)}${wkRegs.length || wkDaily.length ? REG_NOTE : ""}
+${after.length ? `<h2>このあとの神楽</h2>${after.map(card).join("")}` : ""}
+${otherWays("/weekend.html")}`,
+  }));
+}
+{
+  const late = monthDays.length <= 10; // 月末が近いときは、来月の予定も見せる
+  const names = [...tmEvents, ...tmRegs.map((x) => x.r)];
+  write("dist/this-month.html", layout({
+    title: `今月の神楽 ${tmLabel}の開催日程 | ${cfg.siteName}`,
+    desc: padDesc(clip(`${tmLabel}、今日から月末までに観られる神楽を、まとめています。${[tmEvents.length ? `開催${tmEvents.length}件` : "", tmRegs.length + tmDaily.length ? `定期公演${tmRegs.length + tmDaily.length}件の公演日` : ""].filter(Boolean).join("と、") || "開催情報がないときは、来月の予定を案内します"}。${names.length ? `${listNames(names)}など。` : ""}毎日、自動で更新しています。`)),
+    path: "/this-month.html",
+    ld: [crumbsLd([["ホーム", "/"], ["今月の神楽"]]), itemListLd(`今月の神楽(${tmLabel})`, [...tmEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...tmRegs, ...tmDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
+    body: `${crumbNav([["ホーム", "/"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
+<p class="lead">${tmLabel}の、今日(${esc(mdLabel(today))})から月末までに観られる神楽を、まとめています。このページは、毎日、自動で更新しています。日時・会場は変更されることがあるため、お出かけの前に、各ページの公式情報をご確認ください。</p>
+${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2>
+${tmEvents.map(card).join("") || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
+${months.includes(mk) ? `<p class="meta"><a href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
+${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
+${dailyBlock(tmDaily)}${tmRegs.length || tmDaily.length ? REG_NOTE : ""}
+${late && nmEvents.length ? `<h2>来月(${monthLabel(nextMk)})の神楽</h2>${nmEvents.slice(0, 5).map(card).join("")}${nmEvents.length > 5 || months.includes(nextMk) ? `<p class="meta"><a href="/month/${nextMk}.html">${monthLabel(nextMk)}の開催一覧(${nmEvents.length}件)を見る ›</a></p>` : ""}` : ""}
+${otherWays("/this-month.html")}`,
+  }));
+}
+
 // ---------- 固定ページ ----------
 const doc = (path, title, desc, inner, opts = {}) => write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, body: `${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
 
@@ -487,6 +569,9 @@ const staticDay = (() => { const m = String(op.updated ?? "").match(/(\d{4})年(
 const allDay = lastmodOf([...upcoming, ...regular]);
 const sm = [
   ["/", allDay], ["/map.html", allDay], ["/calendar.html", allDay], ["/kagura/", allDay],
+  // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
+  ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
+  ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [`/kagura/${encodeURIComponent(k)}.html`, lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
