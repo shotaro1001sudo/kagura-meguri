@@ -13,6 +13,7 @@ const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""
 const cfg = readJson("config.json");
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
 if (process.env.TEST_FORM_ENDPOINT) cfg.form = { ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };
+if (process.env.TEST_AUTOPUBLISH) cfg.collect = { ...cfg.collect, autoPublish: process.env.TEST_AUTOPUBLISH === "1" };
 if (process.env.TEST_GA) cfg.analyticsId = process.env.TEST_GA;
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
@@ -184,7 +185,11 @@ const lastmodOf = (list) => list.map((x) => x.checked).filter(Boolean).sort().po
 const crumbsLd = (items) => ({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items.map(([name, p], i) => ({ "@type": "ListItem", position: i + 1, name, ...(p ? { item: `${cfg.baseUrl}${p}` } : {}) })) });
 const prefHref = (p) => `/pref/${encodeURIComponent(p)}.html`;
 const listNames = (arr, n = 3) =>arr.slice(0, n).map((x) => x.name.replace(/\s*[(〈].*$/, "")).join("、");
-const sourceNote = (x) => (x.source || x.checked ? `<p class="meta">情報の出典: ${esc(x.source ?? "")}${x.checked ? ` ・ 確認日 ${jpDate(x.checked)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項・情報の取り扱い</a>)。</p>` : "");
+const sourceNote = (x) => {
+  if (!x.source && !x.checked && !x.auto) return "";
+  const day = x.checked ?? x.lastSeen; // 自動取得したものは、最後に取得元で確認できた日
+  return `<p class="meta">情報の出典: ${esc(x.source ?? "")}${day ? ` ・ ${x.auto ? "取得日" : "確認日"} ${jpDate(day)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項・情報の取り扱い</a>)。</p>${x.auto ? '<p class="meta">この情報は、公開されている情報から、プログラムで取得し、自動の検査を経て、掲載しています。誤りに気づいたら、お問い合わせからお知らせください。</p>' : ""}`;
+};
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
@@ -470,7 +475,7 @@ ${contactForm(cfg)}
 const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
 const policyCtx = {
-  cfg, op, mailLink, auto: autoSources,
+  cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
   hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
