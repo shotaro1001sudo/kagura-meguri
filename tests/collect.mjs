@@ -7,6 +7,7 @@ import { createServer } from "node:http";
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import YAML from "yaml";
 import { guardEvent, reconcile, DEFAULTS } from "../scripts/lib/collect-core.mjs";
 
 const NOW = new Date("2026-10-12T05:00:00+09:00");
@@ -200,6 +201,16 @@ export async function collectTests({ ok, section }) {
   section("自動収集: 週次ワークフロー(GitHub Actions)の安全装置");
   const wf = read(".github/workflows/collect.yml");
   const at = (s) => wf.indexOf(s);
+  // 書式の誤りがあると、GitHub はワークフローを読み込めず、何も動かない(手動実行のボタンも出ない)
+  for (const f of [".github/workflows/collect.yml", ".github/workflows/deploy.yml", ".github/dependabot.yml"]) {
+    const d = YAML.parseDocument(read(f));
+    ok(d.errors.length === 0, `${f} が、YAML として正しく読める`, d.errors.map((e) => e.message.split("\n")[0]).join(" / "));
+  }
+  const wy = YAML.parse(wf);
+  const steps = wy.jobs?.collect?.steps ?? [];
+  ok(wy.name === "weekly-collect" && wy.on?.schedule?.[0]?.cron === "0 20 * * 0" && wy.on?.workflow_dispatch?.inputs?.dry_run?.type === "boolean", "読み込んだ結果: 名前・毎週の予定・手動実行(dry_run)が、意図どおり");
+  ok(steps.length > 5 && steps.every((s) => typeof s.run === "string" || typeof s.uses === "string"), "読み込んだ結果: すべての手順が、実行内容(run / uses)を持つ");
+  ok(steps.find((s) => s.name === "notify-mail")?.if === "${{ always() }}" && Object.keys(steps.find((s) => s.name === "notify-mail")?.env ?? {}).includes("MAIL_TO"), "読み込んだ結果: メールの通知は、常に実行され、設定を受け取る");
   ok(/cron: "0 20 \* \* 0"/.test(wf), "毎週(日曜20時UTC = 月曜5時JST)に動く");
   ok(/workflow_dispatch/.test(wf) && /dry_run/.test(wf), "手動の起動と、試運転(dry_run)ができる");
   ok(at("node scripts/collect.mjs") < at("node scripts/geocode.mjs") && at("node scripts/geocode.mjs") < at("npm test") && at("npm test") < at("git push"), "順序: 取得 → 位置付け → テスト → 反映(テストに通らなければ、反映されない)");

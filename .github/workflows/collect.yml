@@ -66,13 +66,15 @@ jobs:
       # 6. 要確認の項目があれば、Issueで知らせる
       - if: ${{ steps.summary.outputs.attention == 'true' && !inputs.dry_run }}
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh issue create --title "週次の自動収集: 確認が必要な項目があります($(date -u +%F))" --body-file data/collect-report.md
+        run: |
+          gh issue create --title "週次の自動収集: 確認が必要な項目があります($(date -u +%F))" --body-file data/collect-report.md
       - if: ${{ inputs.dry_run }}
         run: cat data/collect-report.md >> "$GITHUB_STEP_SUMMARY"
       # 失敗したときも、知らせる
       - if: ${{ failure() && !inputs.dry_run }}
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh issue create --title "週次の自動収集が、失敗しました($(date -u +%F))" --body "何も公開されていません(テストに通らないデータは、公開されない仕組みです)。ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          gh issue create --title "週次の自動収集が、失敗しました($(date -u +%F))" --body "何も公開されていません(テストに通らないデータは、公開されない仕組みです)。ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # 7. 結果を、運営者へメールで送る(成功・失敗・試運転のどれでも。Secrets が未設定なら、何もしない)
       #    秘密情報(Secrets)は、この手順だけに渡す。収集・テストの手順には、渡さない
       #    送り先のアドレスも Secrets に置く(公開リポジトリに書くと、迷惑メールの標的になるため)
