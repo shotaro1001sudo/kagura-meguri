@@ -140,10 +140,28 @@ for (const f of files.filter((x) => x.endsWith(".ics"))) {
   ok(/UID:[^\r\n]+/.test(s) && /DTSTAMP:\d{8}T\d{6}Z/.test(s) && /DTSTART/.test(s) && /DTEND/.test(s) && /SUMMARY:/.test(s), `${n}: 必須項目`);
   ok(!/[^\r]\n/.test(s), `${n}: 改行がCRLFのみ`);
 }
-const icsX = read(join(OUT, "events/t-xss.ics"));
-ok(/\\,/.test(icsX) || !/,/.test(icsX.split("SUMMARY:")[1].split("\r\n")[0]), "ICS の文字がエスケープされる");
-ok(/DTSTART;VALUE=DATE:20261010/.test(read(join(OUT, "events/t-timeunknown.ics"))), "時間未定のICSは終日扱い");
-ok(/DTSTART;TZID=Asia\/Tokyo:20261120T200000/.test(read(join(OUT, "events/t-full.ics"))), "ICS の日時が日本時間(TZID)");
+// 全開催の購読用ファイル(events.ics)の中身: 1件ずつの VEVENT を取り出して確かめる
+const icsAll = read(join(OUT, "events.ics"));
+const vevent = (id) => icsAll.split("BEGIN:VEVENT").find((b) => b.includes(`UID:${id}@`)) ?? "";
+ok(/\\,/.test(vevent("t-xss")) || !/,/.test(vevent("t-xss").split("SUMMARY:")[1]?.split("\r\n")[0] ?? ","), "ICS の文字がエスケープされる");
+ok(/DTSTART;VALUE=DATE:20261010/.test(vevent("t-timeunknown")), "時間未定のICSは終日扱い");
+ok(/DTSTART;TZID=Asia\/Tokyo:20261120T200000/.test(vevent("t-full")), "ICS の日時が日本時間(TZID)");
+ok(!files.some((f) => /events[\\/][^\\/]+\.ics$/.test(f)), "開催ごとの .ics は作らない(登録は、Googleカレンダーのボタンで行う)");
+
+// 開催ページの「Googleカレンダーに追加」: 予定作成の画面に、日時・場所・説明が入る
+section("Googleカレンダーに追加(開催ページ)");
+const gcal = (id) => { const $ = cheerio.load(read(join(OUT, `events/${id}.html`))); const a = $('main a[href^="https://calendar.google.com/"]'); return { a, u: a.length === 1 ? new URL(a.attr("href")) : null }; };
+{
+  const { a, u } = gcal("t-full"), p = u?.searchParams;
+  ok(u && u.pathname === "/calendar/render" && p.get("action") === "TEMPLATE" && p.get("ctz") === "Asia/Tokyo", "Googleカレンダーの予定作成画面を、日本時間で開く");
+  ok(p?.get("dates") === "20261120T200000/20261120T210000" && p.get("text") === JSON.parse(read("tests/fixtures/events.test.json").replace(/^﻿/, "")).find((e) => e.id === "t-full").name, "日時(開始/終了)と名称が入る");
+  ok(p?.get("location").includes("宮崎県") && p.get("details").includes("/events/t-full.html") && p.get("details").includes("公式情報: https://") && p.get("details").includes("公式情報をご確認ください"), "場所と、このページ・公式情報へのリンク、変更の注意が入る");
+  ok(a.attr("target") === "_blank" && a.attr("rel")?.includes("noopener") && a.text() === "Googleカレンダーに追加", "新しいタブで開き、noopener が付く");
+  ok(cheerio.load(read(join(OUT, "events/t-full.html")))('main a[href$=".ics"]').length === 0, "開催ページに、.ics ファイルへのリンクは出さない");
+}
+ok(gcal("t-timeunknown").u?.searchParams.get("dates") === "20261010/20261011", "時間未定の開催は、終日の予定になる");
+ok(gcal("t-minimal").u?.searchParams.get("dates") === "20261103T100000/20261103T120000", "終了時刻がない開催は、開始から2時間の予定になる(ICSと同じ)");
+{ const h = read(join(OUT, "events/t-xss.html")); const raw = h.match(/href="(https:\/\/calendar\.google\.com\/[^"]*)"/)?.[1] ?? ""; ok(raw && !/[<>"']/.test(raw), "名称に記号があっても、リンクのURLが壊れない(エスケープされる)"); }
 
 // ---------- 7. サイトマップ ----------
 section("サイトマップ・robots");
