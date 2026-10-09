@@ -203,12 +203,13 @@ export async function collectTests({ ok, section }) {
   ok(/cron: "0 20 \* \* 0"/.test(wf), "毎週(日曜20時UTC = 月曜5時JST)に動く");
   ok(/workflow_dispatch/.test(wf) && /dry_run/.test(wf), "手動の起動と、試運転(dry_run)ができる");
   ok(at("node scripts/collect.mjs") < at("node scripts/geocode.mjs") && at("node scripts/geocode.mjs") < at("npm test") && at("npm test") < at("git push"), "順序: 取得 → 位置付け → テスト → 反映(テストに通らなければ、反映されない)");
-  // 秘密情報(LINE のトークン)は、最後の通知の手順だけに渡す
-  const notifyAt = at("- name: notify-line");
+  // 秘密情報(メールのアカウント)は、最後の通知の手順だけに渡す
+  const notifyAt = at("- name: notify-mail");
   const secretUses = [...wf.matchAll(/secrets\.(\w+)/g)];
   ok(/permissions:[\s\S]*contents: write[\s\S]*issues: write[\s\S]*actions: write/.test(wf) && !/pull_request_target/.test(wf), "権限は、必要な3つだけ。pull_request_target を使わない");
-  ok(notifyAt > 0 && secretUses.length === 2 && secretUses.every((m) => m.index > notifyAt && /^LINE_/.test(m[1])) && !/run:[^\n]*secrets\./.test(wf) && !/echo[^\n]*LINE_CHANNEL_ACCESS_TOKEN/.test(wf), "秘密情報は、LINE の2つだけで、最後の通知の手順にだけ渡す(収集・テストには渡さず、表示もしない)");
-  ok(notifyAt > at("gh issue create") && /- name: notify-line\n\s+if: \$\{\{ always\(\) \}\}/.test(wf) && /JOB_STATUS: \$\{\{ job\.status \}\}/.test(wf) && /DRY_RUN: \$\{\{ inputs\.dry_run \}\}/.test(wf), "LINE への通知は、最後に、成功・失敗・試運転のどれでも行う");
+  ok(notifyAt > 0 && secretUses.length === 5 && secretUses.every((m) => m.index > notifyAt && /^MAIL_/.test(m[1])) && !/run:[^\n]*secrets\./.test(wf) && !/echo[^\n]*MAIL_PASSWORD/.test(wf), "秘密情報は、メールの設定だけで、最後の通知の手順にだけ渡す(収集・テストには渡さず、表示もしない)");
+  ok(/MAIL_TO: \$\{\{ secrets\.MAIL_TO \}\}/.test(wf) && !/[\w.+-]+@[\w-]+\.[\w.]+/.test(wf.replace(/41898282\+github-actions\[bot\]@users\.noreply\.github\.com/, "")), "送り先のアドレスは、Secrets から読み、ワークフローには書かない");
+  ok(notifyAt > at("gh issue create") && /- name: notify-mail\n\s+if: \$\{\{ always\(\) \}\}/.test(wf) && /JOB_STATUS: \$\{\{ job\.status \}\}/.test(wf) && /DRY_RUN: \$\{\{ inputs\.dry_run \}\}/.test(wf), "メールの通知は、最後に、成功・失敗・試運転のどれでも行う");
   ok(/gh workflow run deploy\.yml/.test(wf) && /gh run watch "\$id" --exit-status/.test(wf) && /DEPLOY_RESULT: \$\{\{ steps\.deploy\.outputs\.result \}\}/.test(wf), "公開を明示的に起動し、完了まで待って、結果を通知に使う");
   ok(/gh issue create/.test(wf) && /failure\(\)/.test(wf) && /needsAttention|attention/.test(wf), "要確認の項目・失敗は、Issueで知らせる");
   ok(/concurrency:/.test(wf) && /timeout-minutes/.test(wf), "同時実行の防止と、時間の上限がある");
