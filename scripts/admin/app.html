@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="admin-token" content="%%TOKEN%%">
+<title>管理者用ページ | 神楽めぐり</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="top">
+  <b>神楽めぐり 管理者用ページ</b>
+  <nav id="tabs" role="tablist">
+    <button role="tab" data-tab="home" aria-selected="true">概要</button>
+    <button role="tab" data-tab="events">開催一覧</button>
+    <button role="tab" data-tab="submit">申請<span class="n" id="n-submit"></span></button>
+    <button role="tab" data-tab="contact">問い合わせ<span class="n" id="n-contact"></span></button>
+  </nav>
+</header>
+<main id="main" tabindex="-1"><p class="mut">読み込んでいます…</p></main>
+<p class="toast" id="toast" role="status" aria-live="polite"></p>
+<dialog id="dlg"><form method="dialog" id="dlg-form" novalidate></form></dialog>
+<script src="/app.js"></script>
+</body>
+</html>
