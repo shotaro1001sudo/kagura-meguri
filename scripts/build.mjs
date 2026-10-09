@@ -128,7 +128,27 @@ const REVEAL_SEL = "main>h2:not(.sr), main .lead, main .about, main table.info, 
 const SPARKS = 12; // 篝火の火の粉の数。位置・大きさ・速さは、決まった乱数で作る(毎回、同じ出力になる)
 let seed = 20261009; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const sparkCss = Array.from({ length: SPARKS }, (_, i) => `.sparks i:nth-child(${i + 1}){--x:${(5 + rnd() * 90).toFixed(1)}%;--s:${(2 + rnd() * 2.2).toFixed(1)}px;--t:${(8 + rnd() * 6).toFixed(1)}s;--d:${(rnd() * 7).toFixed(1)}s;--dx:${Math.round(-40 + rnd() * 80)}px}`).join("\n");
-const sparksHtml = `<div class="sparks" aria-hidden="true">${"<i></i>".repeat(SPARKS)}</div>`;
+// トップの見出しの背景の情景「月と社」: 満月と月暈、金の縁の霞、山の稜線と鳥居。
+// 層(空・霞・地)ごとに、視差の速さを変える。色は CSS(--moon / --fg / --ac2 / --bg)で、昼・夜の配色に合わせる
+const MOONSCAPE = `<svg class="ms" viewBox="0 0 300 240" aria-hidden="true" focusable="false">
+<defs>
+<radialGradient id="msHalo"><stop offset="0" class="ms-s0"/><stop offset=".42" class="ms-s1"/><stop offset="1" class="ms-s2"/></radialGradient>
+<linearGradient id="msMist"><stop offset="0" class="ms-m0"/><stop offset=".3" class="ms-m1"/><stop offset=".7" class="ms-m1"/><stop offset="1" class="ms-m0"/></linearGradient>
+<linearGradient id="msFar" x2="0" y2="1"><stop offset="0" class="ms-l0"/><stop offset="1" class="ms-l2"/></linearGradient>
+<linearGradient id="msNear" x2="0" y2="1"><stop offset="0" class="ms-l1"/><stop offset=".8" class="ms-l2"/></linearGradient>
+<radialGradient id="msEdge" cx=".6" cy=".42" r=".62"><stop offset=".55" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
+<mask id="msMask"><rect width="300" height="240" fill="url(#msEdge)"/></mask>
+</defs>
+<g mask="url(#msMask)">
+<g class="ms-stars"><circle cx="64" cy="40" r="1"/><circle cx="104" cy="22" r=".8"/><circle cx="252" cy="28" r=".9"/><circle cx="276" cy="62" r=".7"/><circle cx="132" cy="58" r=".7"/><circle cx="40" cy="92" r=".8"/></g>
+<g class="ms-sky"><circle class="ms-halo" cx="192" cy="84" r="112"/><circle class="ms-ring" cx="192" cy="84" r="62"/><circle class="ms-moon" cx="192" cy="84" r="42"/></g>
+<g class="ms-kasumi"><path class="ms-k ms-k1" d="M110 106C150 99 250 99 300 106 250 112 150 112 110 106Z"/><path class="ms-k ms-k2" d="M0 150C40 144 120 144 176 150 120 155 40 155 0 150Z"/></g>
+<g class="ms-land"><path fill="url(#msFar)" d="M0 192C40 180 72 172 106 178S166 156 202 162 256 182 300 170V240H0Z"/>
+<path class="ms-torii" d="M88 158q38-6 76 0l-2 5q-36-4.6-72 0zM94 164h64v3H94zM98 175h56v3H98zM124 167h4v8h-4zM102 167h5l1.6 46h-8.2zM145 167h5l1.6 46h-8.2z"/>
+<path fill="url(#msNear)" d="M0 214C44 202 92 204 138 210S226 198 300 210V240H0Z"/></g>
+</g>
+</svg>`;
+const sparksHtml =`<div class="sparks" aria-hidden="true">${"<i></i>".repeat(SPARKS)}</div>`;
 const lf = (s) => s.replace(/\r\n?/g, "\n");
 const motionCss = lf(readFileSync("scripts/motion.css", "utf8")).replaceAll("%%SEL%%", REVEAL_SEL) + "\n" + sparkCss;
 const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8")).replace("%%SEL_JSON%%", JSON.stringify(REVEAL_SEL));
@@ -249,7 +269,7 @@ write("dist/index.html", layout({
   ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: ORG_LD },
     itemListLd("これからの神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   body: `<section class="hero home-hero">
-<svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>${sparksHtml}
+${MOONSCAPE}${sparksHtml}
 <div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1><p><span class="ph">各地で催される神楽の、</span><span class="ph">日取りと舞台を。</span></p></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>はじめての神楽</b><small>見どころ・マナー・服装</small></a></nav>

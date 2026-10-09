@@ -32,10 +32,20 @@ export function identityTests({ ok, section, OUT, build }) {
   const waves = [...css.matchAll(/--wave:url\("data:image\/svg\+xml,([^"]+)"\)/g)].map((m) => decodeURIComponent(m[1]));
   ok(waves.length === 2 && waves.every((s) => s.startsWith("<svg") && (s.match(/<circle/g) ?? []).length === 12 && !/<script|href=/i.test(s)), "青海波の文様が、昼・夜の配色の2種類あり、図形だけでできている(外部の読み込みなし)");
   ok(waves.some((s) => s.includes("#f3eee4")) && waves.some((s) => s.includes("#171513")), "文様の下地の色が、昼・夜それぞれの背景色と同じ(重なりが自然に見える)");
-  ok(/\.home-hero:after\{[^}]*background:var\(--wave\)/.test(css) && /\.home-hero:after\{[^}]*mask-image:radial-gradient/.test(css), "A: トップの見出しの背景に、右から薄れていく形で敷く");
+  ok(!/\.home-hero:after/.test(css), "トップの見出しの背景には、文様を敷かない(左右の余白だけ)");
   ok(/@media\(min-width:1100px\)\{\s*body:before,body:after\{[^}]*position:fixed[^}]*background:var\(--wave\)/.test(css) && !/^body:before/m.test(css.replace(/@media\(min-width:1100px\)\{[\s\S]*?\n\}/, "")), "B: 左右の余白への文様は、余白のある広い画面(1100px以上)だけ");
-  ok(/body\{overflow-x:clip\}/.test(css) && /@media print\{\.home-hero:after,body:before,body:after\{display:none\}\}/.test(css), "画面の外への広がりで、横スクロールが出ない。印刷では、文様を出さない");
+  ok(/@media print\{body:before,body:after\{display:none\}\}/.test(css), "印刷では、文様を出さない");
   ok(/img-src[^;]*data:/.test(home('meta[http-equiv="Content-Security-Policy"]').attr("content")), "CSP: 文様(data: の画像)の表示が、許可されている");
+
+  section("見出しの背景の情景(月と社)");
+  const ms = home(".home-hero svg.ms");
+  ok(ms.length === 1 && ms.attr("aria-hidden") === "true" && ms.attr("focusable") === "false" && home(".enso").length === 0, "見出しの背景は「月と社」の情景(飾りなので、読み上げない)。以前の円は残っていない");
+  ok(["ms-sky", "ms-kasumi", "ms-land", "ms-stars"].every((c) => ms.find(`g.${c}`).length === 1) && ms.find("circle.ms-moon").length === 1 && ms.find("path.ms-torii").length === 1 && ms.find("path.ms-k").length === 2, "月(空)・霞・地(山と鳥居)・星の層がある");
+  const homeHtml = read(join(OUT, "index.html"));
+  ok(["msHalo", "msMist", "msFar", "msNear", "msEdge", "msMask"].every((id) => (homeHtml.match(new RegExp(`id="${id}"`, "g")) ?? []).length === 1), "SVG の中の名前(id)が、ページの中で重ならない");
+  ok(/@media\(max-width:560px\)\{[^@]*\.ms\{display:none\}/.test(css) && /@media print\{[^}]*\.ms[,{]/.test(css), "スマホ(文字の邪魔になる)と印刷では、情景を出さない");
+  ok(/\.intro \.ms-sky\{animation:moonrise/.test(css) && /\.js \.ms-sky\{translate:0 calc\(var\(--py,0px\)\*\.42\)\}/.test(css) && /\.js \.ms-land\{translate:0 calc\(var\(--py,0px\)\*\.18\)\}/.test(css), "動き: 最初の訪問で月が昇り、スクロールでは層ごとに違う速さで動く(奥行き)");
+  ok(/\.js \.ms-k1\{animation:kasumi/.test(css) && /\.js \.ms-stars circle\{animation:twinkle/.test(css) && !/(^|\})\.ms-k1\{animation/.test(css), "霞の漂いと星の瞬きは、JS が動く(動きを減らさない)ときだけ");
 
   section("メールアドレスを公開しない");
   // 本番の設定: フォームの送信先(Web3Forms)があり、運営者のアドレスは、リポジトリの設定にも置かない

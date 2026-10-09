@@ -30,8 +30,14 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .home-hero{display:flex;gap:32px;align-items:flex-start;justify-content:space-between;min-height:260px;padding-top:40px}
 .home-hero .copy{flex:1;min-width:0}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:1.25rem;letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
-.enso{position:absolute;right:90px;top:20px;width:260px;height:260px;opacity:.1;pointer-events:none;color:var(--fg)}
-@media(prefers-color-scheme:dark){.enso{opacity:.14}}
+/* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
+.ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity 1.2s ease;--moon:#b39a5c}
+@media(prefers-color-scheme:dark){.ms{opacity:.28;--moon:#efe6cf}}
+.ms-moon{fill:var(--moon)}.ms-ring{fill:none;stroke:var(--moon);stroke-width:.8;opacity:.55}.ms-halo{fill:url(#msHalo)}
+.ms-s0{stop-color:var(--moon);stop-opacity:.55}.ms-s1{stop-color:var(--moon);stop-opacity:.16}.ms-s2{stop-color:var(--moon);stop-opacity:0}
+.ms-k{fill:url(#msMist)}.ms-m0{stop-color:var(--ac2);stop-opacity:0}.ms-m1{stop-color:var(--ac2);stop-opacity:.8}
+.ms-l0{stop-color:var(--fg);stop-opacity:.3}.ms-l1{stop-color:var(--fg);stop-opacity:.55}.ms-l2{stop-color:var(--fg);stop-opacity:0}.ms-torii{fill:var(--fg);opacity:.72}
+.ms-stars{display:none;fill:var(--moon)}@media(prefers-color-scheme:dark){.ms-stars{display:inline}}
 
 /* 一覧: 枠で囲わず、罫線で区切る */
 .card{display:flex;gap:22px;padding:20px 0;border-top:1px solid var(--line);position:relative;transition:background .4s}
@@ -97,7 +103,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
   .hero{padding-top:36px}
   .home-hero{min-height:0;gap:20px}
   .vert{font-size:1rem;letter-spacing:.3em;padding-right:14px;margin-right:0}
-  .enso{display:none}
+  .ms{display:none}
   .card{gap:14px}
   .afflist a{border-left:0;border-top:1px solid var(--line);padding-left:0}.afflist a:first-child{border-top:0}
   /* スマホのカレンダーは、日付ごとに印(点)だけ出し、詳細は下の一覧で読む */
@@ -123,7 +129,7 @@ footer a{color:var(--mut);padding:8px 2px}
 .taglist{display:flex;flex-wrap:wrap;gap:2px 0}.empty:empty,.monthlist:empty{display:none}
 
 /* 印刷: ナビ・広告・旅の案内を省く */
-@media print{.top,footer,.adwrap,.adph,.aff,.filters,.skip,.enso,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
+@media print{.top,footer,.adwrap,.adph,.aff,.filters,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
 
 /* フォーム */
 .form{max-width:640px}
@@ -172,19 +178,14 @@ footer a{color:var(--mut);padding:8px 2px}
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
 
-/* 青海波(せいがいは)の文様: トップの見出しの背景と、広い画面の左右の余白に、うっすら敷く。
+/* 青海波(せいがいは)の文様: 広い画面の左右の余白に、うっすら敷く。
    重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */
 :root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23f3eee4' stroke='%23b9a982' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
 @media(prefers-color-scheme:dark){:root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23171513' stroke='%236f6447' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}}
 body{overflow-x:clip}
-.home-hero:after{content:"";position:absolute;top:0;bottom:0;left:calc(50% - 50vw);right:calc(50% - 50vw);z-index:-1;pointer-events:none;
-  background:var(--wave) 0 0/56px 28px;opacity:.9;
-  -webkit-mask-image:radial-gradient(ellipse 62% 95% at 100% 45%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%);mask-image:radial-gradient(ellipse 62% 95% at 100% 45%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%)}
-.home-hero{isolation:isolate}
 @media(min-width:1100px){
   body:before,body:after{content:"";position:fixed;top:0;bottom:0;width:calc((100vw - 860px)/2);z-index:-1;pointer-events:none;background:var(--wave) 0 0/56px 28px;opacity:.75}
   body:before{left:0;-webkit-mask-image:linear-gradient(to right,#000,transparent);mask-image:linear-gradient(to right,#000,transparent)}
   body:after{right:0;-webkit-mask-image:linear-gradient(to left,#000,transparent);mask-image:linear-gradient(to left,#000,transparent)}
 }
-@media(max-width:560px){.home-hero:after{opacity:.55}}
-@media print{.home-hero:after,body:before,body:after{display:none}}
+@media print{body:before,body:after{display:none}}
