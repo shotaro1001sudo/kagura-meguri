@@ -23,7 +23,8 @@ const SUMMARY_FILE = process.env.SUMMARY_FILE ?? "data/collect-summary.json";
 const cfg = readJson("config.json", {});
 const ccfg = { ...DEFAULTS, ...(cfg.collect ?? {}) };
 if (process.env.COLLECT_AUTOPUBLISH) ccfg.autoPublish = process.env.COLLECT_AUTOPUBLISH === "1"; // テスト用
-const UA = `KaguraMeguriBot/1.0 (+${cfg.baseUrl}/about.html; ${cfg.operator.contact})`;
+// 取得先に名乗る名前。連絡先は、メールアドレスではなく、お問い合わせのページで示す
+const UA = `KaguraMeguriBot/1.0 (+${cfg.baseUrl}/contact.html)`;
 const DELAY_MS = Number(process.env.COLLECT_DELAY_MS ?? 3000);
 const now = process.env.COLLECT_NOW ? new Date(process.env.COLLECT_NOW) : new Date();
 const only = process.argv[2];

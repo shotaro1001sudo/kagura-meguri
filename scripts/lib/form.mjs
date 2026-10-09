@@ -26,8 +26,11 @@ const guard = (cfg) => `
 
 const consent = (cfg) => `<div class="f consent"><label><input type="checkbox" id="agree" name="agree" required> <span><a href="/privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します</span></label><small class="err" id="agree-e" role="alert"></small></div>`;
 
+// 運営者のメールアドレス(分割)は、送信先が未設定で、メール作成を予備に使う間だけ、フォームに埋め込む
+const mailParts = (cfg) => (formReady(cfg) ? ["", ""] : (cfg.operator.contact || "").split("@"));
+
 export function submitForm(cfg) {
-  const [u, d] = (cfg.operator.contact || "").split("@");
+  const [u, d] = mailParts(cfg);
   return `<form class="form" id="submit-form" data-form="submit" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
 <p class="meta">掲載をご希望の神楽の開催情報を、お送りください。内容を確認のうえ、掲載します(すべての投稿を掲載するとは限りません)。</p>
 <fieldset><legend>開催の情報</legend>
@@ -58,7 +61,7 @@ ${consent(cfg)}
 }
 
 export function contactForm(cfg) {
-  const [u, d] = (cfg.operator.contact || "").split("@");
+  const [u, d] = mailParts(cfg);
   return `<form class="form" id="contact-form" data-form="contact" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
 ${select("topic", "ご用件", ["掲載内容の訂正", "掲載の削除依頼", "サイトの不具合", "広告・取材などのご相談", "その他"], { required: true })}
 ${field("sender", "お名前", { required: true, max: 60, autocomplete: "name" })}
@@ -141,7 +144,10 @@ form.addEventListener('submit',function(ev){
   fetch(C.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload),signal:ctl.signal,referrerPolicy:'no-referrer',credentials:'omit'})
     .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||j.success===false||j.ok===false)throw 0;return j})})
     .then(function(){sessionStorage.setItem('lastSend',String(Date.now()));form.reset();say('送信しました。ありがとうございます。内容を確認のうえ、ご連絡します。')})
-    .catch(function(){say('送信できませんでした。時間をおいて再度お試しいただくか、メールでお送りください。',true);var b=document.createElement('button');b.type='button';b.className='btn ghost';b.textContent='メールで送る';b.onclick=mailto;st.appendChild(document.createElement('br'));st.appendChild(b)})
+    .catch(function(){
+      // 運営者のアドレスはページに載せないため、送信先がある場合は、メールでの予備はない(時間をおいて、もう一度)
+      if(!form.dataset.u){say('送信できませんでした。入力内容は残っています。時間をおいて、もう一度お試しください。',true);return}
+      say('送信できませんでした。時間をおいて再度お試しいただくか、メールでお送りください。',true);var b=document.createElement('button');b.type='button';b.className='btn ghost';b.textContent='メールで送る';b.onclick=mailto;st.appendChild(document.createElement('br'));st.appendChild(b)})
     .finally(function(){clearTimeout(to);btn.disabled=false});
 });
 })();`;

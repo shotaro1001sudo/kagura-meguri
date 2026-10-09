@@ -1,5 +1,5 @@
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
@@ -113,9 +113,11 @@ const LEAFLET = `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/di
 
 // ---------- 連絡先(メールアドレスは、HTMLにそのまま書かない: 収集ボット対策) ----------
 const op = cfg.operator;
-const [mailUser, mailDomain] = /^[^\s@]+@[^\s@]+$/.test(op.contact) ? op.contact.split("@") : [null, null];
-const mailLink = () => (mailUser ? `<a class="mail" data-u="${esc(mailUser)}" data-d="${esc(mailDomain)}" href="/contact.html">お問い合わせフォーム</a>` : esc(op.contact));
-const MAIL_SCRIPT = `document.querySelectorAll('a.mail').forEach(function(a){var m=a.dataset.u+'@'+a.dataset.d;a.href='mailto:'+m;a.textContent=m})`;
+// 運営者のメールアドレスは、ページに載せない(分割して埋め込んでも、ページを実行する収集ボットには読まれる)。
+// 連絡は、お問い合わせフォームに一本化する。フォームの送信先が未設定の間だけ、フォームが、メール作成の予備に使う(form.mjs)
+// 運営者(構造化データ): シンボルを、ロゴとして示す
+const ORG_LD = { "@type": "Organization", name: op.name, url: `${cfg.baseUrl}/about.html`, logo: { "@type": "ImageObject", url: `${cfg.baseUrl}/symbol.png`, width: 330, height: 330 } };
+const mailLink = () => `<a href="/contact.html">お問い合わせフォーム</a>`;
 
 // ---------- 共通レイアウト ----------
 // ---------- 動き(出現・視差・ホバー・導入演出) ----------
@@ -148,18 +150,18 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${esc(cfg.siteName)}"><meta property="og:locale" content="ja_JP"><meta property="og:image" content="${OG_URL}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${OG_URL}">
 <meta name="theme-color" content="#f3eee4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%239a3d2f'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gf" rel="stylesheet" href="${FONT_URL}" media="print"><script>${FONT_SCRIPT}</script><noscript><link rel="stylesheet" href="${FONT_URL}"></noscript>
 <style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
 ${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 <a class="skip" href="#main">本文へ移動</a>
-<header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <div class="wrap"><main id="main">${body}</main>
 <footer><a href="/organizers.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
-${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
+${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -241,7 +243,7 @@ write("dist/index.html", layout({
   title: `神楽の開催情報・日程一覧 | ${cfg.siteName}`,
   desc: clip(`${[...new Set(kaguras)].slice(0, 5).join("、")}など、全国の神楽の開催日程・会場・料金を、一覧・地図・カレンダーで探せます。公式情報をもとに、出典と確認日つきで紹介します。`),
   path: "/", active: "/",
-  ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: { "@type": "Organization", name: cfg.operator.name, url: `${cfg.baseUrl}/about.html` } },
+  ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: ORG_LD },
     itemListLd("これからの神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   body: `<section class="hero home-hero">
 <svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>${sparksHtml}
@@ -542,7 +544,7 @@ ${otherWays("/this-month.html")}`,
     path: "/guide.html",
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
-      author: { "@type": "Person", name: op.name, url: `${cfg.baseUrl}/about.html` }, publisher: { "@type": "Organization", name: cfg.siteName, url: `${cfg.baseUrl}/` },
+      author: ORG_LD, publisher: ORG_LD,
       mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: OG_URL,
     }],
     body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose">${guideHtml({
@@ -564,6 +566,7 @@ doc("/organizers.html", "主催者・関係者の方へ", `神楽の主催者・
   { lead: "神楽の開催情報を、無料で掲載します", layout: { ld: crumbsLd([["ホーム", "/"], ["主催者・関係者の方へ"]]) } });
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報`, `
+<p class="symbol"><img src="/symbol.png" alt="${esc(op.name)}のシンボル" width="120" height="120"></p>
 <table class="info"><tr><th>サイト名</th><td>${esc(cfg.siteName)}</td></tr><tr><th>運営者</th><td>${esc(op.name)}</td></tr>
 <tr><th>連絡先</th><td>${mailLink()}</td></tr><tr><th>開設</th><td>${esc(op.established)}</td></tr></table>
 <h2>このサイトについて</h2>
@@ -579,8 +582,7 @@ doc("/contact.html", "お問い合わせ", "掲載・訂正・削除のご連絡
 <p>次のご連絡は、下のフォームで受け付けています。</p>
 <ul><li>開催情報の訂正、掲載の削除のご依頼</li><li>サイトの不具合のご報告</li><li>その他のお問い合わせ</li></ul>
 <p>新しい開催情報の掲載は、<a href="/submit.html">投稿フォーム</a>をご利用ください。内容によっては、お返事までお時間をいただくことや、お返事できないことがあります。</p>
-${contactForm(cfg)}
-<p class="meta">フォームを使えない場合は、${mailLink()}までメールでお知らせください。</p>`, { layout: { withForm: true } });
+${contactForm(cfg)}`, { layout: { withForm: true } });
 
 // プライバシーポリシー・免責事項: 設定(広告・アクセス解析・アフィリエイト・フォーム送信先・自動取得)に合わせて、本文が変わる
 const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
@@ -621,6 +623,8 @@ const feedItems = [...upcoming.map((e) => ({ id: e.id, title: e.name, href: `/ev
 write("dist/feed.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ja"><title>${xml(cfg.siteName)} 新着の開催情報</title><subtitle>${xml(cfg.description)}</subtitle><link href="${cfg.baseUrl}/feed.xml" rel="self"/><link href="${cfg.baseUrl}/"/><id>${cfg.baseUrl}/</id><updated>${allDay}T00:00:00+09:00</updated><author><name>${xml(op.name)}</name></author>${feedItems.map((i) => `<entry><title>${xml(i.title)}</title><link href="${cfg.baseUrl}${i.href}"/><id>${cfg.baseUrl}${i.href}</id><updated>${i.day}T00:00:00+09:00</updated><summary>${xml(i.summary.trim())}</summary></entry>`).join("")}</feed>\n`);
 write("dist/events.ics", vcal(upcoming));
 mkdirSync(OUT, { recursive: true }); writeFileSync(`${OUT}/og.png`, ogImagePng());
+// 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
+for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
 
 write("dist/404.html", layout({
   title: `ページが見つかりません | ${cfg.siteName}`, desc: "お探しのページは見つかりませんでした", path: "/404.html", noindex: true,

@@ -104,7 +104,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
   const con = cheerio.load(rd("contact.html"));
   ok(con("form[data-form=contact]").length === 1, "お問い合わせフォームが1つある");
   for (const id of ["topic", "sender", "email", "message", "agree"]) ok(con(`#${id}[required]`).length === 1, `お問い合わせ: ${id} が必須`);
-  ok(con("a.mail").length >= 1 && con("a.mail").attr("data-u") && !con("a.mail").text().includes("@"), "メールは、スクリプトが動くまでアドレスを表示しない");
+  ok(con("a.mail").length === 0 && con("main a[href='/contact.html'], main form").length >= 1 && !con("main").text().includes("@"), "お問い合わせページに、メールアドレス(メールのリンク)を載せない。連絡はフォームで受ける");
   const pv = cheerio.load(rd("privacy.html"))("body").text();
   ok(pv.includes("投稿フォーム・お問い合わせフォームについて") && pv.includes("迷惑投稿"), "プライバシーポリシーにフォームの項目がある");
 
@@ -176,7 +176,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
   }
   { // 7. 送信の失敗
     const t = await run("submit.html", { fetchImpl: async () => ({ ok: false, json: async () => ({}) }) }); fillSubmit(t); t.advance(5000); await t.submit();
-    ok(t.status().includes("送信できませんでした") && t.d.querySelector("#status button"), "送信に失敗したら、案内とメール送信ボタンを出す");
+    ok(t.status().includes("送信できませんでした") && t.status().includes("もう一度") && !t.d.querySelector("#status button"), "送信に失敗したら、もう一度試す案内を出す(運営者のアドレスは載せないので、メールで送るボタンは出さない)");
     ok(t.d.getElementById("name").value === "テスト神楽" && !t.d.getElementById("send").disabled, "失敗しても入力内容は残り、もう一度押せる");
   }
   { // 8. 送信先がエラーを返す(success:false)
@@ -189,9 +189,9 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
     t.advance(5000); await t.submit();
     ok(t.calls.length === 1 && JSON.parse(t.calls[0].init.body).subject.includes("お問い合わせ: 掲載内容の訂正") && !JSON.parse(t.calls[0].init.body).message.includes("events.json"), "お問い合わせが送れる(events.json の下書きは付かない)");
   }
-  { // 10. メールアドレスは、スクリプトが動いたときだけ現れる
+  { // 10. スクリプトが動いても、メールアドレスは、ページに現れない
     const t = await run("contact.html", {});
-    ok(t.d.querySelector("a.mail").href.startsWith("mailto:") && t.d.querySelector("a.mail").textContent.includes("@"), "スクリプトが動くと、メールのリンクになる");
+    ok(!t.d.querySelector("a[href^='mailto:']") && !t.d.querySelector("main").textContent.includes("@"), "スクリプトが動いても、メールのリンク・アドレスは現れない");
   }
   { // 11. 送信先が未設定なら、メール作成にフォールバックする(送信先なしのビルド)
     const t = await run("submit.html", { endpointDir: OUT }); fillSubmit(t); t.advance(5000); await t.submit();

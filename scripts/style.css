@@ -17,7 +17,8 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 /* ヘッダ */
 .top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 24px;padding-top:20px;padding-bottom:10px}
 .logo{font-family:var(--serif);font-size:1.35rem;letter-spacing:.3em;color:var(--fg);text-decoration:none;padding:8px 0}
-.logo:before{content:"";display:inline-block;width:.55em;height:.55em;background:var(--ac);border-radius:50%;margin-right:.7em;vertical-align:.05em}
+.logo{display:inline-flex;align-items:center;gap:.6em}.logo img{width:32px;height:32px;border-radius:50%;flex:none}
+.symbol img{display:block;width:120px;height:120px;border-radius:50%;margin:4px 0 8px}
 .top nav{display:flex;gap:4px 22px;flex-wrap:wrap}
 .top nav a{color:var(--mut);text-decoration:none;font-size:.9rem;padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
 .top nav a:hover,.top nav a.on{color:var(--fg);border-color:var(--ac)}
