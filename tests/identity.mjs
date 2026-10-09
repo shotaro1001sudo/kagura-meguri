@@ -27,6 +27,16 @@ export function identityTests({ ok, section, OUT, build }) {
   const pv = read(join(OUT, "privacy.html"));
   ok(pv.includes("運営者: 神楽日和編集部") && pv.includes("運営者の氏名・住所は、ご請求があれば、遅滞なくお知らせします") && !pv.includes("神楽日和編集部"), "プライバシーポリシー: 運営者名と、氏名・住所は請求に応じて知らせる旨");
 
+  section("背景の文様(青海波)");
+  const css = home("style").text();
+  const waves = [...css.matchAll(/--wave:url\("data:image\/svg\+xml,([^"]+)"\)/g)].map((m) => decodeURIComponent(m[1]));
+  ok(waves.length === 2 && waves.every((s) => s.startsWith("<svg") && (s.match(/<circle/g) ?? []).length === 12 && !/<script|href=/i.test(s)), "青海波の文様が、昼・夜の配色の2種類あり、図形だけでできている(外部の読み込みなし)");
+  ok(waves.some((s) => s.includes("#f3eee4")) && waves.some((s) => s.includes("#171513")), "文様の下地の色が、昼・夜それぞれの背景色と同じ(重なりが自然に見える)");
+  ok(/\.home-hero:after\{[^}]*background:var\(--wave\)/.test(css) && /\.home-hero:after\{[^}]*mask-image:radial-gradient/.test(css), "A: トップの見出しの背景に、右から薄れていく形で敷く");
+  ok(/@media\(min-width:1100px\)\{\s*body:before,body:after\{[^}]*position:fixed[^}]*background:var\(--wave\)/.test(css) && !/^body:before/m.test(css.replace(/@media\(min-width:1100px\)\{[\s\S]*?\n\}/, "")), "B: 左右の余白への文様は、余白のある広い画面(1100px以上)だけ");
+  ok(/body\{overflow-x:clip\}/.test(css) && /@media print\{\.home-hero:after,body:before,body:after\{display:none\}\}/.test(css), "画面の外への広がりで、横スクロールが出ない。印刷では、文様を出さない");
+  ok(/img-src[^;]*data:/.test(home('meta[http-equiv="Content-Security-Policy"]').attr("content")), "CSP: 文様(data: の画像)の表示が、許可されている");
+
   section("メールアドレスを公開しない");
   // 本番の設定: フォームの送信先(Web3Forms)があり、運営者のアドレスは、リポジトリの設定にも置かない
   ok(cfg.operator.contact === "" && /^https:\/\/api\.web3forms\.com\//.test(cfg.form.endpoint) && /^[0-9a-f-]{36}$/.test(cfg.form.accessKey), "本番の設定: 送信先は Web3Forms。運営者のアドレスは、設定ファイルにも書かない");

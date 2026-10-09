@@ -171,3 +171,20 @@ footer a{color:var(--mut);padding:8px 2px}
 .prose h2[id]{scroll-margin-top:16px}
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
+
+/* 青海波(せいがいは)の文様: トップの見出しの背景と、広い画面の左右の余白に、うっすら敷く。
+   重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */
+:root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23f3eee4' stroke='%23b9a982' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+@media(prefers-color-scheme:dark){:root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23171513' stroke='%236f6447' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}}
+body{overflow-x:clip}
+.home-hero:after{content:"";position:absolute;top:0;bottom:0;left:calc(50% - 50vw);right:calc(50% - 50vw);z-index:-1;pointer-events:none;
+  background:var(--wave) 0 0/56px 28px;opacity:.9;
+  -webkit-mask-image:radial-gradient(ellipse 62% 95% at 100% 45%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%);mask-image:radial-gradient(ellipse 62% 95% at 100% 45%,#000 0%,rgba(0,0,0,.55) 45%,transparent 78%)}
+.home-hero{isolation:isolate}
+@media(min-width:1100px){
+  body:before,body:after{content:"";position:fixed;top:0;bottom:0;width:calc((100vw - 860px)/2);z-index:-1;pointer-events:none;background:var(--wave) 0 0/56px 28px;opacity:.75}
+  body:before{left:0;-webkit-mask-image:linear-gradient(to right,#000,transparent);mask-image:linear-gradient(to right,#000,transparent)}
+  body:after{right:0;-webkit-mask-image:linear-gradient(to left,#000,transparent);mask-image:linear-gradient(to left,#000,transparent)}
+}
+@media(max-width:560px){.home-hero:after{opacity:.55}}
+@media print{.home-hero:after,body:before,body:after{display:none}}
