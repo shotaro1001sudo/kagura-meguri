@@ -5,6 +5,10 @@ import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
+import { publish, pendingChanges, findGit } from "../scripts/admin/publish.mjs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const SITE = "神楽めぐり";
 const read = (p) => readFileSync(p, "utf8");
@@ -70,7 +74,10 @@ export async function adminTests({ ok, section }) {
   copyFileSync("config.json", join(ROOT, "config.json"));
   writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(base, null, 2));
   const fakeMail = { calls: 0 };
+  // コミットと push は、本物のリポジトリに触れないよう、記録するだけの偽物にする
+  const published = [];
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
+    publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -106,16 +113,53 @@ export async function adminTests({ ok, section }) {
     ok(r.status === 200 && saved?.status === "published" && saved.source === "テスト保存会の公式サイト" && r.json.geocode === "OK  stub", "申請を許可すると、開催データに「掲載」で加わり、位置の取得が走る");
     const done = r.json.state.inbox.find((x) => x.id === subItem.id);
     ok(done.status === "published" && done.eventId === "ev-20261103" && done.closedAt === "2026-10-10", "許可した申請は「掲載済み」になり、開催と結び付く");
+    ok(published.length === 1 && published[0] === "data(admin): 掲載(申請): 第1回 テスト神楽まつり" && r.json.publish?.ok, "許可すると、そのままコミットと push をする(入力の誤りで止まった保存では、しない)", published.join(" / "));
     r = await req("/api/events/status", { body: { id: "ev-20261103", status: "withdrawn" } });
     ok(r.status === 200 && JSON.parse(read(join(ROOT, "data/events.json"))).find((e) => e.id === "ev-20261103").status === "withdrawn", "掲載の取り下げ");
+    ok(published[1] === "data(admin): 取り下げ: 第1回 テスト神楽まつり", "取り下げも、そのままコミットと push をする");
+    r = await req("/api/events/save", { body: { event: { ...base[0], name: "A 改" }, originalId: "a-1" } });
+    ok(r.status === 200 && published[2] === "data(admin): 編集: A 改", "編集も、そのままコミットと push をする");
     ok((await req("/api/events/status", { body: { id: "ev-20261103", status: "pending" } })).status === 400, "取り下げ・再掲載以外の状態には、変えられない");
     const conItem = r.json.state.inbox.find((x) => x.kind === "contact");
     r = await req("/api/inbox/update", { body: { id: conItem.id, status: "doing", memo: "電話で確認中" } });
     ok(r.json.state.inbox.find((x) => x.id === conItem.id).memo === "電話で確認中" && r.json.state.inbox.find((x) => x.id === conItem.id).status === "doing", "問い合わせの対応状況とメモを保存する");
+    ok(published.length === 3, "問い合わせのメモ・状態や、Gmail の読み込みでは、push しない(開催データが変わらない)");
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });
   }
+
+  section("管理者用ページ: 保存と同時の公開(コミットと push)");
+  // 本物の GitHub の代わりに、PC の中に、送り先のリポジトリを作って確かめる
+  const T = mkdtempSync(join(tmpdir(), "kagura-pub-"));
+  const git = findGit();
+  const g = (cwd, ...a) => execFileSync(git, a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }).trim();
+  const clone = (name) => { g(T, "clone", "-q", "-c", "core.autocrlf=false", "remote.git", name); const d = join(T, name); g(d, "config", "user.email", "t@example.invalid"); g(d, "config", "user.name", "t"); return d; };
+  try {
+    g(T, "-c", "init.defaultBranch=main", "init", "-q", "--bare", "remote.git");
+    const A = clone("a");
+    mkdirSync(join(A, "data")); writeFileSync(join(A, "data/events.json"), '[\n  {"id":"x","status":"published"}\n]');
+    g(A, "add", "."); g(A, "commit", "-q", "-m", "init"); g(A, "push", "-q", "-u", "origin", "HEAD:main");
+    const B = clone("b");
+    writeFileSync(join(B, "README.md"), "週次の自動収集の代わり"); g(B, "add", "README.md"); g(B, "commit", "-q", "-m", "auto"); g(B, "push", "-q");
+    writeFileSync(join(A, "data/events.json"), '[\n  {"id":"x","status":"withdrawn"}\n]');
+    writeFileSync(join(A, "notes.txt"), "作業中");
+    ok((await pendingChanges(A, git)).uncommitted === true, "保存したが、まだ送っていない変更を見つける");
+    let p = await publish(A, "data(admin): 取り下げ: X", { git, check: false });
+    const remoteLog = g(T, "--git-dir=remote.git", "log", "--format=%s", "main");
+    ok(p.ok && remoteLog.split("\n")[0] === "data(admin): 取り下げ: X" && remoteLog.includes("auto"), "GitHub 側が先に進んでいても、取り込んでから送る", JSON.stringify(p));
+    ok(g(A, "status", "--porcelain").includes("notes.txt") && !g(T, "--git-dir=remote.git", "show", "--stat", "--format=", "main").includes("notes.txt"), "開催データ以外の、作業中のファイルは、送らない");
+    const pc = await pendingChanges(A, git);
+    ok(!pc.uncommitted && pc.unpushed === 0, "送ったあとは、反映していない変更が残らない", JSON.stringify(pc));
+    // 同じ行を、GitHub 側と、この PC で別々に変えた場合
+    g(B, "pull", "-q"); writeFileSync(join(B, "data/events.json"), '[\n  {"id":"x","status":"pending"}\n]'); g(B, "commit", "-q", "-am", "other"); g(B, "push", "-q");
+    writeFileSync(join(A, "data/events.json"), '[\n  {"id":"x","status":"published"}\n]');
+    p = await publish(A, "data(admin): 再掲載: X", { git, check: false });
+    ok(!p.ok && p.step === "push" && /重なりました/.test(p.log) && !existsSync(join(A, ".git/rebase-merge")) && !existsSync(join(A, ".git/rebase-apply")), "内容が重なったときは、送らずに知らせ、取り込みの途中の状態を残さない", p.log?.slice(0, 120));
+    ok((await pendingChanges(A, git)).unpushed === 1, "送れなかったコミットは、PC に残り、「もう一度公開する」の対象になる");
+    p = await publish(A, "x", { git, check: true });
+    ok(!p.ok && p.step === "build", "サイトを作れないときは、送らない");
+  } finally { rmSync(T, { recursive: true, force: true }); }
 
   section("管理者用ページ: 公開しないもの");
   const gi = read(".gitignore");

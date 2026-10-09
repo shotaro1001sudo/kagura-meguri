@@ -80,8 +80,24 @@ function homeView() {
           h("span", { class: "mut" }, S.lastFetch ? `前回: ${new Date(S.lastFetch).toLocaleString("ja-JP")}` : "まだ読み込んでいません"))
       : h("div", { class: "warn" }, h("p", null, "Gmail の設定がまだありません。リポジトリの ADMIN.md の手順で、admin.local.json を作ってください(GitHub には上がりません)。設定後、この画面を開き直します。")),
     h("h3", null, "公開について"),
-    h("p", { class: "mut" }, "この画面で保存すると、data/events.json だけが書き換わります。サイトに反映するには、コミットして push してください(Claude に「git push」と伝えれば行います)。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。"),
+    S.pending && (S.pending.uncommitted || S.pending.unpushed)
+      ? h("div", { class: "warn bar" }, h("span", null, "サイトに反映していない変更があります。"), h("button", { class: "btn", id: "repub", onclick: republish }, "もう一度公開する")) : "",
+    h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。"),
   ];
+}
+
+// 保存のあとの、公開(コミットと push)の結果を知らせる
+function published(r, what) {
+  const p = r.publish;
+  const geo = r.geocode ? "\n" + r.geocode.split("\n").filter((l) => /^(OK|NG|--)/.test(l)).join("\n") : "";
+  if (!p || p.ok) return toast(`${what}。サイトに反映しました(数分後に表示が変わります)${geo}`);
+  const step = { build: "サイトを作る確認で、問題が見つかりました", commit: "コミットできませんでした", push: "GitHub に送れませんでした" }[p.step] || "公開できませんでした";
+  toast(`${what}が、サイトには反映していません。${step}。\n概要の「もう一度公開する」で、やり直せます。\n${(p.log || "").split("\n").slice(-4).join("\n")}`, true);
+}
+async function republish() {
+  const b = $("#repub"); b.disabled = true; b.textContent = "公開しています…";
+  try { const r = await call("/api/publish", {}); published(r, "変更を送りました"); render(); }
+  catch (err) { toast(err.message, true); b.disabled = false; b.textContent = "もう一度公開する"; }
 }
 
 async function fetchMail() {
@@ -122,9 +138,10 @@ function eventsView() {
 }
 
 async function setEventStatus(e, status) {
-  const msg = status === "withdrawn" ? `「${e.name}」を取り下げます。push 後、サイトから外れ、ページもなくなります。よろしいですか？` : `「${e.name}」を、もう一度掲載します。よろしいですか？`;
+  const msg = status === "withdrawn" ? `「${e.name}」を取り下げます。すぐにサイトに反映し、数分後に、一覧からもページからも外れます。よろしいですか？` : `「${e.name}」を、もう一度掲載します(すぐにサイトに反映します)。よろしいですか？`;
   if (!confirm(msg)) return;
-  try { await call("/api/events/status", { id: e.id, status }); toast(status === "withdrawn" ? "取り下げました(push で反映)" : "掲載に戻しました(push で反映)"); render(); }
+  toast("保存して公開しています…(数十秒かかることがあります)");
+  try { const r = await call("/api/events/status", { id: e.id, status }); published(r, status === "withdrawn" ? "取り下げました" : "掲載に戻しました"); render(); }
   catch (err) { toast(err.message, true); }
 }
 
@@ -170,12 +187,11 @@ function openEditor(e, item) {
       start: date ? `${date}T${unknown ? "00:00" : v("time") || "00:00"}` : "", end: v("endtime") && date ? `${endDate}T${v("endtime")}` : "",
       timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked") };
     form.querySelectorAll(".err").forEach((x) => (x.textContent = "")); form.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
-    const btn = $("#e-save"); btn.disabled = true; btn.textContent = "保存しています…(位置の取得に数秒かかります)";
+    const btn = $("#e-save"); btn.disabled = true; btn.textContent = "保存して公開しています…(数十秒かかることがあります)";
     try {
       const r = await call("/api/events/save", { event: ev2, originalId: e && !item ? e.id : null, inboxId: item ? item.id : null });
       dlg.close();
-      const geo = r.geocode ? "\n" + r.geocode.split("\n").filter((l) => /^(OK|NG|--)/.test(l)).join("\n") : "";
-      toast(`保存しました(push で反映)${geo}`);
+      published(r, "保存しました");
       render();
     } catch (err) {
       btn.disabled = false; btn.textContent = item ? "許可して掲載する" : "保存する";

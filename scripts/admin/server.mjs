@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
+import { publish, pendingChanges } from "./publish.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.js": ["app.js", "text/javascript; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"] };
@@ -19,9 +20,9 @@ const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-sr
 const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
 /**
- * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode を差し替える。
+ * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges } = {}) {
   const token = randomBytes(24).toString("hex");
   const cfg = loadConfig(root);
   const site = cfg.siteName ?? "神楽めぐり";
@@ -29,15 +30,21 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   let queue = Promise.resolve();
   const serial = (fn) => { const p = queue.then(fn); queue = p.catch(() => {}); return p; };
 
-  const state = () => {
+  const state = async () => {
     const box = loadInbox(root);
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword),
-      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS };
+      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null) };
   };
+
+  // 開催データを変えた操作は、そのままコミットして push する(数分後にサイトに反映)
+  const release = (what, e) => publisher(root, `data(admin): ${what}: ${e.name}`).catch((err) => ({ ok: false, step: "push", log: err.message }));
 
   const api = {
     "GET /api/state": () => state(),
+
+    // 反映に失敗したときの、やり直し
+    "POST /api/publish": () => serial(async () => ({ publish: await publisher(root, "data(admin): 管理者用ページの変更"), state: await state() })),
 
     "POST /api/fetch-mail": () => serial(async () => {
       const g = loadLocal(root).gmail ?? {};
@@ -53,7 +60,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       box.lastFetch = new Date().toISOString();
       const pruned = pruneInbox(box, today());
       saveInbox(root, box);
-      return { added: items.length, pruned, state: state() };
+      return { added: items.length, pruned, state: await state() };
     }),
 
     // 開催の保存(追加・編集)。inboxId があれば、その申請を「掲載済み」にする
@@ -67,29 +74,31 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       saveEvents(root, events);
       if (item) { item.eventId = r.event.id; setInboxStatus(item, "published", today()); saveInbox(root, box); }
       const geo = r.event.lat ? "" : await geocode(root);
-      return { saved: r.event.id, geocode: geo, state: state() };
+      const pub = await release(item ? "掲載(申請)" : body.originalId ? "編集" : "追加", r.event);
+      return { saved: r.event.id, geocode: geo, publish: pub, state: await state() };
     }),
 
     // 取り下げ(サイトから外す) / 再掲載
-    "POST /api/events/status": (body) => serial(() => {
+    "POST /api/events/status": (body) => serial(async () => {
       if (!["published", "withdrawn"].includes(body.status)) return [400, { error: "不明な状態です" }];
       const events = loadEvents(root);
       const e = events.find((x) => x.id === body.id);
       if (!e) return [404, { error: "開催が見つかりません" }];
       e.status = body.status;
       saveEvents(root, events);
-      return { state: state() };
+      const pub = await release(body.status === "withdrawn" ? "取り下げ" : "再掲載", e);
+      return { publish: pub, state: await state() };
     }),
 
     // 申請・問い合わせの状態とメモ
-    "POST /api/inbox/update": (body) => serial(() => {
+    "POST /api/inbox/update": (body) => serial(async () => {
       const box = loadInbox(root);
       const item = box.items.find((x) => x.id === body.id);
       if (!item) return [404, { error: "見つかりません" }];
       if (body.status) { try { setInboxStatus(item, body.status, today()); } catch (err) { return [400, { error: err.message }]; } }
       if (typeof body.memo === "string") item.memo = body.memo.slice(0, 2000);
       saveInbox(root, box);
-      return { state: state() };
+      return { state: await state() };
     }),
   };
 
