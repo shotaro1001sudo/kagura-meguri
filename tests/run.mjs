@@ -13,6 +13,7 @@ import { collectTests } from "./collect.mjs";
 import { notifyTests } from "./notify.mjs";
 import { weekendTests } from "./weekend.mjs";
 import { guideTests } from "./guide.mjs";
+import { organizersTests } from "./organizers.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -253,6 +254,7 @@ await collectTests({ ok, section });
 await notifyTests({ ok, section });
 weekendTests({ ok, section, build });
 guideTests({ ok, section, OUT, build });
+organizersTests({ ok, section, OUT, build });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }

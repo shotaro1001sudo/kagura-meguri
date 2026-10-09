@@ -5,6 +5,7 @@ import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
+import { organizersHtml } from "./lib/organizers.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -156,7 +157,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 <a class="skip" href="#main">本文へ移動</a>
 <header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <div class="wrap"><main id="main">${body}</main>
-<footer><a href="/submit.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
+<footer><a href="/organizers.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
 ${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
@@ -555,7 +556,12 @@ ${otherWays("/this-month.html")}`,
 // ---------- 固定ページ ----------
 const doc = (path, title, desc, inner, opts = {}) => write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, body: `${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
 
-doc("/submit.html", "開催情報を投稿する", "神楽の開催情報の掲載依頼フォーム", submitForm(cfg), { lead: "神楽の開催情報を、お寄せください(無料)", layout: { noindex: true, withForm: true } });
+doc("/submit.html", "開催情報を投稿する", "神楽の開催情報の掲載依頼フォーム", `<p class="meta">掲載される場所、掲載までの流れ、定期公演や年間日程の送り方は、<a href="/organizers.html">主催者・関係者の方へ</a>をご覧ください。</p>${submitForm(cfg)}`, { lead: "神楽の開催情報を、お寄せください(無料)", layout: { noindex: true, withForm: true } });
+
+// 主催者・関係者向け(掲載の依頼を増やす。「神楽 イベント 掲載 無料」のような検索にも当てる)
+doc("/organizers.html", "主催者・関係者の方へ", `神楽の主催者・神社・保存会・神楽団・自治体・観光協会の皆さまへ。${cfg.siteName}は、神楽の開催情報を無料で掲載します。掲載される場所、送り方、掲載までの流れ、訂正・削除の方法をご案内します。`,
+  organizersHtml({ esc, siteName: cfg.siteName, formReady: formReady(cfg) }),
+  { lead: "神楽の開催情報を、無料で掲載します", layout: { ld: crumbsLd([["ホーム", "/"], ["主催者・関係者の方へ"]]) } });
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報`, `
 <table class="info"><tr><th>サイト名</th><td>${esc(cfg.siteName)}</td></tr><tr><th>運営者</th><td>${esc(op.name)}</td></tr>
@@ -595,7 +601,7 @@ const sm = [
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
-  ["/guide.html", GUIDE_CHECKED],
+  ["/guide.html", GUIDE_CHECKED], ["/organizers.html", staticDay],
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [`/kagura/${encodeURIComponent(k)}.html`, lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
