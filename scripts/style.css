@@ -169,3 +169,5 @@ footer a{color:var(--mut);padding:8px 2px}
 .toc{margin:20px 0 8px;padding:14px 18px;border-left:2px solid var(--ac2);background:var(--card)}.toc ol{margin:0;padding-left:1.3em}.toc li{margin:6px 0}
 .prose li strong{font-weight:500}.prose ul.sources{font-size:.88rem}
 .prose h2[id]{scroll-margin-top:16px}
+/* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
+.ph{display:inline-block}
