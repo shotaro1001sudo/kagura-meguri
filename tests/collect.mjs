@@ -137,6 +137,7 @@ export async function collectTests({ ok, section }) {
   put(files.SOURCES_FILE, [{ ...source, termsChecked: "" }]); site.page = li("神楽A", "2026年11月23日 19:00");
   let x = await run(NOW);
   ok(x.code === 0 && !site.hits["/list"] && /termsChecked/.test(x.out) && evs().length === 1, "規約の確認日(termsChecked)がない収集元は、アクセスすらしない");
+  ok(sum().inactive === 1 && /止まっている収集元が 1 つ/.test(read(files.REPORT_FILE)), "規約の確認待ちで止まっている収集元の数が、レポートと結果に出る(「確認不要」とだけ出て、誤解されない)");
   put(files.SOURCES_FILE, [{ ...source, enabled: false }]); x = await run(NOW);
   ok(!site.hits["/list"], "停止中(enabled: false)の収集元は、アクセスしない");
   put(files.SOURCES_FILE, [source]); site.robots = "User-agent: *\nDisallow: /list"; x = await run(NOW);
@@ -149,6 +150,7 @@ export async function collectTests({ ok, section }) {
   ok(x.code === 0 && site.hits["/list"] === 1 && site.hits["/robots.txt"] >= 1, "規約確認済みの収集元は、robots.txt を見てから、1回だけ取得する");
   let s = sum();
   ok(s.published === 3 && s.held === 2 && s.withdrawn === 0 && s.needsAttention === true, "1週目: 3件を自動掲載、2件(遠い・ナビの文字)を保留、要確認の印が付く", JSON.stringify(s));
+  ok(s.items?.published?.length === 3 && s.items.published.some((e) => e.name === "神楽A" && e.start && e.url) && s.items.held.every((e) => e.reason) && s.inactive === 0, "結果のファイルに、通知用の明細(名称・日付・URL・保留の理由)が入る");
   ok(byName("神楽A")[0].status === "published" && byName("遠い神楽")[0].status === "pending" && byName("もっと見る")[0].status === "pending" && byName("過去の神楽").length === 0, "掲載・保留・過去(記録しない)が、それぞれ正しい");
   ok(JSON.stringify(evs().find((e) => e.id === "manual-1")) === JSON.stringify(manualEv), "運営者が登録した情報は、ファイル上でも、変わっていない");
   let rep = read(files.REPORT_FILE);
@@ -201,8 +203,13 @@ export async function collectTests({ ok, section }) {
   ok(/cron: "0 20 \* \* 0"/.test(wf), "毎週(日曜20時UTC = 月曜5時JST)に動く");
   ok(/workflow_dispatch/.test(wf) && /dry_run/.test(wf), "手動の起動と、試運転(dry_run)ができる");
   ok(at("node scripts/collect.mjs") < at("node scripts/geocode.mjs") && at("node scripts/geocode.mjs") < at("npm test") && at("npm test") < at("git push"), "順序: 取得 → 位置付け → テスト → 反映(テストに通らなければ、反映されない)");
-  ok(/permissions:[\s\S]*contents: write[\s\S]*issues: write[\s\S]*actions: write/.test(wf) && !/pull_request_target/.test(wf) && !/secrets\./.test(wf), "権限は、必要な3つだけ。pull_request_target も、秘密情報も使わない");
-  ok(/gh workflow run deploy\.yml/.test(wf), "GITHUB_TOKEN でのpushは、公開を起動しないため、公開を明示的に起動している");
+  // 秘密情報(LINE のトークン)は、最後の通知の手順だけに渡す
+  const notifyAt = at("- name: notify-line");
+  const secretUses = [...wf.matchAll(/secrets\.(\w+)/g)];
+  ok(/permissions:[\s\S]*contents: write[\s\S]*issues: write[\s\S]*actions: write/.test(wf) && !/pull_request_target/.test(wf), "権限は、必要な3つだけ。pull_request_target を使わない");
+  ok(notifyAt > 0 && secretUses.length === 2 && secretUses.every((m) => m.index > notifyAt && /^LINE_/.test(m[1])) && !/run:[^\n]*secrets\./.test(wf) && !/echo[^\n]*LINE_CHANNEL_ACCESS_TOKEN/.test(wf), "秘密情報は、LINE の2つだけで、最後の通知の手順にだけ渡す(収集・テストには渡さず、表示もしない)");
+  ok(notifyAt > at("gh issue create") && /- name: notify-line\n\s+if: \$\{\{ always\(\) \}\}/.test(wf) && /JOB_STATUS: \$\{\{ job\.status \}\}/.test(wf) && /DRY_RUN: \$\{\{ inputs\.dry_run \}\}/.test(wf), "LINE への通知は、最後に、成功・失敗・試運転のどれでも行う");
+  ok(/gh workflow run deploy\.yml/.test(wf) && /gh run watch "\$id" --exit-status/.test(wf) && /DEPLOY_RESULT: \$\{\{ steps\.deploy\.outputs\.result \}\}/.test(wf), "公開を明示的に起動し、完了まで待って、結果を通知に使う");
   ok(/gh issue create/.test(wf) && /failure\(\)/.test(wf) && /needsAttention|attention/.test(wf), "要確認の項目・失敗は、Issueで知らせる");
   ok(/concurrency:/.test(wf) && /timeout-minutes/.test(wf), "同時実行の防止と、時間の上限がある");
   ok(/git pull --rebase/.test(wf) && /git add data\/events\.json/.test(wf) && !/git add -A|git add \./.test(wf), "反映するのは data/ の決まったファイルだけ(ほかのファイルを巻き込まない)");

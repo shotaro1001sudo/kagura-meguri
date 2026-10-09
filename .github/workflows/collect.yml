@@ -48,9 +48,21 @@ jobs:
           git push
           echo "changed=true" >> "$GITHUB_OUTPUT"
       # 5. 公開サイトの更新(GITHUB_TOKEN での push は、他のワークフローを自動では起動しないため、明示的に起動する)
-      - if: ${{ steps.commit.outputs.changed == 'true' }}
+      #    完了まで待ち、結果を通知に使う(公開の失敗では、この収集を失敗にしない)
+      - id: deploy
+        if: ${{ steps.commit.outputs.changed == 'true' }}
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh workflow run deploy.yml --ref main
+        run: |
+          since=$(date -u -d '-30 seconds' +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run deploy.yml --ref main
+          id=""
+          for i in $(seq 1 20); do
+            sleep 6
+            id=$(gh run list --workflow deploy.yml --event workflow_dispatch --limit 5 --json databaseId,createdAt -q "[.[] | select(.createdAt >= \"$since\")] | last | .databaseId // empty")
+            [ -n "$id" ] && break
+          done
+          if [ -z "$id" ]; then echo "result=unknown" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if gh run watch "$id" --exit-status --interval 20 > /dev/null; then echo "result=success" >> "$GITHUB_OUTPUT"; else echo "result=failure" >> "$GITHUB_OUTPUT"; fi
       # 6. 要確認の項目があれば、Issueで知らせる
       - if: ${{ steps.summary.outputs.attention == 'true' && !inputs.dry_run }}
         env: { GH_TOKEN: "${{ github.token }}" }
@@ -61,3 +73,16 @@ jobs:
       - if: ${{ failure() && !inputs.dry_run }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: gh issue create --title "週次の自動収集が、失敗しました($(date -u +%F))" --body "何も公開されていません(テストに通らないデータは、公開されない仕組みです)。ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # 7. 結果を、運営者のLINEへ送る(成功・失敗・試運転のどれでも。Secrets が未設定なら、何もしない)
+      #    秘密情報(Secrets)は、この手順だけに渡す。収集・テストの手順には、渡さない
+      - name: notify-line
+        if: ${{ always() }}
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_TO: ${{ secrets.LINE_TO }}
+          JOB_STATUS: ${{ job.status }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CHANGED: ${{ steps.commit.outputs.changed }}
+          DEPLOY_RESULT: ${{ steps.deploy.outputs.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/notify-line.mjs
