@@ -9,7 +9,7 @@
 取得元のページ → 取得(robots.txt を確認・間隔をあける)→ 読み取り(アダプタ)
    → 1件ずつ自動検査 → 掲載 / 保留 / 取り下げ → 住所から位置を付ける
    → テスト(通らなければ、ここで止まる)→ mainへ反映 → 公開サイトを更新
-   → 保留・異常があれば、Issue(確認依頼)を作る
+   → 保留・異常があれば、Issue(確認依頼)を作る → 結果を、あなたのLINEへ送る
 ```
 
 [.github/workflows/collect.yml](.github/workflows/collect.yml) が実行します。手動でも、動かせます(GitHub の Actions → weekly-collect → Run workflow。**「dry_run」にチェックを入れると、何も反映せず、レポートだけ**を出します)。
@@ -46,6 +46,54 @@ node scripts/review.mjs reject <id>     # 不要なとき(以後、再取得さ�
 ```
 
 承認したら、`npm test` → `git push` で、公開します。
+
+## LINE への結果の通知
+
+毎週の自動更新が終わると、結果が、あなたのLINEに届きます(公開サイトの更新が終わるまで待ってから送ります)。成功・変更なし・試運転・失敗の、どの場合も届きます。
+
+```
+【神楽めぐり】週次の自動更新(2026-10-12)
+✅ 公開サイトを更新しました
+
+■ 新規掲載 1件
+・11/23(月) 高宮神楽まつり(広島県安芸高田市)
+
+■ 保留・要確認(掲載していません) 1件
+・10/25(日) かむくら座ミニコンサート2026(広島県安芸高田市)
+　理由: 名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)
+
+サイト: https://kagurameguri.jp/
+詳細: (GitHub の実行結果のURL)
+```
+
+送るのは、サイトに載せる事実(名称・日付・場所)と件数だけです。訪問者の情報は、送りません。
+送信は [scripts/notify-line.mjs](scripts/notify-line.mjs)、LINE Messaging API の push message を使います(LINE Notify は、2025年3月に終了しました)。
+
+### 設定(あなたの作業・最初の1回だけ)
+
+1. **LINE公式アカウントを作る**(無料のコミュニケーションプラン。月200通まで無料で、週1回の通知には十分です)
+   - https://entry.line.biz/start/jp/ から開設します。
+2. **Messaging API を有効にする**
+   - LINE Official Account Manager(https://manager.line.biz/)→ 設定 → Messaging API → 「Messaging APIを利用する」。プロバイダーは、新しく作って構いません。
+3. **チャネルアクセストークンを発行する**
+   - LINE Developers(https://developers.line.biz/console/)→ 作られたチャネル → 「Messaging API設定」→ 「チャネルアクセストークン(長期)」の「発行」。
+4. **あなたのユーザーIDを控える**
+   - 同じチャネルの「チャネル基本設定」→ 「あなたのユーザーID」(`U` から始まる33文字)。
+5. **友だちに追加する**(しないと、届きません)
+   - 「Messaging API設定」のQRコードを、スマホのLINEで読み取ります。
+6. **GitHub に秘密情報として登録する**(リポジトリのファイルには、書かないでください)
+   - GitHub のリポジトリ → Settings → Secrets and variables → Actions → **New repository secret** で、次の2つを登録します。
+
+   | Name | Secret |
+   |---|---|
+   | `LINE_CHANNEL_ACCESS_TOKEN` | 3 のトークン |
+   | `LINE_TO` | 4 のユーザーID |
+7. **試す**: Actions → weekly-collect → Run workflow で、**dry_run にチェックを入れて**実行します。LINE に「🧪 試運転です」が届けば、完了です。
+
+- 2つの Secrets が未登録の間は、何も送りません(エラーにもなりません)。
+- 通知をやめるときは、Secrets を削除します。
+- トークンが漏れた疑いがあるときは、LINE Developers で、トークンを再発行し、Secrets を差し替えてください。
+- 秘密情報は、通知の手順だけに渡しています(収集・テストの手順には、渡しません)。
 
 ## 収集元を足す(あなたの作業)
 

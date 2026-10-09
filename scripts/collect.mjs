@@ -34,12 +34,12 @@ let events = readJson(EVENTS_FILE, []);
 const rejectedIds = new Set(readJson(REJECTED_FILE, []).map((e) => e.id));
 
 const lines = [], published = [], held = [], withdrawn = [];
-let errors = 0, notes = 0;
+let errors = 0, notes = 0, inactive = 0;
 
 for (const s of sources) {
   if (only && s.id !== only) continue;
   if (s.enabled === false) { lines.push(`- ⏸ ${s.id}: 停止中(enabled: false)`); continue; }
-  if (!s.termsChecked) { lines.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のため、取得していません`); continue; }
+  if (!s.termsChecked) { lines.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のため、取得していません`); inactive++; continue; }
   try {
     const robots = await robotsAllows(s.url, UA);
     if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; continue; }
@@ -64,7 +64,7 @@ const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.ci
 const attention = held.length > 0 || errors > 0 || notes > 0;
 const text = `# 週次の自動収集レポート ${today(now)}
 
-${attention ? "**⚠ 確認が必要な項目があります。**" : "確認が必要な項目は、ありません。"}  自動掲載: ${ccfg.autoPublish ? "オン" : "オフ(すべて保留)"}
+${attention ? "**⚠ 確認が必要な項目があります。**" : "確認が必要な項目は、ありません。"}${inactive ? `(ただし、規約の確認待ちで、止まっている収集元が ${inactive} つあります)` : ""}  自動掲載: ${ccfg.autoPublish ? "オン" : "オフ(すべて保留)"}
 
 ## 収集元ごとの結果
 ${lines.join("\n") || "- 対象の収集元なし(規約を確認し、termsChecked を記入した収集元がありません)"}
@@ -80,5 +80,10 @@ ${held.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}`).
 ${withdrawn.map((e) => `${li(e)}\n  - 理由: ${e.withdrawnReason}`).join("\n") || "- なし"}
 `;
 writeFileSync(REPORT_FILE, text);
-writeFileSync(SUMMARY_FILE, JSON.stringify({ date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, needsAttention: attention }, null, 2));
+// 通知(LINE)用の明細。公開してよい事実(名称・日付・場所・URL・理由)だけ
+const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
+writeFileSync(SUMMARY_FILE, JSON.stringify({
+  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
+  items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
+}, null, 2));
 console.log(text);
