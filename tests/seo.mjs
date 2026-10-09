@@ -111,6 +111,14 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
   ok(pages.get("/index.html")('link[rel="alternate"][type="application/atom+xml"]').attr("href") === "/feed.xml", "フィードを、各ページの <head> で知らせる");
   const ics = read(join(dir, "events.ics"));
   ok(ics.startsWith("BEGIN:VCALENDAR\r\n") && ics.endsWith("END:VCALENDAR\r\n") && !/[^\r]\n/.test(ics), "events.ics の形式(CRLF)");
+  // カレンダーのページ: 全開催の登録は、Googleカレンダーへの追加だけを案内する(購読 = 新しい開催も反映される)
+  const cal = pages.get("/calendar.html");
+  const g = cal('main a[href^="https://calendar.google.com/"]');
+  const gu = g.length === 1 ? new URL(g.attr("href")) : null;
+  const cfgDomain = JSON.parse(read("config.json").replace(/^﻿/, "")).domain;
+  ok(gu && gu.pathname === "/calendar/render" && gu.searchParams.get("cid") === `webcal://${cfgDomain}/events.ics` && g.attr("rel")?.includes("noopener") && g.text().includes("Googleカレンダー"), "カレンダー: 「Googleカレンダーに追加」は、本番の日程ファイル(events.ics)の購読を開く", g.attr("href"));
+  ok(cal('main a[href="/events.ics"], main a[href="/feed.xml"]').length === 0, "カレンダー: 日程ファイル・フィードへの直接のリンクは出さない(Googleカレンダーだけにする)");
+  ok(ics.includes(`X-WR-CALNAME:`) && ics.includes("X-WR-TIMEZONE:Asia/Tokyo"), "events.ics: Googleカレンダーで表示される名前と、時区がある");
   const evCount = (ics.match(/BEGIN:VEVENT/g) ?? []).length; ok(evCount === (ics.match(/END:VEVENT/g) ?? []).length && (ics.match(/^UID:/gm) ?? []).length === evCount, `events.ics: VEVENT が対になり、UID がある(${evCount}件)`);
   const png = readFileSync(join(dir, "og.png"));
   ok(png.slice(0, 8).toString("hex") === "89504e470d0a1a0a" && png.readUInt32BE(16) === 1200 && png.readUInt32BE(20) === 630 && png.length < 100_000, "og.png: PNG・1200x630・100KB未満");

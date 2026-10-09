@@ -201,7 +201,9 @@ const sourceNote = (x) => {
   const day = x.checked ?? x.lastSeen; // 自動取得したものは、最後に取得元で確認できた日
   return `<p class="meta">情報の出典: ${esc(x.source ?? "")}${day ? ` ・ ${x.auto ? "取得日" : "確認日"} ${jpDate(day)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項・情報の取り扱い</a>)。</p>${x.auto ? '<p class="meta">この情報は、公開されている情報から、プログラムで取得し、自動の検査を経て、掲載しています。誤りに気づいたら、お問い合わせからお知らせください。</p>' : ""}`;
 };
-const GUIDE_LINK = '<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
+// Googleカレンダーで、全開催の日程(events.ics)を購読する画面を開くリンク(URLで追加 = 新しい開催も、自動で反映される)
+const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${cfg.domain}/events.ics`)}`;
+const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
@@ -306,7 +308,8 @@ write("dist/calendar.html", layout({
   path: "/calendar.html", active: "/calendar.html",
   body: `${hero("開催カレンダー", "日付のある開催を、月ごとに見られます。毎晩・毎週の定期公演は、一覧のページにまとめています。")}
 ${months.length ? `<h2>月ごとの一覧</h2><p class="meta">各月の開催を、ページごとにまとめています。</p>${monthLinks()}` : ""}
-<p class="meta"><a href="/events.ics">すべての開催を、カレンダーアプリに登録する(購読用ファイル)</a> ・ <a href="/feed.xml">新着情報のフィード(Atom)</a></p>
+<p><a class="btn ghost gcal" href="${GCAL_SUBSCRIBE}" target="_blank" rel="noopener">すべての開催を、Googleカレンダーに追加する</a></p>
+<p class="meta">Googleカレンダーの「他のカレンダー」に「${esc(cfg.siteName)}」が追加され、新しい開催が、自動で反映されます(反映まで、数時間から1日ほどかかることがあります)。不要になったら、Googleカレンダーの設定から、登録を解除できます。</p>
 <div class="calhead"><button id="pv" type="button" aria-label="前の月">‹ 前月</button><h2 id="ttl" aria-live="polite"></h2><button id="nx" type="button" aria-label="次の月">次月 ›</button></div>
 <div class="cal" id="cal" role="grid" aria-labelledby="ttl"></div>
 <p class="empty" id="calmsg" aria-live="polite"></p>

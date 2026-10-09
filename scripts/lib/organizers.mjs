@@ -14,7 +14,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <li><strong>一覧・地図・カレンダー</strong>: トップの一覧、<a href="/map.html">地図</a>、<a href="/calendar.html">カレンダー</a>に表示されます。</li>
 <li><strong>日付・地域・種類から探すページ</strong>: <a href="/weekend.html">今週末の神楽</a>、<a href="/this-month.html">今月の神楽</a>、月別・都道府県別・<a href="/kagura/">神楽の種類別</a>のページに、自動で載ります。</li>
 <li><strong>検索エンジン向けの情報</strong>: 開催ページには、検索エンジンが「イベント」として読み取れる形式(構造化データ)で、日時・会場を書き込んでいます。</li>
-<li><strong>新着の配信</strong>: 新着情報のフィードと、カレンダーアプリで購読できる日程ファイルにも、載ります。</li>
+<li><strong>新着の配信</strong>: <a href="/calendar.html">Googleカレンダーで購読できる日程</a>と、新着情報のフィードにも、載ります。</li>
 </ul>
 
 <h2>送り方</h2>
