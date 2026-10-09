@@ -29,6 +29,9 @@ const stripGun = (c = "") => c.replace(/^.*郡/, "");
 let ok = 0, ng = 0;
 for (const e of events) {
   if (e.lat && e.lng) continue;
+  if (e.status === "withdrawn") continue;
+  // 市区町村も住所もないものは、都道府県の中心に、ピンを置いてしまう(誤解を招く)。置かない
+  if (!e.city && !e.address) { console.log(`--  ${e.id} 市区町村・住所がないため、位置は付けません`); continue; }
   // 検索は必ず「都道府県+市区町村」を含める。結果の住所が市区町村と一致しなければ採用しない
   // (一致しない結果を採ると、都道府県の中心や、別の市町村に置いてしまうため)
   const cityTitle = `${e.prefecture}${e.city ?? ""}`;

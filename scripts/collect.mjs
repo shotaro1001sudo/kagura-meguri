@@ -1,73 +1,84 @@
-// 公式サイトからの開催情報の収集: node scripts/collect.mjs [sourceId]
-// - data/sources.json の、規約確認済み(termsChecked あり)かつ enabled なサイトだけを対象にする
-// - robots.txt を守り、リクエスト間隔をあけ、連絡先つきUAで名乗る
-// - 取り込むのは事実(名称・日時・場所・出典URL)だけ。本文や写真は取り込まない
-// - 取り込んだものは必ず status:"pending"。公開は node scripts/review.mjs で人が承認する
+// 公式サイトからの開催情報の、週次の自動収集と、自動掲載: node scripts/collect.mjs [sourceId]
+//
+// 流れ: 取得 → 読み取り(アダプタ) → 1件ずつ自動検査 → 掲載 / 保留 / 取り下げ → レポート
+//  - data/sources.json の、規約確認済み(termsChecked あり)かつ enabled の収集元だけを対象にする
+//  - robots.txt を守り、リクエスト間隔をあけ、連絡先つきUAで名乗る
+//  - 取り込むのは事実(名称・日時・場所・出典URL)だけ。本文や写真は取り込まない
+//  - 判断のルールは scripts/lib/collect-core.mjs。設定は config.json の "collect"
+//  - 検査に通ったものは、自動で status:"published"。通らないものは "pending"(node scripts/review.mjs で、人が確認)
+//  - 運営者が登録した情報(auto でないもの)は、書き換えない
+// テスト用の切り替え: EVENTS_FILE / SOURCES_FILE / REJECTED_FILE / REPORT_FILE / SUMMARY_FILE / COLLECT_NOW / COLLECT_DELAY_MS
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { clean, hash, robotsAllows, sleep } from "./lib/util.mjs";
+import { robotsAllows, sleep } from "./lib/util.mjs";
+import { reconcile, DEFAULTS, today } from "./lib/collect-core.mjs";
 
-const cfg = JSON.parse(readFileSync("config.json", "utf8").replace(/^﻿/, ""));
+const readJson = (p, d) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : d);
+const EVENTS_FILE = process.env.EVENTS_FILE ?? "data/events.json";
+const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
+const REJECTED_FILE = process.env.REJECTED_FILE ?? "data/rejected.json";
+const REPORT_FILE = process.env.REPORT_FILE ?? "data/collect-report.md";
+const SUMMARY_FILE = process.env.SUMMARY_FILE ?? "data/collect-summary.json";
+
+const cfg = readJson("config.json", {});
+const ccfg = { ...DEFAULTS, ...(cfg.collect ?? {}) };
+if (process.env.COLLECT_AUTOPUBLISH) ccfg.autoPublish = process.env.COLLECT_AUTOPUBLISH === "1"; // テスト用
 const UA = `KaguraMeguriBot/1.0 (+${cfg.baseUrl}/about.html; ${cfg.operator.contact})`;
-const DELAY_MS = 3000;
+const DELAY_MS = Number(process.env.COLLECT_DELAY_MS ?? 3000);
+const now = process.env.COLLECT_NOW ? new Date(process.env.COLLECT_NOW) : new Date();
 const only = process.argv[2];
 
-if (!existsSync("data/sources.json")) { console.log("data/sources.json がありません。data/sources.example.json を参考に作成してください"); process.exit(0); }
-const sources = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, ""));
-const events = JSON.parse(readFileSync("data/events.json", "utf8").replace(/^﻿/, ""));
-const key = (e) => `${e.name}|${e.start}|${e.prefecture}`;
-const rejected = existsSync("data/rejected.json") ? JSON.parse(readFileSync("data/rejected.json", "utf8").replace(/^﻿/, "")) : [];
-const seen = new Set([...events.map((e) => e.id), ...rejected.map((e) => e.id)]);
-const seenKey = new Set(events.map(key));
-const now = new Date();
-const report = [];
-let added = 0;
+if (!existsSync(SOURCES_FILE)) { console.log(`${SOURCES_FILE} がありません。data/sources.example.json を参考に作成してください`); process.exit(0); }
+const sources = readJson(SOURCES_FILE, []);
+let events = readJson(EVENTS_FILE, []);
+const rejectedIds = new Set(readJson(REJECTED_FILE, []).map((e) => e.id));
+
+const lines = [], published = [], held = [], withdrawn = [];
+let errors = 0, notes = 0;
 
 for (const s of sources) {
   if (only && s.id !== only) continue;
-  if (s.enabled === false) continue;
-  if (!s.termsChecked) { report.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のためスキップ`); continue; }
+  if (s.enabled === false) { lines.push(`- ⏸ ${s.id}: 停止中(enabled: false)`); continue; }
+  if (!s.termsChecked) { lines.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のため、取得していません`); continue; }
   try {
     const robots = await robotsAllows(s.url, UA);
-    if (!robots.ok) { report.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); continue; }
+    if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; continue; }
     const res = await fetch(s.url, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
-    if (!res.ok) { report.push(`- ❌ ${s.id}: HTTP ${res.status}`); continue; }
-    const html = await res.text();
+    if (!res.ok) { lines.push(`- ❌ ${s.id}: HTTP ${res.status}(この収集元は、今回、変更していません)`); errors++; continue; }
+    const body = await res.text();
     const adapter = await import(pathToFileURL(`${process.cwd()}/scripts/adapters/${s.adapter}.mjs`).href);
-    const items = adapter.parse(html, s);
-    let n = 0, skipped = 0;
-    for (const it of items) {
-      const ev = {
-        id: `${s.id}-${hash(it.name, it.start)}`,
-        name: clean(it.name),
-        kagura: s.kagura || "",
-        prefecture: it.prefecture || s.prefecture || "",
-        city: it.city || "",
-        venue: it.venue || "",
-        address: it.address || undefined,
-        start: it.start,
-        end: it.end || undefined,
-        timeUnknown: it.timeUnknown || undefined,
-        fee: "",
-        url: it.url || s.url,
-        description: "",
-        source: s.name,
-        sourceUrl: s.url,
-        collectedAt: now.toISOString().slice(0, 10),
-        status: "pending",
-      };
-      if (!ev.name || !ev.start || new Date(ev.end || ev.start) < now) { skipped++; continue; }
-      if (seen.has(ev.id) || seenKey.has(key(ev))) { skipped++; continue; }
-      events.push(JSON.parse(JSON.stringify(ev)));
-      seen.add(ev.id); seenKey.add(key(ev)); n++;
-    }
-    added += n;
-    report.push(`- ✅ ${s.id} (${s.name}): 新規 ${n} 件 / 既存・過去などで除外 ${skipped} 件 / 取得 ${items.length} 件${items.length === 0 ? " ← 0件。ページ構造が変わった可能性" : ""}${items.skippedPeriod ? ` / 期間指定のため除外 ${items.skippedPeriod} 件(複数日をまとめたページ。手で確認)` : ""}`);
-  } catch (err) { report.push(`- ❌ ${s.id}: ${err.message}`); }
+    const items = adapter.parse(body, s);
+    const r = reconcile({ events, candidates: items, source: s, now, rejectedIds, cfg: ccfg });
+    events = r.events;
+    published.push(...r.summary.published); held.push(...r.summary.held); withdrawn.push(...r.summary.withdrawn);
+    notes += r.summary.notes.length;
+    const x = r.summary;
+    lines.push(`- ✅ ${s.id}(${s.name}): 取得 ${x.fetched} 件 → 新規掲載 ${x.published.length} / 保留 ${x.held.length} / 取り下げ ${x.withdrawn.length} / 変更なし ${x.unchanged} / 重複 ${x.duplicates} / 過去 ${x.past} / 却下済み ${x.rejected}${items.skippedPeriod ? ` / 期間指定で除外 ${items.skippedPeriod}` : ""}${x.fetched === 0 ? " ← 0件。ページ構造が変わった可能性" : ""}`);
+    for (const n of x.notes) lines.push(`    - ⚠ ${n}`);
+  } catch (err) { lines.push(`- ❌ ${s.id}: ${err.message}(この収集元は、今回、変更していません)`); errors++; }
   await sleep(DELAY_MS);
 }
 
-writeFileSync("data/events.json", JSON.stringify(events, null, 2));
-const text = `# 収集レポート ${now.toISOString().slice(0, 10)}\n\n${report.join("\n") || "- 対象サイトなし"}\n\n新規 pending: ${added} 件。内容を確認し、\`node scripts/review.mjs\` で承認してください。\n`;
-writeFileSync("data/collect-report.md", text);
+writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
+const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.city ?? ""} ${e.venue ?? ""})[公式](${e.url})${e.note ? ` — ${e.note}` : ""}`;
+const attention = held.length > 0 || errors > 0 || notes > 0;
+const text = `# 週次の自動収集レポート ${today(now)}
+
+${attention ? "**⚠ 確認が必要な項目があります。**" : "確認が必要な項目は、ありません。"}  自動掲載: ${ccfg.autoPublish ? "オン" : "オフ(すべて保留)"}
+
+## 収集元ごとの結果
+${lines.join("\n") || "- 対象の収集元なし(規約を確認し、termsChecked を記入した収集元がありません)"}
+
+## 自動で掲載したもの(${published.length}件)
+${published.map(li).join("\n") || "- なし"}
+
+## 保留(掲載していないもの。要確認 ${held.length}件)
+${held.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}`).join("\n") || "- なし"}
+掲載してよければ \`node scripts/review.mjs approve <id>\`、不要なら \`reject <id>\` を実行してください。
+
+## 取り下げたもの(${withdrawn.length}件)
+${withdrawn.map((e) => `${li(e)}\n  - 理由: ${e.withdrawnReason}`).join("\n") || "- なし"}
+`;
+writeFileSync(REPORT_FILE, text);
+writeFileSync(SUMMARY_FILE, JSON.stringify({ date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, needsAttention: attention }, null, 2));
 console.log(text);

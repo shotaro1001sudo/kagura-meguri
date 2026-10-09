@@ -1,21 +1,63 @@
-name: collect
+name: weekly-collect
+# 毎週、公開されている情報を取得し、自動の検査に通ったものを掲載し、公開サイトを更新する。
+# 検査に通らないもの・異常があるときは、掲載せずに、Issue(確認依頼)を作る。
 on:
   schedule: [{ cron: "0 20 * * 0" }] # 毎週月曜 5:00 JST
   workflow_dispatch:
-permissions: { contents: write, pull-requests: write }
+    inputs:
+      dry_run:
+        description: "コミットも公開もせず、レポートだけ出す(試運転)"
+        type: boolean
+        default: false
+permissions:
+  contents: write   # data/ の更新を、mainにコミットする
+  issues: write     # 要確認の項目・失敗を、Issueで知らせる
+  actions: write    # 公開(build-and-deploy)を、起動する
+concurrency: { group: weekly-collect, cancel-in-progress: false }
 jobs:
   collect:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      # 1. 取得 → 自動検査 → 掲載 / 保留 / 取り下げ(規約確認済みの収集元だけ)
       - run: node scripts/collect.mjs
+      # 2. 住所から、緯度経度を付ける
       - run: node scripts/geocode.mjs
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          branch: collect/auto
-          title: "開催情報の自動収集(確認待ち)"
-          body-path: data/collect-report.md
-          commit-message: "chore: collect pending events"
+      # 3. テスト(不正なデータ・表示の崩れ・文面と動作のずれがあれば、ここで止まり、何も公開されない)
+      - run: npm test
+      - id: summary
+        run: |
+          echo "attention=$(node -p "require('./data/collect-summary.json').needsAttention")" >> "$GITHUB_OUTPUT"
+          echo "published=$(node -p "require('./data/collect-summary.json').published")" >> "$GITHUB_OUTPUT"
+          echo "withdrawn=$(node -p "require('./data/collect-summary.json').withdrawn")" >> "$GITHUB_OUTPUT"
+          echo "held=$(node -p "require('./data/collect-summary.json').held")" >> "$GITHUB_OUTPUT"
+      # 4. 変更をコミットして、mainへ反映
+      - id: commit
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/events.json data/geocache.json data/collect-report.md data/collect-summary.json
+          if git diff --cached --quiet; then echo "変更なし"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git commit -m "chore(auto): 週次の自動収集 $(date -u +%F) — 掲載 ${{ steps.summary.outputs.published }} / 保留 ${{ steps.summary.outputs.held }} / 取り下げ ${{ steps.summary.outputs.withdrawn }}"
+          git pull --rebase
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      # 5. 公開サイトの更新(GITHUB_TOKEN での push は、他のワークフローを自動では起動しないため、明示的に起動する)
+      - if: ${{ steps.commit.outputs.changed == 'true' }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh workflow run deploy.yml --ref main
+      # 6. 要確認の項目があれば、Issueで知らせる
+      - if: ${{ steps.summary.outputs.attention == 'true' && !inputs.dry_run }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh issue create --title "週次の自動収集: 確認が必要な項目があります($(date -u +%F))" --body-file data/collect-report.md
+      - if: ${{ inputs.dry_run }}
+        run: cat data/collect-report.md >> "$GITHUB_STEP_SUMMARY"
+      # 失敗したときも、知らせる
+      - if: ${{ failure() && !inputs.dry_run }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh issue create --title "週次の自動収集が、失敗しました($(date -u +%F))" --body "何も公開されていません(テストに通らないデータは、公開されない仕組みです)。ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

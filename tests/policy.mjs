@@ -92,12 +92,16 @@ export function policyTests({ ok, section, OUT, build }) {
   }
   { // 自動取得
     const d = sub("auto", { SOURCES_FILE: "tests/fixtures/sources.auto.json" }); const s = text(join(d, "disclaimer.html"));
-    ok(s.includes("プログラムによる補助的な取得") && s.includes("テスト観光協会") && !s.includes("停止中の収集元") && !s.includes("規約未確認の収集元"), "自動取得が有効な収集元(規約確認済み・有効)だけが、免責事項に載る");
-    ok(s.includes("自動では公開せず、運営者が確認してから掲載します") && s.includes("robots.txt"), "取得した情報は、自動では公開せず、確認してから掲載することと、robots.txt を守ることが書かれている");
-    ok(!s.includes("自動で取得して掲載することは、行っていません"), "自動取得が有効なときは、「行っていません」の記載が消える");
+    ok(s.includes("プログラムによる自動取得と、自動掲載") && s.includes("テスト観光協会") && !s.includes("停止中の収集元") && !s.includes("規約未確認の収集元"), "自動取得が有効な収集元(規約確認済み・有効)だけが、免責事項に載る");
+    ok(s.includes("自動の検査") && s.includes("運営者の確認を待たずに、自動で掲載します") && s.includes("自動で取り下げます") && s.includes("robots.txt") && s.includes("すべては防げません"), "自動掲載の内容(検査・確認を待たない・自動の取り下げ)と、検査の限界・robots.txt の遵守が、書かれている");
+    ok(!s.includes("自動で取得して掲載することは、行っていません") && !s.includes("自動では公開せず"), "自動取得が有効なときは、「行っていません」「自動では公開せず」の記載が消える");
+  }
+  { // 自動取得は有効だが、自動掲載はオフ(確認してから掲載)
+    const d = sub("autooff", { SOURCES_FILE: "tests/fixtures/sources.auto.json", TEST_AUTOPUBLISH: "0" }); const s = text(join(d, "disclaimer.html"));
+    ok(s.includes("プログラムによる自動取得") && !s.includes("と、自動掲載") && s.includes("自動では公開せず、運営者が確認してから掲載します") && !s.includes("運営者の確認を待たずに"), "自動掲載をオフにすると、「自動では公開せず、確認してから掲載」の文面になる");
   }
   ok(ds.includes("自動で取得して掲載することは、行っていません"), "自動取得の収集元が、1つも有効でない間は、「行っていません」と書く(現在の実態)");
   const real = existsSync("data/sources.json") ? JSON.parse(read("data/sources.json").replace(/^﻿/, "")) : [];
   ok(real.filter((x) => x.enabled !== false && x.termsChecked).length === 0 ? ds.includes("行っていません") : ds.includes("補助的な取得"), "本番の収集元の設定と、免責事項の記載が、一致している");
-  for (const n of ["ads", "ga", "aff", "form", "auto"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
+  for (const n of ["ads", "ga", "aff", "form", "auto", "autooff"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
 }
