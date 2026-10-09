@@ -27,7 +27,11 @@ export function policyTests({ ok, section, OUT, build }) {
   for (const h of ["掲載情報は、変更されることがあります", "情報の集め方と、自動処理について", "掲載の権利と、掲載の停止", "お出かけの際の注意", "外部のサイト・広告・リンクについて", "損害についての責任", "準拠法"]) ok(ds.includes(h), `免責事項に「${h}」の項目がある`);
   ok(ds.includes("国土地理院") && ds.includes("おおよその位置") && ds.includes("開始から3時間"), "免責事項に、位置情報の自動付与・日時の自動処理の説明がある");
   ok(ds.includes("故意または重大な過失がある場合を除き"), "免責の範囲に、法令上の例外(故意・重過失)を明記している");
-  ok(ds.includes("確認してから掲載") && ds.includes("事実の情報"), "掲載前の確認と、事実の情報だけを載せることが書かれている");
+  // 本番の設定(規約確認済みの収集元・自動掲載のオンオフ)に応じて、文面が実態と一致しているか
+  const real = existsSync("data/sources.json") ? JSON.parse(read("data/sources.json").replace(/^﻿/, "")) : [];
+  const active = real.filter((x) => x.enabled !== false && x.termsChecked);
+  const autoPub = cfg.collect?.autoPublish !== false;
+  ok(ds.includes("事実の情報") && (active.length && autoPub ? ds.includes("運営者の確認を待たずに、自動で掲載します") : ds.includes("確認してから掲載")), "事実の情報だけを載せること、掲載の前の確認の有無(自動掲載か、確認してから掲載か)が、実態どおりに書かれている");
   ok(/掲載を望まない場合/.test(ds) && /速やかに/.test(ds), "掲載停止・訂正の請求の窓口と、対応の約束がある");
   for (const f of ["index.html", "events/t-full.html", "regular/r-nightly.html", "about.html", "disclaimer.html", "privacy.html"]) {
     const $ = cheerio.load(read(join(OUT, f)));
@@ -100,8 +104,13 @@ export function policyTests({ ok, section, OUT, build }) {
     const d = sub("autooff", { SOURCES_FILE: "tests/fixtures/sources.auto.json", TEST_AUTOPUBLISH: "0" }); const s = text(join(d, "disclaimer.html"));
     ok(s.includes("プログラムによる自動取得") && !s.includes("と、自動掲載") && s.includes("自動では公開せず、運営者が確認してから掲載します") && !s.includes("運営者の確認を待たずに"), "自動掲載をオフにすると、「自動では公開せず、確認してから掲載」の文面になる");
   }
-  ok(ds.includes("自動で取得して掲載することは、行っていません"), "自動取得の収集元が、1つも有効でない間は、「行っていません」と書く(現在の実態)");
-  const real = existsSync("data/sources.json") ? JSON.parse(read("data/sources.json").replace(/^﻿/, "")) : [];
-  ok(real.filter((x) => x.enabled !== false && x.termsChecked).length === 0 ? ds.includes("行っていません") : ds.includes("補助的な取得"), "本番の収集元の設定と、免責事項の記載が、一致している");
-  for (const n of ["ads", "ga", "aff", "form", "auto", "autooff"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
+  { // 自動取得の収集元が、1つもないとき
+    const s = text(join(sub("none", {}), "disclaimer.html"));
+    ok(s.includes("自動で取得して掲載することは、行っていません") && !s.includes("運営者の確認を待たずに"), "自動取得の収集元が、1つも有効でない間は、「行っていません」と書く");
+  }
+  ok(active.length
+    ? ds.includes("プログラムによる自動取得") && active.every((x) => ds.includes(x.name)) && real.filter((x) => !active.includes(x)).every((x) => !ds.includes(x.name)) && !ds.includes("行っていません")
+    : ds.includes("自動で取得して掲載することは、行っていません"),
+  `本番の収集元の設定と、免責事項の記載が、一致している(有効な収集元 ${active.length} 件が、すべて載り、無効なものは載らない)`);
+  for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
 }
