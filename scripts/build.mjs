@@ -4,6 +4,7 @@ import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
+import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -155,7 +156,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 <a class="skip" href="#main">本文へ移動</a>
 <header class="top"><div class="wrap"><a class="logo" href="/">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <div class="wrap"><main id="main">${body}</main>
-<footer><a href="/submit.html">開催情報を掲載する(無料)</a><br>
+<footer><a href="/submit.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
 ${body.includes('class="mail"') ? `<script>${MAIL_SCRIPT}</script>` : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
@@ -196,6 +197,7 @@ const sourceNote = (x) => {
   const day = x.checked ?? x.lastSeen; // 自動取得したものは、最後に取得元で確認できた日
   return `<p class="meta">情報の出典: ${esc(x.source ?? "")}${day ? ` ・ ${x.auto ? "取得日" : "確認日"} ${jpDate(day)}` : ""}。内容は変更されることがあるため、お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項・情報の取り扱い</a>)。</p>${x.auto ? '<p class="meta">この情報は、公開されている情報から、プログラムで取得し、自動の検査を経て、掲載しています。誤りに気づいたら、お問い合わせからお知らせください。</p>' : ""}`;
 };
+const GUIDE_LINK = '<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
@@ -244,7 +246,7 @@ write("dist/index.html", layout({
 <svg class="enso" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8C27 7 8 26 9 50c1 24 21 42 45 41 22-1 38-17 38-38" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>${sparksHtml}
 <div class="copy"><h1>神々へ捧ぐ舞を、<br>訪ねる旅へ。</h1><p>全国の神楽の開催情報を、静かに、ひとつの場所に。</p></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
+<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>はじめての神楽</b><small>見どころ・マナー・服装</small></a></nav>
 <h2>これからの神楽</h2>
 <div class="filters">${upcoming.length ? `<label class="sr" for="f">都道府県で絞り込む</label><select id="f"><option value="">全国</option>${[...new Set(upcoming.map((e) => e.prefecture))].map((p) => `<option>${esc(p)}</option>`).join("")}</select>` : ""}
 <a class="btn ghost" href="/submit.html">開催情報を投稿する</a></div>
@@ -435,7 +437,7 @@ for (const e of events) {
 <p>${esc(e.description)}</p>
 <p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="/events/${e.id}.ics">カレンダーに追加</a> <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
 ${mapBlock(e)}
-${sourceNote(e)}
+${sourceNote(e)}${GUIDE_LINK}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}${affiliateBlock(e)}`,
   }));
@@ -455,7 +457,7 @@ for (const r of regular) {
 <p>${esc(r.description)}</p>
 <p>${r.url ? `<a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
 ${mapBlock(r)}
-${sourceNote(r)}
+${sourceNote(r)}${GUIDE_LINK}
 ${adSlot(cfg.adsense.slotDetail)}${affiliateBlock(r)}`,
   }));
 }
@@ -529,6 +531,27 @@ ${otherWays("/this-month.html")}`,
   }));
 }
 
+// ---------- はじめての神楽ガイド(「神楽 初めて」「夜神楽 服装」などの検索に当てる、読み物) ----------
+{
+  const title = "はじめての神楽ガイド 見どころ・マナー・服装";
+  const regIds = new Set(regular.map((r) => r.id));
+  write("dist/guide.html", layout({
+    title: `${title} | ${cfg.siteName}`,
+    desc: "はじめて神楽を観る方へ。祭り・夜神楽・定期公演の違い、石見・広島・高千穂・備中の見どころ、撮影やご祝儀のマナー、夜の寒さに備える服装と持ち物を、各地の公式情報をもとにまとめました。",
+    path: "/guide.html",
+    ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
+      "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
+      author: { "@type": "Person", name: op.name, url: `${cfg.baseUrl}/about.html` }, publisher: { "@type": "Organization", name: cfg.siteName, url: `${cfg.baseUrl}/` },
+      mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: OG_URL,
+    }],
+    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose">${guideHtml({
+      esc,
+      kaguraLink: (k) => (kaguras.includes(k) ? `<a href="/kagura/${encodeURIComponent(k)}.html">${esc(k)}</a>` : esc(k)),
+      regularLink: (id, text) => (regIds.has(id) ? `<a href="/regular/${id}.html">${esc(text)}</a>` : esc(text)),
+    })}</div>`,
+  }));
+}
+
 // ---------- 固定ページ ----------
 const doc = (path, title, desc, inner, opts = {}) => write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, body: `${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
 
@@ -572,6 +595,7 @@ const sm = [
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
+  ["/guide.html", GUIDE_CHECKED],
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [`/kagura/${encodeURIComponent(k)}.html`, lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
