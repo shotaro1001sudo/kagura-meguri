@@ -24,7 +24,7 @@ const guard = (cfg) => `
 <div class="hp" aria-hidden="true"><label>この欄は空のままにしてください<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 <input type="hidden" name="_t" value="">`;
 
-const consent = (cfg) => `<div class="f consent"><label><input type="checkbox" id="agree" name="agree" required> <span><a href="/privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します</span></label><small class="err" id="agree-e" role="alert"></small></div>`;
+const consent = (cfg) => `<div class="f consent"><label><input type="checkbox" id="agree" name="agree" required> <span><a href="/terms.html" target="_blank" rel="noopener">利用規約</a>と<a href="/privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>(外国にある事業者への提供を含みます)に同意します</span></label><small class="err" id="agree-e" role="alert"></small></div>`;
 
 // 運営者のメールアドレス(分割)は、送信先が未設定で、メール作成を予備に使う間だけ、フォームに埋め込む
 const mailParts = (cfg) => (formReady(cfg) ? ["", ""] : (cfg.operator.contact || "").split("@"));

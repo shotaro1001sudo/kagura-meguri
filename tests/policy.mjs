@@ -22,6 +22,16 @@ export async function policyTests({ ok, section, OUT, build }) {
   for (const h of ["運営者", "取得する情報", "利用目的", "外部サービスの利用と、情報の送信", "投稿フォーム・お問い合わせフォームについて", "第三者への提供", "保存期間", "開示・訂正・削除", "この方針の改定"]) ok(pv.includes(h), `プライバシーポリシーに「${h}」の項目がある`);
   ok(pv.includes("迷惑投稿") && pv.includes("個人情報の保護に関する法律"), "迷惑投稿対策と、関係する法令への言及がある");
   ok(pv.includes(`最終更新: ${cfg.operator.updated}`) && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "最終更新日と、改定の履歴が出る");
+  section("利用規約・法令に沿った記載");
+  const tm = text(join(OUT, "terms.html"));
+  ok(["適用", "開催情報の投稿", "禁止事項", "違反への対応", "知的財産権", "免責", "規約の変更", "分離可能性", "準拠法・管轄裁判所"].every((t) => tm.includes(`(${t})`)), "利用規約に、適用・投稿・禁止事項・知的財産・免責・変更・準拠法と管轄の各条がある");
+  ok(tm.includes("運営者の住所地を管轄する裁判所を、第一審の専属的合意管轄裁判所とします") && tm.includes("無償で、掲載・編集・要約・削除できる権利を許諾") && tm.includes("故意または重大な過失がある場合を除き"), "利用規約: 合意管轄(住所地を出さない書き方)・投稿の利用許諾・責任の範囲(消費者契約法に沿った例外つき)");
+  ok(read(join(OUT, "sitemap.xml")).includes("/terms.html</loc>") && cheerio.load(read(join(OUT, "index.html")))('footer a[href="/terms.html"]').length === 1, "利用規約が、サイトマップとフッターにある");
+  const sform = cheerio.load(read(join(OUT, "submit.html")));
+  ok(sform('.consent a[href="/terms.html"]').length === 1 && sform('.consent a[href="/privacy.html"]').length === 1 && sform(".consent").text().includes("外国にある事業者への提供を含みます"), "投稿フォームの同意: 利用規約とプライバシーポリシー(外国の事業者への提供を含む)");
+  ok(pv.includes("安全管理のために講じている措置") && ["組織的・人的な措置", "物理的な措置", "技術的な措置", "外的環境の把握"].every((t) => pv.includes(t)), "プライバシーポリシー: 安全管理措置(個人情報保護法で公表が求められる項目)");
+  ok(pv.includes("外国にある事業者への提供について") && pv.includes("インド") && pv.includes("アメリカ合衆国") && read(join(OUT, "privacy.html")).includes("https://www.ppc.go.jp/"), "プライバシーポリシー: 外国にある事業者への提供(所在国・制度の情報・措置)");
+  ok(ds.includes("利用規約に定めています") && !ds.includes("文章・デザイン・プログラムの著作権は"), "免責事項: 著作権・準拠法は利用規約に寄せ、重複させない");
   ok(/12か月/.test(pv) || pv.includes(cfg.privacy.retention.slice(0, 8)), "保存期間が書かれている");
   ok(pv.includes(cfg.operator.name), "運営者の名前が出る");
   for (const h of ["掲載情報は、変更されることがあります", "情報の集め方と、自動処理について", "掲載の権利と、掲載の停止", "お出かけの際の注意", "外部のサイト・広告・リンクについて", "損害についての責任", "準拠法"]) ok(ds.includes(h), `免責事項に「${h}」の項目がある`);

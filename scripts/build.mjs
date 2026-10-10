@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
-import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
+import { privacyHtml, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
@@ -193,7 +193,7 @@ const motionCss = lf(readFileSync("scripts/motion.css", "utf8")).replaceAll("%%S
 const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8")).replace("%%SEL_JSON%%", JSON.stringify(REVEAL_SEL));
 // 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
 // 動きを付けないページ(規約・運営者情報など、読むための文書)。js クラスを付けないので、出現・視差などの動きがすべて止まる
-const STILL_PAGES = ["/privacy", "/about"]; // 拡張子なし(/about と /about.html の両方で開けるため、.html を外して比べる)
+const STILL_PAGES = ["/privacy", "/about", "/terms"]; // 拡張子なし(/about と /about.html の両方で開けるため、.html を外して比べる)
 const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;if(${JSON.stringify(STILL_PAGES)}.indexOf(location.pathname.replace(/[.]html$/,""))>=0)return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
 
 // ---------- デザイン ----------
@@ -222,7 +222,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 <header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <div class="wrap"><main id="main">${body}</main>
 <footer><a href="/organizers.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
-<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
+<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
 ${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
@@ -686,6 +686,7 @@ const policyCtx = {
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}の個人情報・外部サービス・Cookieの取り扱い方針`, privacyHtml(policyCtx));
+doc("/terms.html", "利用規約", `${cfg.siteName}の利用条件(投稿の扱い、禁止事項、規約の変更、準拠法・管轄)`, termsHtml(policyCtx));
 doc("/disclaimer.html", "免責事項・情報の取り扱い", `${cfg.siteName}の免責事項と、掲載情報の集め方・自動処理についての説明`, disclaimerHtml(policyCtx));
 // ---------- sitemap / robots / ads.txt / security.txt / 404 ----------
 // lastmod は「そのページの中身が変わった日」(出典の確認日)にする。ビルドした日を全ページに入れると、検索エンジンに信頼されなくなる
@@ -697,7 +698,7 @@ const sm = [
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/guide.html", GUIDE_CHECKED], ["/organizers.html", staticDay],
-  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/disclaimer.html", staticDay],
+  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [`/kagura/${encodeURIComponent(k)}.html`, lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
   ...prefs.map((p) => [prefHref(p), lastmodOf([...upcoming, ...regular].filter((x) => x.prefecture === p))]),
