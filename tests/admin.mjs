@@ -161,6 +161,14 @@ export async function adminTests({ ok, section }) {
     ok(!p.ok && p.step === "build", "サイトを作れないときは、送らない");
   } finally { rmSync(T, { recursive: true, force: true }); }
 
+  section("管理者用ページ: デスクトップのショートカット");
+  const { pngToIco } = await import("../scripts/admin/shortcut.mjs");
+  const png = readFileSync("assets/favicon-48.png"), ico = pngToIco(png);
+  ok(ico.readUInt16LE(2) === 1 && ico.readUInt16LE(4) === 1 && ico[6] === 48 && ico.readUInt32LE(14) === png.length && ico.subarray(22).equals(png), "アイコン(ICO)は、サイトのシンボルの画像を、正しい形で包む");
+  const cmd = read("scripts/admin/start.cmd");
+  ok(/\r\n/.test(cmd) && !/[^\r]\n/.test(cmd) && cmd.includes('cd /d "%~dp0..\\.."') && cmd.includes("node scripts\\admin\\server.mjs"), "起動用のファイルは、Windows の改行で、リポジトリの場所から起動する");
+  ok(read("scripts/admin/server.mjs").includes('t.includes("管理者用ページ")') && read("scripts/admin/server.mjs").includes('root: join(HERE, "..", "..")'), "起動済みなら画面だけ開き、どこから起動しても、リポジトリのデータを使う");
+
   section("管理者用ページ: 公開しないもの");
   const gi = read(".gitignore");
   ok(/^\.admin\/$/m.test(gi) && /^admin\.local\.json$/m.test(gi), "受信した記録(.admin/)と、Gmail の設定(admin.local.json)は、Git に入れない");

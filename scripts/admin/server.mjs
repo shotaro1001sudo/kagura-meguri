@@ -158,10 +158,16 @@ export function runGeocode(root) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const port = Number(process.argv.find((a) => a.startsWith("--port="))?.slice(7)) || 4300;
-  const { url } = await startAdmin({ port });
-  console.log(`管理者用ページ: ${url}\n(このPCの中だけで動いています。終わるときは Ctrl+C)`);
-  if (!process.argv.includes("--no-open")) {
+  const open = (url) => {
+    if (process.argv.includes("--no-open")) return;
     const [cmd, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "", url]] : process.platform === "darwin" ? ["open", [url]] : ["xdg-open", [url]];
     spawn(cmd, args, { stdio: "ignore", detached: true }).on("error", () => {}).unref();
-  }
+  };
+  // すでに起動していれば、2つ目は起動せず、画面だけ開く(デスクトップのショートカットを何度押してもよいように)
+  const running = `http://127.0.0.1:${port}/`;
+  const already = await fetch(running, { signal: AbortSignal.timeout(1500) }).then((r) => r.text()).then((t) => t.includes("管理者用ページ")).catch(() => false);
+  if (already) { open(running); console.log(`起動済みの管理者用ページを開きました: ${running}`); process.exit(0); }
+  const { url } = await startAdmin({ port, root: join(HERE, "..", "..") });
+  console.log(`管理者用ページ: ${url}\n(このPCの中だけで動いています。この画面を閉じるか、Ctrl+C で終了します)`);
+  open(url);
 }

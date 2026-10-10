@@ -9,7 +9,8 @@
         "geocode": "node scripts/geocode.mjs",
         "review": "node scripts/review.mjs",
         "test": "node tests/run.mjs",
-        "admin": "node scripts/admin/server.mjs"
+        "admin": "node scripts/admin/server.mjs",
+        "admin:shortcut": "node scripts/admin/shortcut.mjs"
     },
     "dependencies": {
         "cheerio": "^1.2.0",
