@@ -24,6 +24,31 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .top nav{display:flex;gap:4px 22px;flex-wrap:wrap}
 .top nav a{color:var(--mut);text-decoration:none;font-size:.9rem;padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .top nav a:hover,.top nav a.on{color:var(--fg);border-color:var(--ac)}
+/* メインメニュー: 文字を少し大きく。今いるページは、濃い文字と朱の太い下線。ガイドは、枠で少し目立たせる */
+.top nav a{font-size:.95rem;border-bottom-width:2px}
+.top nav a.on{font-weight:500}
+.top nav a[data-guide]{align-self:center;min-height:36px;padding:4px 14px;border:1px solid var(--line);border-radius:999px;color:var(--fg)}
+.top nav a[data-guide]:hover,.top nav a[data-guide].on{border-color:var(--ac);color:var(--ac)}
+/* カレンダーのページの上の、今週末・今月への入口 */
+.datenav{display:flex;flex-wrap:wrap;gap:8px 20px;margin:4px 0 8px}
+.datenav a{color:var(--ac);text-decoration:none;font-size:.92rem;padding:8px 0;min-height:44px;display:inline-flex;align-items:center}
+.datenav a:hover{text-decoration:underline}
+/* スマホ: 三本線のボタンで、メニューを開け閉めする(JS が動くときだけ。navjs クラス) */
+.menubtn{display:none}
+@media(max-width:640px){
+  .navjs .top .wrap{position:relative;flex-wrap:nowrap}
+  .navjs .menubtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 12px;font:inherit;font-size:.85rem;letter-spacing:.1em;color:var(--fg);background:none;border:1px solid var(--line);border-radius:4px;cursor:pointer}
+  .menubtn .bars,.menubtn .bars:before,.menubtn .bars:after{display:block;width:16px;height:1.5px;background:currentColor;position:relative;transition:transform var(--t-s) var(--ease),opacity var(--t-s) var(--ease)}
+  .menubtn .bars:before,.menubtn .bars:after{content:"";position:absolute;left:0}
+  .menubtn .bars:before{top:-5px}.menubtn .bars:after{top:5px}
+  .menubtn[aria-expanded=true] .bars{background:transparent}
+  .menubtn[aria-expanded=true] .bars:before{transform:translateY(5px) rotate(45deg)}
+  .menubtn[aria-expanded=true] .bars:after{transform:translateY(-5px) rotate(-45deg)}
+  .navjs .top nav{display:none;position:absolute;right:0;left:0;top:100%;z-index:20;flex-direction:column;gap:0;padding:6px 16px 12px;background:var(--bg);border:1px solid var(--line);border-top:0;box-shadow:0 12px 24px -16px rgb(0 0 0/.5)}
+  .navjs .top nav.open{display:flex}
+  .navjs .top nav a{border-bottom:1px solid var(--line);padding:12px 4px}
+  .navjs .top nav a[data-guide]{align-self:stretch;margin-top:10px;justify-content:center;border-radius:4px}
+}
 
 /* ヒーロー */
 .hero{padding:56px 0 24px;position:relative}

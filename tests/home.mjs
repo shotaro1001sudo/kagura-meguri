@@ -33,6 +33,22 @@ export function homeTests({ ok, section, OUT, build }) {
   ok(visible().length === 4 && d.querySelector(".later a span").textContent === "2件" && d.querySelector(".regions button[aria-pressed=true]").textContent === "全国", "全国に戻すと、元の表示になる");
   dom.window.close();
 
+  section("メインメニュー(探し方で並べる)");
+  const navOf = (p) => { const q = cheerio.load(read(join(OUT, p))); return q(".top nav a").map((_, a) => ({ t: q(a).text(), h: q(a).attr("href"), c: q(a).attr("aria-current") })).get(); };
+  ok(navOf("index.html").map((x) => x.t).join() === "これからの神楽,日付で探す,地図で探す,種類で探す,はじめての神楽", "メニューは「これからの神楽・日付で探す・地図で探す・種類で探す・はじめての神楽」");
+  const cur = (p) => navOf(p).filter((x) => x.c).map((x) => `${x.t}:${x.c}`).join();
+  ok(cur("index.html") === "これからの神楽:page" && cur("calendar.html") === "日付で探す:page" && cur("weekend.html") === "日付で探す:true" && cur("this-month.html") === "日付で探す:true" && cur("month/2026-11.html") === "日付で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "はじめての神楽:page", "今いる場所: そのページなら page、日付の各ページでは「日付で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
+  const cal = cheerio.load(read(join(OUT, "calendar.html")));
+  ok(cal('.datenav a[href="/weekend.html"]').length === 1 && cal('.datenav a[href="/this-month.html"]').length === 1, "「日付で探す」(カレンダー)のページの上に、今週末・今月への入口");
+  ok($("#menubtn").attr("hidden") !== undefined && $("#menubtn").attr("aria-controls") === "gnav" && $("#gnav").length === 1, "スマホのメニューのボタン: JS が動くときだけ出す(JS がなければ、メニューは常に見える)");
+  const dm = new JSDOM(html, { runScripts: "dangerously" });
+  const dd = dm.window.document, btn = dd.getElementById("menubtn"), nav = dd.getElementById("gnav");
+  btn.click();
+  const opened = btn.getAttribute("aria-expanded") === "true" && nav.classList.contains("open");
+  dd.dispatchEvent(new dm.window.KeyboardEvent("keydown", { key: "Escape" }));
+  ok(!btn.hidden && dd.documentElement.classList.contains("navjs") && opened && btn.getAttribute("aria-expanded") === "false" && !nav.classList.contains("open"), "ボタンでメニューが開き、Esc キーで閉じる(読み上げにも開閉の状態を伝える)");
+  dm.window.close();
+
   section("検索向け: タイトルの年・開催の構造化データ");
   const titleOf = (p) => cheerio.load(read(join(OUT, p)))("title").text();
   ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島県の神楽 日程【2026年】"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));

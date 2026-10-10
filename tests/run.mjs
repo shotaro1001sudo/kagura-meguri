@@ -192,7 +192,7 @@ for (const f of htmls) {
   $("img").each((_, el) => ok($(el).attr("alt") !== undefined, `${name}: img に alt`));
   $("select").each((_, el) => ok($(`label[for='${$(el).attr("id")}']`).length === 1, `${name}: select にラベル`));
 }
-ok(cheerio.load(read(join(OUT, "map.html")))("nav a[aria-current='page']").text() === "地図", "現在のページに aria-current");
+ok(cheerio.load(read(join(OUT, "map.html")))(".top nav a[aria-current='page']").text() === "地図で探す", "現在のページに aria-current");
 // ---------- 10. 検索・速度・外部ライブラリ ----------
 section("検索(noindex)・外部ライブラリ(SRI)・速度");
 const robotsMeta = (p) => cheerio.load(read(join(OUT, p)))('meta[name="robots"]').attr("content");

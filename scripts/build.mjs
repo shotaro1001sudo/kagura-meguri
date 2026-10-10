@@ -198,7 +198,20 @@ const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.Int
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
-const NAV = [["/", "一覧"], ["/weekend.html", "今週末"], ["/map.html", "地図"], ["/calendar.html", "カレンダー"], ["/kagura/", "神楽の種類"]];
+// メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値)]
+const NAV = [
+  ["/", "これからの神楽", ["/"]],
+  ["/calendar.html", "日付で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"]],
+  ["/map.html", "地図で探す", ["/map.html"]],
+  ["/kagura/", "種類で探す", ["/kagura/"]],
+  ["/guide.html", "はじめての神楽", ["/guide.html"]],
+];
+const navLink = ([h, t, group], active) => {
+  const cur = active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
+  return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}${h === "/guide.html" ? ' data-guide=""' : ""}>${t}</a>`;
+};
+// スマホの三本線メニュー: JS が動くときだけ、ボタンを出して、メニューを畳む(JS がなければ、メニューは常に見える)
+const NAV_SCRIPT = `(function(){var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
@@ -219,7 +232,7 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 ${GOATCOUNTER}${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 <a class="skip" href="#main">本文へ移動</a>
-<header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>メニュー</button><nav id="gnav" aria-label="メインメニュー">${NAV.map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 <div class="wrap"><main id="main">${body}</main>
 <footer><a href="/organizers.html">開催情報を掲載する(無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
@@ -389,6 +402,7 @@ write("dist/calendar.html", layout({
   desc: clip(`神楽の開催日を、月ごとのカレンダーで確認できます。${months.length ? months.slice(0, 4).map(monthLabel).join("・") + "など、" : ""}日付のある開催を、公式情報をもとに掲載しています。`),
   path: "/calendar.html", active: "/calendar.html",
   body: `${hero("開催カレンダー", "日付のある開催を、月ごとに見られます。毎晩・毎週の定期公演は、一覧のページにまとめています。")}
+<nav class="datenav" aria-label="日付で探す"><a href="/weekend.html">今週末の神楽 ›</a><a href="/this-month.html">今月の神楽 ›</a></nav>
 ${months.length ? `<h2>月ごとの一覧</h2><p class="meta">各月の開催を、ページごとにまとめています。</p>${monthLinks()}` : ""}
 <p><a class="btn ghost gcal" href="${GCAL_SUBSCRIBE}" target="_blank" rel="noopener">すべての開催を、Googleカレンダーに追加する</a></p>
 <p class="meta">Googleカレンダーの「他のカレンダー」に「${esc(cfg.siteName)}」が追加され、新しい開催が、自動で反映されます(反映まで、数時間から1日ほどかかることがあります)。不要になったら、Googleカレンダーの設定から、登録を解除できます。</p>
@@ -567,7 +581,7 @@ months.forEach((k, i) => {
   write(`dist/month/${k}.html`, layout({
     title: `${label}の神楽 開催日程(${list.length}件) | ${cfg.siteName}`,
     desc: clip(`${label}に開催される神楽の日程一覧です。${prefsIn.join("・")}の${list.length}件${kindsIn.length ? "(" + kindsIn.join("、") + ")" : ""}を、日付順に掲載しています。会場・料金・公式情報へのリンクつき。`),
-    path: `/month/${k}.html`, active: "/calendar.html",
+    path: `/month/${k}.html`, active: "/month/",
     ld: [crumbsLd([["ホーム", "/"], ["カレンダー", "/calendar.html"], [label]]), itemListLd(`${label}の神楽`, list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))],
     body: `${crumbNav([["ホーム", "/"], ["カレンダー", "/calendar.html"], [label]])}${hero(`${label}の神楽`, `${list.length}件の開催予定`)}
 <p class="lead">${label}に開催される神楽を、日付順にまとめています。${prefsIn.map((p) => `<a href="${prefHref(p)}">${esc(p)}</a>`).join("、")}の開催です。日時・会場は変更されることがあるため、お出かけの前に、各ページの公式情報をご確認ください。</p>
@@ -615,7 +629,7 @@ ${otherWays("/weekend.html")}`,
   write("dist/this-month.html", layout({
     title: `今月の神楽 ${tmLabel}の開催日程 | ${cfg.siteName}`,
     desc: padDesc(clip(`${tmLabel}、今日から月末までに観られる神楽を、まとめています。${[tmEvents.length ? `開催${tmEvents.length}件` : "", tmRegs.length + tmDaily.length ? `定期公演${tmRegs.length + tmDaily.length}件の公演日` : ""].filter(Boolean).join("と、") || "開催情報がないときは、来月の予定を案内します"}。${names.length ? `${listNames(names)}など。` : ""}毎日、自動で更新しています。`)),
-    path: "/this-month.html",
+    path: "/this-month.html", active: "/this-month.html",
     ld: [crumbsLd([["ホーム", "/"], ["今月の神楽"]]), itemListLd(`今月の神楽(${tmLabel})`, [...tmEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...tmRegs, ...tmDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
 <p class="lead">${tmLabel}の、今日(${esc(mdLabel(today))})から月末までに観られる神楽を、まとめています。このページは、毎日、自動で更新しています。日時・会場は変更されることがあるため、お出かけの前に、各ページの公式情報をご確認ください。</p>
@@ -635,7 +649,7 @@ ${otherWays("/this-month.html")}`,
   write("dist/guide.html", layout({
     title: `${title} | ${cfg.siteName}`,
     desc: "はじめて神楽を観る方へ。能・歌舞伎との違い、石見・広島・備中・高千穂・御嶽神楽の見どころ、撮影やご祝儀のマナー、夜の寒さに備える服装と持ち物を、各地の公式情報をもとにまとめました。",
-    path: "/guide.html",
+    path: "/guide.html", active: "/guide.html",
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
       author: ORG_LD, publisher: ORG_LD,
