@@ -1,6 +1,8 @@
 /* 侘び寂び: 和紙の地色・墨の文字・くすんだ朱。装飾は罫線と余白だけで見せる */
 :root{color-scheme:light dark;--bg:#f3eee4;--fg:#2b2622;--mut:#6c6357;--line:#d8cfbf;--ac:#9a3d2f;--ac2:#6b5c38;--card:#f8f4ec;--onac:#ffffff;
 --serif:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;--sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif}
+/* 動きの基準(全ページ共通): 加速の付け方は1種類、速さは3段階(短い=ホバー・状態、普通=出現、長い=演出)。霞が流れるような、静かな動き */
+:root{--ease:cubic-bezier(.22,.61,.36,1);--t-s:.35s;--t-m:.9s;--t-l:2.2s}
 @media(prefers-color-scheme:dark){:root{--bg:#171513;--fg:#e4ddd0;--mut:#9a9082;--line:#3a352e;--ac:#cf7a68;--ac2:#b3a272;--card:#1e1b18;--onac:#171513}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -20,7 +22,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .logo{display:inline-flex;align-items:center;gap:.6em}.logo img{width:32px;height:32px;border-radius:50%;flex:none}
 .symbol img{display:block;width:120px;height:120px;border-radius:50%;margin:4px 0 8px}
 .top nav{display:flex;gap:4px 22px;flex-wrap:wrap}
-.top nav a{color:var(--mut);text-decoration:none;font-size:.9rem;padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color .3s,border-color .3s}
+.top nav a{color:var(--mut);text-decoration:none;font-size:.9rem;padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .top nav a:hover,.top nav a.on{color:var(--fg);border-color:var(--ac)}
 
 /* ヒーロー */
@@ -31,7 +33,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .home-hero .copy{flex:1;min-width:0}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:1.25rem;letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
-.ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity 1.2s ease;--moon:#b39a5c}
+.ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity var(--t-m) var(--ease);--moon:#b39a5c}
 @media(prefers-color-scheme:dark){.ms{opacity:.28;--moon:#efe6cf}}
 .ms-moon{fill:var(--moon)}.ms-ring{fill:none;stroke:var(--moon);stroke-width:.8;opacity:.55}.ms-halo{fill:url(#msHalo)}
 .ms-s0{stop-color:var(--moon);stop-opacity:.55}.ms-s1{stop-color:var(--moon);stop-opacity:.16}.ms-s2{stop-color:var(--moon);stop-opacity:0}
@@ -40,7 +42,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .ms-stars{display:none;fill:var(--moon)}@media(prefers-color-scheme:dark){.ms-stars{display:inline}}
 
 /* 一覧: 枠で囲わず、罫線で区切る */
-.card{display:flex;gap:22px;padding:20px 0;border-top:1px solid var(--line);position:relative;transition:background .4s}
+.card{display:flex;gap:22px;padding:20px 0;border-top:1px solid var(--line);position:relative;transition:background var(--t-s) var(--ease)}
 .card:last-of-type{border-bottom:1px solid var(--line)}
 @media(hover:hover){.card:hover{background:linear-gradient(90deg,color-mix(in srgb,var(--ac) 7%,transparent),transparent 70%)}}
 .date{flex:none;width:60px;white-space:nowrap;text-align:center;font-family:var(--serif);line-height:1.2}
@@ -48,7 +50,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .date b{display:block;font-size:2rem;font-weight:500;color:var(--ac)}
 .card h3{margin:0 0 2px;font-size:1.08rem;line-height:1.6}.card h3 a{color:var(--fg);text-decoration:none}.card h3 a:after{content:"";position:absolute;inset:0}
 .meta{color:var(--mut);font-size:.85rem}
-.tag{display:inline-block;font-size:.82rem;color:var(--ac2);text-decoration:none;margin:0 14px 0 0;padding:8px 0 4px;border-bottom:1px solid var(--line);position:relative;z-index:1}
+.tag{display:inline-block;font-size:.82rem;color:var(--ac2);text-decoration:none;margin:0 14px 0 0;padding:8px 0 4px;border-bottom:1px solid var(--line);position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .tag:hover{color:var(--ac);border-color:var(--ac)}
 .tag.gold{color:var(--ac)}
 
@@ -56,12 +58,12 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .aff{margin:56px 0 8px;padding:22px 0 6px;border-top:1px solid var(--ac)}
 .aff h2{margin:0 0 14px;font-size:1rem}.aff h2:after{display:none}
 .afflist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;margin-bottom:8px}
-.afflist a{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:12px 14px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background .3s}
+.afflist a{display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;padding:12px 14px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
 .afflist a:first-child{border-left:0;padding-left:0}.afflist a:hover{background:var(--card)}
 .afflist .ico{grid-row:span 2;font-size:1.3rem;filter:grayscale(1) sepia(.4);opacity:.8}.afflist b{font-weight:500;font-size:.92rem}.afflist small{color:var(--mut);font-size:.78rem}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background .3s}
+.quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
 .quick a:first-child{border-left:0}.quick a:hover{background:var(--card)}
 .quick b{font-family:var(--serif);font-weight:500;font-size:1.05rem}.quick b::after{content:" ›";color:var(--ac)}
 .quick small{color:var(--mut);font-size:.8rem}
@@ -71,7 +73,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 
 /* フォーム・ボタン */
 select,input,button{font:inherit;font-size:.92rem;padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:.92rem;letter-spacing:.12em;transition:opacity .3s;margin:0 6px 8px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:.92rem;letter-spacing:.12em;transition:opacity var(--t-s) var(--ease);margin:0 6px 8px 0}
 .btn:hover{opacity:.85}.btn.ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
 .filters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 6px}
 
@@ -177,7 +179,7 @@ footer a{color:var(--mut);padding:8px 2px}
 /* トップの「これからの神楽」: 地方のボタン、月の見出し、この先の月 */
 [hidden]{display:none!important}
 .regions{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
-.regions button{font:inherit;font-size:.85rem;background:none;border:1px solid var(--line);color:var(--mut);padding:6px 14px;border-radius:999px;cursor:pointer;min-height:40px;transition:background .25s,color .25s,border-color .25s}
+.regions button{font:inherit;font-size:.85rem;background:none;border:1px solid var(--line);color:var(--mut);padding:6px 14px;border-radius:999px;cursor:pointer;min-height:40px;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .regions button:hover{border-color:var(--fg);color:var(--fg)}
 .regions button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
 .mhead{display:flex;align-items:center;gap:14px;margin:30px 0 2px;font-family:var(--serif);font-weight:500;font-size:1rem;letter-spacing:.2em;color:var(--mut)}

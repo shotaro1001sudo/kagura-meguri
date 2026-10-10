@@ -9,6 +9,7 @@ import { JSDOM, VirtualConsole } from "jsdom";
 const read = (p) => readFileSync(p, "utf8");
 
 export async function motionTests({ ok, section, OUT }) {
+  const SEL_ALL = readFileSync("scripts/build.mjs", "utf8").match(/const REVEAL_SEL = "([^"]+)"/)?.[1] ?? "";
   section("動き: CSS(JSなしの表示・動きを減らす設定・動的な要素)");
   const home = read(join(OUT, "index.html"));
   const $ = cheerio.load(home);
@@ -26,6 +27,15 @@ export async function motionTests({ ok, section, OUT }) {
   const h1Rule = css.match(/\.intro \.home-hero h1\{([^}]*)\}/)?.[1] ?? "";
   const slide = css.match(/@keyframes slide\{([^]*?)\}\s*\./)?.[1] ?? css.match(/@keyframes slide\{[^}]*\}[^}]*\}/)?.[0] ?? "";
   ok(/animation:slide/.test(h1Rule) && !/opacity/.test(slide), "見出し(最大のコンテンツ)は、透明から現さず、位置の動きだけ(表示を遅らせない)", h1Rule);
+  // 統一性: 加速の付け方は1種類、遷移の速さは3段階の基準だけ、ホバーで浮き上がり・拡大しない
+  const plain = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  ok([...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].length === 1 && /--ease:cubic-bezier/.test(plain), "加速の付け方(cubic-bezier)は、基準の1種類だけ", [...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].join(" "));
+  const trans = [...plain.matchAll(/transition:([^;}]+)/g)].map((m) => m[1]).filter((v) => !/^none/.test(v));
+  ok(trans.length > 5 && trans.every((v) => !/\d(\.\d+)?m?s\b/.test(v) && /var\(--t-[sml]\)/.test(v)), "遷移の速さは、すべて基準(--t-s / --t-m / --t-l)を使う", trans.filter((v) => /\d(\.\d+)?m?s\b/.test(v)).join(" | "));
+  const hoverMoves = [...plain.matchAll(/([^{}]*:hover[^{}]*)\{([^{}]*)\}/g)].filter(([, sel, body]) => /translate|scale\(|scale:|transform/.test(body) && !/\.card:hover:before/.test(sel)).map(([, s]) => s.trim());
+  ok(hoverMoves.length === 0, "ホバーでは、浮き上がり・拡大をしない(色と朱の線だけ。カードの線は伸びる)", hoverMoves.join(" | "));
+  ok(!/@keyframes drop/.test(plain) && !/animation:drop/.test(plain), "弾む動き(ロゴの drop)は使わない");
+  ok(["main .gcard", "main .mhead", "main .toc", "main .tblwrap"].every((s) => SEL_ALL.includes(s)), "新しい部品(ガイドのカード・月の見出し・目次・表)も、同じルールで現れる");
   ok(Number(statSync("scripts/motion.css").size) < 9000 && Number(statSync("scripts/motion.js").size) < 4000, "動きの CSS / JS が軽い(9KB / 4KB 未満)");
 
   // 隠す対象に、JSで後から作る要素・フォーム・ヒーローが入っていない

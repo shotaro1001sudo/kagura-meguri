@@ -125,7 +125,8 @@ const mailLink = () => `<a href="/contact.html">お問い合わせフォーム</
 // ---------- 動き(出現・視差・ホバー・導入演出) ----------
 // スクロールで現れる要素。ビルド時に静的に出力されるものだけ(カレンダーのように、JSが後から作る要素は含めない。
 // 含めると、観察されないまま、隠れたままになるため)。CSSとJSで、同じ一覧を使う。
-const REVEAL_SEL = "main>h2:not(.sr), main .lead, main .about, main table.info, main .aff, main .card, main .taglist, main .venuelist li, main .prose>h2";
+// スクロールで現れるもの(全ページ共通のルール): 見出しと、カード・ブロックの単位だけ。段落・ボタン・フォームには付けない
+const REVEAL_SEL = "main>h2:not(.sr), main .prose>h2, main .mhead, main .lead, main .about, main .toc, main table.info, main .tblwrap, main .aff, main .card, main .gcard, main .taglist, main .venuelist li";
 const SPARKS = 12; // 篝火の火の粉の数。位置・大きさ・速さは、決まった乱数で作る(毎回、同じ出力になる)
 let seed = 20261009; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const sparkCss = Array.from({ length: SPARKS }, (_, i) => `.sparks i:nth-child(${i + 1}){--x:${(5 + rnd() * 90).toFixed(1)}%;--s:${(2 + rnd() * 2.2).toFixed(1)}px;--t:${(8 + rnd() * 6).toFixed(1)}s;--d:${(rnd() * 7).toFixed(1)}s;--dx:${Math.round(-40 + rnd() * 80)}px}`).join("\n");
