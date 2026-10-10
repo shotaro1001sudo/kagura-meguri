@@ -100,6 +100,13 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(pa(".afflist a[rel~=sponsored]").length === 1 && pa(".afflist a[rel~=sponsored]").attr("href").includes("tag=test-22") && pa(".aff .pr").length === 1, "Amazon を設定すると、通販のリンクが加わり、sponsored と「PR」が付く");
     ok($(".staylinks a[rel~=sponsored]").length === 0, "宿の ID が未設定なら、宿のリンクには sponsored を付けない(Amazon だけ設定したとき)");
   }
+  { // 本番の設定: 楽天アフィリエイトが有効(宿の楽天リンクだけが報酬つき。じゃらんは提携前なので、ふつうのリンク)
+    const d = sub("prod-aff", { TEST_AFF_OFF: "" }); const p = text(join(d, "privacy.html"));
+    const $ = cheerio.load(read(join(d, "events/t-full.html")));
+    const [jl, rk] = $(".staylinks a").get();
+    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && !/sponsored/.test($(jl).attr("rel") ?? "") && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)、じゃらんは提携前なので、ふつうのリンク");
+    ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
+  }
   { // 宿のアフィリエイト(楽天・バリューコマース)
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
