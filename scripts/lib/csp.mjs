@@ -34,6 +34,13 @@ export function cspFor(html, cfg) {
     d["img-src"].push("https:");
     d["connect-src"].push("https://*.google.com", "https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google-analytics.com");
   }
+  if (cfg.goatcounter) {
+    // アクセス解析 GoatCounter: スクリプト(SRI付き)の配信元と、計測の送り先だけを許可する
+    const gc = `https://${cfg.goatcounter}.goatcounter.com`;
+    d["script-src"].push("https://gc.zgo.at");
+    d["connect-src"].push(gc);
+    d["img-src"].push(gc);
+  }
   if (ga) {
     d["script-src"].push("https://www.googletagmanager.com", "https://*.google-analytics.com");
     d["img-src"].push("https://*.google-analytics.com", "https://*.googletagmanager.com");

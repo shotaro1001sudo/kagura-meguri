@@ -70,6 +70,12 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 @media(max-width:560px){.quick a{border-left:0;border-top:1px solid var(--line);padding-left:0;padding-right:0}.quick a:first-child{border-top:0}}
 .adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:.72rem;color:var(--mut);letter-spacing:.3em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
 .adwrap{margin:28px 0;min-height:0}
+/* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */
+.adwrap:before{content:"広告";display:block;font-size:.7rem;color:var(--mut);letter-spacing:.3em;margin-bottom:4px}
+/* 開催ページの「会場近くの宿」 */
+.stay{margin:28px 0;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+.stay h2{margin:0 0 8px;font-size:1rem}.stay p{margin:6px 0}.staylinks{margin:12px 0 6px!important}
+.pr{display:inline-block;font-size:.68rem;letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 
 /* フォーム・ボタン */
 select,input,button{font:inherit;font-size:.92rem;padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
@@ -131,7 +137,7 @@ footer a{color:var(--mut);padding:8px 2px}
 .taglist{display:flex;flex-wrap:wrap;gap:2px 0}.empty:empty,.monthlist:empty{display:none}
 
 /* 印刷: ナビ・広告・旅の案内を省く */
-@media print{.top,footer,.adwrap,.adph,.aff,.filters,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
+@media print{.top,footer,.adwrap,.adph,.aff,.stay,.filters,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
 
 /* フォーム */
 .form{max-width:640px}

@@ -270,7 +270,7 @@ for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads"]) rmSyn
 await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW });
 seoTests({ ok, section, OUT, build });
 await motionTests({ ok, section, OUT });
-policyTests({ ok, section, OUT, build });
+await policyTests({ ok, section, OUT, build });
 await collectTests({ ok, section });
 await notifyTests({ ok, section });
 weekendTests({ ok, section, build });

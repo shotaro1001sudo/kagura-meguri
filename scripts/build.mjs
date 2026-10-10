@@ -8,6 +8,7 @@ import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
+import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -21,7 +22,12 @@ if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", provide
 if (process.env.TEST_FORM_ENDPOINT) cfg.form ={ ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };
 if (process.env.TEST_AUTOPUBLISH) cfg.collect = { ...cfg.collect, autoPublish: process.env.TEST_AUTOPUBLISH === "1" };
 if (process.env.TEST_GA) cfg.analyticsId = process.env.TEST_GA;
+if (process.env.TEST_GOATCOUNTER != null) cfg.goatcounter = process.env.TEST_GOATCOUNTER; // テスト用(空文字で無効)
+// アクセス解析 GoatCounter(Cookie を使わない)。コードは英小文字・数字・ハイフン(https://<コード>.goatcounter.com)
+if (cfg.goatcounter && !/^[a-z0-9-]+$/.test(cfg.goatcounter)) { console.error("config.json の goatcounter は、英小文字・数字・ハイフンのコードにしてください"); process.exit(1); }
+const GOATCOUNTER = cfg.goatcounter ? `<script data-goatcounter="https://${cfg.goatcounter}.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>` : "";
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
+if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: "1234567", jalanPid: "7654321" }; // テスト用(宿のアフィリエイト)
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -89,21 +95,49 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 
 // ---------- 収益化 ----------
 const a = cfg.affiliate;
-const hasAffiliate = !!(a.rakutenAffiliateId || a.valueCommerceSid || a.amazonTag); // 報酬の出るリンクがあるか(未設定の間は、ふつうのリンク)
-const rakuten = (url) => (a.rakutenAffiliateId ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}` : url);
-const vc = (url) => (a.valueCommerceSid ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&vc_url=${encodeURIComponent(url)}` : url);
-const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${a.amazonTag ? `&tag=${a.amazonTag}` : ""}`;
+// 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
+const rakutenOn = !!a.rakutenAffiliateId, jalanOn = !!(a.valueCommerceSid && a.jalanPid), amazonOn = !!a.amazonTag;
+const hasAffiliate = rakutenOn || jalanOn || amazonOn;
+const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
+const vcJalan = (url) => (jalanOn ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&pid=${a.jalanPid}&vc_url=${encodeURIComponent(url)}` : url);
+const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
+// 宿の検索(会場の市区町村で探す)。日付があれば、その日の1泊・大人2名で開く。
+// じゃらんはキーワードを Shift_JIS で、楽天トラベルは charset=utf-8 の指定つきで受け取る(どちらも、実際の検索結果で確認済み)
+const stayPlace = (x) => (x.city ? x.city.replace(/^.*郡/, "") : x.prefecture);
+const jalanStay = (x, day) => {
+  const q = [`keyword=${encodeSjisURI(stayPlace(x))}`];
+  if (day) q.push(`stayYear=${+day.slice(0, 4)}`, `stayMonth=${+day.slice(5, 7)}`, `stayDay=${+day.slice(8, 10)}`, "stayCount=1", "roomCount=1", "adultNum=2");
+  return vcJalan(`https://www.jalan.net/uw/uwp2011/uww2011init.do?${q.join("&")}`);
+};
+const rakutenStay = (x, day) => {
+  const q = ["charset=utf-8", `f_query=${encodeURIComponent(stayPlace(x))}`];
+  if (day) { const n = addDays(day, 1); q.push(`f_nen1=${day.slice(0, 4)}`, `f_tuki1=${+day.slice(5, 7)}`, `f_hi1=${+day.slice(8, 10)}`, `f_nen2=${n.slice(0, 4)}`, `f_tuki2=${+n.slice(5, 7)}`, `f_hi2=${+n.slice(8, 10)}`, "f_otona_su=2", "f_heya_su=1"); }
+  return rakuten(`https://kw.travel.rakuten.co.jp/keyword/Search.do?${q.join("&")}`);
+};
+// 外部リンク(アフィリエイト)の属性。報酬の出るリンクは sponsored。クリック数は、アクセス解析(GoatCounter)で数える
+const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
+const prNote = (on) => (on ? `<small class="meta"><span class="pr">PR</span> 広告(アフィリエイトリンク)を含みます。内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small>` : `<small class="meta">外部の予約サイトへのリンクです。内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small>`);
 
+/** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
+function stayBlock(e) {
+  const day = e.start.slice(0, 10), place = stayPlace(e);
+  const on = rakutenOn || jalanOn;
+  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場近くの宿</h2>
+<p>神楽は夜に行われることも多くあります。遠方から観に行くなら、${esc(place)}の宿もあわせて探せます。<br><span class="meta">${jpDate(day)}泊・大人2名で検索します(日付や人数は、移動先で変えられます)。</span></p>
+<p class="staylinks"><a class="btn" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}>じゃらんで宿を探す</a> <a class="btn ghost" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}>楽天トラベルで宿を探す</a></p>
+${prNote(on)}</aside>`;
+}
+
+/** 種類・都道府県・定期公演のページの「旅支度」(日付なし) */
 function affiliateBlock(e) {
-  const place = `${e.prefecture}${e.city?.replace(/^.*郡/, "") ?? ""}`;
   const links = [
-    ["🏨", "周辺の宿を探す", "楽天トラベル", rakuten(`https://travel.rakuten.co.jp/searchHotel/?f_keyword=${encodeURIComponent(place)}`)],
-    ["🚄", "交通・ツアーを探す", "じゃらん", vc(`https://www.jalan.net/kankou/?keyword=${encodeURIComponent(place)}`)],
-    ["📚", "神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽")],
+    ["🏨", `${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"],
+    ["🏨", `${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"],
+    ...(amazonOn ? [["📚", "神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
   ];
   return `<aside class="aff"><h2>${esc(e.prefecture)}への旅支度</h2><div class="afflist">${links
-    .map(([i, t, s, u]) => `<a href="${esc(u)}" rel="${hasAffiliate ? "sponsored " : ""}noopener" target="_blank"><span class="ico">${i}</span><b>${t}</b><small>${s}</small></a>`)
-    .join("")}</div><small class="meta">${hasAffiliate ? "※ 広告・アフィリエイトリンクを含みます。" : "※ 外部のサービスへのリンクです。"}内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small></aside>`;
+    .map(([i, t, s, u, on, k]) => `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><span class="ico">${i}</span><b>${esc(t)}</b><small>${s}</small></a>`)
+    .join("")}</div>${prNote(links.some((l) => l[4]))}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -178,7 +212,7 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gf" rel="stylesheet" href="${FONT_URL}" media="print"><script>${FONT_SCRIPT}</script><noscript><link rel="stylesheet" href="${FONT_URL}"></noscript>
 <style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
-${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
+${GOATCOUNTER}${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 <a class="skip" href="#main">本文へ移動</a>
 <header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><nav aria-label="メインメニュー">${NAV.map(([h, t]) => `<a href="${h}"${h === active ? ' class="on" aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
@@ -493,10 +527,11 @@ for (const e of events) {
 <tr><th>場所</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table>
 <p>${esc(e.description)}</p>
 <p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a> <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
+${isUpcoming(e) ? stayBlock(e) : ""}
 ${mapBlock(e)}
 ${sourceNote(e)}${GUIDE_LINK}
 ${related(e)}
-${adSlot(cfg.adsense.slotDetail)}${affiliateBlock(e)}`,
+${adSlot(cfg.adsense.slotDetail)}`,
   }));
 }
 
@@ -641,7 +676,7 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
 const policyCtx = {
   cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
-  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasAffil: hasAffiliate,
+  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}の個人情報・外部サービス・Cookieの取り扱い方針`, privacyHtml(policyCtx));

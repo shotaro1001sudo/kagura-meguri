@@ -12,7 +12,7 @@ const text = (f) => { const $ = cheerio.load(read(f)); $("script,style").remove(
 const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const cspOf = (f) => cheerio.load(read(f))('meta[http-equiv="Content-Security-Policy"]').attr("content") ?? "";
 
-export function policyTests({ ok, section, OUT, build }) {
+export async function policyTests({ ok, section, OUT, build }) {
   const cfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
   const D = "dist-test-policy";
   const sub = (name, env) => { const r = build("tests/fixtures/events.test.json", `${D}-${name}`, { SOURCES_FILE: "tests/fixtures/sources.empty.json", ...env }); ok(r.status === 0, `ポリシー検査用ビルド(${name})`, r.stderr); return `${D}-${name}`; };
@@ -62,7 +62,17 @@ export function policyTests({ ok, section, OUT, build }) {
   ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません"), "ポリシーに、Cookieを設定しないこと・セッションストレージの2項目・外部に送らないことが書かれている");
   // (3) 画面に出す「広告・アフィリエイト」の表示は、実態に合っている
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
-  ok(ev(".afflist a[href]").length === 3 && ev(".afflist a[rel~=sponsored]").length === 0 && ev(".aff .meta").text().includes("外部のサービスへのリンク") && !ev(".aff .meta").text().includes("アフィリエイトリンクを含みます"), "アフィリエイト未設定の間は、「外部のサービスへのリンク」と表示し、sponsored を付けない");
+  ok(ev(".staylinks a[href]").length === 2 && ev(".staylinks a[rel~=sponsored], .stay .pr").length === 0 && ev(".stay .meta").text().includes("外部の予約サイトへのリンク"), "アフィリエイト未設定の間は、宿のリンクに sponsored も「PR」も付けない");
+  // 会場近くの宿: 開催日の1泊・大人2名、会場の市区町村(郡は除く)で探す。じゃらんは Shift_JIS、楽天は charset=utf-8
+  const [jl0, rk0] = ev(".staylinks a").map((_, x) => ev(x).attr("href")).get();
+  ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);
+  ok(rk0 === "https://kw.travel.rakuten.co.jp/keyword/Search.do?charset=utf-8&f_query=%E9%AB%98%E5%8D%83%E7%A9%82%E7%94%BA&f_nen1=2026&f_tuki1=11&f_hi1=20&f_nen2=2026&f_tuki2=11&f_hi2=21&f_otona_su=2&f_heya_su=1", "楽天トラベル: 「高千穂町」・開催日から翌日まで・大人2名で検索する", rk0);
+  ok(ev(".stay").text().includes("2026年11月20日泊") && ev(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test(ev(x).attr("data-goatcounter-click"))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
+  ok(cheerio.load(read(join(OUT, "events/t-past.html")))(".stay").length === 0, "終わった開催には、宿のリンクを出さない");
+  const { encodeSjisURI } = await import("../scripts/lib/sjis.mjs");
+  ok(encodeSjisURI("安芸高田市") === "%88%C0%8C%7C%8D%82%93%63%8E%73" && encodeSjisURI("ｶｸﾞﾗ a") === "%B6%B8%DE%D7%20a", "Shift_JIS のエンコード(漢字・半角カナ・英数字)");
+  const pf = cheerio.load(read(join(OUT, "pref", "広島県.html")));
+  ok(pf(".afflist a[href]").length === 2 && pf(".afflist a[rel~=sponsored]").length === 0 && !pf(".aff").text().includes("Amazon"), "未設定の間は、旅支度は宿の2つだけ(通販のリンクは、提携してから出す)");
   ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !pv.includes("Google AdSense") && !pv.includes("Googleアナリティクス") && !pv.includes("アフィリエイトプログラムに参加"), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
   ok(text(join(OUT, "about.html")).includes("収益を、得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
@@ -86,7 +96,30 @@ export function policyTests({ ok, section, OUT, build }) {
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     ok(p.includes("アフィリエイトプログラムについて") && p.includes("適格販売により収入を得ています"), "アフィリエイトを設定すると、その項目と、Amazonの表記が現れる");
     ok(s.includes("一部のリンクは、広告・アフィリエイトのリンクです") && !s.includes("契約を結んでおらず"), "アフィリエイトを設定すると、免責事項が変わる");
-    ok($(".afflist a[rel~=sponsored]").length === 3 && $(".aff .meta").text().includes("アフィリエイトリンクを含みます"), "アフィリエイトを設定すると、リンクに sponsored が付き、表示が「広告・アフィリエイトリンクを含みます」に変わる");
+    const pa = cheerio.load(read(join(d, "pref", "広島県.html")));
+    ok(pa(".afflist a[rel~=sponsored]").length === 1 && pa(".afflist a[rel~=sponsored]").attr("href").includes("tag=test-22") && pa(".aff .pr").length === 1, "Amazon を設定すると、通販のリンクが加わり、sponsored と「PR」が付く");
+    ok($(".staylinks a[rel~=sponsored]").length === 0, "宿の ID が未設定なら、宿のリンクには sponsored を付けない(Amazon だけ設定したとき)");
+  }
+  { // 宿のアフィリエイト(楽天・バリューコマース)
+    const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
+    const $ = cheerio.load(read(join(d, "events/t-full.html")));
+    const [jl, rk] = $(".staylinks a").map((_, x) => $(x).attr("href")).get();
+    ok(/^https:\/\/ck\.jp\.ap\.valuecommerce\.com\/servlet\/referral\?sid=1234567&pid=7654321&vc_url=https%3A%2F%2Fwww\.jalan\.net/.test(jl), "じゃらん: バリューコマースのリンク(サイトIDと提携IDの両方)", jl);
+    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/test\.rakuten\/\?pc=https%3A%2F%2Fkw\.travel\.rakuten\.co\.jp/.test(rk), "楽天トラベル: 楽天アフィリエイトのリンク", rk);
+    ok($(".staylinks a[rel~=sponsored]").length === 2 && $(".stay .pr").text() === "PR" && $(".stay").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
+    ok(p.includes("アフィリエイトプログラムについて") && p.includes("楽天アフィリエイト") && p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる");
+  }
+  { // アクセス解析(GoatCounter)
+    const d = sub("gc", { TEST_GOATCOUNTER: "kagura-test" }); const p = text(join(d, "privacy.html"));
+    const h = read(join(d, "index.html")), $ = cheerio.load(h);
+    const s = $('script[src="https://gc.zgo.at/count.v5.js"]');
+    ok(s.attr("data-goatcounter") === "https://kagura-test.goatcounter.com/count" && /^sha384-/.test(s.attr("integrity")) && s.attr("crossorigin") === "anonymous", "GoatCounter: 改ざん検知(SRI)つきで読み込み、送り先は設定したコード");
+    const csp = cspOf(join(d, "index.html"));
+    ok(/script-src[^;]*https:\/\/gc\.zgo\.at/.test(csp) && /connect-src[^;]*https:\/\/kagura-test\.goatcounter\.com/.test(csp), "GoatCounter: CSP で、配信元と送り先だけを許可する");
+    ok(p.includes("GoatCounter(アクセス解析)") && p.includes("Cookieや、ブラウザに保存する識別子を使いません") && !p.includes("取得も保存もしていません(アクセス解析を導入する場合"), "GoatCounter: ポリシーに、外部送信の行・Cookie を使わないこと・集計だけであることが書かれる");
+    ok(!p.includes("Googleアナリティクス"), "GoatCounter だけのとき、Googleアナリティクスの項目は出ない");
+    const off = read(join(OUT, "index.html"));
+    ok(!off.includes("gc.zgo.at"), "コードが未設定の間は、GoatCounter を読み込まない");
   }
   { // フォーム送信先
     const d = sub("form", { TEST_FORM_ENDPOINT: "https://forms.example.test/submit", TEST_FORM_PROVIDER: "テスト送信サービス" }); const p = text(join(d, "privacy.html"));
