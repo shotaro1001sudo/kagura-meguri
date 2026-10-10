@@ -567,20 +567,18 @@ ${otherWays("/this-month.html")}`,
 // ---------- はじめての神楽ガイド(「神楽 初めて」「夜神楽 服装」などの検索に当てる、読み物) ----------
 {
   const title = "はじめての神楽ガイド 見どころ・マナー・服装";
-  const regIds = new Set(regular.map((r) => r.id));
   write("dist/guide.html", layout({
     title: `${title} | ${cfg.siteName}`,
-    desc: "はじめて神楽を観る方へ。祭り・夜神楽・定期公演の違い、石見・広島・高千穂・備中の見どころ、撮影やご祝儀のマナー、夜の寒さに備える服装と持ち物を、各地の公式情報をもとにまとめました。",
+    desc: "はじめて神楽を観る方へ。能・歌舞伎との違い、石見・広島・備中・高千穂・御嶽神楽の見どころ、撮影やご祝儀のマナー、夜の寒さに備える服装と持ち物を、各地の公式情報をもとにまとめました。",
     path: "/guide.html",
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
       author: ORG_LD, publisher: ORG_LD,
       mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: OG_URL,
     }],
-    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose">${guideHtml({
+    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
       esc,
       kaguraLink: (k) => (kaguras.includes(k) ? `<a href="/kagura/${encodeURIComponent(k)}.html">${esc(k)}</a>` : esc(k)),
-      regularLink: (id, text) => (regIds.has(id) ? `<a href="/regular/${id}.html">${esc(text)}</a>` : esc(text)),
     })}</div>`,
   }));
 }
