@@ -1,0 +1,50 @@
+// トップの「これからの神楽」のテスト: 直近2か月だけをカードで出し、その先は月のボタン。地方のボタンで絞り込む
+import { readFileSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
+
+const read = (p) => readFileSync(p, "utf8");
+
+export function homeTests({ ok, section, OUT, build }) {
+  section("トップ: これからの神楽(月ごと・地方の絞り込み)");
+  const html = read(join(OUT, "index.html"));
+  const $ = cheerio.load(html);
+  // テストの基準日(2026-10-09): 開催のある月は 10月・11月・12月
+  ok($("#list .mgroup").length === 2 && $("#list .mhead").map((_, h) => $(h).text()).get().join() === "10月,11月", "直近2か月(開催のある月)だけを、月の見出しつきで出す");
+  const later = $(".later a").map((_, a) => ({ href: $(a).attr("href"), n: $(a).attr("data-n"), c: JSON.parse($(a).attr("data-c")), text: $(a).text() })).get();
+  ok(later.length === 1 && later[0].href === "/month/2026-12.html" && later[0].text === "12月 2件" && later[0].c["中国"] === 2 && later[0].c["九州・沖縄"] === 0, "その先の月は、件数つきのボタンで、月のページへ", JSON.stringify(later));
+  ok($("#list .card").length === 4 && !$("#list").text().includes("12月5日"), "一覧のカードは、直近2か月の分だけ");
+  ok($(".regions").attr("hidden") !== undefined && $(".regions button").map((_, b) => $(b).text()).get().join() === "全国,中国,九州・沖縄", "地方のボタン(開催のある地方だけ)。JS が動くときだけ表示する");
+  ok(!$("main select#f").length && !$("main").text().includes("月ごとに探す"), "都道府県の選択欄と、重複する「月ごとに探す」はなくした");
+
+  // 地方のボタンの動き(ブラウザと同じように、ページのスクリプトを動かす)
+  const dom = new JSDOM(html, { runScripts: "dangerously" });
+  const d = dom.window.document;
+  const visible = () => [...d.querySelectorAll("#list [data-r]")].filter((x) => !x.hidden && !x.closest(".mgroup").hidden).map((x) => x.dataset.r);
+  const press = (r) => [...d.querySelectorAll(".regions button")].find((b) => b.textContent === r).click();
+  ok(!d.querySelector(".regions").hidden, "JS が動くと、地方のボタンが出る");
+  press("九州・沖縄");
+  ok(visible().length > 0 && visible().every((r) => r === "九州・沖縄") && d.querySelector(".later a").hidden && d.querySelector(".laterwrap").hidden, "九州・沖縄: 九州の開催だけになり、該当のない先の月は隠れる", visible().join());
+  ok([...d.querySelectorAll(".mgroup")].filter((m) => m.hidden).length === 1, "該当のない月は、見出しごと隠れる");
+  press("中国");
+  ok(visible().every((r) => r === "中国") && !d.querySelector(".later a").hidden && d.querySelector(".later a span").textContent === "2件", "中国: 先の月の件数も、その地方の数になる");
+  press("全国");
+  ok(visible().length === 4 && d.querySelector(".later a span").textContent === "2件" && d.querySelector(".regions button[aria-pressed=true]").textContent === "全国", "全国に戻すと、元の表示になる");
+  dom.window.close();
+
+  // 1か月の開催が多いとき: 10件までを出し、残りは月のページへ(地方で絞ったときは全部)
+  const base = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.prefecture === "広島県");
+  const many = Array.from({ length: 13 }, (_, i) => ({ ...base, id: `t-many-${i}`, name: `多い月の神楽${i}`, start: `2026-10-${String(12 + i).padStart(2, "0")}T18:00`, end: undefined, prefecture: i < 12 ? "広島県" : "宮崎県", lat: undefined, lng: undefined }));
+  const F = "tests/.tmp-home.json", D = "dist-test-home";
+  writeFileSync(F, JSON.stringify(many));
+  const r = build(F, D);
+  const m = cheerio.load(read(join(D, "index.html")));
+  ok(r.status === 0 && m("#list .mgroup").first().find("[data-r]").length === 13 && m("#list .ov").length === 3 && m("#list .more a").attr("href") === "/month/2026-10.html" && m("#list .more").text().includes("13件"), "1か月が10件を超えると、残りは隠し、月のページへのリンクを出す", r.stderr);
+  const dom2 = new JSDOM(read(join(D, "index.html")), { runScripts: "dangerously" });
+  const d2 = dom2.window.document;
+  [...d2.querySelectorAll(".regions button")].find((b) => b.textContent === "中国").click();
+  ok([...d2.querySelectorAll("#list [data-r]")].filter((x) => !x.hidden).length === 12 && d2.querySelector("#list .more").hidden, "地方で絞ったときは、隠していた分も出す");
+  dom2.window.close();
+  rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
+}

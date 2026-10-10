@@ -6,6 +6,7 @@ import { privacyHtml, disclaimerHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
+import { REGIONS, regionOf } from "./lib/util.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -262,6 +263,19 @@ const prefs = [...new Set([...upcoming, ...regular].map((e) => e.prefecture))];
 const kaguras = [...new Set([...events, ...regular].map((e) => e.kagura).filter(Boolean))];
 
 // ---------- トップ ----------
+// 「これからの神楽」: 直近2か月(開催のある月)だけをカードで出し、その先は月ごとのボタンにする(件数が増えても長くならない)
+const HOME_MONTHS = 2, MONTH_CAP = 10;
+const homeMonths = months.slice(0, HOME_MONTHS), laterMonths = months.slice(HOME_MONTHS);
+const monthShort = (k) => (k.slice(0, 4) === nowJst.slice(0, 4) ? `${+k.slice(5, 7)}月` : monthLabel(k));
+const regionsUsed = REGIONS.map(([r]) => r).filter((r) => upcoming.some((e) => regionOf(e.prefecture) === r));
+const regionCounts = (list) => JSON.stringify(Object.fromEntries(regionsUsed.map((r) => [r, list.filter((e) => regionOf(e.prefecture) === r).length])));
+// 1か月に MONTH_CAP 件を超える分は、地方で絞り込んだときだけ出す(全国のときは、月のページへのリンク)
+const homeList = homeMonths.map((k) => {
+  const list = monthMap.get(k);
+  return `<div class="mgroup"><h3 class="mhead">${monthShort(k)}</h3>${list.map((e, i) => `<div data-r="${regionOf(e.prefecture)}"${i >= MONTH_CAP ? ' class="ov" hidden' : ""}>${card(e)}</div>`).join("")}${list.length > MONTH_CAP ? `<p class="meta more"><a href="/month/${k}.html">${monthLabel(k)}の開催をすべて見る(${list.length}件) ›</a></p>` : ""}</div>`;
+}).join("");
+const laterLinks = laterMonths.length ? `<div class="laterwrap"><h3 class="mhead">この先の開催</h3><div class="taglist later">${laterMonths.map((k) => { const l = monthMap.get(k); return `<a class="tag" href="/month/${k}.html" data-n="${l.length}" data-c="${esc(regionCounts(l))}">${monthShort(k)} <span>${l.length}件</span></a>`; }).join("")}</div></div>` : "";
+const regionButtons = regionsUsed.length > 1 ? `<div class="regions" role="group" aria-label="地方で絞り込む" hidden><button type="button" data-r="" aria-pressed="true">全国</button>${regionsUsed.map((r) => `<button type="button" data-r="${r}" aria-pressed="false">${r}</button>`).join("")}</div>` : "";
 write("dist/index.html", layout({
   title: `神楽の開催情報・日程一覧 | ${cfg.siteName}`,
   desc: clip(`${[...new Set(kaguras)].slice(0, 5).join("、")}など、全国の神楽の開催日程・会場・料金を、一覧・地図・カレンダーで探せます。公式情報をもとに、出典と確認日つきで紹介します。`),
@@ -274,14 +288,20 @@ ${MOONSCAPE}${sparksHtml}
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>はじめての神楽</b><small>見どころ・マナー・服装</small></a></nav>
 <h2>これからの神楽</h2>
-<div class="filters">${upcoming.length ? `<label class="sr" for="f">都道府県で絞り込む</label><select id="f"><option value="">全国</option>${[...new Set(upcoming.map((e) => e.prefecture))].map((p) => `<option>${esc(p)}</option>`).join("")}</select>` : ""}
-<a class="btn ghost" href="/submit.html">開催情報を投稿する</a></div>
+${regionButtons}
 ${adSlot(cfg.adsense.slotList)}
-<div id="list">${upcoming.map((e) => `<div data-p="${esc(e.prefecture)}">${card(e)}</div>`).join("") || empty("現在掲載中の開催情報はありません。開催情報の掲載は、上のボタン、またはフッターからお寄せください。")}</div>
-<p class="empty" id="none" hidden>この地域の開催予定は、いまのところありません。</p>
-<script>(function(){var f=document.getElementById('f');if(!f)return;f.addEventListener('change',function(){var n=0;document.querySelectorAll('#list>div').forEach(function(d){var h=!!f.value&&d.dataset.p!==f.value;d.hidden=h;if(!h)n++});document.getElementById('none').hidden=n>0})})()</script>
+<div id="list">${homeList || empty("現在掲載中の開催情報はありません。開催情報の掲載は、下のボタン、またはフッターからお寄せください。")}</div>
+<p class="empty" id="none" hidden>この地方の${laterMonths.length ? "、直近の開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
+${laterLinks}
+<div class="filters"><a class="btn ghost" href="/submit.html">開催情報を投稿する</a></div>
+<script>(function(){var g=document.querySelector('.regions');if(!g)return;g.hidden=false;
+g.addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;var r=b.dataset.r;
+g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
+var n=0;document.querySelectorAll('.mgroup').forEach(function(m){var k=0;m.querySelectorAll('[data-r]').forEach(function(d){var s=r?d.dataset.r===r:!d.classList.contains('ov');d.hidden=!s;if(s)k++});m.hidden=k===0;n+=k;var mo=m.querySelector('.more');if(mo)mo.hidden=!!r});
+document.getElementById('none').hidden=n>0;
+var any=false;document.querySelectorAll('.later a').forEach(function(a){var c=r?(JSON.parse(a.dataset.c)[r]||0):+a.dataset.n;a.querySelector('span').textContent=c+'件';a.hidden=c===0;if(c)any=true});
+var lw=document.querySelector('.laterwrap');if(lw)lw.hidden=!any})})()</script>
 ${regular.length ? `<h2>いつでも観られる定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>` : ""}
-${months.length ? `<h2>月ごとに探す</h2>${monthLinks()}` : ""}
 ${prefs.length ? `<h2>都道府県から探す</h2><div class="taglist">${prefs.map((p) => `<a class="tag" href="/pref/${encodeURIComponent(p)}.html">${esc(p)}</a>`).join("")}</div>` : ""}
 ${kaguras.length ? `<h2>神楽の種類から探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}`,
 }));

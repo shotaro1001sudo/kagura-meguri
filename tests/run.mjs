@@ -16,6 +16,7 @@ import { guideTests } from "./guide.mjs";
 import { organizersTests } from "./organizers.mjs";
 import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
+import { homeTests } from "./home.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -257,7 +258,7 @@ r = build("tests/fixtures/events.empty.json", "dist-test-empty", { REGULAR_FILE:
 ok(r.status === 0, "0件でもビルドできる", r.stderr);
 const e0 = cheerio.load(read("dist-test-empty/index.html"));
 ok(e0("#list").text().includes("現在掲載中の開催情報はありません"), "0件の一覧に案内が出る");
-ok(e0("select#f").length === 0, "0件では都道府県セレクトを出さない");
+ok(e0(".regions").length === 0 && e0(".later").length === 0, "0件では、地方のボタンと月のボタンを出さない");
 ok(read("dist-test-empty/kagura/index.html").includes("まだありません"), "0件の神楽の種類ページに案内が出る");
 r = build("tests/fixtures/events.invalid.json", "dist-test-invalid");
 ok(r.status !== 0 && /データエラー/.test(r.stderr), "不正データではビルドを止める(公開されない)");
@@ -276,6 +277,7 @@ weekendTests({ ok, section, build });
 guideTests({ ok, section, OUT, build });
 organizersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
+homeTests({ ok, section, OUT, build });
 await adminTests({ ok, section });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
