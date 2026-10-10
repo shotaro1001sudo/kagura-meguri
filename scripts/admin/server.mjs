@@ -33,7 +33,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   const state = async () => {
     const box = loadInbox(root);
     const local = loadLocal(root);
-    return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword),
+    return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null) };
   };
 

@@ -252,7 +252,7 @@ function detail(x) {
         ["new", "doing", "done"].map((s) => h("option", { value: s, selected: x.status === s }, S.inboxStatus[s]))) : "",
       x.kind === "submit" && x.status === "new" ? h("button", { class: "btn ghost", onclick: () => upd({ status: "doing" }, "対応中にしました") }, "対応中にする") : "",
       x.kind === "submit" && x.status !== "new" && x.status !== "doing" ? h("button", { class: "btn ghost", onclick: () => upd({ status: "doing" }, "対応中に戻しました") }, "対応中に戻す") : ""),
-    x.email ? h("div", { class: "bar" }, h("span", { class: "mut" }, "返信(メールアプリが開きます):"), replies(x, ev).map(([label, body]) => h("button", { class: "btn ghost small", onclick: () => mail(x, body) }, label))) : "",
+    x.email ? h("div", { class: "bar" }, h("span", { class: "mut" }, S.gmailUser ? "返信(Gmail の作成画面が開きます):" : "返信(メールアプリが開きます):"), replies(x, ev).map(([label, body]) => h("button", { class: "btn ghost small", onclick: () => mail(x, body) }, label))) : "",
     h("h3", null, "メモ(このPCの中だけに保存)"), memo,
     h("div", { class: "bar mt" }, h("button", { class: "btn ghost small", onclick: () => upd({ memo: memo.value }, "メモを保存しました") }, "メモを保存")));
 }
@@ -266,9 +266,15 @@ function replies(x, ev) {
     ["見送りのお知らせ", `開催情報をお寄せいただき、ありがとうございます。公式の情報で内容を確認できなかったため、今回は掲載を見送らせていただきます。公式のページが公開されましたら、あらためてお寄せください。${sign}`],
   ];
 }
+// 返信は Gmail の作成画面で開く(差出人は、Gmail で既定にした編集部アドレス)。Gmail の設定がなければ、メールアプリで開く
 function mail(x, body) {
-  const a = h("a", { href: `mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent("Re: " + x.subject)}&body=${encodeURIComponent(body)}` });
-  a.click();
+  const subject = "Re: " + x.subject;
+  if (S.gmailUser) {
+    const q = new URLSearchParams({ view: "cm", fs: "1", authuser: S.gmailUser, to: x.email, su: subject, body });
+    window.open(`https://mail.google.com/mail/?${q}`, "_blank", "noopener,noreferrer");
+    return;
+  }
+  h("a", { href: `mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` }).click();
 }
 
 // ---------- 起動 ----------

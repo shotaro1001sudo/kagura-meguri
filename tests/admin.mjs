@@ -166,6 +166,7 @@ export async function adminTests({ ok, section }) {
   ok(/^\.admin\/$/m.test(gi) && /^admin\.local\.json$/m.test(gi), "受信した記録(.admin/)と、Gmail の設定(admin.local.json)は、Git に入れない");
   const js = read("scripts/admin/app.js");
   ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write/.test(js), "画面: メールの内容を HTML として扱わない(文字として表示)");
+  ok(js.includes("https://mail.google.com/mail/?${q}`, \"_blank\", \"noopener,noreferrer\")"), "返信: Gmail の作成画面を、元の画面と切り離して開く");
   ok(!/\bstyle:|\.style\b/.test(js), "画面: 埋め込みの style を使わない(CSP で止められるため、クラスで指定する)");
   ok(!existsSync("dist-test/admin") && !read("scripts/build.mjs").includes("scripts/admin"), "管理者用ページは、公開サイトには含めない");
 }
