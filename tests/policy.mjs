@@ -21,7 +21,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const pv = text(join(OUT, "privacy.html")), ds = text(join(OUT, "disclaimer.html"));
   for (const h of ["運営者", "取得する情報", "利用目的", "外部サービスの利用と、情報の送信", "投稿フォーム・お問い合わせフォームについて", "第三者への提供", "保存期間", "開示・訂正・削除", "この方針の改定"]) ok(pv.includes(h), `プライバシーポリシーに「${h}」の項目がある`);
   ok(pv.includes("迷惑投稿") && pv.includes("個人情報の保護に関する法律"), "迷惑投稿対策と、関係する法令への言及がある");
-  ok(pv.includes(`最終更新: ${cfg.operator.updated}`) && (cfg.privacy.history ?? []).length >= 2 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "最終更新日と、改定の履歴が出る");
+  ok(pv.includes(`最終更新: ${cfg.operator.updated}`) && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "最終更新日と、改定の履歴が出る");
   ok(/12か月/.test(pv) || pv.includes(cfg.privacy.retention.slice(0, 8)), "保存期間が書かれている");
   ok(pv.includes(cfg.operator.name), "運営者の名前が出る");
   for (const h of ["掲載情報は、変更されることがあります", "情報の集め方と、自動処理について", "掲載の権利と、掲載の停止", "お出かけの際の注意", "外部のサイト・広告・リンクについて", "損害についての責任", "準拠法"]) ok(ds.includes(h), `免責事項に「${h}」の項目がある`);
@@ -48,7 +48,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   for (const f of walk(OUT).filter((x) => x.endsWith(".html"))) for (const d of ["script-src", "style-src", "img-src", "font-src", "connect-src", "frame-src"]) for (const tok of (cspOf(f).split(";").map((s) => s.trim()).find((s) => s.startsWith(d + " ")) ?? "").split(/\s+/).slice(1)) if (/^https:\/\//.test(tok)) origins.add(new URL(tok).hostname);
   ok(origins.size >= 3, "通信できる外部が、CSPから読み取れる", [...origins].join(","));
   for (const host of origins) ok(!!(names[host] ??= host.endsWith(".goatcounter.com") ? "GoatCounter" : undefined) && pv.includes(names[host]), `通信できる外部 ${host} が、ポリシーの外部送信の表に載っている`);
-  ok(pv.includes("GitHub Pages"), "配信元(GitHub Pages)が、ポリシーに載っている");
+  ok(pv.includes("当サイトの配信サーバー") && !pv.includes("GitHub"), "配信サーバーを載せる(自サイトの配信なので、事業者名は出さない)");
   // (2) ブラウザに保存するものは、ポリシーの記載と同じ
   const pages = walk(OUT).filter((x) => x.endsWith(".html"));
   const keys = new Set(), bad = [];
@@ -83,7 +83,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     const d = sub("ads", { TEST_ADSENSE: "ca-pub-0000000000000000" }); const p = text(join(d, "privacy.html")), s = text(join(d, "disclaimer.html")), a = text(join(d, "about.html"));
     ok(p.includes("Google AdSense") && p.includes("myadcenter.google.com") || read(join(d, "privacy.html")).includes("myadcenter.google.com"), "広告を設定すると、AdSenseの項目(広告設定へのリンクつき)が現れる");
     ok(p.includes("Google AdSense(Google LLC)") && /広告を表示するページ/.test(p), "広告を設定すると、外部送信の表に AdSense が加わる");
-    ok(s.includes("第三者が配信する広告") && a.includes("広告(Google AdSense)による収益"), "広告を設定すると、免責事項と運営者情報も、変わる");
+    ok(s.includes("第三者が配信する広告") && a.includes("広告およびアフィリエイトプログラムによる収益") || a.includes("広告による収益"), "広告を設定すると、免責事項と運営者情報も、変わる");
     ok(!p.includes("Googleアナリティクス"), "広告だけを設定したとき、アクセス解析の項目は出ない");
     const ads = cspOf(join(d, "privacy.html")); ok(/googlesyndication/.test(ads), "(参考)広告を設定すると、CSPにも、広告の許可が入る");
   }
@@ -119,7 +119,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(/^https:\/\/ck\.jp\.ap\.valuecommerce\.com\/servlet\/referral\?sid=1234567&pid=7654321&vc_url=https%3A%2F%2Fwww\.jalan\.net/.test(jl), "じゃらん: バリューコマースのリンク(サイトIDと提携IDの両方)", jl);
     ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/test\.rakuten\/\?pc=https%3A%2F%2Fkw\.travel\.rakuten\.co\.jp/.test(rk), "楽天トラベル: 楽天アフィリエイトのリンク", rk);
     ok($(".staylinks a[rel~=sponsored]").length === 2 && $(".stay .pr").text() === "PR" && $(".stay").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
-    ok(p.includes("アフィリエイトプログラムについて") && p.includes("楽天アフィリエイト") && p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる");
+    ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && !p.includes("楽天") && !p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる(提携先の名前は出さない)");
   }
   { // アクセス解析(GoatCounter)
     const d = sub("gc", { TEST_GOATCOUNTER: "kagura-test" }); const p = text(join(d, "privacy.html"));

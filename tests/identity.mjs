@@ -33,7 +33,7 @@ export function identityTests({ ok, section, OUT, build }) {
   const about = cheerio.load(read(join(OUT, "about.html")));
   ok(about("main").text().includes("神楽日和編集部") && about('.symbol img[src="/symbol.png"]').attr("alt") === "神楽日和編集部のシンボル", "運営者情報に、名前とシンボル(代替テキストつき)");
   const pv = read(join(OUT, "privacy.html"));
-  ok(pv.includes("運営者: 神楽日和編集部") && pv.includes("運営者の氏名・住所は、ご請求があれば、遅滞なくお知らせします"), "プライバシーポリシー: 運営者名と、氏名・住所は請求に応じて知らせる旨");
+  ok(pv.includes("運営者: 神楽日和編集部") && pv.includes("保有する個人データのご本人から求めがあった場合は、個人情報保護法に基づき、運営者の氏名と住所を、遅滞なくお知らせします") && !pv.includes("ご請求があれば"), "プライバシーポリシー: 運営者名と、氏名・住所は「保有個人データのご本人」から求めがあったときだけ知らせる旨(個人情報保護法32条)");
 
   section("背景の文様(青海波)");
   const css = home("style").text();
