@@ -33,6 +33,13 @@ export function homeTests({ ok, section, OUT, build }) {
   ok(visible().length === 4 && d.querySelector(".later a span").textContent === "2件" && d.querySelector(".regions button[aria-pressed=true]").textContent === "全国", "全国に戻すと、元の表示になる");
   dom.window.close();
 
+  section("検索向け: タイトルの年・開催の構造化データ");
+  const titleOf = (p) => cheerio.load(read(join(OUT, p)))("title").text();
+  ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島県の神楽 日程【2026年】"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));
+  const ldOf = (id) => { const $e = cheerio.load(read(join(OUT, `events/${id}.html`))); return $e('script[type="application/ld+json"]').map((_, s) => JSON.parse($e(s).text())).get().flat().find((x) => x["@type"] === "Event"); };
+  const full = ldOf("t-full"), xss = ldOf("t-xss");
+  ok(full.offers?.price === "1000" && full.offers.priceCurrency === "JPY" && xss.offers?.price === "500", "料金に金額があれば、構造化データの価格にする(最初の金額)", JSON.stringify([full.offers, xss.offers]));
+
   // 1か月の開催が多いとき: 10件までを出し、残りは月のページへ(地方で絞ったときは全部)
   const base = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.prefecture === "広島県");
   const many = Array.from({ length: 13 }, (_, i) => ({ ...base, id: `t-many-${i}`, name: `多い月の神楽${i}`, start: `2026-10-${String(12 + i).padStart(2, "0")}T18:00`, end: undefined, prefecture: i < 12 ? "広島県" : "宮崎県", lat: undefined, lng: undefined }));

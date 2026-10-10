@@ -438,13 +438,15 @@ write("dist/kagura/index.html", layout({
     .map((k) => `<div class="card"><div><h3><a href="/kagura/${encodeURIComponent(k)}.html">${esc(k)}</a></h3><div class="meta">開催予定 ${upcoming.filter((e) => e.kagura === k).length} 件 ・ 定期公演 ${regular.filter((r) => r.kagura === k).length} 件</div>${kaguraInfo[k] ? `<p class="meta">${esc(clip(kaguraInfo[k].intro, 70))}</p>` : ""}</div></div>`)
     .join("") || empty("掲載中の神楽の種類は、まだありません。")}${adSlot(cfg.adsense.slotList)}`,
 }));
+// タイトルに入れる年(「◯◯神楽 2026」のような検索に合わせる)。これからの開催の年の範囲。なければ今年
+const yearsOf = (list) => { const ys = [...new Set(list.map((e) => e.start.slice(0, 4)))].sort(); const y = ys.length ? ys : [nowJst.slice(0, 4)]; return y.length > 1 ? `${y[0]}〜${y[y.length - 1]}年` : `${y[0]}年`; };
 for (const k of kaguras) {
   const list = upcoming.filter((e) => e.kagura === k), reg = regular.filter((r) => r.kagura === k);
   const first = [...events, ...regular].find((e) => e.kagura === k);
   const info = kaguraInfo[k];
   const when = list.length ? `${monthLabel(ym(list[0].start))}〜${monthLabel(ym(list[list.length - 1].start))}の開催${list.length}件` : "";
   write(`dist/kagura/${k}.html`, layout({
-    title: `${k}の日程・開催情報${list.length ? "(" + list[0].start.slice(0, 4) + "年〜)" : ""} | ${cfg.siteName}`,
+    title: `${k}の日程【${yearsOf(list)}】公演・開催情報 | ${cfg.siteName}`,
     desc: clip(`${k}の公演日程・会場・料金をまとめています。${when ? when + "、" : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`),
     path: `/kagura/${encodeURIComponent(k)}.html`, active: "/kagura/", noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], ["神楽の種類", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
@@ -460,7 +462,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
   const list = events.filter((e) => e.prefecture === p && isUpcoming(e)), reg = regular.filter((r) => r.prefecture === p);
   const kinds = [...new Set([...list, ...reg].map((x) => x.kagura).filter(Boolean))];
   write(`dist/pref/${p}.html`, layout({
-    title: `${p}の神楽 開催日程・会場一覧 | ${cfg.siteName}`,
+    title: `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
     desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "これからの開催" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日つきで掲載しています。`),
     path: `/pref/${encodeURIComponent(p)}.html`, noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
@@ -505,13 +507,13 @@ for (const e of events) {
     "@context": "https://schema.org", "@type": "Event", name: e.name,
     startDate: e.timeUnknown ? e.start.slice(0, 10) : e.start + JST,
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode", eventStatus: "https://schema.org/EventScheduled",
-    location: { "@type": "Place", name: e.venue || `${e.prefecture}${e.city}`, address: { "@type": "PostalAddress", addressRegion: e.prefecture, addressLocality: e.city, addressCountry: "JP" } },
+    location: { "@type": "Place", name: e.venue || `${e.prefecture}${e.city}`, address: { "@type": "PostalAddress", addressRegion: e.prefecture, addressLocality: e.city, ...(e.address ? { streetAddress: e.address } : {}), addressCountry: "JP" } },
     url: `${cfg.baseUrl}/events/${e.id}.html`,
   };
   if (e.end) ld.endDate = e.timeUnknown ? e.end.slice(0, 10) : e.end + JST;
   ld.image = [OG_URL];
   if (e.description) ld.description = e.description;
-  if (e.fee) ld.offers = { "@type": "Offer", description: e.fee, url: e.url || `${cfg.baseUrl}/events/${e.id}.html`, availability: "https://schema.org/InStock", ...(/無料/.test(e.fee) && !/円/.test(e.fee) ? { price: "0", priceCurrency: "JPY" } : {}) };
+  if (e.fee) ld.offers = { "@type": "Offer", description: e.fee, url: e.url || `${cfg.baseUrl}/events/${e.id}.html`, availability: "https://schema.org/InStock", ...(/無料/.test(e.fee) && !/円/.test(e.fee) ? { price: "0", priceCurrency: "JPY" } : /[\d,]+円/.test(e.fee) ? { price: e.fee.match(/([\d,]+)円/)[1].replace(/,/g, ""), priceCurrency: "JPY" } : {}) }; // 金額があれば、最初の金額(一般・大人の料金)を価格にする
   if (/無料/.test(e.fee ?? "") && !/円/.test(e.fee ?? "")) ld.isAccessibleForFree = true;
   if (e.lat != null) ld.location.geo = { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng };
   const q = encodeURIComponent(`${e.venue} ${e.prefecture}${e.city}`.trim());
