@@ -17,6 +17,7 @@ const EVENTS_FILE = process.env.EVENTS_FILE ?? "data/events.json";
 const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
+if (process.env.TEST_ADS_OFF) cfg.adsense = { client: "", slotList: "", slotDetail: "" }; // テスト用(広告未設定の状態から確かめる)
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
 if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", providerName: "" }, cfg.operator = { ...cfg.operator, contact: process.env.TEST_CONTACT ?? "" }; // テスト: 送信先が未設定の状態
 if (process.env.TEST_FORM_ENDPOINT) cfg.form ={ ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };

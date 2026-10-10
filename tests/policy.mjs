@@ -73,7 +73,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(encodeSjisURI("安芸高田市") === "%88%C0%8C%7C%8D%82%93%63%8E%73" && encodeSjisURI("ｶｸﾞﾗ a") === "%B6%B8%DE%D7%20a", "Shift_JIS のエンコード(漢字・半角カナ・英数字)");
   const pf = cheerio.load(read(join(OUT, "pref", "広島県.html")));
   ok(pf(".afflist a[href]").length === 2 && pf(".afflist a[rel~=sponsored]").length === 0 && !pf(".aff").text().includes("Amazon"), "未設定の間は、旅支度は宿の2つだけ(通販のリンクは、提携してから出す)");
-  ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !pv.includes("Google AdSense") && !pv.includes("Googleアナリティクス") && !pv.includes("アフィリエイトプログラムに参加"), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
+  ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !["広告の配信について", "Google AdSense(", "Googleアナリティクス", "アフィリエイトプログラムに参加"].some((w) => pv.split("改定の履歴")[0].includes(w)), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
   ok(text(join(OUT, "about.html")).includes("収益を、得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
 
@@ -102,12 +102,14 @@ export async function policyTests({ ok, section, OUT, build }) {
   }
   { // 本番の設定: 楽天アフィリエイトが有効(宿の楽天リンクだけが報酬つき。じゃらんは提携前なので、ふつうのリンク)
     const prodCfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
-    const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
+    const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_ADS_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     const [jl, rk] = $(".staylinks a").get();
     ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && !/sponsored/.test($(jl).attr("rel") ?? "") && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)、じゃらんは提携前なので、ふつうのリンク");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
+    const pub = prodCfg.adsense.client;
+    ok(/^ca-pub-\d{16}$/.test(pub) && read(join(d, "index.html")).includes(`adsbygoogle.js?client=${pub}`) && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense のコード・ads.txt・ポリシーの広告の項目がそろう(審査の準備)");
   }
   { // 宿のアフィリエイト(楽天・バリューコマース)
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
