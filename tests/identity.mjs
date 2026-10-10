@@ -22,6 +22,14 @@ export function identityTests({ ok, section, OUT, build }) {
   const ld = (q) => q('script[type="application/ld+json"]').map((_, s) => JSON.parse(q(s).text())).get().flat();
   const pub = ld(home).find((x) => x["@type"] === "WebSite")?.publisher;
   ok(pub?.name === "神楽日和編集部" && pub.logo?.url === `${cfg.baseUrl}/symbol.png` && pub.logo.width === 330, "構造化データ: 運営者として、名前とロゴ(シンボル)を示す");
+  // 検索結果の見た目: サイト名(ドメイン名でなく「神楽めぐり」)・ファビコン・題と説明
+  const site = ld(home).find((x) => x["@type"] === "WebSite");
+  ok(site?.name === cfg.siteName && site.url === `${cfg.baseUrl}/` && site.alternateName?.includes("かぐらめぐり"), "サイト名: トップの構造化データに、名前・別名・URL(検索結果にサイト名を出す)");
+  const ico = existsSync(join(OUT, "favicon.ico")) ? readFileSync(join(OUT, "favicon.ico")) : Buffer.alloc(0);
+  ok(ico.length > 22 && ico.readUInt16LE(2) === 1 && ico[6] === 48 && ico.subarray(22, 26).toString("latin1") === "\x89PNG", "/favicon.ico がある(48px。検索エンジンが直接見に行く)");
+  ok(home('link[rel="icon"][sizes="96x96"]').attr("href") === "/symbol-96.png", "48の倍数の大きさのアイコン(48px・96px)を示す");
+  const ht = home("title").text(), hd = home('meta[name="description"]').attr("content");
+  ok(/日程/.test(ht) && /今週末/.test(ht) && ht.endsWith(cfg.siteName) && hd.startsWith("今週末、どこで神楽が観られる？"), "トップの題と説明: 「神楽 日程」「神楽 今週末」で探す人に向けた言葉", `${ht} / ${hd}`);
   const about = cheerio.load(read(join(OUT, "about.html")));
   ok(about("main").text().includes("神楽日和編集部") && about('.symbol img[src="/symbol.png"]').attr("alt") === "神楽日和編集部のシンボル", "運営者情報に、名前とシンボル(代替テキストつき)");
   const pv = read(join(OUT, "privacy.html"));
