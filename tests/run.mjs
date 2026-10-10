@@ -20,7 +20,7 @@ import { homeTests } from "./home.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_GOATCOUNTER: "", ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];

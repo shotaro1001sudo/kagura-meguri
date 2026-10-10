@@ -43,11 +43,11 @@ export async function policyTests({ ok, section, OUT, build }) {
 
   section("ポリシー: 実際の動作との一致");
   // (1) 通信できる外部は、すべてポリシーに載っている
-  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms" };
+  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms", "gc.zgo.at": "GoatCounter" };
   const origins = new Set();
   for (const f of walk(OUT).filter((x) => x.endsWith(".html"))) for (const d of ["script-src", "style-src", "img-src", "font-src", "connect-src", "frame-src"]) for (const tok of (cspOf(f).split(";").map((s) => s.trim()).find((s) => s.startsWith(d + " ")) ?? "").split(/\s+/).slice(1)) if (/^https:\/\//.test(tok)) origins.add(new URL(tok).hostname);
   ok(origins.size >= 3, "通信できる外部が、CSPから読み取れる", [...origins].join(","));
-  for (const host of origins) ok(!!names[host] && pv.includes(names[host]), `通信できる外部 ${host} が、ポリシーの外部送信の表に載っている`);
+  for (const host of origins) ok(!!(names[host] ??= host.endsWith(".goatcounter.com") ? "GoatCounter" : undefined) && pv.includes(names[host]), `通信できる外部 ${host} が、ポリシーの外部送信の表に載っている`);
   ok(pv.includes("GitHub Pages"), "配信元(GitHub Pages)が、ポリシーに載っている");
   // (2) ブラウザに保存するものは、ポリシーの記載と同じ
   const pages = walk(OUT).filter((x) => x.endsWith(".html"));
@@ -101,11 +101,13 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok($(".staylinks a[rel~=sponsored]").length === 0, "宿の ID が未設定なら、宿のリンクには sponsored を付けない(Amazon だけ設定したとき)");
   }
   { // 本番の設定: 楽天アフィリエイトが有効(宿の楽天リンクだけが報酬つき。じゃらんは提携前なので、ふつうのリンク)
-    const d = sub("prod-aff", { TEST_AFF_OFF: "" }); const p = text(join(d, "privacy.html"));
+    const prodCfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
+    const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     const [jl, rk] = $(".staylinks a").get();
     ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && !/sponsored/.test($(jl).attr("rel") ?? "") && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)、じゃらんは提携前なので、ふつうのリンク");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
+    ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
   }
   { // 宿のアフィリエイト(楽天・バリューコマース)
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
