@@ -44,11 +44,19 @@ for (const s of sources) {
   try {
     const robots = await robotsAllows(s.url, UA);
     if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; continue; }
-    const res = await fetch(s.url, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
-    if (!res.ok) { lines.push(`- ❌ ${s.id}: HTTP ${res.status}(この収集元は、今回、変更していません)`); errors++; continue; }
-    const body = await res.text();
     const adapter = await import(pathToFileURL(`${process.cwd()}/scripts/adapters/${s.adapter}.mjs`).href);
-    const items = adapter.parse(body, s);
+    // 読むページ: アダプタが月ごとなどの複数のページを示せば、それをすべて(間隔をあけて)読む。1つでも失敗したら、この収集元は変更しない
+    const pages = adapter.urls ? adapter.urls(s, now) : [s.url];
+    const items = [];
+    for (const [i, pageUrl] of pages.entries()) {
+      if (i) await sleep(DELAY_MS);
+      const res = await fetch(pageUrl, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}(${pageUrl})`);
+      const body = adapter.decode ? adapter.decode(new Uint8Array(await res.arrayBuffer())) : await res.text();
+      const got = adapter.parse(body, s, pageUrl);
+      items.push(...got);
+      if (got.skippedPeriod) items.skippedPeriod = (items.skippedPeriod ?? 0) + got.skippedPeriod;
+    }
     const r = reconcile({ events, candidates: items, source: s, now, rejectedIds, cfg: ccfg });
     events = r.events;
     published.push(...r.summary.published); held.push(...r.summary.held); withdrawn.push(...r.summary.withdrawn);

@@ -26,11 +26,14 @@ export const today = (now) => new Date(now.getTime() + 9 * 3600e3).toISOString()
 
 // 名称のゆれ(空白・全角半角・記号・「第54回」の空白など)をそろえる
 export const normName = (s) => String(s ?? "").normalize("NFKC").toLowerCase().replace(/[\s　・、。,.()\[\]{}「」『』〈〉《》<>~〜～\-‐ー_／/:：!！?？"'“”]/g, "");
-/** 同じ開催か: 同じ都道府県・同じ日・名称が(ゆれを除いて)同じ、または、一方がもう一方を含む(4字以上) */
+/** 同じ開催か: 同じ都道府県・同じ日で、名称が(ゆれを除いて)同じ、一方がもう一方を含む(4字以上)、または、先頭の12字以上が同じ */
 export function sameEvent(a, b) {
   if (a.prefecture !== b.prefecture || String(a.start).slice(0, 10) !== String(b.start).slice(0, 10)) return false;
   const x = normName(a.name), y = normName(b.name);
-  return x === y || (Math.min(x.length, y.length) >= 4 && (x.includes(y) || y.includes(x)));
+  if (x === y || (Math.min(x.length, y.length) >= 4 && (x.includes(y) || y.includes(x)))) return true;
+  // 名称の前半が十分に同じ(例: 「道の駅舞ロードIC千代田「神楽の日」(11月)」と「…「神楽の日」大塚神楽団」)
+  let n = 0; while (n < x.length && x[n] === y[n]) n++;
+  return n >= 12;
 }
 
 /** 1件の候補の検査。理由の配列を返す(空なら、合格) */
@@ -64,7 +67,7 @@ const nameHint = (s) => { try { return s.nameHint ? new RegExp(s.nameHint) : nul
 
 /** 候補(取得したもの)から、掲載・保留・取り下げを決める。events は、変更しない(新しい配列を返す) */
 export function reconcile({ events, candidates, source, now, rejectedIds = new Set(), cfg = {} }) {
-  const c = { ...DEFAULTS, ...cfg };
+  const c = { ...DEFAULTS, ...cfg, ...(source.maxNewPerSource ? { maxNewPerSource: source.maxNewPerSource } : {}) }; // 月ごとの日程表など、件数の多い収集元は、上限を個別に指定できる
   const day = today(now), stamp = day;
   const out = events.map((e) => ({ ...e }));
   const sum = { fetched: candidates.length, published: [], held: [], withdrawn: [], unchanged: 0, duplicates: 0, rejected: 0, past: 0, notes: [] };
@@ -76,9 +79,9 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
   for (const it of candidates) {
     const ev = {
       id: `${source.id}-${hash(clean(it.name), it.start)}`,
-      name: clean(it.name), kagura: source.kagura || "", prefecture: it.prefecture || source.prefecture || "", city: it.city || "", venue: it.venue || "",
+      name: clean(it.name), kagura: it.kagura || source.kagura || "", prefecture: it.prefecture || source.prefecture || "", city: it.city || "", venue: it.venue || "",
       ...(it.address ? { address: it.address } : {}), start: it.start, ...(it.end ? { end: it.end } : {}), ...(it.timeUnknown ? { timeUnknown: true } : {}),
-      fee: "", url: it.url || source.url, description: "",
+      fee: clean(it.fee ?? "").slice(0, 80), url: it.url || source.url, description: "",
     };
     candIds.add(ev.id);
     cands.push(ev);
