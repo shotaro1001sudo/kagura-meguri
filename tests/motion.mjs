@@ -124,7 +124,7 @@ export async function motionTests({ ok, section, OUT }) {
     ok(t.h.classList.contains("js") && !t.h.classList.contains("intro"), "トップ以外のページでは、導入演出を出さない");
     ok(t.ios.every((io) => io.els.length !== 1 || !io.els[0].classList.contains("home-hero")), "ヒーローがないページでは、視差の観察をしない");
   }
-  for (const [p, path] of [["privacy.html", "/privacy.html"], ["about.html", "/about.html"], ["about.html", "/about"], ["privacy.html", "/privacy"]]) { // 読むための文書(プライバシーポリシー・運営者情報)は、動かさない(.html なしの URL でも)
+  for (const [p, path] of [["about.html", "/about.html"], ["about.html", "/about"], ["contact.html", "/contact.html"], ["privacy.html", "/privacy.html"], ["privacy.html", "/privacy"], ["terms.html", "/terms.html"], ["disclaimer.html", "/disclaimer.html"]]) { // 読むための文書(プライバシーポリシー・運営者情報)は、動かさない(.html なしの URL でも)
     const t = await run(p, { path });
     ok(!t.h.classList.contains("js") && t.ios.length === 0, `${path}: 動き(出現・視差)を付けない`);
   }
