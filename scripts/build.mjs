@@ -192,7 +192,9 @@ const lf = (s) => s.replace(/\r\n?/g, "\n");
 const motionCss = lf(readFileSync("scripts/motion.css", "utf8")).replaceAll("%%SEL%%", REVEAL_SEL) + "\n" + sparkCss;
 const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8")).replace("%%SEL_JSON%%", JSON.stringify(REVEAL_SEL));
 // 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
-const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
+// 動きを付けないページ(規約・運営者情報など、読むための文書)。js クラスを付けないので、出現・視差などの動きがすべて止まる
+const STILL_PAGES = ["/privacy.html", "/about.html"];
+const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;if(${JSON.stringify(STILL_PAGES)}.indexOf(location.pathname)>=0)return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;

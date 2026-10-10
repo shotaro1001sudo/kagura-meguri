@@ -74,6 +74,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const pf = cheerio.load(read(join(OUT, "pref", "広島県.html")));
   ok(pf(".afflist a[href]").length === 2 && pf(".afflist a[rel~=sponsored]").length === 0 && !pf(".aff").text().includes("Amazon"), "未設定の間は、旅支度は宿の2つだけ(通販のリンクは、提携してから出す)");
   ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !["広告の配信について", "Google AdSense(", "Googleアナリティクス", "アフィリエイトプログラムに参加"].some((w) => pv.split("改定の履歴")[0].includes(w)), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
+  ok(!pv.includes("専門家") && !ds.includes("専門家"), "プライバシーポリシー・免責事項に、運営者向けの注意書き(専門家の確認のすすめ)を載せない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
   ok(text(join(OUT, "about.html")).includes("収益を、得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
 

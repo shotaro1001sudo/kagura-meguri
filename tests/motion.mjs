@@ -124,6 +124,10 @@ export async function motionTests({ ok, section, OUT }) {
     ok(t.h.classList.contains("js") && !t.h.classList.contains("intro"), "トップ以外のページでは、導入演出を出さない");
     ok(t.ios.every((io) => io.els.length !== 1 || !io.els[0].classList.contains("home-hero")), "ヒーローがないページでは、視差の観察をしない");
   }
+  for (const p of ["privacy.html", "about.html"]) { // 読むための文書(プライバシーポリシー・運営者情報)は、動かさない
+    const t = await run(p, { path: `/${p}` });
+    ok(!t.h.classList.contains("js") && t.ios.length === 0, `${p}: 動き(出現・視差)を付けない`);
+  }
   { // D. 動きを減らす設定
     const t = await run("index.html", { reduced: true });
     ok(!t.h.classList.contains("js") && !t.h.classList.contains("intro"), "「動きを減らす」設定: js も intro も付かない");
