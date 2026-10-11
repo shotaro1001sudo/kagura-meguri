@@ -6,7 +6,7 @@ import { JSDOM } from "jsdom";
 
 const read = (p) => readFileSync(p, "utf8");
 
-export function homeTests({ ok, section, OUT, build }) {
+export async function homeTests({ ok, section, OUT, build }) {
   section("トップ: これからの神楽(月ごと・地方の絞り込み)");
   const html = read(join(OUT, "index.html"));
   const $ = cheerio.load(html);
@@ -36,11 +36,25 @@ export function homeTests({ ok, section, OUT, build }) {
 
   section("メインメニュー(探し方で並べる)");
   const navOf = (p) => { const q = cheerio.load(read(join(OUT, p))); return q(".top nav a").map((_, a) => ({ t: q(a).text(), h: q(a).attr("href"), c: q(a).attr("aria-current") })).get(); };
-  ok(navOf("index.html").map((x) => x.t).join() === "開催予定,日付で探す,地図で探す,種類で探す,はじめての神楽,主催者の方へ", "メニューは「開催予定・日付で探す・地図で探す・種類で探す・はじめての神楽・主催者の方へ」");
+  ok(navOf("index.html").map((x) => x.t).join() === "開催予定,日付・場所で探す,地図で探す,種類で探す,はじめての神楽,主催者の方へ", "メニューは「開催予定・日付・場所で探す・地図で探す・種類で探す・はじめての神楽・主催者の方へ」");
   const cur = (p) => navOf(p).filter((x) => x.c).map((x) => `${x.t}:${x.c}`).join();
-  ok(cur("index.html") === "開催予定:page" && cur("organizers.html") === "主催者の方へ:page" && cur("submit.html") === "主催者の方へ:true" && cur("calendar.html") === "日付で探す:page" && cur("weekend.html") === "日付で探す:true" && cur("this-month.html") === "日付で探す:true" && cur("month/2026-11.html") === "日付で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "はじめての神楽:page", "今いる場所: そのページなら page、日付の各ページでは「日付で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
+  ok(cur("index.html") === "開催予定:page" && cur("organizers.html") === "主催者の方へ:page" && cur("submit.html") === "主催者の方へ:true" && cur("calendar.html") === "日付・場所で探す:page" && cur("weekend.html") === "日付・場所で探す:true" && cur("this-month.html") === "日付・場所で探す:true" && cur("month/2026-11.html") === "日付・場所で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "はじめての神楽:page", "今いる場所: そのページなら page、日付の各ページでは「日付・場所で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
   const cal = cheerio.load(read(join(OUT, "calendar.html")));
-  ok(cal('.datenav a[href="/weekend.html"]').length === 1 && cal('.datenav a[href="/this-month.html"]').length === 1, "「日付で探す」(カレンダー)のページの上に、今週末・今月への入口");
+  ok(cal("#finder").attr("hidden") !== undefined && cal('#finder [data-w]').map((_, b) => cal(b).text()).get().join() === "すべて,今週末,今月,来月,日付を指定" && cal("#region option").first().text() === "全国" && cal("#pref option[data-r]").length > 0 && cal("#cal").length === 0, "「日付・場所で探す」: いつ(すべて・今週末・今月・来月・日付を指定)と、どこ(地方・都道府県)で探す。JS が動くときだけ出す");
+  {
+    const evJson = read(join(OUT, "events.json"));
+    const fd = new JSDOM(read(join(OUT, "calendar.html")), { runScripts: "dangerously", url: "https://kagurameguri.jp/calendar.html?when=range&from=2026-10-01&to=2026-11-30&pref=%E5%BA%83%E5%B3%B6%E7%9C%8C", beforeParse(w) { w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(evJson)) }); } });
+    await new Promise((r) => setTimeout(r, 30));
+    const D = fd.window.document, items = () => [...D.querySelectorAll("#results li")].map((li) => li.querySelector(".meta").textContent);
+    const all = JSON.parse(evJson).filter((x) => x.up);
+    const exp = all.filter((x) => x.prefecture === "広島県" && (x.end || x.start).slice(0, 10) >= "2026-10-01" && x.start.slice(0, 10) <= "2026-11-30").length;
+    ok(!D.getElementById("finder").hidden && D.getElementById("range").hidden === false && D.getElementById("region").value === "中国" && items().length === exp && exp > 0 && items().every((t) => t.includes("広島県")) && D.getElementById("count").textContent === `当てはまる開催 ${exp}件`, "URL の条件(期間・県)を戻し、当てはまる開催と件数を出す。県を選ぶと地方も合わせる", `${items().length}/${exp}`);
+    const rg = D.getElementById("region"); rg.value = "九州・沖縄"; rg.dispatchEvent(new fd.window.Event("change"));
+    ok(D.getElementById("pref").value === "" && [...D.querySelectorAll("#pref option[data-r]")].every((o) => o.hidden === (o.dataset.r !== "九州・沖縄")) && items().every((t) => !t.includes("広島県")) && /region=/.test(fd.window.location.search) && !/pref=/.test(fd.window.location.search), "地方を変えると、都道府県の選択肢をその地方だけにし、条件を URL に残す", fd.window.location.search);
+    [...D.querySelectorAll("[data-w]")].find((b) => b.dataset.w === "all").click(); rg.value = ""; rg.dispatchEvent(new fd.window.Event("change"));
+    ok(items().length === all.length && D.getElementById("range").hidden && fd.window.location.search === "", "「すべて」「全国」に戻すと、開催予定がすべて出る");
+    fd.window.close();
+  }
   ok($("#menubtn").attr("hidden") !== undefined && $("#menubtn").attr("aria-controls") === "gnav" && $("#gnav").length === 1, "スマホのメニューのボタン: JS が動くときだけ出す(JS がなければ、メニューは常に見える)");
   const dm = new JSDOM(html, { runScripts: "dangerously" });
   const dd = dm.window.document, btn = dd.getElementById("menubtn"), nav = dd.getElementById("gnav");

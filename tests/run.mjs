@@ -278,7 +278,7 @@ weekendTests({ ok, section, build });
 guideTests({ ok, section, OUT, build });
 organizersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
-homeTests({ ok, section, OUT, build });
+await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });
 await adminTests({ ok, section });
 

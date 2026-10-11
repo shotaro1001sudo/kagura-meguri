@@ -1,14 +1,14 @@
-/* 動き: 出現(スクロール連動)・視差・ホバー・導入演出。
+/* 動き: ページの出現・視差・ホバー・導入演出。
    方針: ①JavaScriptが動かなくても、内容は全部見える(.js クラスがあるときだけ、隠す)
          ②OSの「視差効果を減らす」では、すべて止める(.js / .intro クラスを付けない)
          ③動かすのは transform 系だけ(レイアウトを動かさない = 表示のずれ CLS を起こさない)
          ④静かでゆったり: 加速の付け方は --ease の1種類。速さは --t-s(ホバー・状態)/ --t-m(出現)/ --t-l(演出)の3段階。
            弾む・拡大する・浮き上がる動きは使わない。ホバーは「色が変わる・朱の線が入る」だけ */
 
-/* ---------- 1. スクロールで、ふわっと現れる(見出しと、カード・ブロックの単位。全ページ共通) ---------- */
-.js :is(%%SEL%%){opacity:0;translate:0 12px;transition:opacity var(--t-m) var(--ease),translate var(--t-m) var(--ease),background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
-.js :is(%%SEL%%).in{opacity:1;translate:none}
-@media print{.js :is(%%SEL%%){opacity:1!important;translate:none!important}}
+/* ---------- 1. ページを開いたとき: 本文全体が、1回だけ、静かに現れる(全ページ共通。部分ごと・スクロールごとには動かさない) ---------- */
+@keyframes pagein{from{opacity:0;translate:0 8px}to{opacity:1;translate:none}}
+.js main{animation:pagein var(--t-m) var(--ease) both}
+@media print{.js main{animation:none}}
 
 /* ---------- 2. 視差(パララックス): 背景の層は、ゆっくり。手前は、普通に ---------- */
 .home-hero:before{content:"";position:absolute;inset:-40px -12% auto;height:380px;pointer-events:none;
@@ -37,21 +37,15 @@
 .sparks.off i{animation-play-state:paused}
 
 /* ---------- 4. 開いた瞬間の演出(そのセッションの最初の、トップページだけ) ----------
-   一つの流れ: 情景(地 → 月が昇る → 霞が流れ込む)と同時に、ヘッダー → 見出し → 説明 → 一覧の順に、静かに現れる */
+   情景(地 → 月が昇る → 霞が流れ込む)とヘッダーが現れる。本文は、ほかのページと同じ「1. ページの出現」で現れる */
 @keyframes fadein{from{opacity:0}to{opacity:1}}
-@keyframes rise{from{opacity:0;translate:0 12px}to{opacity:1;translate:none}}
 @keyframes moonrise{from{transform:translateY(38px);opacity:0}to{transform:none;opacity:1}}
 @keyframes kasumiin{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
-/* 見出しは、最大のコンテンツ(LCP)になる。透明から現すと、表示が遅れ、検索の評価にも響くため、位置の動きだけにする */
-@keyframes slide{from{translate:0 12px}to{translate:none}}
 .intro .ms-land{animation:fadein var(--t-l) var(--ease) both}
 .intro .ms-sky{animation:moonrise var(--t-l) .2s var(--ease) both}
 .intro .ms-kasumi{animation:kasumiin var(--t-l) .8s var(--ease) both}
 .intro .top .logo,.intro .top nav{animation:fadein var(--t-m) .1s var(--ease) both}
-.intro .home-hero h1{animation:slide var(--t-m) .2s var(--ease) both}
-.intro .home-hero .copy p{animation:rise var(--t-m) .45s var(--ease) both}
 .intro .vert{animation:fadein var(--t-l) .6s var(--ease) both}
-.intro .quick,.intro .regions,.intro #list{animation:fadein var(--t-m) .7s var(--ease) both}
 
 /* ---------- 5. ホバー: 色が変わる・朱の線が入る(浮き上がり・拡大はしない) ---------- */
 .btn{transition:background-color var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
@@ -75,5 +69,4 @@
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .sparks{display:none!important}
-  .js :is(%%SEL%%){opacity:1!important;translate:none!important}
 }

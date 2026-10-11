@@ -5,13 +5,13 @@
 /** @param {{ esc: (s:string)=>string, siteName: string, formReady: boolean }} x */
 export function organizersHtml({ esc, siteName, formReady }) {
   return `
-<p>${esc(siteName)}は、全国の神楽の開催情報を、一覧・地図・カレンダーで探せるサイトです。神楽の主催者、神社・保存会、神楽団、自治体・観光協会の皆さまからの開催情報を、<strong>無料で掲載</strong>しています。観に来る方に、公演を見つけてもらう入口として、ご活用ください。</p>
+<p>${esc(siteName)}は、全国の神楽の開催情報を、一覧・地図・日付と場所の検索で探せるサイトです。神楽の主催者、神社・保存会、神楽団、自治体・観光協会の皆さまからの開催情報を、<strong>無料で掲載</strong>しています。観に来る方に、公演を見つけてもらう入口として、ご活用ください。</p>
 <p><a class="btn" href="/submit.html">開催情報を送る(無料)</a> <a class="btn ghost" href="/contact.html">お問い合わせ</a></p>
 
 <h2>掲載すると、ここに載ります</h2>
 <ul>
 <li><strong>開催ごとのページ</strong>: 日時・会場・料金と、公式情報へのリンク。会場の地図、経路の検索、スマホのカレンダーへの登録ボタンが付きます。</li>
-<li><strong>一覧・地図・カレンダー</strong>: トップの一覧、<a href="/map.html">地図</a>、<a href="/calendar.html">カレンダー</a>に表示されます。</li>
+<li><strong>一覧・地図・検索</strong>: トップの一覧、<a href="/map.html">地図</a>、<a href="/calendar.html">日付・場所で探す</a>に表示されます。</li>
 <li><strong>日付・地域・種類から探すページ</strong>: <a href="/weekend.html">今週末の神楽</a>、<a href="/this-month.html">今月の神楽</a>、月別・都道府県別・<a href="/kagura/">神楽の種類別</a>のページに、自動で載ります。</li>
 <li><strong>検索エンジン向けの情報</strong>: 開催ページには、検索エンジンが「イベント」として読み取れる形式(構造化データ)で、日時・会場を書き込んでいます。</li>
 <li><strong>新着の配信</strong>: <a href="/calendar.html">Googleカレンダーで購読できる日程</a>と、新着情報のフィードにも、載ります。</li>

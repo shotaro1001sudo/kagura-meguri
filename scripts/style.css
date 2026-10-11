@@ -119,16 +119,20 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .leaflet-popup-content-wrapper{border-radius:2px;background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
 
 /* カレンダー */
-.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 16px}.calhead h2{margin:0;font-size:1.3rem}.calhead h2:after{display:none}
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line)}
-.cal .h{text-align:center;font-size:.78rem;color:var(--mut);padding:6px 0;border-right:1px solid var(--line);letter-spacing:.2em}
-.cal .d{min-height:84px;padding:4px 5px;font-size:.78rem;border-right:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden}
-.cal .d.o{background:color-mix(in srgb,var(--fg) 3%,transparent)}.cal .d.t i{color:var(--onac);background:var(--ac);border-radius:50%;padding:0 5px}
-.cal .d i{font-style:normal;color:var(--mut);font-family:var(--serif)}.cal .d.sun i{color:var(--ac)}
-.cal .d a{display:block;border-left:2px solid var(--ac);padding:0 5px;margin-top:3px;color:var(--fg);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--card)}
+/* 日付・場所で探す */
+.finder{margin:8px 0 0;display:grid;gap:14px}
+.finder fieldset{border:0;margin:0;padding:0;min-width:0}
+.finder legend{font-family:var(--serif);color:var(--mut);font-size:.9rem;letter-spacing:.2em;padding:0;margin-bottom:6px}
+.finder .regions{margin:0}
+.finder .range{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:10px;font-size:.9rem;color:var(--mut)}
+.finder .where{display:flex;flex-wrap:wrap;gap:8px 10px}
+.finder input,.finder select{font:inherit;font-size:.95rem;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-height:44px}
+.finder select{min-width:11em}
+.count{margin:22px 0 0;color:var(--mut);font-size:.92rem}.count:empty{display:none}
+.monthlist .md small{font-size:.78em;color:var(--mut);margin-left:1px}
 .monthlist{list-style:none;margin:28px 0 0;padding:0}
 .monthlist li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--line)}.monthlist li:last-child{border-bottom:1px solid var(--line)}
-.monthlist .md{flex:none;width:3.6em;font-family:var(--serif);color:var(--ac);white-space:nowrap}
+.monthlist .md{flex:none;width:5.6em;font-family:var(--serif);color:var(--ac);white-space:nowrap}
 .monthlist a{color:var(--fg);text-decoration:none}.monthlist a:hover{color:var(--ac);text-decoration:underline}
 
 @media(max-width:560px){
@@ -139,11 +143,6 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
   .ms{display:none}
   .card{gap:14px}
   .afflist a{border-left:0;border-top:1px solid var(--line);padding-left:0}.afflist a:first-child{border-top:0}
-  /* スマホのカレンダーは、日付ごとに印(点)だけ出し、詳細は下の一覧で読む */
-  .cal .d{min-height:46px;padding:3px;font-size:.72rem;text-align:center}
-  .cal .d a{display:none}
-  .cal .d.has i{color:var(--ac);font-weight:700}.cal .d.t i,.cal .d.t.has i{color:var(--onac)}
-  .cal .d.has:after{content:"";display:block;width:6px;height:6px;border-radius:50%;background:var(--ac);margin:2px auto 0}
   .top nav{gap:0 16px}
 }
 
