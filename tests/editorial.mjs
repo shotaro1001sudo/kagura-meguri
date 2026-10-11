@@ -30,6 +30,9 @@ export function editorialTests({ ok, section, OUT, build }) {
   const cardDate = home(".card .date").first().find("small").map((_, x) => home(x).text()).get();
   ok(cardDate.length === 2 && /^\d+月$/.test(cardDate[0]) && /^[日月火水木金土]曜$/.test(cardDate[1]), "一覧の日付: 「10月 / 18 / 日曜」(曜日を日付と紛れない形で)", cardDate.join("/"));
 
+  const rg = page("calendar.html")("#range").text().replace(/\s+/g, "");
+  ok(rg === "からまで" && page("calendar.html")("#range label").first().children().first().is("input#from"), "日付の指定は「[日付] から [日付] まで」の並び", rg);
+
   section("編集: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金", "開催ページの欄名は「日時・会場・所在地・料金」(「場所」と「会場」の紛れをなくす)");

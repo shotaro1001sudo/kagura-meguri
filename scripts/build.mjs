@@ -445,7 +445,7 @@ write("dist/calendar.html", layout({
   body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す"]])}${hero("日付・場所で探す", "いつ・どこで観たいかを選ぶと、当てはまる開催が一覧で出ます。")}
 <form class="finder" id="finder" role="search" aria-label="開催を探す" hidden>
 <fieldset><legend>いつ</legend><div class="regions" role="group" aria-label="期間"><button type="button" data-w="all" aria-pressed="true">すべて</button><button type="button" data-w="weekend" aria-pressed="false">今週末</button><button type="button" data-w="month" aria-pressed="false">今月</button><button type="button" data-w="next" aria-pressed="false">来月</button><button type="button" data-w="range" aria-pressed="false">日付を指定</button></div>
-<div class="range" id="range" hidden><label>から <input type="date" id="from"></label><span aria-hidden="true">〜</span><label>まで <input type="date" id="to"></label></div></fieldset>
+<div class="range" id="range" hidden><label><input type="date" id="from" aria-label="いつから"> から</label><label><input type="date" id="to" aria-label="いつまで"> まで</label></div></fieldset>
 <fieldset><legend>どこ</legend><div class="where"><label for="region" class="sr">地方</label><select id="region"><option value="">全国</option>${finderPrefs.map(([r]) => `<option value="${r}">${r}</option>`).join("")}</select>
 <label for="pref" class="sr">都道府県</label><select id="pref"><option value="">すべての都道府県</option>${finderPrefs.map(([r, ps]) => ps.map((p) => `<option value="${p}" data-r="${r}">${p}</option>`).join("")).join("")}</select></div></fieldset>
 </form>
