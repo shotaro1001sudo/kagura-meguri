@@ -1,4 +1,4 @@
-// 「主催者・関係者の方へ」(/organizers.html)の本文。
+// 「主催者の方へ」(/organizers.html)の本文。
 // ここに書く「掲載すると載る場所・機能」は、サイトに実在するものだけにする(tests/organizers.mjs で確認)。
 // 掲載の方針は、免責事項・プライバシーポリシーの記載と、食い違わないようにする。
 
@@ -6,20 +6,20 @@
 export function organizersHtml({ esc, siteName, formReady }) {
   return `
 <p>${esc(siteName)}は、全国の神楽の開催情報を、一覧・地図・日付と場所の検索で探せるサイトです。神楽の主催者、神社・保存会、神楽団、自治体・観光協会の皆さまからの開催情報を、<strong>無料で掲載</strong>しています。観に来る方に、公演を見つけてもらう入口として、ご活用ください。</p>
-<p><a class="btn" href="/submit.html">開催情報を送る(無料)</a> <a class="btn ghost" href="/contact.html">お問い合わせ</a></p>
+<p><a class="btn" href="/submit.html">掲載を依頼する(無料)</a> <a class="btn ghost" href="/contact.html">お問い合わせ</a></p>
 
 <h2>掲載すると、ここに載ります</h2>
 <ul>
 <li><strong>開催ごとのページ</strong>: 日時・会場・料金と、公式情報へのリンク。会場の地図、経路の検索、スマホのカレンダーへの登録ボタンが付きます。</li>
 <li><strong>一覧・地図・検索</strong>: トップの一覧、<a href="/map.html">地図</a>、<a href="/calendar.html">日付・場所で探す</a>に表示されます。</li>
 <li><strong>日付・地域・種類から探すページ</strong>: <a href="/weekend.html">今週末の神楽</a>、<a href="/this-month.html">今月の神楽</a>、月別・都道府県別・<a href="/kagura/">神楽の種類別</a>のページに、自動で載ります。</li>
-<li><strong>検索エンジン向けの情報</strong>: 開催ページには、検索エンジンが「イベント」として読み取れる形式(構造化データ)で、日時・会場を書き込んでいます。</li>
+<li><strong>検索エンジン</strong>: 開催ページは、Googleなどの検索エンジンが、開催の日時と会場を読み取りやすい形で作っています。</li>
 <li><strong>新着の配信</strong>: <a href="/calendar.html">Googleカレンダーで購読できる日程</a>と、新着情報のフィードにも、載ります。</li>
 </ul>
 
 <h2>送り方</h2>
-<h3>1件ずつの開催: 投稿フォーム</h3>
-<p><a href="/submit.html">投稿フォーム</a>から、1件ずつお送りください。${formReady ? "" : "現在は、送信ボタンを押すと、入力した内容が入ったメールの作成画面が開きます。そのまま送信してください。"}</p>
+<h3>1件ずつの開催: 掲載の依頼フォーム</h3>
+<p><a href="/submit.html">掲載の依頼フォーム</a>から、1件ずつお送りください。${formReady ? "" : "現在は、送信ボタンを押すと、入力した内容が入ったメールの作成画面が開きます。そのまま送信してください。"}</p>
 <table class="info">
 <tr><th>必須</th><td>神楽・イベントの名称 / 神楽の種類 / 都道府県・市区町村 / 会場名 / 開催日</td></tr>
 <tr><th>任意</th><td>番地までの住所(地図に正しく表示するため) / 開始・終了時刻 / 料金 / 公式情報のURL / ひとこと説明</td></tr>
@@ -27,7 +27,10 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <h3>定期公演・年間の日程・複数の公演</h3>
 <p>毎週・毎月の定期公演や、年間の日程表など、まとめて掲載したい場合は、<a href="/contact.html">お問い合わせ</a>(ご用件は「その他」)から、日程が載っているページのURLか、日程の内容をお知らせください。</p>
 <h3>公式サイトで、日程を公開している場合</h3>
-<p>公式サイトの日程を、毎週、自動で取り込める場合があります。日程のページに、イベントの構造化データ(schema.org の Event)を入れている場合や、カレンダー形式(.ics)で公開している場合は、特に正確に取り込めます。取り込みをご希望の場合は、<a href="/contact.html">お問い合わせ</a>から、日程のページのURLをお知らせください。取り込む前に、サイトの利用規約と robots.txt を確認します。自動の取り込みを望まない場合も、お知らせください。</p>
+<p>公式サイトに載っている日程を、毎週、自動で取り込める場合があります。ご希望の場合は、<a href="/contact.html">お問い合わせ</a>から、日程のページのURLをお知らせください。自動の取り込みを望まない場合も、お知らせください。</p>
+<details class="tech"><summary>Web担当の方へ(自動で取り込める条件)</summary>
+<p>日程のページに、イベントの構造化データ(schema.org の Event)を入れている場合や、カレンダー形式(.ics)で公開している場合は、特に正確に取り込めます。取り込む前に、サイトの利用規約と robots.txt を確認します。</p>
+</details>
 
 <h2>掲載までの流れ</h2>
 <ol>
@@ -41,7 +44,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <ul>
 <li><strong>載せるのは、事実の情報と、公式情報へのリンク</strong>です。主催者のサイトの文章・写真・図などは、転載しません。</li>
 <li><strong>一般の見学を想定していない神事や、公開を望まれない行事</strong>は、掲載しません。地域の方が公表している範囲で、掲載します。</li>
-<li><strong>投稿された方のお名前・ご連絡先</strong>は、サイトに表示しません(<a href="/privacy.html">プライバシーポリシー</a>)。</li>
+<li><strong>ご依頼者のお名前・ご連絡先</strong>は、サイトに表示しません(<a href="/privacy.html">プライバシーポリシー</a>)。</li>
 <li>掲載は無料です。</li>
 </ul>
 

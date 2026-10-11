@@ -1,4 +1,4 @@
-// 「主催者・関係者の方へ」のテスト: 書いてある「載る場所・機能」が実在するか、フォームの説明と実物が一致しているか
+// 「主催者の方へ」のテスト: 書いてある「載る場所・機能」が実在するか、フォームの説明と実物が一致しているか
 import { readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
@@ -6,10 +6,10 @@ import * as cheerio from "cheerio";
 const read = (p) => readFileSync(p, "utf8");
 
 export function organizersTests({ ok, section, OUT, build }) {
-  section("主催者・関係者の方へ");
+  section("主催者の方へ");
   const $ = cheerio.load(read(join(OUT, "organizers.html")));
   const text = $("main").text();
-  ok($("title").text() === "主催者・関係者の方へ | 神楽めぐり" && $("h1").text() === "主催者・関係者の方へ" && !/noindex/.test($('meta[name="robots"]').attr("content")) && read(join(OUT, "sitemap.xml")).includes("/organizers.html</loc>"), "タイトル・見出し、検索に載せる(サイトマップ・noindex なし)");
+  ok($("title").text() === "主催者の方へ | 神楽めぐり" && $("h1").text() === "主催者の方へ" && !/noindex/.test($('meta[name="robots"]').attr("content")) && read(join(OUT, "sitemap.xml")).includes("/organizers.html</loc>"), "タイトル・見出し、検索に載せる(サイトマップ・noindex なし)");
   ok($('script[type="application/ld+json"]').map((_, s) => JSON.parse($(s).text())).get().flat().some((x) => x["@type"] === "BreadcrumbList"), "パンくずの構造化データ");
   const internal = $("main a[href^='/']").map((_, a) => $(a).attr("href").split("#")[0]).get();
   const fileOf = (h) => join(OUT, decodeURIComponent(h.endsWith("/") ? h + "index.html" : h));

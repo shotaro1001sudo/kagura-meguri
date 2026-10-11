@@ -57,7 +57,6 @@
 .card:before{content:"";position:absolute;left:-14px;top:22px;bottom:22px;width:2px;background:var(--ac);scale:1 0;transform-origin:top;transition:scale var(--t-s) var(--ease)}
 .card:hover:before{scale:1 1}
 .logo img{transition:opacity var(--t-s) var(--ease)}.logo:hover img{opacity:.8}
-.afflist .ico{transition:opacity var(--t-s) var(--ease)}.afflist a:hover .ico{opacity:1}
 /* 写真を載せたときの表示(いまは、写真がないので、使われていない)。拡大はせず、少し明るくする */
 .zoom{display:block;overflow:hidden}.zoom img{display:block;width:100%;height:auto;transition:filter var(--t-s) var(--ease)}.zoom:hover img{filter:brightness(1.06)}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){

@@ -1,4 +1,4 @@
-// 投稿フォーム・お問い合わせフォーム(静的サイト用)
+// 掲載の依頼フォーム・お問い合わせフォーム(静的サイト用)
 // 送信先は config.json の form.endpoint(Web3Forms / Formspree など)。未設定の間は、入力内容を入れた
 // メールの作成画面を開く(= 受け取れる状態で公開できる)。迷惑投稿は、ハニーポット・送信間隔・送信先側の対策で抑える。
 import { PREFECTURES } from "./util.mjs";
@@ -32,7 +32,6 @@ const mailParts = (cfg) => (formReady(cfg) ? ["", ""] : (cfg.operator.contact ||
 export function submitForm(cfg) {
   const [u, d] = mailParts(cfg);
   return `<form class="form" id="submit-form" data-form="submit" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
-<p class="meta">掲載をご希望の神楽の開催情報を、お送りください。内容を確認のうえ、掲載します(すべての投稿を掲載するとは限りません)。</p>
 <fieldset><legend>開催の情報</legend>
 ${field("name", "神楽・イベントの名称", { required: true, max: 80, placeholder: "例: 第54回 高宮神楽まつり" })}
 ${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 石見神楽、高千穂神楽、備中神楽" })}
@@ -47,7 +46,7 @@ ${field("fee", "料金", { max: 80, placeholder: "例: 無料、1,000円" })}
 ${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者の公式ページ、または自治体・観光協会のページ。https:// で始まるものに限ります。" })}
 ${area("description", "ひとこと説明", { max: 300, hint: "300字まで。写真や文章の転載はご遠慮ください。", rows: 4 })}
 </fieldset>
-<fieldset><legend>投稿された方について</legend>
+<fieldset><legend>ご依頼者について</legend>
 ${select("role", "ご関係", ["主催者・出演者", "神社・保存会の関係者", "自治体・観光協会の担当者", "観覧した方・その他"], { required: true })}
 ${field("sender", "お名前または団体名", { required: true, max: 60, autocomplete: "name" })}
 ${field("email", "ご連絡先のメールアドレス", { type: "email", required: true, max: 120, autocomplete: "email", hint: "確認のご連絡にだけ使います。サイトには表示しません。" })}
@@ -136,7 +135,7 @@ form.addEventListener('submit',function(ev){
   if(!check()){say('入力内容をご確認ください。',true);return}
   var last=+(sessionStorage.getItem('lastSend')||0);
   if(Date.now()-last<30000){say('連続での送信はできません。30秒ほどあけてください。',true);return}
-  if(!C.endpoint){say('メールの作成画面を開きます。メールを送信して、投稿を完了してください。');mailto();return}
+  if(!C.endpoint){say('メールの作成画面を開きます。メールを送信して、ご依頼を完了してください。');mailto();return}
   btn.disabled=true;say('送信しています…');
   var payload={access_key:C.accessKey||undefined,subject:(kind==='submit'?'【'+C.site+'】開催情報の掲載依頼: '+val('name'):'【'+C.site+'】お問い合わせ: '+val('topic')),
     from_name:val('sender'),email:val('email'),message:lines().join('\\n')+(kind==='submit'?'\\n\\n【events.json 用】\\n'+jsonBlock():'')};

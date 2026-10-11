@@ -84,9 +84,13 @@ export function rangeLabel(a, b) {
 
 /**
  * 定期公演が、その日に行われる予定か(データの weekdays / months / closedDates / until による)。
+ * 季節だけ増える公演は extra に書く: [{ "weekdays": [5], "months": [9, 10, 11] }, { "dates": ["05-03", "05-04"] }]
  * weekdays がない公演は、日付が分からないため、false。
  */
 export function regularOn(r, s) {
+  const md = s.slice(5), mo = +s.slice(5, 7);
+  const extra = (r.extra ?? []).some((x) => (Array.isArray(x.dates) && x.dates.includes(md)) || (Array.isArray(x.weekdays) && x.weekdays.includes(weekday(s)) && (!Array.isArray(x.months) || x.months.includes(mo))));
+  if (extra) return !(r.until && s > r.until) && !(Array.isArray(r.closedDates) && r.closedDates.includes(md));
   if (!Array.isArray(r.weekdays) || !r.weekdays.includes(weekday(s))) return false;
   if (r.until && s > r.until) return false;
   if (Array.isArray(r.months) && !r.months.includes(+s.slice(5, 7))) return false;

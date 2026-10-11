@@ -28,9 +28,9 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
   ok(cheerio.load(rd("kagura/高千穂神楽.html"))("body").text().includes("毎晩の神楽"), "神楽の種類ページに定期公演が出る");
   const rn = cheerio.load(rd("regular/r-nightly.html"));
   const th = rn("table.info th").map((_, e) => rn(e).text()).get();
-  ok(["開催", "休演日", "会場", "料金", "予約"].every((x) => th.includes(x)), "定期公演の詳細に 開催・休演日・会場・料金・予約 が出る", th.join(","));
+  ok(["公演日時", "休演日", "会場", "所在地", "料金", "予約"].every((x) => th.includes(x)), "定期公演の詳細に 公演日時・休演日・会場・所在地・料金・予約 が出る", th.join(","));
   ok(rn("body").text().includes("おおよその位置"), "定期公演の詳細にも、おおよその位置の注意書きが出る");
-  ok(rn("body").text().includes("情報の出典: テスト協会") && rn("body").text().includes("確認日 2026年10月9日"), "出典と確認日が出る");
+  ok(rn("body").text().includes("出典: テスト協会(2026年10月9日確認)"), "出典と確認日が出る");
   const rx = rd("regular/r-xss.html");
   ok(!/<img src=x/i.test(rx) && !rx.includes("<script>alert(3)") && !/会場 <\/script>/.test(rx), "定期公演の名称・説明の悪意ある文字がそのまま出力されない");
 

@@ -19,6 +19,7 @@ import { adminTests } from "./admin.mjs";
 import { homeTests } from "./home.mjs";
 import { sourcesTests } from "./sources.mjs";
 import { consistencyTests } from "./consistency.mjs";
+import { editorialTests } from "./editorial.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -99,7 +100,7 @@ ok(!listText.includes("承認前のため出てはいけない"), "承認前(pen
 ok(!existsSync(join(OUT, "events/t-pending.html")), "承認前のデータは詳細ページも作られない");
 ok(!listText.includes("終了した神楽"), "終了したイベントは一覧に出ない");
 ok(listText.includes("開催中のテスト"), "開催中(終了時刻なし・3時間以内)は一覧に出る");
-ok(listText.includes("時間は公式情報で確認"), "時間未定のイベントは「時間は公式情報で確認」と出る");
+ok(listText.includes("時間は公式情報をご確認ください"), "時間未定のイベントは「時間は公式情報をご確認ください」と出る(一覧と開催ページで同じ言い方)");
 ok(index("#list > div").first().text().includes("開催中のテスト"), "一覧は日付順(いちばん早い開催中が先頭)");
 const past = cheerio.load(read(join(OUT, "events/t-past.html")));
 ok(past("body").text().includes("終了しました"), "終了したイベントの詳細ページに「終了しました」");
@@ -110,7 +111,7 @@ const min = cheerio.load(read(join(OUT, "events/t-minimal.html")));
 ok(!min("a[href='/kagura/.html']").length && !/\/kagura\/\.html/.test(read(join(OUT, "events/t-minimal.html"))), "神楽の種類が空でも壊れたリンクを作らない");
 ok(!existsSync(join(OUT, "kagura/.html")), "神楽の種類が空のファイルを作らない");
 const full = cheerio.load(read(join(OUT, "events/t-full.html")));
-ok(/2026年11月20日 20:00 〜 2026年11月20日 21:00/.test(full("table.info").text()), "日時が日本時間のまま正しく表示される");
+ok(full("table.info").text().includes("2026年11月20日(金) 20:00〜21:00"), "日時が日本時間のまま、曜日つきで表示される(同じ日の終わりは時刻だけ)", full("table.info").text().slice(0, 60));
 
 // ---------- 5. 安全性(XSS・構造化データ) ----------
 section("安全性と構造化データ");
@@ -282,6 +283,7 @@ identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });
 consistencyTests({ ok, section, OUT });
+editorialTests({ ok, section, OUT, build });
 await adminTests({ ok, section });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
