@@ -46,6 +46,8 @@ export function consistencyTests({ ok, section, OUT }) {
   ok(!/\.datenav|\.filters\{/.test(css) && !/\.card h3\b/.test(css.replace(/:is\(h3,h4\)/g, "")), "使われなくなった CSS(.datenav・.filters)が残っていない");
   ok(/@media\(max-width:560px\)\{\.home-hero:before\{inset:-40px 0 auto\}/.test(css), "スマホでは、トップの背景の光を画面の幅に収める");
   ok(page("404.html")('main a[href="/"]').text() === "開催予定を見る", "404 のボタンは、メニューの名前(開催予定)にそろえる");
+  const disc = page("disclaimer.html")("main").text();
+  ok(disc.includes("自動で作る一覧・検索・フィード") && disc.includes("日付・場所での検索") && !disc.includes("月別のページ、カレンダー、"), "免責事項: 自動で作るものの名前が、今の機能(日付・場所での検索)に合っている");
   const motionDoc = read("MOTION.md");
   ok(!/REVEAL_SEL|スクロールで現れる|2px浮く/.test(motionDoc) && /ページの出現/.test(motionDoc), "MOTION.md が、今の動き(ページ単位の出現)に合っている");
 }
