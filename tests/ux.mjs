@@ -1,0 +1,106 @@
+// UI/UX の決まりのテスト(UI/UX の目線の点検で決めたこと)
+//  - 固定ヘッダー・文字の大きさの基準・補足の文字の大きさ
+//  - トップの最初の画面(次の開催・入口の横並び)、定期公演は3件まで
+//  - 地図: 同じ場所のピンをまとめる・凡例・操作の切り替え・会場名から地図へ
+//  - 開催ページ: 要点の帯・ボタンの強弱・共有・ほかの日程・小さな地図
+//  - 検索のリセット、ガイドの目次へ戻る、フォームの「くわしく書く」と同意の欄
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
+
+const read = (p) => readFileSync(p, "utf8");
+
+export async function uxTests({ ok, section, OUT }) {
+  const page = (p) => cheerio.load(read(join(OUT, p)));
+  const home = page("index.html");
+  const css = home("style").first().html();
+
+  section("UI: 全ページ共通(ヘッダー・文字)");
+  ok(/\.top\{position:sticky;top:0;/.test(css) && /\.scrolled \.top\{box-shadow/.test(css) && /scroll-padding-top:\d+px/.test(css), "ヘッダーは画面の上に固定。スクロールすると影。ページ内リンクの位置はヘッダーの分ずらす");
+  const nav = new JSDOM(read(join(OUT, "about.html")), { runScripts: "dangerously", pretendToBeVisual: true });
+  Object.defineProperty(nav.window, "pageYOffset", { value: 200, configurable: true });
+  nav.window.dispatchEvent(new nav.window.Event("scroll"));
+  await new Promise((r) => setTimeout(r, 40));
+  ok(nav.window.document.documentElement.classList.contains("scrolled"), "スクロールすると、scrolled クラスが付く(動きのないページでも)");
+  nav.window.close();
+  const sizes = [...new Set([...css.matchAll(/font-size:([^;}!]+)/g)].map((m) => m[1]))].filter((v) => !v.startsWith("var(--fs-") && v !== ".68em" && !/^\d+px$/.test(v));
+  ok(sizes.length === 0, "文字の大きさは、すべて基準の変数(--fs-…)で指定する", sizes.join(" "));
+  const fs = Object.fromEntries([...css.matchAll(/--fs-([a-z0-9]+):([^;}]+)/g)].map((m) => [m[1], m[2]]));
+  ok(Object.keys(fs).length === 8 && /\.meta\{color:var\(--mut\);font-size:var\(--fs-s\)\}/.test(css) && parseFloat(fs.s) >= 0.9, "補足の文字(一覧の時刻・場所など)は s(14.5px 以上)", JSON.stringify(fs));
+  ok(/\.finder legend\{[^}]*letter-spacing:\.08em/.test(css) && /\.mhead\{[^}]*letter-spacing:\.1em/.test(css), "小さな見出しの文字の間隔を詰める");
+  ok(/body:before,body:after\{[^}]*opacity:\.4\}/.test(css), "広い画面の左右の模様は薄く");
+
+  section("UI: トップの最初の画面");
+  ok(home(".home-hero .next a").length === 1 && home(".home-hero .next .lbl").text() === "次の開催", "見出しの中に、次の開催を1件出す");
+  ok(/@media\(max-width:560px\)\{\.quick\{grid-template-columns:repeat\(3,1fr\)\}/.test(css), "スマホでは、今週末・今月・はじめての入口を横に3つ並べる");
+  const regN = home(".reglist .card").length;
+  ok(regN <= 3 ? home("#regmore").length === 0 : home("#regmore").length === 1 && home("#regmore").parent().attr("hidden") !== undefined, "定期公演が4件以上なら「すべて表示」のボタンを用意する(JS が動くときだけ出す)", String(regN));
+  const hd = new JSDOM(read(join(OUT, "index.html")), { runScripts: "dangerously" });
+  const regs = [...hd.window.document.querySelectorAll(".reglist .card")];
+  ok(regs.filter((c) => !c.hidden).length === Math.min(3, regs.length) && (regs.length <= 3 || !hd.window.document.getElementById("regmore").parentNode.hidden), "定期公演: 最初は3件", String(regs.length));
+  hd.window.document.getElementById("regmore")?.click();
+  ok(regs.every((c) => !c.hidden), "「すべて表示」で、定期公演がすべて出る");
+  hd.window.close();
+  const hh = read(join(OUT, "index.html"));
+  ok(hh.indexOf('class="reglist"') < hh.lastIndexOf("トップの「開催予定」"), "トップのスクリプトは、定期公演の一覧より後ろに置く(読み込んだ時点で、一覧がある)");
+  ok(/\.card\.reg\{background:/.test(css), "定期公演のカードは、地色で、日付のある開催と見分けられる");
+
+  section("UI: 地図で探す");
+  const mp = page("map.html");
+  ok(mp(".legend .pin.ev").length === 1 && mp(".legend .pin.reg").length === 1 && mp(".legend .pin.mix").length === 1, "凡例: 日付のある開催・定期公演・両方");
+  ok(mp("#maplock").length === 1 && mp("#maplock").attr("hidden") !== undefined, "指で触る端末だけ「地図を動かす」を出す(最初は隠す)");
+  ok(mp(".venuelist .vjump[data-k]").length > 0 && mp(".venuelist .vjump").first().attr("disabled") !== undefined, "会場名は、地図へ移るボタン(地図が読めたら押せる)");
+  ok(/#map \.leaflet-tile-pane\{filter:/.test(css) && !/#map\{[^}]*filter:/.test(css), "色の加工は、地図の画像だけ(ピン・吹き出しには、かけない)");
+  // ピンのまとめ方を、Leaflet の代わりの小さな部品で確かめる
+  const markers = [];
+  const evs = [
+    { id: "a", name: "A", up: true, start: "2026-11-01T10:00", prefecture: "広島県", city: "北広島町", venue: "道の駅", lat: 34.6, lng: 132.5 },
+    { id: "b", name: "B", up: true, start: "2026-12-01T10:00", prefecture: "広島県", city: "北広島町", venue: "道の駅", lat: 34.6, lng: 132.5 },
+    { id: "c", name: "C", up: true, start: "2026-11-05T10:00", prefecture: "岡山県", city: "高梁市", venue: "紺屋川", lat: 34.79, lng: 133.61 },
+  ];
+  const regsJ = [{ id: "r", name: "R", schedule: "毎週土曜 20:00", prefecture: "岡山県", city: "高梁市", venue: "紺屋川", lat: 34.79, lng: 133.61 }];
+  const mdom = new JSDOM(read(join(OUT, "map.html")), {
+    runScripts: "dangerously",
+    beforeParse(w) {
+      w.matchMedia = () => ({ matches: false, addEventListener() {} });
+      w.fetch = (u) => Promise.resolve({ ok: true, json: () => Promise.resolve(u.includes("events") ? evs : regsJ) });
+      const mapObj = { setView() { return mapObj; }, fitBounds() {}, on() {}, getZoom() { return 6; }, scrollWheelZoom: { enable() {}, disable() {} }, dragging: { enable() {}, disable() {} } };
+      w.L = {
+        map: () => mapObj, tileLayer: () => ({ addTo() {} }),
+        divIcon: (o) => o,
+        marker: (ll, o) => { const m = { ll, o, popup: "", addTo() { markers.push(m); return m; }, bindPopup(h) { m.popup = h; return m; }, getLatLng() { return ll; }, openPopup() { m.opened = true; } }; return m; },
+      };
+    },
+  });
+  await new Promise((r) => setTimeout(r, 40));
+  ok(markers.length === 2, "同じ場所の開催は、1本のピンにまとめる", String(markers.length));
+  const road = markers.find((m) => m.ll[0] === 34.6), takahashi = markers.find((m) => m.ll[0] === 34.79);
+  ok(road?.o.icon.className === "pin ev" && road.o.icon.html === "2" && /11月1日.*12月1日/s.test(road.popup), "まとめたピン: 件数を数字で出し、吹き出しに日付順の一覧");
+  ok(takahashi?.o.icon.className === "pin mix", "日付のある開催と定期公演が同じ場所なら、両方の色");
+  mdom.window.close();
+
+  section("UI: 開催ページ・定期公演ページ");
+  const full = page("events/t-full.html");
+  ok(full(".keyinfo table.info").length === 1 && full(".keyinfo").next(".actions").length === 1, "要点(日時・会場・料金)の帯のすぐ下に、ボタン");
+  ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".actions a[href*='calendar.google.com']").hasClass("sm") && full(".stay .btn").toArray().every((b) => full(b).hasClass("ghost")), "主役のボタンは「公式情報を見る」だけ(カレンダー・宿は控えめに)");
+  const sh = full(".share");
+  ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
+  ok(full(".mapbox #map.dmap[data-lat][data-lng]").length === 1 && full("#mapbig").attr("aria-expanded") === "false", "地図は小さく出し、「地図を大きく見る」で広げる");
+  ok(/#map\.dmap\{height:200px\}/.test(css) && /@media\(max-width:560px\)\{#map\.dmap\{height:160px\}\}/.test(css), "開催ページの地図の高さは、地図ページの指定(#map)に負けない");
+  const reg = page("regular/r-weekly.html");
+  ok(reg(".keyinfo").length === 1 && reg(".share").length === 1, "定期公演ページも、要点の帯と共有");
+
+  section("UI: 検索・ガイド・フォーム・主催者の方へ");
+  const cal = page("calendar.html");
+  ok(cal("#reset").length === 1 && cal("#reset").parent().attr("hidden") !== undefined, "検索: 「条件をリセット」(条件を変えたときだけ出す)");
+  ok(/\.finder \.where\{display:grid;grid-template-columns:1fr 1fr/.test(css), "検索: 地方と県の選択欄を横に並べる");
+  const g = page("guide.html");
+  ok(g("#toc").length === 1 && g(".totoc a[href='#toc']").length >= 5, "ガイド: 章ごとに「目次へ戻る」");
+  ok(/@media\(min-width:1320px\)\{\.guide \.toc\{position:fixed/.test(css), "ガイド: 広い画面では、目次を横に固定");
+  const sub = page("submit.html");
+  ok(sub("details.more-fields #address").length === 1 && sub("details.more-fields #description").length === 1 && sub("details.more-fields #date").length === 0 && sub("legend").first().text() === "1. 開催の情報", "掲載の依頼: 任意の項目は「くわしく書く」で開く。段階に番号");
+  ok(sub(".consent label a").length === 0 && sub(".consent .links a").length === 2, "同意の欄: リンクは文の後ろ(チェックボックスと離す)");
+  ok(page("organizers.html")(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");
+  ok(page("kagura/石見神楽.html")("main h2").first().text() !== "石見神楽とは", "種類のページ: 開催予定を先に、説明は後ろに");
+}

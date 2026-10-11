@@ -24,7 +24,7 @@ const guard = (cfg) => `
 <div class="hp" aria-hidden="true"><label>この欄は空のままにしてください<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 <input type="hidden" name="_t" value="">`;
 
-const consent = (cfg) => `<div class="f consent"><label><input type="checkbox" id="agree" name="agree" required> <span><a href="/terms.html" target="_blank" rel="noopener">利用規約</a>と<a href="/privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>(外国にある事業者への提供を含みます)に同意します</span></label><small class="err" id="agree-e" role="alert"></small></div>`;
+const consent = (cfg) => `<div class="f consent"><label><input type="checkbox" id="agree" name="agree" required> <span>利用規約とプライバシーポリシー(外国にある事業者への提供を含みます)に同意します</span></label><p class="links">内容を確かめる: <a href="/terms.html" target="_blank" rel="noopener">利用規約</a> ・ <a href="/privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p><small class="err" id="agree-e" role="alert"></small></div>`;
 
 // 運営者のメールアドレス(分割)は、送信先が未設定で、メール作成を予備に使う間だけ、フォームに埋め込む
 const mailParts = (cfg) => (formReady(cfg) ? ["", ""] : (cfg.operator.contact || "").split("@"));
@@ -32,21 +32,23 @@ const mailParts = (cfg) => (formReady(cfg) ? ["", ""] : (cfg.operator.contact ||
 export function submitForm(cfg) {
   const [u, d] = mailParts(cfg);
   return `<form class="form" id="submit-form" data-form="submit" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
-<fieldset><legend>開催の情報</legend>
+<fieldset><legend>1. 開催の情報</legend>
 ${field("name", "神楽・イベントの名称", { required: true, max: 80, placeholder: "例: 第54回 高宮神楽まつり" })}
 ${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 石見神楽、高千穂神楽、備中神楽" })}
 ${select("prefecture", "都道府県", PREFECTURES, { required: true })}
 ${field("city", "市区町村", { required: true, max: 40, placeholder: "例: 益田市" })}
 ${field("venue", "会場名", { required: true, max: 80, placeholder: "例: 〇〇神社 神楽殿" })}
-${field("address", "番地までの住所", { max: 100, hint: "地図に正しく表示するために使います。分かる範囲で結構です。" })}
 ${field("date", "開催日", { type: "date", required: true, max: 10 })}
 ${field("time_start", "開始時刻", { type: "time", max: 5 })}
+${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者の公式ページ、または自治体・観光協会のページ。https:// で始まるものに限ります。" })}
+<details class="more-fields"><summary>くわしく書く <small>(任意: 住所・終了時刻・料金・ひとこと説明)</small></summary>
+${field("address", "番地までの住所", { max: 100, hint: "地図に正しく表示するために使います。分かる範囲で結構です。" })}
 ${field("time_end", "終了時刻", { type: "time", max: 5 })}
 ${field("fee", "料金", { max: 80, placeholder: "例: 無料、1,000円" })}
-${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者の公式ページ、または自治体・観光協会のページ。https:// で始まるものに限ります。" })}
 ${area("description", "ひとこと説明", { max: 300, hint: "300字まで。写真や文章の転載はご遠慮ください。", rows: 4 })}
+</details>
 </fieldset>
-<fieldset><legend>ご依頼者について</legend>
+<fieldset><legend>2. ご依頼者について</legend>
 ${select("role", "ご関係", ["主催者・出演者", "神社・保存会の関係者", "自治体・観光協会の担当者", "観覧した方・その他"], { required: true })}
 ${field("sender", "お名前または団体名", { required: true, max: 60, autocomplete: "name" })}
 ${field("email", "ご連絡先のメールアドレス", { type: "email", required: true, max: 120, autocomplete: "email", hint: "確認のご連絡にだけ使います。サイトには表示しません。" })}
@@ -97,7 +99,7 @@ function check(){
     var m='';
     if(el.type==='checkbox'){if(!el.checked)m='同意が必要です'}
     else if(!el.value.trim())m='入力してください';
-    err(el.id,m);if(m&&ok){ok=false;el.focus()}else if(m)ok=false;
+    err(el.id,m);if(m&&ok){ok=false;var dt=el.closest('details');if(dt)dt.open=true;el.focus()}else if(m)ok=false;
   });
   var em=$('email');if(em&&em.value&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(em.value.trim())){err('email','メールアドレスの形式を確認してください');ok=false}
   ['url','target'].forEach(function(id){var u=$(id);if(u&&u.value.trim()&&!/^https:\\/\\/[^\\s]+$/.test(u.value.trim())){err(id,'https:// で始まるURLを入力してください');ok=false}});

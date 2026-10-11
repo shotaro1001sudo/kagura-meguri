@@ -15,7 +15,7 @@ export async function homeTests({ ok, section, OUT, build }) {
   const later = $(".later a").map((_, a) => ({ href: $(a).attr("href"), n: $(a).attr("data-n"), c: JSON.parse($(a).attr("data-c")), text: $(a).text() })).get();
   ok(later.length === 1 && later[0].href === "/month/2026-12.html" && later[0].text === "12月 2件" && later[0].c["中国"] === 2 && later[0].c["九州・沖縄"] === 0, "その先の月は、件数つきのボタンで、月のページへ", JSON.stringify(later));
   ok($("#list .card").length === 4 && !$("#list").text().includes("12月5日"), "一覧のカードは、直近2か月の分だけ");
-  ok($(".regions").attr("hidden") !== undefined && $(".regions button").map((_, b) => $(b).text()).get().join() === "全国,中国,九州・沖縄", "地方のボタン(開催のある地方だけ)。JS が動くときだけ表示する");
+  ok($(".regions:not(.prefs)").attr("hidden") !== undefined && $(".regions:not(.prefs) button").map((_, b) => $(b).text()).get().join() === "全国,中国,九州・沖縄", "地方のボタン(開催のある地方だけ)。JS が動くときだけ表示する");
   ok(!$('main a[href="/submit.html"]').length, "トップの一覧の途中に、投稿のボタンを置かない(入口は、メニューの「主催者の方へ」)");
   ok(!$("main select#f").length && !$("main").text().includes("月ごとに探す"), "都道府県の選択欄と、重複する「月ごとに探す」はなくした");
 
@@ -23,15 +23,15 @@ export async function homeTests({ ok, section, OUT, build }) {
   const dom = new JSDOM(html, { runScripts: "dangerously" });
   const d = dom.window.document;
   const visible = () => [...d.querySelectorAll("#list [data-r]")].filter((x) => !x.hidden && !x.closest(".mgroup").hidden).map((x) => x.dataset.r);
-  const press = (r) => [...d.querySelectorAll(".regions button")].find((b) => b.textContent === r).click();
-  ok(!d.querySelector(".regions").hidden, "JS が動くと、地方のボタンが出る");
+  const press = (r) => [...d.querySelectorAll(".regions:not(.prefs) button")].find((b) => b.textContent === r).click();
+  ok(!d.querySelector(".regions:not(.prefs)").hidden, "JS が動くと、地方のボタンが出る");
   press("九州・沖縄");
   ok(visible().length > 0 && visible().every((r) => r === "九州・沖縄") && d.querySelector(".later a").hidden && d.querySelector(".laterwrap").hidden, "九州・沖縄: 九州の開催だけになり、該当のない先の月は隠れる", visible().join());
   ok([...d.querySelectorAll(".mgroup")].filter((m) => m.hidden).length === 1, "該当のない月は、見出しごと隠れる");
   press("中国");
   ok(visible().every((r) => r === "中国") && !d.querySelector(".later a").hidden && d.querySelector(".later a span").textContent === "2件", "中国: 先の月の件数も、その地方の数になる");
   press("全国");
-  ok(visible().length === 4 && d.querySelector(".later a span").textContent === "2件" && d.querySelector(".regions button[aria-pressed=true]").textContent === "全国", "全国に戻すと、元の表示になる");
+  ok(visible().length === 4 && d.querySelector(".later a span").textContent === "2件" && d.querySelector(".regions:not(.prefs) button[aria-pressed=true]").textContent === "全国", "全国に戻すと、元の表示になる");
   dom.window.close();
 
   section("メインメニュー(探し方で並べる)");
@@ -69,10 +69,10 @@ export async function homeTests({ ok, section, OUT, build }) {
   const withMap = evs.find((e) => e.lat != null), noMap = evs.find((e) => e.lat == null);
   const pg = (e) => cheerio.load(read(join(OUT, `events/${e.id}.html`)));
   const wm = pg(withMap), route = wm('a[href*="google.com/maps"]');
-  ok(route.length === 1 && route.text() === "経路を調べる" && route.closest(".routebtn").prevAll("#map").length === 1, "「経路を調べる」は、地図の下に1つだけ");
+  ok(route.length === 1 && route.text() === "経路を調べる" && route.closest(".routebtn").prevAll(".mapbox").find("#map").length === 1, "「経路を調べる」は、地図の下に1つだけ");
   ok(!noMap || pg(noMap)('a[href*="google.com/maps"]').length === 0, "地図のない開催では、経路のボタンを出さない", noMap?.id);
   const rel = wm("h2").filter((_, h) => wm(h).text() === "あわせて観たい神楽");
-  ok(!wm("h2").text().includes("ほかの") && (rel.length === 0 || /・/.test(rel.next(".venuelist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));
+  ok(!wm("h2").text().includes("ほかの") && (rel.length === 0 || /・/.test(rel.next(".monthlist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));
   ok(/.crumbs li{display:flex;align-items:center}/.test(read("scripts/style.css")), "パンくずの、リンクと今のページ名の高さをそろえる");
 
   section("検索向け: タイトルの年・開催の構造化データ");
@@ -82,18 +82,25 @@ export async function homeTests({ ok, section, OUT, build }) {
   const full = ldOf("t-full"), xss = ldOf("t-xss");
   ok(full.offers?.price === "1000" && full.offers.priceCurrency === "JPY" && xss.offers?.price === "500", "料金に金額があれば、構造化データの価格にする(最初の金額)", JSON.stringify([full.offers, xss.offers]));
 
-  // 1か月の開催が多いとき: 10件までを出し、残りは月のページへ(地方で絞ったときは全部)
+  // 開催が多いとき: 最初は8件まで出し、残りは「すべて見る」・地方・県で出す(JS がなければ、日付・場所で探すへ)
   const base = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.prefecture === "広島県");
-  const many = Array.from({ length: 13 }, (_, i) => ({ ...base, id: `t-many-${i}`, name: `多い月の神楽${i}`, start: `2026-10-${String(12 + i).padStart(2, "0")}T18:00`, end: undefined, prefecture: i < 12 ? "広島県" : "宮崎県", lat: undefined, lng: undefined }));
+  const many = Array.from({ length: 13 }, (_, i) => ({ ...base, id: `t-many-${i}`, name: `多い月の神楽${i}`, start: `2026-10-${String(12 + i).padStart(2, "0")}T18:00`, end: undefined, prefecture: i < 10 ? "広島県" : i < 12 ? "岡山県" : "宮崎県", lat: undefined, lng: undefined }));
   const F = "tests/.tmp-home.json", D = "dist-test-home";
   writeFileSync(F, JSON.stringify(many));
   const r = build(F, D);
   const m = cheerio.load(read(join(D, "index.html")));
-  ok(r.status === 0 && m("#list .mgroup").first().find("[data-r]").length === 13 && m("#list .ov").length === 3 && m("#list .more a").attr("href") === "/month/2026-10.html" && m("#list .more").text().includes("13件"), "1か月が10件を超えると、残りは隠し、月のページへのリンクを出す", r.stderr);
+  ok(r.status === 0 && m("#list [data-r]").length === 13 && m("#list .ov").length === 5 && m("#showall").attr("href") === "/calendar.html" && m("#showall").text().includes("13件"), "最初は8件まで。残りは隠し、「すべて見る」(JS がなければ、日付・場所で探すへ)", r.stderr);
   const dom2 = new JSDOM(read(join(D, "index.html")), { runScripts: "dangerously" });
-  const d2 = dom2.window.document;
-  [...d2.querySelectorAll(".regions button")].find((b) => b.textContent === "中国").click();
-  ok([...d2.querySelectorAll("#list [data-r]")].filter((x) => !x.hidden).length === 12 && d2.querySelector("#list .more").hidden, "地方で絞ったときは、隠していた分も出す");
+  const d2 = dom2.window.document, vis2 = () => [...d2.querySelectorAll("#list [data-r]")].filter((x) => !x.hidden);
+  d2.getElementById("showall").click();
+  ok(vis2().length === 13 && d2.getElementById("showall").parentNode.hidden, "「すべて見る」を押すと、残りも出て、ボタンは消える");
+  [...d2.querySelectorAll(".regions:not(.prefs) button")].find((b) => b.textContent === "中国").click();
+  const pfb = [...d2.querySelectorAll(".regions.prefs button")].filter((b) => !b.hidden).map((b) => b.textContent);
+  ok(vis2().length === 12 && !d2.querySelector(".regions.prefs").hidden && pfb.join() === "すべての県,岡山県,広島県", "地方で絞ると、その地方の開催をすべて出し、県のボタンが出る(北から南の順)", pfb.join());
+  [...d2.querySelectorAll(".regions.prefs button")].find((b) => b.textContent === "岡山県").click();
+  ok(vis2().length === 2 && vis2().every((x) => x.dataset.p === "岡山県"), "県で絞り込める");
+  [...d2.querySelectorAll(".regions:not(.prefs) button")].find((b) => b.textContent === "九州・沖縄").click();
+  ok(d2.querySelector(".regions.prefs").hidden && vis2().length === 1, "開催のある県が1つだけの地方では、県のボタンを出さない");
   dom2.window.close();
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 }

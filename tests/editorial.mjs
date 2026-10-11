@@ -21,7 +21,7 @@ export function editorialTests({ ok, section, OUT, build }) {
   ok(home(".copy .sub").text().includes("日付・場所・地図から探せます"), "トップの副題で、何ができるサイトかを伝える");
   ok(home("footer a").first().text() === "主催者の方へ(掲載は無料)", "フッターの主催者向けの入口は「主催者の方へ(掲載は無料)」");
   const org = page("organizers.html"), sub = page("submit.html");
-  ok(org("h1").text() === "主催者の方へ" && org('main a[href="/submit.html"].btn').text() === "掲載を依頼する(無料)" && sub("h1").text() === "掲載の依頼" && sub("legend").last().text() === "ご依頼者について", "主催者向けの言葉: 「主催者の方へ」「掲載を依頼する」「掲載の依頼」にそろえる");
+  ok(org("h1").text() === "主催者の方へ" && org('main a[href="/submit.html"].btn').first().text() === "掲載を依頼する(無料)" && sub("h1").text() === "掲載の依頼" && sub("legend").last().text() === "2. ご依頼者について", "主催者向けの言葉: 「主催者の方へ」「掲載を依頼する」「掲載の依頼」にそろえる");
   const allText = ["index.html", "organizers.html", "submit.html", "contact.html", "guide.html"].map((p) => page(p)("main").text() + page(p)("footer").text()).join("");
   ok(!/開催情報を送る|開催情報を投稿する|開催情報を掲載する\(無料\)|投稿フォーム|投稿された方/.test(allText), "古い言い方(開催情報を送る・投稿する・投稿フォームなど)が残っていない");
   ok(page("map.html")("h1").text() === "地図で探す" && page("kagura/index.html")("h1").text() === "種類で探す" && page("kagura/石見神楽.html")(".crumbs li").eq(1).text() === "種類で探す", "地図・種類のページの名前は、メニューと同じ「地図で探す」「種類で探す」");
@@ -58,10 +58,10 @@ export function editorialTests({ ok, section, OUT, build }) {
   const PREF_ORDER = REGIONS.flatMap(([, ps]) => ps);
   const homePrefs = home("main h2").filter((_, h) => home(h).text() === "都道府県で探す").next(".taglist").find("a").map((_, a) => home(a).text()).get();
   ok(homePrefs.length > 1 && homePrefs.every((p, i) => i === 0 || PREF_ORDER.indexOf(homePrefs[i - 1]) < PREF_ORDER.indexOf(p)), "都道府県は北から南の順", homePrefs.join(","));
-  const kIntro = page("kagura/index.html")(".card p.meta").map((_, p) => page("kagura/index.html")(p).text()).get();
-  ok(kIntro.length > 0 && kIntro.every((t) => /[。…]$/.test(t) && !/[^、。]…$/.test(t.replace(/、[^、]*…$/, ""))), "種類の一覧の紹介文は、文の区切りで終わる(語の途中で切らない)", kIntro.join(" | "));
+  const kq = page("kagura/index.html"), kTag = kq(".card .tagline").map((_, p) => kq(p).text()).get();
+  ok(kTag.length > 0 && kTag.length === kq(".card").length && kTag.every((t) => /^[^・]+ ・ .+$/.test(t)) && !kq(".card p.meta").length, "種類の一覧: 地域と特徴を1行で(長い紹介文の切れ端は出さない)", kTag.join(" | "));
   const map = page("map.html");
-  const venues = map(".venuelist > li > b").map((_, b) => map(b).text()).get();
+  const venues = map(".venuelist > li > .vjump").map((_, b) => map(b).text()).get();
   ok(venues.length > 0 && new Set(venues).size === venues.length && map(".venuelist .vitems li").length >= venues.length, "地図の会場の一覧は、会場ごとにまとめる(同じ会場をくり返さない)", venues.join(","));
   const g = page("guide.html");
   ok(g(".gcard p").filter((_, p) => g(p).text().includes("ぶっ返り")).find("a[href^='#src']").length >= 1 || /ぶっ返り[^<]*<sup/.test(read(join(OUT, "guide.html"))), "ガイド: 「ぶっ返り」の一文にも出典を付ける");
@@ -89,14 +89,14 @@ export function editorialTests({ ok, section, OUT, build }) {
     ok(s1("table.info td").first().text() === "2026年11月8日(日) 11:00〜12:00、13:00〜14:00(1日2回)", "1日2回の公演は、2つの時間を書く", s1("table.info td").first().text());
     ok(idx(".card").filter((_, c) => idx(c).text().includes("後楽園")).first().find(".meta").text().includes("11:00〜・13:00〜"), "一覧でも、2つの開始時刻を出す");
     ok(o1("table.info td").first().text() === "2026年12月20日(日) 19:00〜12月21日(月) 08:00", "日をまたぐ公演は、終わりの日付も曜日つきで(同じ年なら年は省く)", o1("table.info td").first().text());
-    ok(s1("main").text().includes("ほかの日程: 12月13日(日)・1月10日(日)"), "くり返しの公演は、開催ページに、ほかの日程を出す", s1("main p.meta").first().text());
+    ok(s1(".dates .chip").map((_, a) => s1(a).text()).get().join() === "12月13日(日),1月10日(日)", "くり返しの公演は、開催ページに、ほかの日程を丸いボタンで出す", s1(".dates").text());
     const kr2 = idx(".card").filter((_, c) => idx(c).text().includes("後楽園"));
     ok(kr2.length >= 2 && kr2.find(".rep").length === kr2.length && idx(".card").filter((_, c) => idx(c).text().includes("倉敷")).find(".rep").length === 0, "くり返しの公演には「定例開催」の印。1回だけの開催には付けない");
-    const rel = o2("h2").filter((_, h) => o2(h).text() === "あわせて観たい神楽").next("ul").find("li > a").map((_, a) => o2(a).text()).get();
+    const rel = o2("h2").filter((_, h) => o2(h).text() === "あわせて観たい神楽").next("ol").find("li > span > a").map((_, a) => o2(a).text()).get();
     ok(rel.filter((t) => t === "後楽園 定期公演").length === 1 && rel.length === 2, "あわせて観たい神楽: 同じ公演は1件だけ", rel.join(","));
-    const relDates = o2("h2").filter((_, h) => o2(h).text() === "あわせて観たい神楽").next("ul").find(".meta").map((_, m) => o2(m).text()).get();
+    const relDates = o2("h2").filter((_, h) => o2(h).text() === "あわせて観たい神楽").next("ol").find(".md").map((_, m) => o2(m).text()).get();
     ok(relDates[0]?.includes("11月8日") && relDates[1]?.includes("12月20日"), "あわせて観たい神楽: 日付順", relDates.join(" | "));
-    ok(!s1("h2").filter((_, h) => s1(h).text() === "あわせて観たい神楽").next("ul").text().includes("後楽園 定期公演"), "あわせて観たい神楽に、この公演自身のくり返しは入れない(「ほかの日程」に出す)");
+    ok(!s1("h2").filter((_, h) => s1(h).text() === "あわせて観たい神楽").next("ol").text().includes("後楽園 定期公演"), "あわせて観たい神楽に、この公演自身のくり返しは入れない(「ほかの日程」に出す)");
     ok(!page("events/o-2.html", D)(".stay").text().includes("夜の公演") , "昼の公演では、夜の一文を出さない");
   }
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });

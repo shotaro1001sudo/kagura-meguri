@@ -100,8 +100,6 @@ const regular = rawRegular.filter((r) => !r.until || r.until >= nowJst.slice(0, 
 const kaguraInfo = existsSync("data/kagura-info.json") ? readJson("data/kagura-info.json") : {};
 const SEO = cfg.seo ?? {};
 // 検索結果の説明文は、全角で80〜120字くらいが、読まれやすい長さ。長すぎるものは、文の切れ目で切る
-// 文の区切りで、n 字までの文だけを残す(1文目が長いときは、読点の区切りで切って「…」)
-const sentences = (s, n) => { const out = []; for (const t of String(s).match(/[^。]+。?/g) ?? []) { if ((out.join("") + t).length > n) break; out.push(t); } if (out.length) return out.join(""); const cut = String(s).slice(0, n); const i = cut.lastIndexOf("、"); return (i > n * 0.4 ? cut.slice(0, i) : cut.slice(0, n - 1)) + "…"; };
 const clip = (s, n = 118) => { s = String(s).replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const i = cut.lastIndexOf("。"); return (i > n * 0.5 ? cut.slice(0, i + 1) : cut.slice(0, n - 1) + "…"); };
 // 説明文が短すぎる(情報の少ないイベント)ときは、サイトとしての補足を足す
 const padDesc = (s) => (s.length >= 70 ? s : clip(`${s}公式情報へのリンク、地図、カレンダー登録つき。出典と確認日を載せています。`));
@@ -138,7 +136,7 @@ function stayBlock(e) {
   const on = rakutenOn || jalanOn;
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場近くの宿</h2>
 <p>${!e.timeUnknown && +e.start.slice(11, 13) >= 17 ? "夜の公演です。" : ""}遠方から観に行くなら、${esc(place)}の宿もあわせて探せます。<br><span class="meta">${jpDate(day)}泊・大人2名で検索します(日付や人数は、予約サイトで変えられます)。</span></p>
-<p class="staylinks"><a class="btn" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}>じゃらんで宿を探す</a> <a class="btn ghost" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}>楽天トラベルで宿を探す</a></p>
+<p class="staylinks"><a class="btn ghost sm" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}>じゃらんで宿を探す</a> <a class="btn ghost sm" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}>楽天トラベルで宿を探す</a></p>
 ${prNote(on)}</aside>`;
 }
 
@@ -200,6 +198,7 @@ const sparksHtml =`<div class="sparks" aria-hidden="true">${"<i></i>".repeat(SPA
 const lf = (s) => s.replace(/\r\n?/g, "\n");
 const motionCss = lf(readFileSync("scripts/motion.css", "utf8")) + "\n" + sparkCss;
 const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8"));
+const clientJs = (name) => `<script>${lf(readFileSync(`scripts/client/${name}.js`, "utf8")).trim()}</script>`;
 // 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
 // 動きを付けないページ(規約・運営者情報など、読むための文書)。js クラスを付けないので、出現・視差などの動きがすべて止まる
 const STILL_PAGES = ["/about", "/contact", "/privacy", "/terms", "/disclaimer"]; // 拡張子なし(/about と /about.html の両方で開けるため、.html を外して比べる)
@@ -221,7 +220,7 @@ const navLink = ([h, t, group], active) => {
   return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}${h === "/guide.html" ? ' data-guide=""' : ""}>${t}</a>`;
 };
 // スマホの三本線メニュー: JS が動くときだけ、ボタンを出して、メニューを畳む(JS がなければ、メニューは常に見える)
-const NAV_SCRIPT = `(function(){var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
+const NAV_SCRIPT = `(function(){var h=document.documentElement,w=window,q=false;function sc(){q=false;h.classList.toggle('scrolled',(w.pageYOffset||0)>8)}w.addEventListener('scroll',function(){if(!q){q=true;w.requestAnimationFrame(sc)}},{passive:true});sc();var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
@@ -300,7 +299,7 @@ const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encode
 const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
-const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}<p class="routebtn"><a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
+const mapBlock = (x) => (x.lat != null ? `<div class="mapbox"><div id="map" class="dmap" role="region" aria-label="会場周辺の地図" data-lat="${x.lat}" data-lng="${x.lng}" data-zoom="${zoomOf(x)}"></div><button type="button" class="maplock" id="mapbig" aria-expanded="false">地図を大きく見る</button></div>${clientJs("detailmap")}${geoNote(x)}<p class="routebtn"><a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
@@ -342,16 +341,28 @@ const kaguras = [...new Set([...events, ...regular].map((e) => e.kagura).filter(
 
 // ---------- トップ ----------
 // 「開催予定」: 直近2か月(開催のある月)だけをカードで出し、その先は月ごとのボタンにする(件数が増えても長くならない)
-const HOME_MONTHS = 2, MONTH_CAP = 10;
+const HOME_MONTHS = 2, HOME_CAP = 8; // 最初に出すのは8件まで。残りは「すべて見る」で
 const homeMonths = months.slice(0, HOME_MONTHS), laterMonths = months.slice(HOME_MONTHS);
 const monthShort = (k) => (k.slice(0, 4) === nowJst.slice(0, 4) ? `${+k.slice(5, 7)}月` : monthLabel(k));
 const regionsUsed = REGIONS.map(([r]) => r).filter((r) => upcoming.some((e) => regionOf(e.prefecture) === r));
-const regionCounts = (list) => JSON.stringify(Object.fromEntries(regionsUsed.map((r) => [r, list.filter((e) => regionOf(e.prefecture) === r).length])));
-// 1か月に MONTH_CAP 件を超える分は、地方で絞り込んだときだけ出す(全国のときは、月のページへのリンク)
+const prefsUsed = [...new Set(upcoming.map((e) => e.prefecture))].sort(byPref);
+// 先の月のボタンの件数: 地方ごと・県ごと(絞り込んだときに、その数に変える)
+const regionCounts = (list) => JSON.stringify(Object.fromEntries([...regionsUsed, ...prefsUsed].map((k) => [k, list.filter((e) => regionOf(e.prefecture) === k || e.prefecture === k).length])));
+// 直近2か月の開催のうち、HOME_CAP 件を超える分は隠す(「すべて見る」か、地方・県で絞ったときに出す)
+const homeAll = homeMonths.flatMap((k) => monthMap.get(k));
+let homeIdx = 0;
 const homeList = homeMonths.map((k) => {
   const list = monthMap.get(k);
-  return `<div class="mgroup"><h3 class="mhead">${monthShort(k)}</h3>${list.map((e, i) => `<div data-r="${regionOf(e.prefecture)}"${i >= MONTH_CAP ? ' class="ov" hidden' : ""}>${card(e, "h4")}</div>`).join("")}${list.length > MONTH_CAP ? `<p class="meta more"><a href="/month/${k}.html">${monthLabel(k)}の開催をすべて見る(${list.length}件) ›</a></p>` : ""}</div>`;
+  const rows = list.map((e) => { const ov = homeIdx++ >= HOME_CAP; return `<div data-r="${regionOf(e.prefecture)}" data-p="${esc(e.prefecture)}"${ov ? ' class="ov" hidden' : ""}>${card(e, "h4")}</div>`; });
+  const allHidden = rows.every((r) => r.includes(' class="ov" hidden'));
+  return `<div class="mgroup"${allHidden ? " hidden" : ""}><h3 class="mhead">${monthShort(k)}</h3>${rows.join("")}</div>`;
 }).join("");
+const showAll = homeAll.length > HOME_CAP ? `<p class="more"><a class="btn ghost sm" id="showall" href="/calendar.html">直近の開催をすべて見る(${homeAll.length}件)</a></p>` : "";
+// 県のボタン: 地方を選んだとき、その地方に開催のある県が2つ以上あれば出す
+const prefButtons = regionsUsed.length ? `<div class="regions prefs" role="group" aria-label="都道府県で絞り込む" hidden><button type="button" data-p="" aria-pressed="true">すべての県</button>${prefsUsed.map((p) => `<button type="button" data-p="${esc(p)}" data-in="${regionOf(p)}" aria-pressed="false" hidden>${esc(p)}</button>`).join("")}</div>` : "";
+// 次の開催(トップの最初の画面に、開催を1件出す)
+const nextEv = upcoming.find((e) => e.start.slice(0, 10) >= today) ?? upcoming[0];
+const nextLine = nextEv ? `<p class="next"><a href="/events/${nextEv.id}.html"><span class="lbl">次の開催</span><span>${esc(mdw(nextEv.start.slice(0, 10)))}${nextEv.timeUnknown ? "" : ` ${startTimes(nextEv)}`}</span><b>${esc(nextEv.name)}</b><span class="meta">${esc(nextEv.prefecture)}${esc(nextEv.city ?? "")}</span></a></p>` : "";
 const laterLinks = laterMonths.length ? `<div class="laterwrap"><h3 class="mhead">この先の開催</h3><div class="taglist later">${laterMonths.map((k) => { const l = monthMap.get(k); return `<a class="tag" href="/month/${k}.html" data-n="${l.length}" data-c="${esc(regionCounts(l))}">${monthShort(k)} <span>${l.length}件</span></a>`; }).join("")}</div></div>` : "";
 const regionButtons = regionsUsed.length > 1 ? `<div class="regions" role="group" aria-label="地方で絞り込む" hidden><button type="button" data-r="" aria-pressed="true">全国</button>${regionsUsed.map((r) => `<button type="button" data-r="${r}" aria-pressed="false">${r}</button>`).join("")}</div>` : "";
 write("dist/index.html", layout({
@@ -364,25 +375,20 @@ write("dist/index.html", layout({
     itemListLd("開催予定の神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   body: `<section class="hero home-hero">
 ${MOONSCAPE}${sparksHtml}
-<div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1><p><span class="ph">各地で催される神楽の、</span><span class="ph">日取りと舞台を。</span></p><p class="sub"><span class="ph">公式情報で確かめた</span><span class="ph">全国の神楽の日程を、</span><span class="ph">日付・場所・地図から</span><span class="ph">探せます。</span></p></div>
+<div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1><p><span class="ph">各地で催される神楽の、</span><span class="ph">日取りと舞台を。</span></p><p class="sub"><span class="ph">公式情報で確かめた</span><span class="ph">全国の神楽の日程を、</span><span class="ph">日付・場所・地図から</span><span class="ph">探せます。</span></p>${nextLine}</div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>はじめての神楽</b><small>見どころ・マナー・服装</small></a></nav>
 <h2>開催予定</h2>
-${regionButtons}
+${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
 <div id="list">${homeList || empty("現在掲載中の開催情報はありません。開催情報の掲載は、上のメニューの「主催者の方へ」からお寄せください。")}</div>
-<p class="empty" id="none" hidden>この地方の${laterMonths.length ? "、直近の開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
+${showAll}
+<p class="empty" id="none" hidden>この地域の${laterMonths.length ? "、直近の開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
 ${laterLinks}
-<script>(function(){var g=document.querySelector('.regions');if(!g)return;g.hidden=false;
-g.addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;var r=b.dataset.r;
-g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
-var n=0;document.querySelectorAll('.mgroup').forEach(function(m){var k=0;m.querySelectorAll('[data-r]').forEach(function(d){var s=r?d.dataset.r===r:!d.classList.contains('ov');d.hidden=!s;if(s)k++});m.hidden=k===0;n+=k;var mo=m.querySelector('.more');if(mo)mo.hidden=!!r});
-document.getElementById('none').hidden=n>0;
-var any=false;document.querySelectorAll('.later a').forEach(function(a){var c=r?(JSON.parse(a.dataset.c)[r]||0):+a.dataset.n;a.querySelector('span').textContent=c+'件';a.hidden=c===0;if(c)any=true});
-var lw=document.querySelector('.laterwrap');if(lw)lw.hidden=!any})})()</script>
-${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>` : ""}
+${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>${regular.length > 3 ? `<p class="more" hidden><button type="button" class="btn ghost sm" id="regmore">定期公演をすべて表示(${regular.length}件)</button></p>` : ""}` : ""}
 ${prefs.length ? `<h2>都道府県で探す</h2><div class="taglist">${prefs.map((p) => `<a class="tag" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</div>` : ""}
-${kaguras.length ? `<h2>種類で探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}`,
+${kaguras.length ? `<h2>種類で探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}
+${clientJs("home")}`,
 }));
 
 // ---------- 地図 (Leaflet + OpenStreetMap) ----------
@@ -397,9 +403,9 @@ const venueList = () => {
   const list = [...groups.values()].sort((a, b) => byPref(a.pref, b.pref) || a.city.localeCompare(b.city, "ja"));
   if (!list.length) return "";
   const item = (x) => (x.start
-    ? `<a href="/events/${x.id}.html">${esc(x.name)}</a> <span class="meta">${esc(mdw(x.start.slice(0, 10)))}</span>`
-    : `<a href="/regular/${x.id}.html">${esc(x.name)}</a> <span class="meta">定期公演 ・ ${esc(x.schedule.replace(/[(。].*$/, "").trim())}</span>`);
-  return `<h2>会場の一覧</h2><ul class="venuelist">${list.map((g) => `<li><b>${esc(g.venue || g.city)}</b><span class="meta"> ${esc(g.pref)}${esc(g.city)}</span><ul class="vitems">${g.items.map((x) => `<li>${item(x)}</li>`).join("")}</ul></li>`).join("")}</ul>`;
+    ? `<span class="md">${esc(mdw(x.start.slice(0, 10)))}</span><a href="/events/${x.id}.html">${esc(x.name)}</a>`
+    : `<span class="md">定期公演</span><a href="/regular/${x.id}.html">${esc(x.name)}</a> <span class="meta">${esc(x.schedule.replace(/[(。].*$/, "").trim())}</span>`);
+  return `<h2>会場の一覧</h2><p class="meta">会場名を押すと、地図がその場所に移ります。</p><ul class="venuelist">${list.map((g) => `<li><button type="button" class="vjump" data-k="${esc(`${g.pref}|${g.city}|${g.venue}`)}" disabled>${esc(g.venue || g.city)}</button><span class="meta"> ${esc(g.pref)}${esc(g.city)}</span><ul class="vitems">${g.items.map((x) => `<li>${item(x)}</li>`).join("")}</ul></li>`).join("")}</ul>`;
 };
 write("dist/map.html", layout({
   title: `神楽の開催地マップ | 会場を地図で探す | ${cfg.siteName}`,
@@ -407,32 +413,12 @@ write("dist/map.html", layout({
   path: "/map.html", active: "/map.html",
   head: LEAFLET,
   ld: [crumbsLd([["ホーム", "/"], ["地図で探す"]]), itemListLd("神楽の開催会場", [...upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...regular.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-  body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を、地図で探せます。")}<div id="map" role="region" aria-label="開催場所の地図"></div>
+  body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を、地図で探せます。")}<div class="mapbox"><div id="map" role="region" aria-label="開催場所の地図"></div><button type="button" class="maplock" id="maplock" aria-pressed="false" hidden>地図を動かす</button></div>
+<p class="legend meta"><span><span class="pin ev"></span>日付のある開催</span><span><span class="pin reg"></span>定期公演</span><span><span class="pin mix"></span>両方</span><span>数字は、同じ場所の件数です。</span></p>
 <p class="meta" id="mapmsg" aria-live="polite"></p>
 <p class="meta">地図データ © OpenStreetMap contributors</p>${adSlot(cfg.adsense.slotList)}
 ${venueList()}
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-var msg=document.getElementById('mapmsg'),box=document.getElementById('map');
-if(typeof L==='undefined'){box.hidden=true;msg.textContent='地図を読み込めませんでした。通信状況をご確認のうえ、ページを再読み込みしてください。一覧・日付と場所の検索からも開催情報をご覧いただけます。';return}
-var map=L.map('map').setView([34.5,133.5],6);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(map);
-var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
-var get=function(u){return fetch(u).then(function(r){if(!r.ok)throw 0;return r.json()})};
-Promise.all([get('/events.json'),get('/regular.json')]).then(function(res){
-  var pts=[];
-  res[0].filter(function(x){return x.up&&x.lat&&x.lng}).forEach(function(x){
-    var m=+x.start.slice(5,7),d=+x.start.slice(8,10);
-    L.marker([x.lat,x.lng],{title:x.name}).addTo(map).bindPopup('<b>'+esc(x.name)+'</b><br>'+m+'月'+d+'日 '+esc(x.prefecture)+esc(x.city)+'<br><a href="/events/'+esc(x.id)+'.html">詳細を見る</a>');
-    pts.push([x.lat,x.lng]);});
-  res[1].filter(function(x){return x.lat&&x.lng}).forEach(function(x){
-    L.marker([x.lat,x.lng],{title:x.name}).addTo(map).bindPopup('<b>'+esc(x.name)+'</b><br>定期公演 '+esc(x.schedule)+'<br>'+esc(x.prefecture)+esc(x.city)+'<br><a href="/regular/'+esc(x.id)+'.html">詳細を見る</a>');
-    pts.push([x.lat,x.lng]);});
-  if(pts.length>1)map.fitBounds(pts,{padding:[40,40]});else if(pts.length)map.setView(pts[0],9);
-  else msg.textContent='いま地図に出せる開催情報はありません。';
-}).catch(function(){msg.textContent='開催情報を読み込めませんでした。時間をおいて再読み込みしてください。'});
-});
-</script>`,
+${clientJs("map")}`,
 }));
 
 // ---------- 日付・場所で探す(/calendar.html。URL は前のカレンダーのまま) ----------
@@ -448,6 +434,7 @@ write("dist/calendar.html", layout({
 <div class="range" id="range" hidden><label><input type="date" id="from" aria-label="いつから"> から</label><label><input type="date" id="to" aria-label="いつまで"> まで</label></div></fieldset>
 <fieldset><legend>どこ</legend><div class="where"><label for="region" class="sr">地方</label><select id="region"><option value="">全国</option>${finderPrefs.map(([r]) => `<option value="${r}">${r}</option>`).join("")}</select>
 <label for="pref" class="sr">都道府県</label><select id="pref"><option value="">すべての都道府県</option>${finderPrefs.map(([r, ps]) => ps.map((p) => `<option value="${p}" data-r="${r}">${p}</option>`).join("")).join("")}</select></div></fieldset>
+<p class="freset" hidden><button type="button" class="linkbtn" id="reset">条件をリセット</button></p>
 </form>
 <p class="count" id="count" aria-live="polite"></p>
 <ol class="monthlist" id="results" aria-label="当てはまる開催"></ol>
@@ -459,7 +446,7 @@ ${months.length ? `<h2>月ごとの一覧</h2><p class="meta">各月の開催を
 <script>
 (function(){
 var f=document.getElementById('finder'),out=document.getElementById('results'),cnt=document.getElementById('count');
-var rg=document.getElementById('region'),pf=document.getElementById('pref'),fr=document.getElementById('from'),to=document.getElementById('to'),rangeBox=document.getElementById('range');
+var rg=document.getElementById('region'),pf=document.getElementById('pref'),fr=document.getElementById('from'),to=document.getElementById('to'),rangeBox=document.getElementById('range'),rs=document.getElementById('reset');
 var list=[],loaded=false,failed=false,when='all',regionOf={};
 [].forEach.call(pf.options,function(o){if(o.value)regionOf[o.value]=o.dataset.r});
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
@@ -496,9 +483,11 @@ function draw(){
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'当てはまる開催は、いまのところありません。期間や場所を広げてみてください。';
   var q=new URLSearchParams();if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value);
   var s=q.toString();try{history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}
+  rs.parentNode.hidden=!s;
 }
 function setWhen(v){when=v;[].forEach.call(f.querySelectorAll('[data-w]'),function(b){b.setAttribute('aria-pressed',String(b.dataset.w===v))});rangeBox.hidden=v!=='range'}
-f.addEventListener('click',function(ev){var b=ev.target.closest('[data-w]');if(!b)return;setWhen(b.dataset.w);draw();if(when==='range'&&!fr.value)fr.focus()});
+f.addEventListener('click',function(ev){var b=ev.target.closest('[data-w]');if(!b)return;setWhen(b.dataset.w);draw();if(when==='range'&&!fr.value){fr.focus();try{fr.showPicker()}catch(e){}}});
+rs.addEventListener('click',function(){setWhen('all');rg.value='';pf.value='';fr.value='';to.value='';syncPrefs();draw();f.querySelector('[data-w=all]').focus()});
 rg.addEventListener('change',function(){syncPrefs();draw()});
 pf.addEventListener('change',function(){if(pf.value)rg.value=regionOf[pf.value];syncPrefs();draw()});
 fr.addEventListener('change',function(){if(to.value&&fr.value&&to.value<fr.value)to.value=fr.value;draw()});
@@ -523,7 +512,7 @@ write("dist/kagura/index.html", layout({
   path: "/kagura/", active: "/kagura/",
   ld: crumbsLd([["ホーム", "/"], ["種類で探す"]]),
   body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "流派・系統ごとに、開催情報を探せます。")}<h2 class="sr">神楽の種類の一覧</h2>${kaguras
-    .map((k) => `<div class="card"><div><h3><a href="${kaguraHref(k)}">${esc(k)}</a></h3><div class="meta">${countLine(upcoming.filter((e) => e.kagura === k).length, regular.filter((r) => r.kagura === k).length)}</div>${kaguraInfo[k] ? `<p class="meta">${esc(sentences(kaguraInfo[k].intro, 70))}</p>` : ""}</div></div>`)
+    .map((k) => `<div class="card"><div><h3><a href="${kaguraHref(k)}">${esc(k)}</a></h3>${kaguraInfo[k]?.tagline ? `<p class="tagline">${esc(kaguraInfo[k].tagline)}</p>` : ""}<div class="meta">${countLine(upcoming.filter((e) => e.kagura === k).length, regular.filter((r) => r.kagura === k).length)}</div></div></div>`)
     .join("") || empty("掲載中の神楽の種類は、まだありません。")}${adSlot(cfg.adsense.slotList)}`,
 }));
 // タイトルに入れる年(「◯◯神楽 2026」のような検索に合わせる)。これからの開催の年の範囲。なければ今年
@@ -539,8 +528,8 @@ for (const k of kaguras) {
     path: kaguraHref(k), active: "/kagura/", noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
-${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
 ${adSlot(cfg.adsense.slotList)}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
+${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}`,
   }));
 }
@@ -583,7 +572,9 @@ const gcalEvent = (e) => {
   return `https://calendar.google.com/calendar/render?${new URLSearchParams({ action: "TEMPLATE", text: e.name, dates, ctz: "Asia/Tokyo", location, details })}`;
 };
 const vcal = (list) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteName}//JA`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${ie(cfg.siteName)}`, "X-WR-TIMEZONE:Asia/Tokyo", ...list.flatMap(veventLines), "END:VCALENDAR"].join("\r\n") + "\r\n";
-// 開催ページ・定期公演ページの並び(共通): 情報 → 説明 → ボタン → 地図・経路 → 出典 → 宿の案内 → あわせて観たい神楽 → 広告
+// 共有: LINE で送る・リンクをコピー(押したときだけ、外部へ移動する。コピーはこのページの中だけで動く)
+const shareBlock = (path, title) => { const url = `${cfg.baseUrl}${path}`; return `<p class="share"><span class="meta">共有</span><a class="btn ghost sm" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}" target="_blank" rel="noopener" data-goatcounter-click="share-line">LINEで送る</a><button type="button" class="btn ghost sm" data-copy="${esc(url)}">リンクをコピー</button></p>${clientJs("share")}`; };
+// 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 公式情報のボタン・共有 → 説明・ほかの日程 → 地図・経路 → 出典 → 宿の案内 → あわせて観たい神楽 → 広告
 // あわせて観たい神楽: 同じ種類の開催予定を先に、同じ県の開催予定を後に(開催・定期公演のどちらのページでも使う)
 const related = (e) => {
   const uniq = (arr) => arr.filter((x, i) => arr.findIndex((y) => seriesKey(y) === seriesKey(x)) === i && seriesKey(x) !== seriesKey(e));
@@ -591,7 +582,7 @@ const related = (e) => {
   const near = uniq(upcoming.filter((x) => x.id !== e.id && x.prefecture === e.prefecture && !same.includes(x))).slice(0, 4);
   const seen = new Set([seriesKey(e)]);
   const list = [...same, ...near].filter((x) => !seen.has(seriesKey(x)) && seen.add(seriesKey(x))).sort((a, b) => a.start.localeCompare(b.start));
-  return list.length ? `<h2>あわせて観たい神楽</h2><ul class="venuelist">${list.map((x) => `<li><a href="/events/${x.id}.html">${esc(x.name)}</a><span class="meta"> ${esc(dayLabel(x.start.slice(0, 10)))} ・ ${x.kagura ? esc(x.kagura) + "・" : ""}${esc(x.prefecture)}${esc(x.city ?? "")}</span></li>`).join("")}</ul>` : "";
+  return list.length ? `<h2>あわせて観たい神楽</h2><ol class="monthlist">${list.map((x) => `<li><span class="md">${esc(mdw(x.start.slice(0, 10)).replace(/\((.)\)$/, ""))}<small>(${WD[parts(x.start).wd]})</small></span><span><a href="/events/${x.id}.html">${esc(x.name)}</a><br><span class="meta">${x.kagura ? esc(x.kagura) + " ・ " : ""}${esc(x.prefecture)}${esc(x.city ?? "")}</span></span></li>`).join("")}</ol>` : "";
 };
 for (const e of events) {
   const JST = "+09:00";
@@ -617,11 +608,12 @@ for (const e of events) {
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
     head: e.lat != null ? LEAFLET : "",
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? "" : '<span class="tag">終了しました</span>'}`)}
-<table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
-<tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table>
+<div class="keyinfo"><table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
+<tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table></div>
+<p class="actions">${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
+${shareBlock(`/events/${e.id}.html`, e.name)}
 <p>${esc(e.description)}</p>
-${others.length ? `<p class="meta">ほかの日程: ${others.map((x) => `<a href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("・")}</p>` : ""}
-<p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
+${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${mapBlock(e)}
 ${sourceNote(e)}${GUIDE_LINK}
 ${isUpcoming(e) ? stayBlock(e) : ""}
@@ -639,9 +631,10 @@ for (const r of regular) {
     path: `/regular/${r.id}.html`, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     head: r.lat != null ? LEAFLET : "",
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
-<table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table>
+<div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table></div>
+${r.url ? `<p class="actions"><a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
+${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
-${r.url ? `<p><a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 ${mapBlock(r)}
 ${sourceNote(r)}${GUIDE_LINK}
 ${affiliateBlock(r)}

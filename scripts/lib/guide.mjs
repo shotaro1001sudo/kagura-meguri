@@ -43,14 +43,15 @@ export function guideHtml({ esc, kaguraLink }) {
     if (first) { order.push(id); n = order.length; }
     return `<sup class="cite"><a href="#src-${n}"${first ? ` id="ref-${n}"` : ""} aria-label="出典${n}">[${n}]</a></sup>`;
   }).join("");
-  const chapter = (i) => { const [id, title] = CHAPTERS[i]; return `<h2 id="${id}" class="gsec"><span class="no">${String(i + 1).padStart(2, "0")}</span>${title}</h2>`; };
+  const toToc = '<p class="totoc"><a href="#toc">↑ 目次へ戻る</a></p>';
+  const chapter = (i) => { const [id, title] = CHAPTERS[i]; return `${i ? toToc : ""}<h2 id="${id}" class="gsec"><span class="no">${String(i + 1).padStart(2, "0")}</span>${title}</h2>`; };
   const card = (title, inner, sub = "") => `<section class="gcard"><h3>${title}${sub ? `<small>${sub}</small>` : ""}</h3>${inner}</section>`;
   const cards = (...xs) => `<div class="gcards">${xs.join("")}</div>`;
 
   const body = `
 <p>神楽(かぐら)は、神社の祭りなどで神様に奉納される歌と舞です。地域ごとに、囃子(はやし)の速さや衣装、演目が大きく違います。</p>
 <p>このページでは、はじめて神楽を観る方に向けて、観られる場所と見どころ、マナー、服装を、各地の公式情報をもとにまとめました。</p>
-<nav class="toc" aria-label="このページの目次"><ol>${CHAPTERS.map(([id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol></nav>
+<nav class="toc" id="toc" aria-label="このページの目次"><ol>${CHAPTERS.map(([id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol></nav>
 
 ${chapter(0)}
 ${cards(
@@ -155,6 +156,7 @@ ${cards(
 </ul>`),
   card("予約が必要な公演も", `<p>公演によっては、事前の予約が必要だったり、当日受付の枠が決まっていたりします。各公演のページで確かめてください。</p>`))}
 
+${toToc}
 <h2>神楽を探す</h2>
 <p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・場所で探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a></p>`;
 
