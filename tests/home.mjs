@@ -16,6 +16,7 @@ export function homeTests({ ok, section, OUT, build }) {
   ok(later.length === 1 && later[0].href === "/month/2026-12.html" && later[0].text === "12月 2件" && later[0].c["中国"] === 2 && later[0].c["九州・沖縄"] === 0, "その先の月は、件数つきのボタンで、月のページへ", JSON.stringify(later));
   ok($("#list .card").length === 4 && !$("#list").text().includes("12月5日"), "一覧のカードは、直近2か月の分だけ");
   ok($(".regions").attr("hidden") !== undefined && $(".regions button").map((_, b) => $(b).text()).get().join() === "全国,中国,九州・沖縄", "地方のボタン(開催のある地方だけ)。JS が動くときだけ表示する");
+  ok(!$('main a[href="/submit.html"]').length, "トップの一覧の途中に、投稿のボタンを置かない(入口は、メニューの「主催者の方へ」)");
   ok(!$("main select#f").length && !$("main").text().includes("月ごとに探す"), "都道府県の選択欄と、重複する「月ごとに探す」はなくした");
 
   // 地方のボタンの動き(ブラウザと同じように、ページのスクリプトを動かす)
@@ -35,9 +36,9 @@ export function homeTests({ ok, section, OUT, build }) {
 
   section("メインメニュー(探し方で並べる)");
   const navOf = (p) => { const q = cheerio.load(read(join(OUT, p))); return q(".top nav a").map((_, a) => ({ t: q(a).text(), h: q(a).attr("href"), c: q(a).attr("aria-current") })).get(); };
-  ok(navOf("index.html").map((x) => x.t).join() === "これからの神楽,日付で探す,地図で探す,種類で探す,はじめての神楽", "メニューは「これからの神楽・日付で探す・地図で探す・種類で探す・はじめての神楽」");
+  ok(navOf("index.html").map((x) => x.t).join() === "開催予定,日付で探す,地図で探す,種類で探す,はじめての神楽,主催者の方へ", "メニューは「開催予定・日付で探す・地図で探す・種類で探す・はじめての神楽・主催者の方へ」");
   const cur = (p) => navOf(p).filter((x) => x.c).map((x) => `${x.t}:${x.c}`).join();
-  ok(cur("index.html") === "これからの神楽:page" && cur("calendar.html") === "日付で探す:page" && cur("weekend.html") === "日付で探す:true" && cur("this-month.html") === "日付で探す:true" && cur("month/2026-11.html") === "日付で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "はじめての神楽:page", "今いる場所: そのページなら page、日付の各ページでは「日付で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
+  ok(cur("index.html") === "開催予定:page" && cur("organizers.html") === "主催者の方へ:page" && cur("submit.html") === "主催者の方へ:true" && cur("calendar.html") === "日付で探す:page" && cur("weekend.html") === "日付で探す:true" && cur("this-month.html") === "日付で探す:true" && cur("month/2026-11.html") === "日付で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "はじめての神楽:page", "今いる場所: そのページなら page、日付の各ページでは「日付で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
   const cal = cheerio.load(read(join(OUT, "calendar.html")));
   ok(cal('.datenav a[href="/weekend.html"]').length === 1 && cal('.datenav a[href="/this-month.html"]').length === 1, "「日付で探す」(カレンダー)のページの上に、今週末・今月への入口");
   ok($("#menubtn").attr("hidden") !== undefined && $("#menubtn").attr("aria-controls") === "gnav" && $("#gnav").length === 1, "スマホのメニューのボタン: JS が動くときだけ出す(JS がなければ、メニューは常に見える)");

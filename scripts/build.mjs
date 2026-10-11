@@ -200,11 +200,12 @@ const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.Int
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
 // メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値)]
 const NAV = [
-  ["/", "これからの神楽", ["/"]],
+  ["/", "開催予定", ["/"]],
   ["/calendar.html", "日付で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"]],
   ["/map.html", "地図で探す", ["/map.html"]],
   ["/kagura/", "種類で探す", ["/kagura/"]],
   ["/guide.html", "はじめての神楽", ["/guide.html"]],
+  ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"]],
 ];
 const navLink = ([h, t, group], active) => {
   const cur = active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
@@ -345,10 +346,9 @@ ${MOONSCAPE}${sparksHtml}
 <h2>これからの神楽</h2>
 ${regionButtons}
 ${adSlot(cfg.adsense.slotList)}
-<div id="list">${homeList || empty("現在掲載中の開催情報はありません。開催情報の掲載は、下のボタン、またはフッターからお寄せください。")}</div>
+<div id="list">${homeList || empty("現在掲載中の開催情報はありません。開催情報の掲載は、上のメニューの「主催者の方へ」からお寄せください。")}</div>
 <p class="empty" id="none" hidden>この地方の${laterMonths.length ? "、直近の開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
 ${laterLinks}
-<div class="filters"><a class="btn ghost" href="/submit.html">開催情報を投稿する</a></div>
 <script>(function(){var g=document.querySelector('.regions');if(!g)return;g.hidden=false;
 g.addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;var r=b.dataset.r;
 g.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
@@ -663,12 +663,12 @@ ${otherWays("/this-month.html")}`,
 // ---------- 固定ページ ----------
 const doc = (path, title, desc, inner, opts = {}) => write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, body: `${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
 
-doc("/submit.html", "開催情報を投稿する", "神楽の開催情報の掲載依頼フォーム", `<p class="meta">掲載される場所、掲載までの流れ、定期公演や年間日程の送り方は、<a href="/organizers.html">主催者・関係者の方へ</a>をご覧ください。</p>${submitForm(cfg)}`, { lead: "神楽の開催情報を、お寄せください(無料)", layout: { noindex: true, withForm: true } });
+doc("/submit.html", "開催情報を投稿する", "神楽の開催情報の掲載依頼フォーム", `<p class="meta">掲載される場所、掲載までの流れ、定期公演や年間日程の送り方は、<a href="/organizers.html">主催者・関係者の方へ</a>をご覧ください。</p>${submitForm(cfg)}`, { lead: "神楽の開催情報を、お寄せください(無料)", layout: { noindex: true, withForm: true, active: "/submit.html" } });
 
 // 主催者・関係者向け(掲載の依頼を増やす。「神楽 イベント 掲載 無料」のような検索にも当てる)
 doc("/organizers.html", "主催者・関係者の方へ", `神楽の主催者・神社・保存会・神楽団・自治体・観光協会の皆さまへ。${cfg.siteName}は、神楽の開催情報を無料で掲載します。掲載される場所、送り方、掲載までの流れ、訂正・削除の方法をご案内します。`,
   organizersHtml({ esc, siteName: cfg.siteName, formReady: formReady(cfg) }),
-  { lead: "神楽の開催情報を、無料で掲載します", layout: { ld: crumbsLd([["ホーム", "/"], ["主催者・関係者の方へ"]]) } });
+  { lead: "神楽の開催情報を、無料で掲載します", layout: { active: "/organizers.html", ld: crumbsLd([["ホーム", "/"], ["主催者・関係者の方へ"]]) } });
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報`, `
 <p class="symbol"><img src="/symbol.png" alt="${esc(op.name)}のシンボル" width="120" height="120"></p>
