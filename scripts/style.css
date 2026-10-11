@@ -10,7 +10,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.95 var(--sans);
 background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .35 0 0 0 0 .3 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 a{color:var(--ac);text-underline-offset:4px;text-decoration-thickness:1px}
 .wrap{max-width:860px;margin:0 auto;padding:0 24px}
-h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:.1em}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:500;letter-spacing:.1em}
 h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px}h2:after{content:"";flex:1;height:1px;background:var(--line)}
 :focus-visible{outline:2px solid var(--ac);outline-offset:3px;border-radius:2px}
 .skip{position:absolute;left:12px;top:-60px;background:var(--ac);color:var(--onac);padding:10px 16px;z-index:10;text-decoration:none;border-radius:2px}
@@ -29,10 +29,6 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .top nav a.on{font-weight:500}
 .top nav a[data-guide]{align-self:center;min-height:36px;padding:4px 14px;border:1px solid var(--line);border-radius:999px;color:var(--fg)}
 .top nav a[data-guide]:hover,.top nav a[data-guide].on{border-color:var(--ac);color:var(--ac)}
-/* カレンダーのページの上の、今週末・今月への入口 */
-.datenav{display:flex;flex-wrap:wrap;gap:8px 20px;margin:4px 0 8px}
-.datenav a{color:var(--ac);text-decoration:none;font-size:.92rem;padding:8px 0;min-height:44px;display:inline-flex;align-items:center}
-.datenav a:hover{text-decoration:underline}
 /* スマホ: 三本線のボタンで、メニューを開け閉めする(JS が動くときだけ。navjs クラス) */
 .menubtn{display:none}
 @media(max-width:640px){
@@ -73,7 +69,7 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 .date{flex:none;width:60px;white-space:nowrap;text-align:center;font-family:var(--serif);line-height:1.2}
 .date small{display:block;font-size:.8rem;color:var(--mut);letter-spacing:.15em}
 .date b{display:block;font-size:2rem;font-weight:500;color:var(--ac)}
-.card h3{margin:0 0 2px;font-size:1.08rem;line-height:1.6}.card h3 a{color:var(--fg);text-decoration:none}.card h3 a:after{content:"";position:absolute;inset:0}
+.card :is(h3,h4){margin:0 0 2px;font-size:1.08rem;line-height:1.6}.card :is(h3,h4) a{color:var(--fg);text-decoration:none}.card :is(h3,h4) a:after{content:"";position:absolute;inset:0}
 .meta{color:var(--mut);font-size:.85rem}
 .tag{display:inline-block;font-size:.82rem;color:var(--ac2);text-decoration:none;margin:0 14px 0 0;padding:8px 0 4px;border-bottom:1px solid var(--line);position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .tag:hover{color:var(--ac);border-color:var(--ac)}
@@ -106,7 +102,6 @@ h2{font-size:1.15rem;margin:56px 0 16px;display:flex;align-items:center;gap:14px
 select,input,button{font:inherit;font-size:.92rem;padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:.92rem;letter-spacing:.12em;transition:opacity var(--t-s) var(--ease);margin:0 6px 8px 0}
 .btn:hover{opacity:.85}.btn.ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
-.filters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 6px}
 
 /* 詳細 */
 table.info{border-collapse:collapse;width:100%;margin:12px 0 20px}
@@ -118,7 +113,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 @media(prefers-color-scheme:dark){#map{filter:invert(.9) hue-rotate(180deg) sepia(.3) saturate(.6)}}
 .leaflet-popup-content-wrapper{border-radius:2px;background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
 
-/* カレンダー */
+/* 日付・場所で探す */
 /* 日付・場所で探す */
 .finder{margin:8px 0 0;display:grid;gap:14px}
 .finder fieldset{border:0;margin:0;padding:0;min-width:0}
@@ -147,7 +142,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 }
 
 footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 48px;color:var(--mut);font-size:.82rem;text-align:center;letter-spacing:.12em;line-height:2.4}
-footer a{color:var(--mut);padding:8px 2px}
+footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2px;line-height:2.4}
 
 /* ゆっくり現れる */
 /* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
@@ -161,7 +156,7 @@ footer a{color:var(--mut);padding:8px 2px}
 .taglist{display:flex;flex-wrap:wrap;gap:2px 0}.empty:empty,.monthlist:empty{display:none}
 
 /* 印刷: ナビ・広告・旅の案内を省く */
-@media print{.top,footer,.adwrap,.adph,.aff,.stay,.filters,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
+@media print{.top,footer,.adwrap,.adph,.aff,.stay,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
 
 /* フォーム */
 .form{max-width:640px}
@@ -177,7 +172,7 @@ footer a{color:var(--mut);padding:8px 2px}
 .req{background:var(--ac);color:var(--onac)}.opt{border:1px solid var(--line);color:var(--mut)}
 .hint{display:block;color:var(--mut);font-size:.8rem;margin-top:4px}
 .err{display:block;color:var(--ac);font-size:.85rem;min-height:0}.err:empty{display:none}
-.consent label{display:flex;gap:10px;align-items:flex-start}.consent input{width:auto;min-height:0;margin-top:6px}
+.consent label{display:flex;gap:10px;align-items:flex-start}.consent input{flex:none;width:20px;height:20px;min-height:0;margin-top:5px;accent-color:var(--ac)}
 .hp{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
 .status{margin-top:14px;min-height:1.6em}.status.ok{color:var(--fg);border-left:3px solid var(--ac2);padding-left:10px}.status.bad{color:var(--ac);border-left:3px solid var(--ac);padding-left:10px}
 .form .btn[disabled]{opacity:.5;cursor:wait}

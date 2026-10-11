@@ -51,7 +51,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
       ok(desc.length >= 55 && desc.length <= 125, `${p}: 説明文が、検索結果で読みやすい長さ(55〜125字)`, `${desc.length}字`);
       ok(!descs.has(desc), `${p}: 説明文が他ページと重複しない`, desc);
       descs.set(desc, p);
-    }
+    } else ok(desc.length >= 50 && desc.length <= 125, `${p}: 説明文が、中身の分かる長さ(50〜125字)`, `${desc.length}字`);
     ok(title.length <= (key === "detail" ? 75 : 55), `${p}: タイトルが長すぎない`, `${title.length}字: ${title}`);
     ok(title.endsWith(base.includes("example") ? "" : $('meta[property="og:site_name"]').attr("content")), `${p}: タイトルの末尾にサイト名`);
     if (/^\/pref\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに都道府県名`);
@@ -71,7 +71,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     // 構造化データ
     const lds = $('script[type="application/ld+json"]').map((_, e) => JSON.parse($(e).text())).get().flat();
     const types = lds.map((x) => x["@type"]);
-    if (key === "detail" || /^\/(kagura|pref|month)\/./.test(p) || ["/kagura/index.html"].includes(p)) {
+    if (p !== "/index.html") { // トップ以外の、検索に出るページには、すべてパンくず(画面と構造化データ)がある
       ok(types.includes("BreadcrumbList"), `${p}: パンくずの構造化データ`);
       const bc = lds.find((x) => x["@type"] === "BreadcrumbList");
       const crumbItems = $("nav.crumbs li").map((_, e) => $(e).text().trim()).get();

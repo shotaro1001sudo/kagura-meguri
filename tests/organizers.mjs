@@ -43,5 +43,5 @@ export function organizersTests({ ok, section, OUT, build }) {
   ok(text.includes("無料") && text.includes("転載しません") && text.includes("サイトに表示しません") && read(join(OUT, "privacy.html")).includes("ご連絡先は、サイトには掲載しません") && read(join(OUT, "disclaimer.html")).includes("転載しません"), "方針(無料・転載しない・連絡先を表示しない)が、ポリシーの記載と一致している");
   // 入口
   const home = cheerio.load(read(join(OUT, "index.html")));
-  ok(home('footer a[href="/organizers.html"]').length === 1 && sf('main a[href="/organizers.html"]').length === 1, "フッターと、投稿フォームのページから、リンクしている");
+  ok(home('footer a[href="/organizers.html"]').length === 1 && sf('main .prose a[href="/organizers.html"]').length === 1 && sf('main .crumbs a[href="/organizers.html"]').length === 1, "フッターと、投稿フォームのページから、リンクしている");
 }

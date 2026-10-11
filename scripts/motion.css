@@ -18,7 +18,7 @@
 .js .ms-sky{translate:0 calc(var(--py,0px)*.42)}.js .ms-kasumi{translate:0 calc(var(--py,0px)*.3)}.js .ms-land{translate:0 calc(var(--py,0px)*.18)}
 .js .vert{translate:0 calc(var(--py,0px)*.12)}
 .js .sparks{translate:0 calc(var(--py,0px)*.2)}
-@media(max-width:560px){.js .home-hero:before,.js .ms g,.js .vert,.js .sparks{translate:none}}
+@media(max-width:560px){.home-hero:before{inset:-40px 0 auto}.js .home-hero:before,.js .ms g,.js .vert,.js .sparks{translate:none}}
 /* 情景の、ずっと続く動き: 霞はゆっくり漂い、月の光と星は、かすかに明滅する(JS が動き、動きを減らさない設定のときだけ) */
 @keyframes kasumi{from{transform:translateX(-12px)}to{transform:translateX(12px)}}
 @keyframes halo{0%,100%{opacity:.75}50%{opacity:1}}
@@ -52,8 +52,8 @@
 .btn:hover{opacity:1;background:var(--fg);border-color:var(--fg);color:var(--bg)}
 .btn.ghost:hover{background:var(--fg);border-color:var(--fg);color:var(--bg)}
 .btn[disabled]:hover{background:var(--ac);border-color:var(--ac);color:var(--onac)}
-.card h3 a{transition:color var(--t-s) var(--ease)}
-.card:hover h3 a{color:var(--ac)}
+.card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
+.card:hover :is(h3,h4) a{color:var(--ac)}
 .card:before{content:"";position:absolute;left:-14px;top:22px;bottom:22px;width:2px;background:var(--ac);scale:1 0;transform-origin:top;transition:scale var(--t-s) var(--ease)}
 .card:hover:before{scale:1 1}
 .logo img{transition:opacity var(--t-s) var(--ease)}.logo:hover img{opacity:.8}
