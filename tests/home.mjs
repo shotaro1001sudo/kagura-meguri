@@ -49,6 +49,17 @@ export function homeTests({ ok, section, OUT, build }) {
   ok(!btn.hidden && dd.documentElement.classList.contains("navjs") && opened && btn.getAttribute("aria-expanded") === "false" && !nav.classList.contains("open"), "ボタンでメニューが開き、Esc キーで閉じる(読み上げにも開閉の状態を伝える)");
   dm.window.close();
 
+  section("開催ページ: 経路のボタン・あわせて観たい神楽");
+  const evs = JSON.parse(read("tests/fixtures/events.test.json")).filter((e) => e.status === "published");
+  const withMap = evs.find((e) => e.lat != null), noMap = evs.find((e) => e.lat == null);
+  const pg = (e) => cheerio.load(read(join(OUT, `events/${e.id}.html`)));
+  const wm = pg(withMap), route = wm('a[href*="google.com/maps"]');
+  ok(route.length === 1 && route.text() === "経路を調べる" && route.closest(".routebtn").prevAll("#map").length === 1, "「経路を調べる」は、地図の下に1つだけ");
+  ok(!noMap || pg(noMap)('a[href*="google.com/maps"]').length === 0, "地図のない開催では、経路のボタンを出さない", noMap?.id);
+  const rel = wm("h2").filter((_, h) => wm(h).text() === "あわせて観たい神楽");
+  ok(!wm("h2").text().includes("ほかの") && (rel.length === 0 || /・/.test(rel.next(".venuelist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));
+  ok(/.crumbs li{display:flex;align-items:center}/.test(read("scripts/style.css")), "パンくずの、リンクと今のページ名の高さをそろえる");
+
   section("検索向け: タイトルの年・開催の構造化データ");
   const titleOf = (p) => cheerio.load(read(join(OUT, p)))("title").text();
   ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島県の神楽 日程【2026年】"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));

@@ -280,7 +280,7 @@ const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encode
 const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは、市区町村のおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは、町名ごとのおおよその位置です。正確な場所は公式情報をご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
-const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}` : "");
+const mapBlock = (x) => (x.lat != null ? `<div id="map" style="height:260px" role="region" aria-label="会場周辺の地図"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('map');if(typeof L==='undefined'){b.hidden=true;return}var m=L.map('map',{scrollWheelZoom:false}).setView([${x.lat},${x.lng}],${zoomOf(x)});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap'}).addTo(m);L.marker([${x.lat},${x.lng}]).addTo(m)})</script>${geoNote(x)}<p class="routebtn"><a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
@@ -514,8 +514,8 @@ const vcal = (list) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteN
 const related = (e) => {
   const same = upcoming.filter((x) => x.id !== e.id && x.kagura && x.kagura === e.kagura).slice(0, 4);
   const near = upcoming.filter((x) => x.id !== e.id && x.prefecture === e.prefecture && !same.includes(x)).slice(0, 4);
-  const block = (h, arr) => (arr.length ? `<h2>${h}</h2><ul class="venuelist">${arr.map((x) => `<li><a href="/events/${x.id}.html">${esc(x.name)}</a><span class="meta"> ${esc(jpDate(x.start.slice(0, 10)))} ${esc(x.prefecture)}${esc(x.city ?? "")}</span></li>`).join("")}</ul>` : "");
-  return block(`ほかの${esc(e.kagura || "神楽")}の開催`, same) + block(`${esc(e.prefecture)}のほかの開催`, near);
+  const list = [...same, ...near];
+  return list.length ? `<h2>あわせて観たい神楽</h2><ul class="venuelist">${list.map((x) => `<li><a href="/events/${x.id}.html">${esc(x.name)}</a><span class="meta"> ${esc(jpDate(x.start.slice(0, 10)))} ・ ${x.kagura ? esc(x.kagura) + "・" : ""}${esc(x.prefecture)}${esc(x.city ?? "")}</span></li>`).join("")}</ul>` : "";
 };
 for (const e of events) {
   const JST = "+09:00";
@@ -532,7 +532,6 @@ for (const e of events) {
   if (e.fee) ld.offers = { "@type": "Offer", description: e.fee, url: e.url || `${cfg.baseUrl}/events/${e.id}.html`, availability: "https://schema.org/InStock", ...(/無料/.test(e.fee) && !/円/.test(e.fee) ? { price: "0", priceCurrency: "JPY" } : /[\d,]+円/.test(e.fee) ? { price: e.fee.match(/([\d,]+)円/)[1].replace(/,/g, ""), priceCurrency: "JPY" } : {}) }; // 金額があれば、最初の金額(一般・大人の料金)を価格にする
   if (/無料/.test(e.fee ?? "") && !/円/.test(e.fee ?? "")) ld.isAccessibleForFree = true;
   if (e.lat != null) ld.location.geo = { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng };
-  const q = encodeURIComponent(`${e.venue} ${e.prefecture}${e.city}`.trim());
   const when = e.timeUnknown
     ? fmt(e.start).replace(/ \d\d:\d\d$/, "") + (e.end && e.end.slice(0, 10) !== e.start.slice(0, 10) ? ` 〜 ${fmt(e.end).replace(/ \d\d:\d\d$/, "")}` : "") + "(時間は公式情報をご確認ください)"
     : fmt(e.start) + (e.end ? " 〜 " + fmt(e.end) : "");
@@ -546,7 +545,7 @@ for (const e of events) {
 <table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
 <tr><th>場所</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table>
 <p>${esc(e.description)}</p>
-<p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a> <a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
+<p>${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${isUpcoming(e) ? stayBlock(e) : ""}
 ${mapBlock(e)}
 ${sourceNote(e)}${GUIDE_LINK}
@@ -557,7 +556,6 @@ ${adSlot(cfg.adsense.slotDetail)}`,
 
 // ---------- 詳細ページ(定期公演) ----------
 for (const r of regular) {
-  const q = encodeURIComponent(`${r.venue ?? ""} ${r.prefecture}${r.city ?? ""}`.trim());
   const row = (th, v) => (v ? `<tr><th>${th}</th><td>${esc(v)}</td></tr>` : "");
   write(`dist/regular/${r.id}.html`, layout({
     title: `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
@@ -567,7 +565,7 @@ for (const r of regular) {
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="/pref/${encodeURIComponent(r.prefecture)}.html">${esc(r.prefecture)}</a>`)}
 <table class="info">${row("開催", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("場所", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table>
 <p>${esc(r.description)}</p>
-<p>${r.url ? `<a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">経路を調べる</a></p>
+${r.url ? `<p><a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 ${mapBlock(r)}
 ${sourceNote(r)}${GUIDE_LINK}
 ${adSlot(cfg.adsense.slotDetail)}${affiliateBlock(r)}`,
