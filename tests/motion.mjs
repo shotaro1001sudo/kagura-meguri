@@ -17,7 +17,8 @@ export async function motionTests({ ok, section, OUT }) {
   // opacity:0 で隠すルールは、すべて「.js」つき(= JavaScriptが動き、動きを減らす設定でないときだけ)
   const hiding = [...noKeyframes.matchAll(/([^{}]+)\{[^{}]*opacity:0[;}][^{}]*\}/g)].map((m) => m[1].trim()).filter((s) => !s.includes("%"));
   ok(hiding.every((s) => /^\.js[ :]/.test(s) || /^\.sparks i$/.test(s)), "opacity:0 で隠す規則は、すべて .js つき(JSなしでは、隠れない)", hiding.join(" | "));
-  ok(/\.js main\{animation:pagein var\(--t-m\) var\(--ease\) both\}/.test(noKeyframes) && /@keyframes pagein\{from\{opacity:0;translate:0 8px\}to\{opacity:1;translate:none\}\}/.test(css), "全ページ共通: ページを開いたとき、本文全体(main)が1回だけ、静かに現れる");
+  ok(/\.js main\{animation:pagein var\(--t-m\) var\(--ease\) backwards\}/.test(noKeyframes) && /@keyframes pagein\{from\{opacity:0;translate:0 8px\}to\{opacity:1;translate:none\}\}/.test(css), "全ページ共通: ページを開いたとき、本文全体(main)が1回だけ、静かに現れる");
+  ok(!/\.js main\{animation:[^}]*\b(both|forwards)\b/.test(noKeyframes), "本文の出現の動きは、終わりの値を残さない(残すと、ガイドの固定の目次がスクロールについてこない)");
   const rm = css.slice(css.lastIndexOf("@media(prefers-reduced-motion:reduce){"));
   ok(/animation:none!important/.test(rm) && /transition:none!important/.test(rm) && /\.sparks\{display:none!important\}/.test(rm), "「動きを減らす」設定で、アニメーション・遷移・火の粉が、止まる");
   ok(/@media\(hover:hover\) and \(prefers-reduced-motion:no-preference\)/.test(css), "ホバーの演出は、ホバーできる端末で、動きを減らさない設定のときだけ");

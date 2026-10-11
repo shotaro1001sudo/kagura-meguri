@@ -18,7 +18,7 @@ export function editorialTests({ ok, section, OUT, build }) {
   const home = page("index.html");
   ok(h2s(home).includes("毎週・毎晩の定期公演") && h2s(home).includes("都道府県で探す") && h2s(home).includes("種類で探す") && !home("main").text().includes("いつでも観られる"), "トップ: 「毎週・毎晩の定期公演」「都道府県で探す」「種類で探す」(「いつでも観られる」は言い過ぎなので使わない)", h2s(home).join(","));
   ok(!/カレンダーで探せます/.test(home('meta[name="description"]').attr("content")) && /日付・場所・地図で探せます/.test(home('meta[name="description"]').attr("content")), "トップの説明文に、なくなった「カレンダー」を書かない");
-  ok(home(".copy .sub").text().includes("日付・場所・地図から探せます"), "トップの副題で、何ができるサイトかを伝える");
+  ok(home(".copy .sub").length === 0 && home(".copy p").length === 1, "トップの見出しの下は「各地で催される神楽の、日取りと舞台を。」の1行だけ(副題は外した)");
   ok(home("footer a").first().text() === "主催者の方へ(掲載は無料)", "フッターの主催者向けの入口は「主催者の方へ(掲載は無料)」");
   const org = page("organizers.html"), sub = page("submit.html");
   ok(org("h1").text() === "主催者の方へ" && org('main a[href="/submit.html"].btn').first().text() === "掲載を依頼する(無料)" && sub("h1").text() === "掲載の依頼" && sub("legend").last().text() === "2. ご依頼者について", "主催者向けの言葉: 「主催者の方へ」「掲載を依頼する」「掲載の依頼」にそろえる");

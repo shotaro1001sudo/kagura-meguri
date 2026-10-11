@@ -32,7 +32,7 @@ export async function uxTests({ ok, section, OUT }) {
   ok(/body:before,body:after\{[^}]*opacity:\.4\}/.test(css), "広い画面の左右の模様は薄く");
 
   section("UI: トップの最初の画面");
-  ok(home(".home-hero .next a").length === 1 && home(".home-hero .next .lbl").text() === "次の開催", "見出しの中に、次の開催を1件出す");
+  ok(home(".home-hero .next").length === 0, "見出しの中に「次の開催」は出さない(運営者の判断で外した)");
   ok(/@media\(max-width:560px\)\{\.quick\{grid-template-columns:repeat\(3,1fr\)\}/.test(css), "スマホでは、今週末・今月・はじめての入口を横に3つ並べる");
   const regN = home(".reglist .card").length;
   ok(regN <= 3 ? home("#regmore").length === 0 : home("#regmore").length === 1 && home("#regmore").parent().attr("hidden") !== undefined, "定期公演が4件以上なら「すべて表示」のボタンを用意する(JS が動くときだけ出す)", String(regN));
@@ -101,6 +101,8 @@ export async function uxTests({ ok, section, OUT }) {
   const sub = page("submit.html");
   ok(sub("details.more-fields #address").length === 1 && sub("details.more-fields #description").length === 1 && sub("details.more-fields #date").length === 0 && sub("legend").first().text() === "1. 開催の情報", "掲載の依頼: 任意の項目は「くわしく書く」で開く。段階に番号");
   ok(sub(".consent label a").length === 0 && sub(".consent .links a").length === 2, "同意の欄: リンクは文の後ろ(チェックボックスと離す)");
-  ok(page("organizers.html")(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");
+  const org = page("organizers.html");
+  ok(org(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");
+  ok(org(".opoints li").length === 3 && org(".ocards li").length === 5 && org(".oways .oway").length === 3 && org("ol.steps li").length === 3 && org(".faq details summary").length === 3, "主催者の方へ: 要点のカード3つ・載る場所5つ・送り方3つ・番号つきの手順・開閉式のよくあるご質問");
   ok(page("kagura/石見神楽.html")("main h2").first().text() !== "石見神楽とは", "種類のページ: 開催予定を先に、説明は後ろに");
 }

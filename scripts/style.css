@@ -29,11 +29,9 @@ html{scroll-padding-top:84px}
 .top nav{display:flex;gap:4px 22px;flex-wrap:wrap}
 .top nav a{color:var(--mut);text-decoration:none;font-size:var(--fs-s);padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .top nav a:hover,.top nav a.on{color:var(--fg);border-color:var(--ac)}
-/* メインメニュー: 文字を少し大きく。今いるページは、濃い文字と朱の太い下線。ガイドは、枠で少し目立たせる */
+/* メインメニュー: 文字を少し大きく。今いるページは、濃い文字と朱の太い下線(すべてのタブで同じ見た目) */
 .top nav a{font-size:var(--fs-s);border-bottom-width:2px}
 .top nav a.on{font-weight:500}
-.top nav a[data-guide]{align-self:center;min-height:36px;padding:4px 14px;border:1px solid var(--line);border-radius:999px;color:var(--fg)}
-.top nav a[data-guide]:hover,.top nav a[data-guide].on{border-color:var(--ac);color:var(--ac)}
 /* スマホ: 三本線のボタンで、メニューを開け閉めする(JS が動くときだけ。navjs クラス) */
 .menubtn{display:none}
 @media(max-width:640px){
@@ -48,7 +46,6 @@ html{scroll-padding-top:84px}
   .navjs .top nav{display:none;position:absolute;right:0;left:0;top:100%;z-index:20;flex-direction:column;gap:0;padding:6px 16px 12px;background:var(--bg);border:1px solid var(--line);border-top:0;box-shadow:0 12px 24px -16px rgb(0 0 0/.5)}
   .navjs .top nav.open{display:flex}
   .navjs .top nav a{border-bottom:1px solid var(--line);padding:12px 4px}
-  .navjs .top nav a[data-guide]{align-self:stretch;margin-top:10px;justify-content:center;border-radius:4px}
 }
 
 /* ヒーロー */
@@ -56,8 +53,6 @@ html{scroll-padding-top:84px}
 .hero h1{font-size:var(--fs-h1);margin:0 0 10px;line-height:1.5;font-weight:500}
 .hero p{margin:0;color:var(--mut)}
 .home-hero{display:flex;gap:32px;align-items:flex-start;justify-content:space-between;min-height:220px;padding-top:28px;padding-bottom:16px}
-.next{margin:14px 0 0!important}.next a{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:8px 14px;border-left:2px solid var(--ac);background:color-mix(in srgb,var(--card) 80%,transparent);color:var(--fg);text-decoration:none;font-size:var(--fs-s)}
-.next a:hover{color:var(--ac)}.next .lbl{color:var(--ac);font-size:var(--fs-xs);letter-spacing:.08em}.next b{font-weight:500}
 .home-hero .copy{flex:1;min-width:0}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
@@ -181,6 +176,30 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 /* ゆっくり現れる */
 /* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
 
+/* 主催者の方へ: 要点のカード・載る場所・送り方・番号つきの手順・開閉式のよくあるご質問 */
+.olead{line-height:2.05}
+.opoints,.ocards,.steps{list-style:none;padding:0!important;display:grid;gap:10px}
+.opoints{margin:18px 0 12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.opoints li,.ocards li,.steps li{margin:0!important}
+.opoints li{padding:14px 16px;background:var(--card);border:1px solid var(--line);border-top:2px solid var(--ac);border-radius:4px}
+.opoints b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin-bottom:4px}
+.opoints span{display:block;font-size:var(--fs-s);color:var(--mut);line-height:1.8}
+.octa{margin:4px 0 0}
+.ocards{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.ocards li{padding:14px 16px;border:1px solid var(--line);border-radius:4px;font-size:var(--fs-s);line-height:1.85}
+.ocards b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin-bottom:4px}
+.oways{display:grid;gap:12px}
+.oway{padding:2px 18px 14px;background:var(--card);border:1px solid var(--line);border-radius:4px}
+.oway h3{margin-top:14px!important}.oway table.info{margin:8px 0 0}.oway table.info tr:last-child :is(th,td){border-bottom:0}
+.steps{counter-reset:st;gap:14px}
+.steps li{counter-increment:st;display:grid;grid-template-columns:44px 1fr;gap:0 14px;align-items:start}
+.steps li:before{content:counter(st);grid-row:span 2;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--ac);color:var(--onac);font-family:var(--serif);font-size:var(--fs-l)}
+.steps b{font-family:var(--serif);font-weight:500;padding-top:8px}.steps span{font-size:var(--fs-s);line-height:1.85}
+.rules li{margin:8px 0!important}
+.faq details{border-top:1px solid var(--line)}.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;padding:12px 4px;min-height:44px;font-weight:500}
+.faq details p{margin:0 4px 14px;font-size:var(--fs-s);line-height:1.9}
+
 /* 固定ページ */
 .prose{max-width:680px}.prose h2{font-size:var(--fs-l);margin:40px 0 10px}.prose ul{padding-left:1.4em}.prose li{margin:4px 0}
 
@@ -232,7 +251,7 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .vitems{list-style:none;margin:4px 0 0;padding:0 0 0 1em}.vitems li{padding:2px 0;border:0!important}.vitems .md{color:var(--ac);font-family:var(--serif);margin-right:8px}
 .vjump{background:none;border:0;padding:6px 0;min-height:40px;font:inherit;font-weight:500;color:var(--fg);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px;cursor:pointer}.vjump:hover{color:var(--ac)}.vjump[disabled]{text-decoration:none;cursor:default;color:var(--fg)}
 .tech{margin:8px 0 0;font-size:var(--fs-s)}.tech summary{cursor:pointer;color:var(--mut);padding:10px 0;min-height:44px}.tech p{margin-top:4px}
-.hero .sub,.copy .sub{font-size:var(--fs-s);color:var(--mut);margin-top:6px;max-width:22em}.venuelist a:hover{color:var(--ac)}
+.venuelist a:hover{color:var(--ac)}
 @media(max-width:560px){.crumbs{margin-bottom:-18px}}
 
 /* 表(外部サービスの一覧など) */

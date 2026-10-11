@@ -212,12 +212,12 @@ const NAV = [
   ["/calendar.html", "日付・場所で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"]],
   ["/map.html", "地図で探す", ["/map.html"]],
   ["/kagura/", "種類で探す", ["/kagura/"]],
-  ["/guide.html", "はじめての神楽", ["/guide.html"]],
+  ["/guide.html", "神楽を初めて見る方へ", ["/guide.html"]],
   ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"]],
 ];
 const navLink = ([h, t, group], active) => {
   const cur = active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
-  return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}${h === "/guide.html" ? ' data-guide=""' : ""}>${t}</a>`;
+  return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}>${t}</a>`;
 };
 // スマホの三本線メニュー: JS が動くときだけ、ボタンを出して、メニューを畳む(JS がなければ、メニューは常に見える)
 const NAV_SCRIPT = `(function(){var h=document.documentElement,w=window,q=false;function sc(){q=false;h.classList.toggle('scrolled',(w.pageYOffset||0)>8)}w.addEventListener('scroll',function(){if(!q){q=true;w.requestAnimationFrame(sc)}},{passive:true});sc();var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
@@ -360,9 +360,6 @@ const homeList = homeMonths.map((k) => {
 const showAll = homeAll.length > HOME_CAP ? `<p class="more"><a class="btn ghost sm" id="showall" href="/calendar.html">直近の開催をすべて見る(${homeAll.length}件)</a></p>` : "";
 // 県のボタン: 地方を選んだとき、その地方に開催のある県が2つ以上あれば出す
 const prefButtons = regionsUsed.length ? `<div class="regions prefs" role="group" aria-label="都道府県で絞り込む" hidden><button type="button" data-p="" aria-pressed="true">すべての県</button>${prefsUsed.map((p) => `<button type="button" data-p="${esc(p)}" data-in="${regionOf(p)}" aria-pressed="false" hidden>${esc(p)}</button>`).join("")}</div>` : "";
-// 次の開催(トップの最初の画面に、開催を1件出す)
-const nextEv = upcoming.find((e) => e.start.slice(0, 10) >= today) ?? upcoming[0];
-const nextLine = nextEv ? `<p class="next"><a href="/events/${nextEv.id}.html"><span class="lbl">次の開催</span><span>${esc(mdw(nextEv.start.slice(0, 10)))}${nextEv.timeUnknown ? "" : ` ${startTimes(nextEv)}`}</span><b>${esc(nextEv.name)}</b><span class="meta">${esc(nextEv.prefecture)}${esc(nextEv.city ?? "")}</span></a></p>` : "";
 const laterLinks = laterMonths.length ? `<div class="laterwrap"><h3 class="mhead">この先の開催</h3><div class="taglist later">${laterMonths.map((k) => { const l = monthMap.get(k); return `<a class="tag" href="/month/${k}.html" data-n="${l.length}" data-c="${esc(regionCounts(l))}">${monthShort(k)} <span>${l.length}件</span></a>`; }).join("")}</div></div>` : "";
 const regionButtons = regionsUsed.length > 1 ? `<div class="regions" role="group" aria-label="地方で絞り込む" hidden><button type="button" data-r="" aria-pressed="true">全国</button>${regionsUsed.map((r) => `<button type="button" data-r="${r}" aria-pressed="false">${r}</button>`).join("")}</div>` : "";
 write("dist/index.html", layout({
@@ -375,9 +372,9 @@ write("dist/index.html", layout({
     itemListLd("開催予定の神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   body: `<section class="hero home-hero">
 ${MOONSCAPE}${sparksHtml}
-<div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1><p><span class="ph">各地で催される神楽の、</span><span class="ph">日取りと舞台を。</span></p><p class="sub"><span class="ph">公式情報で確かめた</span><span class="ph">全国の神楽の日程を、</span><span class="ph">日付・場所・地図から</span><span class="ph">探せます。</span></p>${nextLine}</div>
+<div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1><p><span class="ph">各地で催される神楽の、</span><span class="ph">日取りと舞台を。</span></p></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>はじめての神楽</b><small>見どころ・マナー・服装</small></a></nav>
+<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/guide.html"><b>初めて見る方へ</b><small>見どころ・マナー・服装</small></a></nav>
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
