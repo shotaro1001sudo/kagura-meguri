@@ -50,5 +50,10 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(home('.quick a[href="/guide.html"]').length === 0 && home('.top nav a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 1, "ガイドへは、メニューとフッターから(トップの入口はメニューと重なるので置かない)");
   const ev = cheerio.load(read(join(OUT, "events/t-full.html"))), rg = cheerio.load(read(join(OUT, "regular/r-nightly.html")));
   ok(ev('main a[href="/guide.html"]').length === 1 && rg('main a[href="/guide.html"]').length === 1, "開催・定期公演のページから、ガイドへリンクしている");
+  // 「各地の神楽の見どころ」以外の章は、特定の神楽・地域によらない、一般的な内容にする
+  const g = cheerio.load(read(join(D, "guide.html")));
+  g("#highlights").nextUntil("h2").remove(); g("#highlights").remove(); g("ol.sources").remove();
+  const general = g("main .guide").text().match(/.{0,12}(石見|広島|高千穂|御嶽|備中|安芸高田|島根|宮崎|大分|岡山).{0,12}/g) ?? [];
+  ok(general.length === 0, "見どころの章以外は、特定の神楽・地域の名前を出さない(一般的な内容)", general.join(" / "));
   rmSync(D, { recursive: true, force: true });
 }
