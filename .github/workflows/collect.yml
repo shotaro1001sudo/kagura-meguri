@@ -41,10 +41,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/events.json data/geocache.json data/collect-report.md data/collect-summary.json
+          git add data/events.json data/regular.json data/geocache.json data/collect-report.md data/collect-summary.json
           if git diff --cached --quiet; then echo "変更なし"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git commit -m "chore(auto): 週次の自動収集 $(date -u +%F) — 掲載 ${{ steps.summary.outputs.published }} / 保留 ${{ steps.summary.outputs.held }} / 取り下げ ${{ steps.summary.outputs.withdrawn }}"
-          git pull --rebase
+          git pull --rebase --autostash
           git push
           echo "changed=true" >> "$GITHUB_OUTPUT"
       # 5. 公開サイトの更新(GITHUB_TOKEN での push は、他のワークフローを自動では起動しないため、明示的に起動する)
