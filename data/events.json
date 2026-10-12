@@ -633,29 +633,5 @@
     "lat": 34.38528,
     "lng": 132.45528,
     "geoPrecision": "city"
-  },
-  {
-    "id": "npo-hiroshima-31f3938ffa",
-    "name": "「神謝歳」あさ神楽会",
-    "kagura": "広島神楽",
-    "prefecture": "広島県",
-    "city": "",
-    "venue": "",
-    "start": "2026-12-13T00:00",
-    "timeUnknown": true,
-    "fee": "",
-    "url": "https://www.instagram.com/asa4.kgr/",
-    "description": "",
-    "auto": true,
-    "sourceId": "npo-hiroshima",
-    "source": "NPO広島神楽芸術研究所(神楽日程表)",
-    "sourceUrl": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
-    "firstSeen": "2026-10-12",
-    "lastSeen": "2026-10-12",
-    "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "場所(市区町村・会場)が不明"
-    ]
   }
 ]
