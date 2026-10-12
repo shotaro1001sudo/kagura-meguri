@@ -94,7 +94,7 @@ html{scroll-padding-top:84px}
 .quick a:first-child{border-left:0}.quick a:hover{background:var(--card)}
 .quick b{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.quick b::after{content:" ›";color:var(--ac)}
 .quick small{color:var(--mut);font-size:var(--fs-s)}
-@media(max-width:560px){.quick{grid-template-columns:repeat(3,1fr)}.quick a{padding:10px 4px;min-height:52px;justify-content:center;align-items:center;text-align:center}.quick b{font-size:var(--fs-xs);letter-spacing:0;white-space:nowrap}.quick small{display:none}}
+@media(max-width:560px){.quick{grid-template-columns:repeat(2,1fr)}.quick a{padding:10px 4px;min-height:52px;justify-content:center;align-items:center;text-align:center}.quick b{font-size:var(--fs-xs);letter-spacing:0;white-space:nowrap}.quick small{display:none}}
 .adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
 .adwrap{margin:28px 0;min-height:0}
 /* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */

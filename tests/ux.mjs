@@ -33,7 +33,7 @@ export async function uxTests({ ok, section, OUT }) {
 
   section("UI: トップの最初の画面");
   ok(home(".home-hero .next").length === 0, "見出しの中に「次の開催」は出さない(運営者の判断で外した)");
-  ok(/@media\(max-width:560px\)\{\.quick\{grid-template-columns:repeat\(3,1fr\)\}/.test(css), "スマホでは、今週末・今月・はじめての入口を横に3つ並べる");
+  ok(/@media\(max-width:560px\)\{\.quick\{grid-template-columns:repeat\(2,1fr\)\}/.test(css) && home(".quick a").length === 2, "トップの入口は今週末・今月の2つ(ガイドはメニューと重なるので置かない)。スマホでは横に並べる");
   const regN = home(".reglist .card").length;
   ok(regN <= 3 ? home("#regmore").length === 0 : home("#regmore").length === 1 && home("#regmore").parent().attr("hidden") !== undefined, "定期公演が4件以上なら「すべて表示」のボタンを用意する(JS が動くときだけ出す)", String(regN));
   const hd = new JSDOM(read(join(OUT, "index.html")), { runScripts: "dangerously" });

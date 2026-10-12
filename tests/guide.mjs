@@ -47,7 +47,7 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(/guide\.html<\/loc><lastmod>/.test(read(join(D, "sitemap.xml"))) && read(join(D, "sitemap.xml")).includes(`guide.html</loc><lastmod>${CHECKED}<`), "サイトマップに載り、lastmod は確認日");
   // 入口(トップ・フッター・各開催ページ)
   const home = cheerio.load(read(join(OUT, "index.html")));
-  ok(home('.quick a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 1, "トップの入口と、フッターに、ガイドへのリンクがある");
+  ok(home('.quick a[href="/guide.html"]').length === 0 && home('.top nav a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 1, "ガイドへは、メニューとフッターから(トップの入口はメニューと重なるので置かない)");
   const ev = cheerio.load(read(join(OUT, "events/t-full.html"))), rg = cheerio.load(read(join(OUT, "regular/r-nightly.html")));
   ok(ev('main a[href="/guide.html"]').length === 1 && rg('main a[href="/guide.html"]').length === 1, "開催・定期公演のページから、ガイドへリンクしている");
   rmSync(D, { recursive: true, force: true });
