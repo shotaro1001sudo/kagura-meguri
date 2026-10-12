@@ -100,6 +100,8 @@ export async function uxTests({ ok, section, OUT }) {
   ok(/@media\(min-width:1320px\)\{\.guide \.toc\{position:fixed/.test(css), "ガイド: 広い画面では、目次を横に固定");
   const sub = page("submit.html");
   ok(sub("details.more-fields #address").length === 1 && sub("details.more-fields #description").length === 1 && sub("details.more-fields #date").length === 0 && sub("legend").first().text() === "1. 開催の情報", "掲載の依頼: 任意の項目は「くわしく書く」で開く。段階に番号");
+  const ph = sub("[placeholder^='例']").map((_, x) => sub(x).attr("placeholder")).get();
+  ok(ph.length >= 4 && ph.every((t) => !/石見|高千穂|備中|広島|高宮|益田|安芸高田/.test(t)), "入力例は、特定の神楽・地名によらない(〇〇の形)", ph.join(" / "));
   ok(sub(".consent label a").length === 0 && sub(".consent .links a").length === 2, "同意の欄: リンクは文の後ろ(チェックボックスと離す)");
   const org = page("organizers.html");
   ok(org(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");

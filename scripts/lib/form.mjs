@@ -33,10 +33,10 @@ export function submitForm(cfg) {
   const [u, d] = mailParts(cfg);
   return `<form class="form" id="submit-form" data-form="submit" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
 <fieldset><legend>1. 開催の情報</legend>
-${field("name", "神楽・イベントの名称", { required: true, max: 80, placeholder: "例: 第54回 高宮神楽まつり" })}
-${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 石見神楽、高千穂神楽、備中神楽" })}
+${field("name", "神楽・イベントの名称", { required: true, max: 80, placeholder: "例: 第〇回 〇〇神楽まつり" })}
+${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 〇〇神楽" })}
 ${select("prefecture", "都道府県", PREFECTURES, { required: true })}
-${field("city", "市区町村", { required: true, max: 40, placeholder: "例: 益田市" })}
+${field("city", "市区町村", { required: true, max: 40, placeholder: "例: 〇〇市、〇〇町" })}
 ${field("venue", "会場名", { required: true, max: 80, placeholder: "例: 〇〇神社 神楽殿" })}
 ${field("date", "開催日", { type: "date", required: true, max: 10 })}
 ${field("time_start", "開始時刻", { type: "time", max: 5 })}
