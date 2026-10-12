@@ -210,11 +210,12 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
       const w = `${kind}/${e.id}`;
       ok(PREFECTURES.includes(e.prefecture), `${w}: 都道府県が正しい`, e.prefecture);
       ok(!!e.kagura, `${w}: 神楽の種類がある`);
-      ok(!!e.source && /^\d{4}-\d{2}-\d{2}$/.test(e.checked ?? ""), `${w}: 出典と確認日がある`);
+      // 自動で取り込んだ開催は、確認日の代わりに「最後に取得元で確認できた日」(lastSeen)を、出典とともに表示する
+      ok(!!e.source && /^\d{4}-\d{2}-\d{2}$/.test((e.auto ? e.lastSeen : e.checked) ?? ""), `${w}: 出典と確認日(自動取得は取得日)がある`);
       ok(/^https:\/\//.test(e.url ?? ""), `${w}: 公式情報のURL(https)がある`);
       ok(e.lat != null && e.lng != null, `${w}: 緯度経度がある(地図に出る)`);
       ok(!e.geoPrecision || ["city", "area"].includes(e.geoPrecision), `${w}: 位置の精度の値が正しい`);
-      if (kind === "events") ok(!!e.description, `${w}: 説明がある`);
+      if (kind === "events" && !e.auto) ok(!!e.description, `${w}: 説明がある(手で登録した開催)`); // 自動取得の開催は、取得元に説明がないことがある
     }
   }
   for (const d of ["dist-test-ads", "dist-test-form", "dist-test-key", "dist-test-noform", "dist-test-bad", "dist-test-real"]) rmSync(d, { recursive: true, force: true });
