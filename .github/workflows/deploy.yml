@@ -8,6 +8,7 @@ concurrency: { group: pages, cancel-in-progress: false }
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # 止まったときに長時間動き続けて、実行時間を使い切らないための上限
     steps:
       # 外部のアクションは、版の名前(タグ)ではなく、中身を指す番号(コミットSHA)で固定する(タグの付け替えによる、すり替えを防ぐ)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -25,6 +26,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
