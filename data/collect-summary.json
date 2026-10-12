@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-12",
+  "autoPublish": true,
+  "published": 7,
+  "held": 1,
+  "withdrawn": 0,
+  "errors": 0,
+  "inactive": 0,
+  "needsAttention": true,
+  "items": {
+    "published": [
+      {
+        "name": "呉の神楽 大歳神楽",
+        "start": "2026-10-17T00:00",
+        "prefecture": "広島県",
+        "city": "呉市",
+        "url": "https://kure-kagura.com/"
+      },
+      {
+        "name": "道の駅舞ロードIC千代田 秋の大感謝祭(1日目)",
+        "start": "2026-10-17T00:00",
+        "prefecture": "広島県",
+        "city": "北広島町",
+        "url": "https://office-zero1.com/workshop.html"
+      },
+      {
+        "name": "道の駅舞ロードIC千代田 秋の大感謝祭(2日目)",
+        "start": "2026-10-18T00:00",
+        "prefecture": "広島県",
+        "city": "北広島町",
+        "url": "https://office-zero1.com/workshop.html"
+      },
+      {
+        "name": "呉の神楽 戸田神楽",
+        "start": "2026-10-24T00:00",
+        "prefecture": "広島県",
+        "city": "呉市",
+        "url": "https://kure-kagura.com/"
+      },
+      {
+        "name": "呉の神楽 小坪神楽",
+        "start": "2026-10-24T00:00",
+        "prefecture": "広島県",
+        "city": "呉市",
+        "url": "https://kure-kagura.com/"
+      },
+      {
+        "name": "第49回美都町神楽競演大会",
+        "start": "2026-11-08T10:30",
+        "prefecture": "島根県",
+        "city": "益田市",
+        "url": "https://mitocho-kankou.jp/page2140/"
+      },
+      {
+        "name": "あさきた神楽公演 あさひが丘神楽団",
+        "start": "2026-11-15T00:00",
+        "prefecture": "広島県",
+        "city": "広島市",
+        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=11#250"
+      }
+    ],
+    "held": [
+      {
+        "name": "「神謝歳」あさ神楽会",
+        "start": "2026-12-13T00:00",
+        "prefecture": "広島県",
+        "city": "",
+        "url": "https://www.instagram.com/asa4.kgr/",
+        "reason": "場所(市区町村・会場)が不明"
+      }
+    ],
+    "withdrawn": []
+  }
+}
