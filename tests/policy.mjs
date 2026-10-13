@@ -111,12 +111,14 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(pa(".afflist a[rel~=sponsored]").length === 1 && pa(".afflist a[rel~=sponsored]").attr("href").includes("tag=test-22") && pa(".aff .pr").length === 1, "Amazon を設定すると、通販のリンクが加わり、sponsored と「PR」が付く");
     ok($(".staylinks a[rel~=sponsored]").length === 0, "宿の ID が未設定なら、宿のリンクには sponsored を付けない(Amazon だけ設定したとき)");
   }
-  { // 本番の設定: 楽天アフィリエイトが有効(宿の楽天リンクだけが報酬つき。じゃらんは提携前なので、ふつうのリンク)
+  { // 本番の設定: 楽天アフィリエイトとバリューコマース(じゃらんnet)が有効。宿の2つのリンクが、どちらも報酬つき
     const prodCfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
     const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_ADS_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     const [jl, rk] = $(".staylinks a").get();
-    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && !/sponsored/.test($(jl).attr("rel") ?? "") && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)、じゃらんは提携前なので、ふつうのリンク");
+    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)");
+    const jh = new URL($(jl).attr("href"));
+    ok(jh.origin + jh.pathname === "https://ck.jp.ap.valuecommerce.com/servlet/referral" && jh.searchParams.get("sid") === prodCfg.affiliate.valueCommerceSid && jh.searchParams.get("pid") === prodCfg.affiliate.jalanPid && /^https:\/\/www\.jalan\.net\/uw\/uwp2011\/uww2011init\.do\?keyword=/.test(jh.searchParams.get("vc_url")) && /sponsored/.test($(jl).attr("rel")), "本番: じゃらんのリンクはバリューコマース経由(行き先は会場の市町村の宿の検索。sponsored・PR 表示つき)", $(jl).attr("href").slice(0, 160));
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
     const pub = prodCfg.adsense.client;
