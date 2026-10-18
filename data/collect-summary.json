@@ -1,56 +1,15 @@
 {
-  "date": "2026-10-18",
+  "date": "2026-10-19",
   "autoPublish": true,
-  "published": 1,
-  "held": 4,
+  "published": 0,
+  "held": 0,
   "withdrawn": 0,
   "errors": 0,
   "inactive": 0,
-  "needsAttention": true,
+  "needsAttention": false,
   "items": {
-    "published": [
-      {
-        "name": "神楽門前湯治村「第14回米舞まつり」",
-        "start": "2026-10-18T00:00",
-        "prefecture": "広島県",
-        "city": "安芸高田市",
-        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=10#438"
-      }
-    ],
-    "held": [
-      {
-        "name": "第20回千代田まつり",
-        "start": "2026-11-01T00:00",
-        "prefecture": "広島県",
-        "city": "北広島町",
-        "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/8362.html",
-        "reason": "名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)"
-      },
-      {
-        "name": "第21回あさきた神楽発表会",
-        "start": "2026-11-03T00:00",
-        "prefecture": "広島県",
-        "city": "",
-        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=11#442",
-        "reason": "場所(市区町村・会場)が不明"
-      },
-      {
-        "name": "浜田市石見神楽フェスティバル PRIDE 第1日目",
-        "start": "2026-11-28T11:00",
-        "prefecture": "島根県",
-        "city": "",
-        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=11#439",
-        "reason": "場所(市区町村・会場)が不明"
-      },
-      {
-        "name": "浜田市石見神楽フェスティバル PRIDE 第2日目",
-        "start": "2026-11-29T11:00",
-        "prefecture": "島根県",
-        "city": "",
-        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=11#440",
-        "reason": "場所(市区町村・会場)が不明"
-      }
-    ],
+    "published": [],
+    "held": [],
     "withdrawn": []
   }
 }
