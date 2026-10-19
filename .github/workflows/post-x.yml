@@ -1,0 +1,42 @@
+name: post-x
+# 毎朝、開催の2週間前〜3日前になった神楽を、Xに投稿する(最大2件)。Secrets が未設定なら、文面の表示だけ(試運転)。
+on:
+  schedule: [{ cron: "0 0 * * *" }] # 毎日 9:00 JST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "投稿せず、文面だけ出す(試運転)"
+        type: boolean
+        default: true
+permissions:
+  contents: write   # data/x-posted.json(投稿済みの記録)を、mainにコミットする
+  issues: write     # 失敗したとき、Issueで知らせる
+concurrency: { group: post-x, cancel-in-progress: false }
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24 }
+      # 秘密情報(Secrets)は、この手順だけに渡す。手動実行の既定は試運転
+      - run: node scripts/post-x.mjs
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+      - if: ${{ always() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/x-posted.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(auto): X投稿の記録 $(date -u +%F)"
+          git pull --rebase --autostash
+          git push
+      - if: ${{ failure() }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh issue create --title "X への自動投稿が失敗しました($(date -u +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
