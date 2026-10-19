@@ -108,6 +108,14 @@ const kaguraDetail = (k, info) => !info?.history ? "" : `<section class="detail"
 ${info.programs?.length ? `<h2>主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
 ${info.viewing?.length ? `<h2>観賞のコツ</h2><ul>${info.viewing.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 ${refList(info.refs)}</section>`;
+// 開催ごとの編集部の解説(data/event-notes.json)。公式情報から調べた事実だけを、出典つきで載せる
+const eventNotes = existsSync("data/event-notes.json") ? readJson("data/event-notes.json") : [];
+const noteBlock = (e) => {
+  const n = eventNotes.find((x) => x.ids.includes(e.id));
+  if (!n) return "";
+  const local = n.local?.[e.id];
+  return `<section class="detail note"><h2>この開催のポイント</h2>${[...(n.paras ?? []), ...(local ? [local] : [])].map((t) => `<p>${esc(t)}</p>`).join("")}<ul>${n.points.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>${refList(n.refs)}</section>`;
+};
 // 都道府県ページの解説
 const prefDetail = (p) => { const i = prefInfo[p]; return i ? `<section class="detail"><h2>${esc(p)}の神楽について</h2>${i.paras.map((t) => `<p>${esc(t)}</p>`).join("")}${refList(i.refs)}</section>` : ""; };
 const SEO = cfg.seo ?? {};
@@ -623,6 +631,7 @@ for (const e of events) {
 <p class="actions">${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${shareBlock(`/events/${e.id}.html`, e.name)}
 <p>${esc(e.description)}</p>
+${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${mapBlock(e)}
 ${sourceNote(e)}${GUIDE_LINK}
