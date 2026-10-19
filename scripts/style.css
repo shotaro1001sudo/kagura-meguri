@@ -246,6 +246,7 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .routebtn{margin:12px 0 0}
 .lead{max-width:680px;color:var(--fg);margin:8px 0 4px}
 .about{max-width:680px;margin:8px 0 4px}.about h2{margin-top:36px}
+.detail{max-width:680px;margin:8px 0 4px}.detail h2{margin-top:36px}.detail dt{font-weight:500;margin-top:12px}.detail dd{margin:2px 0 0}.detail ul{padding-left:1.4em}
 .venuelist{list-style:none;margin:0;padding:0}.venuelist li{padding:10px 0;border-top:1px solid var(--line)}.venuelist li:last-child{border-bottom:1px solid var(--line)}
 .venuelist a{color:var(--fg)}.venuelist b{font-weight:500}
 .vitems{list-style:none;margin:4px 0 0;padding:0 0 0 1em}.vitems li{padding:2px 0;border:0!important}.vitems .md{color:var(--ac);font-family:var(--serif);margin-right:8px}
