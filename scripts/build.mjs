@@ -22,7 +22,7 @@ if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
 if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", providerName: "" }, cfg.operator = { ...cfg.operator, contact: process.env.TEST_CONTACT ?? "" }; // テスト: 送信先が未設定の状態
 if (process.env.TEST_FORM_ENDPOINT) cfg.form ={ ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };
 if (process.env.TEST_AUTOPUBLISH) cfg.collect = { ...cfg.collect, autoPublish: process.env.TEST_AUTOPUBLISH === "1" };
-if (process.env.TEST_GA) cfg.analyticsId = process.env.TEST_GA;
+if (process.env.TEST_GA != null) cfg.analyticsId = process.env.TEST_GA; // テスト用(空文字で無効)
 if (process.env.TEST_GOATCOUNTER != null) cfg.goatcounter = process.env.TEST_GOATCOUNTER; // テスト用(空文字で無効)
 // アクセス解析 GoatCounter(Cookie を使わない)。コードは英小文字・数字・ハイフン(https://<コード>.goatcounter.com)
 if (cfg.goatcounter && !/^[a-z0-9-]+$/.test(cfg.goatcounter)) { console.error("config.json の goatcounter は、英小文字・数字・ハイフンのコードにしてください"); process.exit(1); }
