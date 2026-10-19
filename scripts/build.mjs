@@ -23,6 +23,7 @@ if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", provide
 if (process.env.TEST_FORM_ENDPOINT) cfg.form ={ ...cfg.form, endpoint: process.env.TEST_FORM_ENDPOINT, providerName: process.env.TEST_FORM_PROVIDER ?? cfg.form?.providerName };
 if (process.env.TEST_AUTOPUBLISH) cfg.collect = { ...cfg.collect, autoPublish: process.env.TEST_AUTOPUBLISH === "1" };
 if (process.env.TEST_GA != null) cfg.analyticsId = process.env.TEST_GA; // テスト用(空文字で無効)
+if (process.env.TEST_CB != null) cfg.cookiebotId = process.env.TEST_CB; // テスト用(空文字で無効)
 if (process.env.TEST_GOATCOUNTER != null) cfg.goatcounter = process.env.TEST_GOATCOUNTER; // テスト用(空文字で無効)
 // アクセス解析 GoatCounter(Cookie を使わない)。コードは英小文字・数字・ハイフン(https://<コード>.goatcounter.com)
 if (cfg.goatcounter && !/^[a-z0-9-]+$/.test(cfg.goatcounter)) { console.error("config.json の goatcounter は、英小文字・数字・ハイフンのコードにしてください"); process.exit(1); }
@@ -237,7 +238,7 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gf" rel="stylesheet" href="${FONT_URL}" media="print"><script>${FONT_SCRIPT}</script><noscript><link rel="stylesheet" href="${FONT_URL}"></noscript>
-<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
+${cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" type="text/javascript" async></script>` : ""}<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
 ${GOATCOUNTER}${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 <a class="skip" href="#main">本文へ移動</a>
@@ -765,7 +766,7 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
 const policyCtx = {
   cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
-  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
+  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasCB: !!cfg.cookiebotId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプライバシーポリシーです。取得する情報と利用目的、外部サービスへの情報の送信、Cookie、個人情報の開示・訂正・削除のご請求について定めています。`, privacyHtml(policyCtx));

@@ -46,6 +46,13 @@ export function cspFor(html, cfg) {
     d["img-src"].push("https://*.google-analytics.com", "https://*.googletagmanager.com");
     d["connect-src"].push("https://*.google-analytics.com", "https://*.analytics.google.com", "https://*.googletagmanager.com");
   }
+  if (cfg.cookiebotId) {
+    // 同意管理 Cookiebot: 配信元と通信先だけを許可する
+    d["script-src"].push("https://consent.cookiebot.com", "https://consentcdn.cookiebot.com");
+    d["connect-src"].push("https://consent.cookiebot.com", "https://consentcdn.cookiebot.com");
+    d["img-src"].push("https://imgsct.cookiebot.com", "https://consent.cookiebot.com");
+    d["frame-src"] = d["frame-src"][0] === "'none'" ? ["https://consentcdn.cookiebot.com"] : [...d["frame-src"], "https://consentcdn.cookiebot.com"];
+  }
   return Object.entries(d).map(([k, v]) => `${k} ${[...new Set(v)].join(" ")}`).join("; ") + "; upgrade-insecure-requests";
 }
 

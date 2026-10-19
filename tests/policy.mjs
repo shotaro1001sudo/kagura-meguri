@@ -53,7 +53,7 @@ export async function policyTests({ ok, section, OUT, build }) {
 
   section("ポリシー: 実際の動作との一致");
   // (1) 通信できる外部は、すべてポリシーに載っている
-  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms", "gc.zgo.at": "GoatCounter" };
+  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms", "gc.zgo.at": "GoatCounter", "consent.cookiebot.com": "Cookiebot", "consentcdn.cookiebot.com": "Cookiebot", "imgsct.cookiebot.com": "Cookiebot" };
   const origins = new Set();
   for (const f of walk(OUT).filter((x) => x.endsWith(".html"))) for (const d of ["script-src", "style-src", "img-src", "font-src", "connect-src", "frame-src"]) for (const tok of (cspOf(f).split(";").map((s) => s.trim()).find((s) => s.startsWith(d + " ")) ?? "").split(/\s+/).slice(1)) if (/^https:\/\//.test(tok)) origins.add(new URL(tok).hostname);
   ok(origins.size >= 3, "通信できる外部が、CSPから読み取れる", [...origins].join(","));
