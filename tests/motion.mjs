@@ -127,4 +127,13 @@ export async function motionTests({ ok, section, OUT }) {
   ok(/@media \(prefers-reduced-motion:no-preference\)\{\s*@view-transition\{navigation:auto\}/.test(mcss), "切り替えは、動きを減らす設定の人には行わない");
   ok(/\.top\{view-transition-name:site-header\}/.test(mcss) && /\.vt main\{animation:none\}/.test(mcss), "ヘッダーは移動中も動かさず、切り替えたページでは本文の出現の動きを重ねない");
   ok(!/view-transition-name:ev-title/.test(vtHtml), "題名と見出しの名前は、前もってページに書かない(同じ開催が2回並ぶと、名前が重なって切り替えが失敗するため)");
+  // 一覧のカードの題名は、ページによって h3 / h4 と違う。切り替えのスクリプトが、どの見出しの高さでも拾えること
+  const vtJs = readFileSync("scripts/vt.js", "utf8");
+  const levels = new Set();
+  for (const f of ["index.html", "weekend.html", "this-month.html", "kagura/index.html"]) {
+    const $c = cheerio.load(readFileSync(join(OUT, f), "utf8"));
+    $c("main .card").each((_, c) => { const h = $c(c).find("h2,h3,h4,h5,h6").first(); if (h.length) levels.add(h[0].tagName); });
+  }
+  ok(levels.size > 0 && [...levels].every((t) => /querySelector\('h2,h3,h4'\)/.test(vtJs) && ["h2", "h3", "h4"].includes(t)), "カードの題名の見出し(h2〜h4)を、切り替えのスクリプトがすべて拾える", [...levels].join(","));
+  ok(/addEventListener\('click'/.test(vtJs) && /document\.referrer/.test(vtJs), "押したカードを優先し、移動元を知る仕組みがないブラウザでは、リファラーで移動元を知る");
 }
