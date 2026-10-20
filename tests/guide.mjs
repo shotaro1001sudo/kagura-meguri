@@ -36,9 +36,9 @@ export function guideTests({ ok, section, OUT, build }) {
   ok($(".gcard").length >= 20 && $(".gcard").get().every((c) => $(c).children("h3").length === 1), "項目は、見出しつきのカードにまとまっている", String($(".gcard").length));
   const local = $("#highlights").nextUntil("h2").find(".gcard h3").map((_, h) => $(h).text()).get().join(" ");
   ok(["石見神楽", "広島神楽", "備中神楽", "高千穂神楽", "御嶽神楽"].every((k) => local.includes(k)), "各地の見どころ: 石見・広島・備中・高千穂・御嶽", local);
-  const cmp = $("table.cmp thead th").map((_, th) => $(th).text()).get();
-  ok(cmp.join() === ",神楽,能,歌舞伎" && $("table.cmp tbody tr").length >= 3, "能・歌舞伎との比較表がある");
-  ok($("table.cmp tbody td").get().every((td, i) => $(td).attr("data-k") === ["神楽", "能", "歌舞伎"][i % 3]), "比較表の各欄に列名がある(スマホで縦に積んだときに表示する)");
+  const cmp = $("table.cmp:not(.chk) thead th").map((_, th) => $(th).text()).get();
+  ok(cmp.join() === ",神楽,能,歌舞伎" && $("table.cmp:not(.chk) tbody tr").length >= 3, "能・歌舞伎との比較表がある");
+  ok($("table.cmp:not(.chk) tbody td").get().every((td, i) => $(td).attr("data-k") === ["神楽", "能", "歌舞伎"][i % 3]), "比較表の各欄に列名がある(スマホで縦に積んだときに表示する)");
   ok(!$("main").text().includes("定期公演"), "定期公演には触れない(ガイドは、観方の読み物)");
   const internal = $("main a[href^='/']").map((_, a) => $(a).attr("href").split("#")[0]).get();
   const fileOf = (h) => join(D, decodeURIComponent(h.endsWith("/") ? h + "index.html" : h));
