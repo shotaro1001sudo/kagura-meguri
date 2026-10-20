@@ -375,3 +375,9 @@ body{overflow-x:clip}
 .dg-pot{fill:color-mix(in srgb,var(--mut) 14%,var(--bg));stroke:var(--mut);stroke-width:2}.dg-leaf{stroke:var(--ac2);stroke-width:3;stroke-linecap:round;fill:none}.dg-drop{fill:var(--ac2)}.dg-num{fill:var(--onac);text-anchor:middle}
 @media(min-width:761px){.flow.h li{flex-wrap:nowrap}.flow.h .d{flex-basis:auto}}
 @media(min-width:561px){.tbl.cmp.nw td:nth-child(2){white-space:nowrap}}
+/* 英語ページ: 日本語向けの広い文字間隔をやめ、ロゴ・ボタンの折り返しを防ぐ */
+html[lang=en] body{letter-spacing:.015em}
+html[lang=en] .logo,html[lang=en] .menubtn,html[lang=en] .btn{letter-spacing:.03em;white-space:nowrap}
+html[lang=en] h1,html[lang=en] h2,html[lang=en] h3{letter-spacing:.02em}
+html[lang=en] .top nav a{letter-spacing:.01em}
+html[lang=en] .hero h1{line-height:1.3}

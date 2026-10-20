@@ -15,6 +15,7 @@ import { xpostTests } from "./xpost.mjs";
 import { weekendTests } from "./weekend.mjs";
 import { guideTests } from "./guide.mjs";
 import { historyTests } from "./history.mjs";
+import { englishTests } from "./english.mjs";
 import { organizersTests } from "./organizers.mjs";
 import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
@@ -59,7 +60,7 @@ section("各ページの基本(title / description / canonical / h1 / lang)");
 const titles = new Map();
 for (const f of htmls) {
   const html = read(f), $ = cheerio.load(html), name = rel(f);
-  ok($("html").attr("lang") === "ja", `${name}: lang=ja`);
+  ok($("html").attr("lang") === (/^\/?en\//.test(name) ? "en" : "ja"), `${name}: lang=${/^\/?en\//.test(name) ? "en" : "ja"}`);
   const t = $("title").text().trim();
   ok(t.length > 0 && t.length <= 120, `${name}: title がある(120字以内)`, t);
   ok(!titles.has(t), `${name}: title が他ページと重複しない`, t);
@@ -193,7 +194,7 @@ ok(/prefers-reduced-motion/.test(css + read("scripts/motion.css")), "動きを�
 for (const f of htmls) {
   const $ = cheerio.load(read(f)), name = rel(f);
   ok($("a.skip[href='#main']").length === 1 && $("main#main").length === 1, `${name}: 「本文へ移動」リンクと main`);
-  ok($("nav[aria-label='メインメニュー']").length === 1 && $("nav:not([aria-label])").length === 0, `${name}: nav にラベル`);
+  ok($(`nav[aria-label='${/^\/?en\//.test(name) ? "Main menu" : "メインメニュー"}']`).length === 1 && $("nav:not([aria-label])").length === 0, `${name}: nav にラベル`);
   $("img").each((_, el) => ok($(el).attr("alt") !== undefined, `${name}: img に alt`));
   $("select").each((_, el) => ok($(`label[for='${$(el).attr("id")}']`).length === 1, `${name}: select にラベル`));
 }
@@ -283,6 +284,7 @@ weekendTests({ ok, section, build });
 xpostTests({ ok, section });
 guideTests({ ok, section, OUT, build });
 historyTests({ ok, section, OUT });
+englishTests({ ok, section, OUT });
 organizersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
