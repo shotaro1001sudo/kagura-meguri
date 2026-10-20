@@ -574,6 +574,19 @@ ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}`,
 for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) {
   const list = events.filter((e) => e.prefecture === p && isUpcoming(e)), reg = regular.filter((r) => r.prefecture === p);
   const kinds = [...new Set([...list, ...reg].map((x) => x.kagura).filter(Boolean))];
+  // 広島県: 開催月へのリンクと月別見出しで公演を探しやすくする。
+  const isHiroshima = p === "広島県";
+  const monthKeys = [...new Set(list.map((e) => e.start.slice(0, 7)))];
+  const monthLinks = monthKeys.map((key) => `<a href="#hiroshima-${key}">${esc(monthLabel(key))}（${list.filter((e) => e.start.startsWith(key)).length}件）</a>`).join("");
+  const monthNavigation = isHiroshima && monthKeys.length
+    ? `<nav class="pref-month-nav" aria-label="広島県の神楽公演を開催月から探す"><span>開催月から探す</span>${monthLinks}${hasAffiliate ? `<a href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
+    : "";
+  const scheduleHtml = isHiroshima && list.length
+    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の神楽公演</h2>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e)).join("")}</section>`).join("")
+    : list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : "";
+  const stayHtml = isHiroshima
+    ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
+    : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" });
   write(`dist/pref/${p}.html`, layout({
     title: `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
     desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
