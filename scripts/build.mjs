@@ -878,7 +878,7 @@ write("dist/feed.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="htt
 write("dist/events.ics", vcal(upcoming));
 mkdirSync(OUT, { recursive: true });
 // 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
-for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
+for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg", "washi.svg", "washi-dark.svg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
 // 検索エンジンや古いブラウザは、/favicon.ico を直接見に行く。シンボルの画像から作って置く
 writeFileSync(`${OUT}/favicon.ico`, pngToIco(readFileSync("assets/favicon-48.png")));
 

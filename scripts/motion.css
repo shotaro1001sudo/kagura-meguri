@@ -54,7 +54,7 @@
 @keyframes splashin{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:none}}
 @keyframes splashout{to{opacity:0;visibility:hidden}}
 .splash{display:none}
-.intro .splash{display:flex;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg);cursor:pointer;
+.intro .splash{display:flex;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg) var(--paper);cursor:pointer;
   animation:splashout 1.3s 3.2s ease-in-out forwards}
 .intro .splash>*{animation:splashin 2s .3s var(--ease) both}
 .intro .splash b{animation-delay:.7s}
