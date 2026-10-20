@@ -41,7 +41,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const real = existsSync("data/sources.json") ? JSON.parse(read("data/sources.json").replace(/^﻿/, "")) : [];
   const active = real.filter((x) => x.enabled !== false && x.termsChecked);
   const autoPub = cfg.collect?.autoPublish !== false;
-  ok(ds.includes("事実の情報") && (active.length && autoPub ? ds.includes("運営者の確認を待たずに、自動で掲載します") : ds.includes("確認してから掲載")), "事実の情報だけを載せること、掲載の前の確認の有無(自動掲載か、確認してから掲載か)が、実態どおりに書かれている");
+  ok(ds.includes("事実の情報") && (active.length && autoPub ? ds.includes("運営者の確認を待たずに自動で掲載します") : ds.includes("確認してから掲載")), "事実の情報だけを載せること、掲載の前の確認の有無(自動掲載か、確認してから掲載か)が、実態どおりに書かれている");
   ok(/掲載を望まない場合/.test(ds) && /速やかに/.test(ds), "掲載停止・訂正の請求の窓口と、対応の約束がある");
   for (const f of ["index.html", "events/t-full.html", "regular/r-nightly.html", "about.html", "disclaimer.html", "privacy.html"]) {
     const $ = cheerio.load(read(join(OUT, f)));
@@ -86,7 +86,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !["広告の配信について", "Google AdSense(", "Googleアナリティクス", "アフィリエイトプログラムに参加"].some((w) => pv.split("改定の履歴")[0].includes(w)), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
   ok(!pv.includes("専門家") && !ds.includes("専門家"), "プライバシーポリシー・免責事項に、運営者向けの注意書き(専門家の確認のすすめ)を載せない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
-  ok(text(join(OUT, "about.html")).includes("収益を、得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
+  ok(text(join(OUT, "about.html")).includes("収益を得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
 
   section("ポリシー: 設定を有効にしたときだけ、項目が現れる");
   { // 広告
@@ -140,7 +140,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(s.attr("data-goatcounter") === "https://kagura-test.goatcounter.com/count" && /^sha384-/.test(s.attr("integrity")) && s.attr("crossorigin") === "anonymous", "GoatCounter: 改ざん検知(SRI)つきで読み込み、送り先は設定したコード");
     const csp = cspOf(join(d, "index.html"));
     ok(/script-src[^;]*https:\/\/gc\.zgo\.at/.test(csp) && /connect-src[^;]*https:\/\/kagura-test\.goatcounter\.com/.test(csp), "GoatCounter: CSP で、配信元と送り先だけを許可する");
-    ok(p.includes("GoatCounter(アクセス解析)") && p.includes("Cookieや、ブラウザに保存する識別子を使いません") && !p.includes("取得も保存もしていません(アクセス解析を導入する場合"), "GoatCounter: ポリシーに、外部送信の行・Cookie を使わないこと・集計だけであることが書かれる");
+    ok(p.includes("GoatCounter(アクセス解析)") && p.includes("Cookieもブラウザに保存する識別子も使いません") && !p.includes("取得も保存もしていません(アクセス解析を導入する場合"), "GoatCounter: ポリシーに、外部送信の行・Cookie を使わないこと・集計だけであることが書かれる");
     ok(!p.includes("Googleアナリティクス"), "GoatCounter だけのとき、Googleアナリティクスの項目は出ない");
     const off = read(join(OUT, "index.html"));
     ok(!off.includes("gc.zgo.at"), "コードが未設定の間は、GoatCounter を読み込まない");
@@ -156,8 +156,8 @@ export async function policyTests({ ok, section, OUT, build }) {
   { // 自動取得
     const d = sub("auto", { SOURCES_FILE: "tests/fixtures/sources.auto.json" }); const s = text(join(d, "disclaimer.html"));
     ok(s.includes("プログラムによる自動取得と、自動掲載") && s.includes("テスト観光協会") && !s.includes("停止中の収集元") && !s.includes("規約未確認の収集元"), "自動取得が有効な収集元(規約確認済み・有効)だけが、免責事項に載る");
-    ok(s.includes("自動の検査") && s.includes("運営者の確認を待たずに、自動で掲載します") && s.includes("自動で取り下げます") && s.includes("robots.txt") && s.includes("すべては防げません"), "自動掲載の内容(検査・確認を待たない・自動の取り下げ)と、検査の限界・robots.txt の遵守が、書かれている");
-    ok(!s.includes("自動で取得して掲載することは、行っていません") && !s.includes("自動では公開せず"), "自動取得が有効なときは、「行っていません」「自動では公開せず」の記載が消える");
+    ok(s.includes("自動の検査") && s.includes("運営者の確認を待たずに自動で掲載します") && s.includes("自動で取り下げます") && s.includes("robots.txt") && s.includes("すべての誤りを防げるわけではありません"), "自動掲載の内容(検査・確認を待たない・自動の取り下げ)と、検査の限界・robots.txt の遵守が、書かれている");
+    ok(!s.includes("自動で取得して掲載することはしていません") && !s.includes("自動では公開せず"), "自動取得が有効なときは、「行っていません」「自動では公開せず」の記載が消える");
   }
   { // 自動取得は有効だが、自動掲載はオフ(確認してから掲載)
     const d = sub("autooff", { SOURCES_FILE: "tests/fixtures/sources.auto.json", TEST_AUTOPUBLISH: "0" }); const s = text(join(d, "disclaimer.html"));
@@ -165,11 +165,11 @@ export async function policyTests({ ok, section, OUT, build }) {
   }
   { // 自動取得の収集元が、1つもないとき
     const s = text(join(sub("none", {}), "disclaimer.html"));
-    ok(s.includes("自動で取得して掲載することは、行っていません") && !s.includes("運営者の確認を待たずに"), "自動取得の収集元が、1つも有効でない間は、「行っていません」と書く");
+    ok(s.includes("自動で取得して掲載することはしていません") && !s.includes("運営者の確認を待たずに"), "自動取得の収集元が、1つも有効でない間は、「行っていません」と書く");
   }
   ok(active.length
     ? ds.includes("プログラムによる自動取得") && active.every((x) => ds.includes(x.name)) && real.filter((x) => !active.includes(x)).every((x) => !ds.includes(x.name)) && !ds.includes("行っていません")
-    : ds.includes("自動で取得して掲載することは、行っていません"),
+    : ds.includes("自動で取得して掲載することはしていません"),
   `本番の収集元の設定と、免責事項の記載が、一致している(有効な収集元 ${active.length} 件が、すべて載り、無効なものは載らない)`);
   for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none", "noform"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
 }

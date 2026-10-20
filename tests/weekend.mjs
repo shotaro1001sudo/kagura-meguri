@@ -39,7 +39,7 @@ export function weekendTests({ ok, section, build }) {
   ok(wk("title").text() === "今週末の神楽(10月10日(土)〜12日(月・祝)) | 神楽めぐり" && wk("h1").text() === "今週末の神楽" && wk(".hero p").text().includes("3連休・スポーツの日"), "今週末: 見出しに、期間・連休・祝日の名前が出る");
   ok(hrefs(wk).includes("/events/t-timeunknown.html") && !hrefs(wk).includes("/events/t-ongoing.html") && !hrefs(wk).includes("/events/t-past.html") && !hrefs(wk).includes("/events/t-pending.html"), "今週末: 週末の開催だけが載る(金曜・終了・保留は載らない)");
   ok(hrefs(wk).includes("/regular/r-nightly.html") && !hrefs(wk).includes("/regular/r-weekly.html") && !hrefs(wk).includes("/regular/r-expired.html") && !hrefs(wk).includes("/regular/r-xss.html"), "今週末: 毎晩の公演は載り、水曜の公演・終了した公演・曜日が不明な公演は載らない");
-  ok(wk("main").text().includes("臨時の休演") && wk("main").text().includes("2026年10月9日時点") && wk("main").text().includes("毎日、自動で更新"), "今週末: 時点・自動更新・休演の注意書き");
+  ok(wk("main").text().includes("臨時に休演") && wk("main").text().includes("2026年10月9日時点") && wk("main").text().includes("毎日自動で更新"), "今週末: 時点・自動更新・休演の注意書き");
   ok(ld(wk).some((x) => x["@type"] === "ItemList" && x.itemListElement.some((i) => i.url.endsWith("/events/t-timeunknown.html"))) && ld(wk).some((x) => x["@type"] === "BreadcrumbList"), "今週末: 構造化データ(一覧・パンくず)");
   ok(wk('.top nav a[href="/calendar.html"]').attr("aria-current") === "true" && wk('.top nav a[href="/calendar.html"]').text() === "日付・場所で探す", "今週末のページでは、メニューの「日付・場所で探す」が、今いる場所として示される");
   ok(tm("title").text() === "今月の神楽 2026年10月の開催日程 | 神楽めぐり" && hrefs(tm).includes("/events/t-timeunknown.html") && hrefs(tm).includes("/events/t-ongoing.html") && !hrefs(tm).includes("/events/t-full.html"), "今月: 今日から月末までの開催が載る(開催中を含み、来月は含まない)");
