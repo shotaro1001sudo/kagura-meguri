@@ -423,7 +423,7 @@ write("dist/index.html", layout({
 <div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
-<p class="home-search-link"><a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
+<p class="home-search-link"><span class="meta">全国の神楽を日付・地域・開催月から探せます。</span> <a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
