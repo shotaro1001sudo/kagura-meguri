@@ -3,6 +3,15 @@
   var d = document, h = d.documentElement, w = window;
   if (!h.classList.contains('js')) return;
 
+  /* オープニング(トップの最初の訪問だけ): 押す・キーを押すと、すぐ消す。消えたあとは、画面から外す */
+  var splash = d.querySelector('.splash');
+  if (splash && h.classList.contains('intro')) {
+    var skip = function () { h.classList.add('unsplash'); };
+    splash.addEventListener('click', skip);
+    w.addEventListener('keydown', skip, { once: true });
+    splash.addEventListener('animationend', function (e) { if (e.target === splash) splash.remove(); });
+  }
+
   /* 視差(パララックス): スクロール量を、CSS変数 --py に渡すだけ。動かす計算は、CSSの translate が行う */
   var hero = d.querySelector('.home-hero');
   if (hero && 'IntersectionObserver' in w && w.matchMedia && w.matchMedia('(min-width:561px)').matches) {

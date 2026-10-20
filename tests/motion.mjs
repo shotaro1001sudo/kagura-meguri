@@ -26,7 +26,7 @@ export async function motionTests({ ok, section, OUT }) {
   // 本文の一部だけを動かさない: スクロールで一部だけ現れる動き・トップの一覧だけの導入を、使わない
   ok(!/\.js :is\(/.test(noKeyframes) && !/\.in\{/.test(noKeyframes) && !/\.intro (\.home-hero h1|\.home-hero \.copy|\.quick|\.regions|#list)/.test(noKeyframes), "本文の一部だけが動く規則(スクロールでの出現・一覧だけの導入)がない");
   const animated = [...noKeyframes.matchAll(/([^{}]+)\{[^{}]*animation:(?!none)[^{}]*\}/g)].map((m) => m[1].trim().replace(/^.*\}/, "")).filter((x) => !/^@/.test(x));
-  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.top |^::view-transition-(old|new)\(root\)$/.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・ヘッダーだけ", animated.join(" | "));
+  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.top |\.splash|^::view-transition-(old|new)\(root\)$/.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・ヘッダー・オープニングだけ", animated.join(" | "));
   // 統一性: 加速の付け方は1種類、遷移の速さは3段階の基準だけ、ホバーで浮き上がり・拡大しない
   const plain = css.replace(/\/\*[\s\S]*?\*\//g, "");
   ok([...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].length === 1 && /--ease:cubic-bezier/.test(plain), "加速の付け方(cubic-bezier)は、基準の1種類だけ", [...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].join(" "));
@@ -39,6 +39,10 @@ export async function motionTests({ ok, section, OUT }) {
   const sp = $(".sparks");
   ok(sp.length === 1 && sp.attr("aria-hidden") === "true" && sp.find("i").length === 12 && sp.find("a,button,input").length === 0, "火の粉: 装飾(aria-hidden)・12個・操作できる要素を含まない");
   ok((css.match(/\.sparks i:nth-child\(\d+\)\{/g) ?? []).length === 12, "火の粉の位置・速さの設定が、12個ぶんある");
+  const spl = $(".splash");
+  ok(spl.length === 1 && spl.attr("aria-hidden") === "true" && spl.parents("main").length === 0 && spl.find("a,button,input").length === 0 && spl.text().trim() === "神楽めぐり", "オープニング: トップに1つ・装飾(aria-hidden)・main の外(fixed の基準を画面にする)・操作できる要素を含まない");
+  ok(/\.splash\{display:none\}/.test(css) && /\.intro \.splash\{display:flex/.test(css) && /\.intro\.unsplash \.splash\{/.test(css), "オープニング: intro のときだけ出し、押すとすぐ消える(普段・2回目・動きを減らす設定では出さない)");
+  ok(!/class="splash"/.test(read(join(OUT, "calendar.html"))), "オープニング: トップ以外のページには置かない");
   ok(read(join(OUT, "index.html")) === home && !/class="js/.test(home.slice(0, 200)), "HTMLの時点では、js / intro クラスが付いていない(スクリプトが付ける)");
 
   section("動き: JS(視差・導入・動かさないページ)を jsdom で動かす");
@@ -65,6 +69,8 @@ export async function motionTests({ ok, section, OUT }) {
     const t = await run("index.html");
     ok(t.h.classList.contains("js") && t.h.classList.contains("intro"), "ふつうの環境: トップの最初の訪問で、js と intro が付く");
     ok(t.errs.length === 0, "スクリプトのエラーがない", t.errs.join(";"));
+    t.d.querySelector(".splash").dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
+    ok(t.h.classList.contains("unsplash"), "オープニング: 押すと、すぐ消す(unsplash が付く)");
     const heroIO = t.ios.find((io) => io.els.length === 1);
     ok(t.ios.length === 1 && !t.d.querySelector(".in"), "スクロールで一部だけを出す観察はしない(視差の観察だけ)", String(t.ios.length));
     // 視差
