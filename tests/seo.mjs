@@ -71,7 +71,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     // 構造化データ
     const lds = $('script[type="application/ld+json"]').map((_, e) => JSON.parse($(e).text())).get().flat();
     const types = lds.map((x) => x["@type"]);
-    if (p !== "/index.html") { // トップ以外の、検索に出るページには、すべてパンくず(画面と構造化データ)がある
+    if (p !== "/index.html" && p !== "/en/index.html") { // トップ以外の、検索に出るページには、すべてパンくず(画面と構造化データ)がある
       ok(types.includes("BreadcrumbList"), `${p}: パンくずの構造化データ`);
       const bc = lds.find((x) => x["@type"] === "BreadcrumbList");
       const crumbItems = $("nav.crumbs li").map((_, e) => $(e).text().trim()).get();

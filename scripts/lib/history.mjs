@@ -22,7 +22,7 @@ export const SOURCES = [
   { id: "aichinow", name: "花祭(東栄町)", by: "愛知県公式観光サイト Aichi Now", url: "https://aichinow.pref.aichi.jp/events/detail/1643/" },
   { id: "wiki-bitchu", name: "備中神楽", by: "Wikipedia", url: "https://ja.wikipedia.org/wiki/備中神楽" },
   { id: "wiki-shonai", name: "庄内神楽", by: "Wikipedia", url: "https://ja.wikipedia.org/wiki/庄内神楽" },
-  { id: "hiroshima", name: "広島市「ひろしま市民と市政」(神楽の紹介)", by: "広島市", url: "https://www.city.hiroshima.lg.jp/asakitaku/machi/1027757/1007622.html" },
+  { id: "hiroshima-city", name: "広島市「ひろしま市民と市政」(神楽の紹介)", by: "広島市", url: "https://www.city.hiroshima.lg.jp/asakitaku/machi/1027757/1007622.html" },
   { id: "wiki-ise", name: "伊勢大神楽", by: "Wikipedia", url: "https://ja.wikipedia.org/wiki/伊勢大神楽" },
   { id: "wiki-juyo", name: "重要無形民俗文化財", by: "Wikipedia", url: "https://ja.wikipedia.org/wiki/重要無形民俗文化財" },
   { id: "kyogikai", name: "全国神楽継承・振興協議会", by: "全国神楽継承・振興協議会", url: "https://www.miyazaki-archive.jp/kagura/" },
@@ -295,7 +295,7 @@ ${figure(flow([
 <p>佐陀神能では、大正8年(1919年)に、佐太神社古伝神事保存協会が結成されました。その神能部が、のちに佐太神能保存会になり、現在に至ります。${cite("matsue")}</p>
 
 <h2 id="postwar">戦後の新舞</h2>
-<p>広島県の芸北神楽には、戦前から伝わる「旧舞」と、戦後に創作された「新舞」があります。新舞は、戦後、連合国軍総司令部(GHQ)により神楽が規制されるなかで、神道色を薄め、娯楽性を高めて創られたものとされています。${cite("hiroshima")}</p>
+<p>広島県の芸北神楽には、戦前から伝わる「旧舞」と、戦後に創作された「新舞」があります。新舞は、戦後、連合国軍総司令部(GHQ)により神楽が規制されるなかで、神道色を薄め、娯楽性を高めて創られたものとされています。${cite("hiroshima-city")}</p>
 
 <h2 id="heritage">文化財としての保護</h2>
 <p>昭和50年(1975年)の文化財保護法の改正で、「重要無形民俗文化財」の指定制度が始まり、翌年の昭和51年(1976年)5月4日に、第1回として30件が指定されました。${cite("wiki-juyo")}佐陀神能は、この年に、国の重要無形民俗文化財に指定されています。${cite("wiki-sada")}</p>

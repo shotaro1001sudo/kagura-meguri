@@ -5,6 +5,7 @@ import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
 import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
+import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
 import { historyPages, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
@@ -247,14 +248,18 @@ const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
 const OG_URL = `${cfg.baseUrl}/og.png`;
-const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex = false, withForm = false, ogType = "website" }) => {
-  const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's guide", ["/en/guide.html"]], ["/en/kagura.html", "Styles by region", ["/en/kagura.html"]], ["/en/history.html", "History", ["/en/history.html"]], ["/", "日本語", ["/"]]];
+const EN_FOOTER = `<footer>Event listings are in Japanese; use your browser's translate button. <a href="/calendar.html" hreflang="ja">Calendar</a> ・ <a href="/map.html" hreflang="ja">Map</a><br><a href="/about.html" hreflang="ja">About (Japanese)</a> ・ <a href="/contact.html" hreflang="ja">Contact (Japanese)</a> ・ <a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a> ・ <a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a><br>© Kagura Meguri</footer>`;
+const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [] }) => {
+  const en = lang === "en";
+  const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
 <script>${HEAD_MOTION}</script>
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
-<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
+<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${alternates}${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
-<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${esc(cfg.siteName)}"><meta property="og:locale" content="ja_JP"><meta property="og:image" content="${OG_URL}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${OG_URL}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${en ? "Kagura Meguri" : esc(cfg.siteName)}"><meta property="og:locale" content="${en ? "en_US" : "ja_JP"}"><meta property="og:image" content="${OG_URL}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${OG_URL}">
 <meta name="theme-color" content="#f3eee4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -262,11 +267,11 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 ${cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" type="text/javascript" async></script>` : ""}<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
 ${GOATCOUNTER}${cfg.analyticsId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${cfg.analyticsId}"></script><script>window.dataLayer=[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${cfg.analyticsId}')</script>` : ""}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
-<a class="skip" href="#main">本文へ移動</a>
-<header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">${esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>メニュー</button><nav id="gnav" aria-label="メインメニュー">${NAV.map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
+<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
+<header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 <div class="wrap"><main id="main">${body}</main>
-<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a><br>
-<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer></div>
+${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
+<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}</div>
 ${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
@@ -388,7 +393,7 @@ write("dist/index.html", layout({
   // 検索結果で選ばれやすく: 「神楽 日程」「神楽 今週末」で探す人に、何ができるかが一目で分かる題と説明にする
   title: `全国の神楽の日程・今週末の公演 | ${cfg.siteName}`,
   desc: clip(`今週末、どこで神楽が観られる？${[...new Set([...["石見神楽", "高千穂神楽", "広島神楽", "備中神楽"].filter((k) => kaguras.includes(k)), ...kaguras])].slice(0, 3).join("・")}など、全国の神楽の日程と会場を、日付・場所・地図で探せます。公式情報で確かめた開催だけを掲載しています。`),
-  path: "/", active: "/",
+  path: "/", active: "/", alts: [["en", "/en/"]],
   // サイト名: 検索結果に、ドメイン名ではなく「神楽めぐり」と出すための情報(トップページの WebSite)
   ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, alternateName: ["かぐらめぐり", "Kagura Meguri"], url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: ORG_LD },
     itemListLd("開催予定の神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
@@ -528,7 +533,7 @@ fetch('/events.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(f
 write("dist/kagura/index.html", layout({
   title: `神楽の種類一覧 | 流派・系統ごとに探す | ${cfg.siteName}`,
   desc: clip(`${kaguras.slice(0, 5).join("、")}など、神楽の種類ごとに、開催日程と定期公演を探せます。それぞれの特徴も、あわせて紹介します。`),
-  path: "/kagura/", active: "/kagura/",
+  path: "/kagura/", active: "/kagura/", alts: [["en", "/en/kagura.html"]],
   ld: crumbsLd([["ホーム", "/"], ["種類で探す"]]),
   body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "流派・系統ごとに、開催情報を探せます。")}<h2 class="sr">神楽の種類の一覧</h2>${kaguras
     .map((k) => `<div class="card"><div><h3><a href="${kaguraHref(k)}">${esc(k)}</a></h3>${kaguraInfo[k]?.tagline ? `<p class="tagline">${esc(kaguraInfo[k].tagline)}</p>` : ""}<div class="meta">${countLine(upcoming.filter((e) => e.kagura === k).length, regular.filter((r) => r.kagura === k).length)}</div></div></div>`)
@@ -738,7 +743,7 @@ ${otherWays("/this-month.html")}`,
   write("dist/guide.html", layout({
     title: `${title} | ${cfg.siteName}`,
     desc: "はじめて神楽を観る方へ。能・歌舞伎との違い、石見・広島・備中・高千穂・御嶽神楽の見どころ、撮影やご祝儀のマナー、夜の寒さに備える服装と持ち物を、各地の公式情報をもとにまとめました。",
-    path: "/guide.html", active: "/guide.html",
+    path: "/guide.html", active: "/guide.html", alts: [["en", "/en/guide.html"]],
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
       author: ORG_LD, publisher: ORG_LD,
@@ -759,12 +764,27 @@ ${otherWays("/this-month.html")}`,
     const era = HISTORY_ERAS.find((e) => e.slug === key);
     const crumbs = key === "index" ? [["ホーム", "/"], ["神楽の歴史"]] : [["ホーム", "/"], ["神楽の歴史", "/history/"], [era.title]];
     write(`dist${key === "index" ? "/history/index.html" : path}`, layout({
-      title: `${pg.title} | ${cfg.siteName}`, desc: clip(pg.desc, 160), path, active: "/history/",
+      title: `${pg.title} | ${cfg.siteName}`, desc: clip(pg.desc, 160), path, active: "/history/", alts: key === "index" ? [["en", "/en/history.html"]] : [],
       ld: [crumbsLd(crumbs.map(([t, h]) => [t, h])), {
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: OG_URL,
       }],
       body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>`,
+    }));
+  }
+}
+
+// ---------- English entry pages (/en/): 海外からの旅行者向け。開催情報の詳細は日本語のまま ----------
+{
+  const pages = englishPages({ esc, upcoming, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null) });
+  const JA = { index: "/", guide: "/guide.html", kagura: "/kagura/", history: "/history/" };
+  for (const [key, pg] of Object.entries(pages)) {
+    const path = key === "index" ? "/en/" : `/en/${key}.html`;
+    const crumbs = key === "index" ? [["Home"]] : [["Home", "/en/"], [pg.h1]];
+    write(`dist${key === "index" ? "/en/index.html" : path}`, layout({
+      lang: "en", title: pg.title, desc: pg.desc, path, active: path, alts: [["ja", JA[key]]],
+      ld: [...(key === "index" ? [] : [crumbsLd(crumbs)]), { "@context": "https://schema.org", "@type": "Article", headline: pg.h1, inLanguage: "en", datePublished: EN_CHECKED, dateModified: EN_CHECKED, author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: OG_URL }],
+      body: `${key === "index" ? "" : `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([t, h]) => (h ? `<li><a href="${h}">${esc(t)}</a></li>` : `<li aria-current="page">${esc(t)}</li>`)).join("")}</ol></nav>`}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose en">${pg.body()}</div>`,
     }));
   }
 }
@@ -829,7 +849,7 @@ const sm = [
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
-  ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay],
+  ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ["/en/", EN_CHECKED], ["/en/guide.html", EN_CHECKED], ["/en/kagura.html", EN_CHECKED], ["/en/history.html", EN_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay],
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", staticDay], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [kaguraHref(k), lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
