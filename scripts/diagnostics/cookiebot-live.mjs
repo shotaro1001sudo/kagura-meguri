@@ -141,7 +141,7 @@ try {
   // Exercise the public banner UI in an ephemeral browser profile. No booking/affiliate links.
   const evaluate = async (expression) => {
     const x = await call("Runtime.evaluate", { expression, returnByValue: true });
-    if (x.exceptionDetails) throw Error("Browser evaluation: " + (x.exceptionDetails.text || ""));
+    if (x.exceptionDetails) throw Error("Browser evaluation: " + (x.exceptionDetails.exception?.description || x.exceptionDetails.text || ""));
     return x.result?.value;
   };
   const state = () => evaluate(`JSON.stringify((() => ({
@@ -157,7 +157,7 @@ try {
     const nodes = [...document.querySelectorAll("#CybotCookiebotDialog button, #CybotCookiebotDialog [role=button]")];
     const patterns = ${JSON.stringify(["decline", "deny", "reject", "拒否", "同意しない"])}.map(x=>new RegExp(x, "i"));
     const yes = ${JSON.stringify(["allow all", "accept all", "agree all", "すべて許可", "すべて同意", "allowall", "acceptall", "同意する"])}.map(x=>new RegExp(x, "i"));
-    const p = reject ? patterns : yes;
+    const p = ${reject ? "patterns" : "yes"};
     const btn = nodes.find(x => p.some(rx => rx.test(x.id+" "+x.textContent.trim())));
     if (!btn) return JSON.stringify({ found: false });
     const result = { found: true, id: btn.id, label: btn.textContent.trim().slice(0, 70) };
