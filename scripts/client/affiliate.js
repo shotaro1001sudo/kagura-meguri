@@ -5,8 +5,9 @@ document.addEventListener("click", (event) => {
   const link = target instanceof Element ? target.closest("a[data-goatcounter-click]") : null;
   if (!link || !link.relList.contains("sponsored")) return;
 
-  // Cookiebot is optional. If configured, do not send analytics without statistics consent.
-  if (document.getElementById("Cookiebot") && window.Cookiebot?.consent?.statistics !== true) return;
+  // The bootstrap enables GA4 only after explicit statistics consent.
+  // Do not trust Cookiebot's potentially automatic/implied consent here.
+  if (window.kaguraGa4Allowed !== true) return;
 
   const label = link.getAttribute("data-goatcounter-click") || "";
   const match = /^(stay|aff)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
