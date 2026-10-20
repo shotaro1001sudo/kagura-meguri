@@ -104,8 +104,8 @@ const prefInfo = existsSync("data/pref-info.json") ? readJson("data/pref-info.js
 // 出典リンクの一覧(外部リンクは、新しいタブで開き、推薦しない旨の rel を付ける)
 const refList = (refs = []) => refs.length ? `<p class="meta">参考: ${refs.map((r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`).join(" / ")}</p>` : "";
 // 神楽の種類ページの、くわしい解説(歴史・特徴・演目・観賞のコツ)。データがある項目だけ出す
-const kaguraDetail = (k, info) => !info?.history ? "" : `<section class="detail"><h2>${esc(k)}の歴史</h2>${info.history.map((t) => `<p>${esc(t)}</p>`).join("")}
-<h2>${esc(k)}の特徴</h2><ul>${info.features.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+const kaguraDetail = (k, info) => !(info?.history?.length || info?.features?.length) ? "" : `<section class="detail">${info.history?.length ? `<h2>${esc(k)}の歴史</h2>${info.history.map((t) => `<p>${esc(t)}</p>`).join("")}` : ""}
+${info.features?.length ? `<h2>${esc(k)}の特徴</h2><ul>${info.features.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 ${info.programs?.length ? `<h2>主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
 ${info.viewing?.length ? `<h2>観賞のコツ</h2><ul>${info.viewing.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 ${refList(info.refs)}</section>`;
