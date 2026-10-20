@@ -411,8 +411,8 @@ write("dist/index.html", layout({
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
 <div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<section class="home-find" aria-label="神楽の公演を探す"><p>全国の神楽公演を、日付や地域から探せます。</p><a class="btn" href="/calendar.html">日付・地域から公演を探す <span aria-hidden="true">→</span></a></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
+<p class="home-search-link"><a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
@@ -577,9 +577,9 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
   // 広島県: 開催月へのリンクと月別見出しで公演を探しやすくする。
   const isHiroshima = p === "広島県";
   const monthKeys = [...new Set(list.map((e) => e.start.slice(0, 7)))];
-  const monthLinks = monthKeys.map((key) => `<a href="#hiroshima-${key}">${esc(monthLabel(key))}（${list.filter((e) => e.start.startsWith(key)).length}件）</a>`).join("");
+  const monthLinks = monthKeys.map((key) => `<a class="tag" href="#hiroshima-${key}">${esc(monthLabel(key))}（${list.filter((e) => e.start.startsWith(key)).length}件）</a>`).join("");
   const monthNavigation = isHiroshima && monthKeys.length
-    ? `<nav class="pref-month-nav" aria-label="広島県の神楽公演を開催月から探す"><span>開催月から探す</span>${monthLinks}${hasAffiliate ? `<a href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
+    ? `<nav class="pref-month-nav" aria-label="広島県の神楽公演を開催月から探す"><span class="meta">開催月から探す</span>${monthLinks}${hasAffiliate ? `<a class="tag" href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
     : "";
   const scheduleHtml = isHiroshima && list.length
     ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の神楽公演</h2>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e)).join("")}</section>`).join("")
@@ -588,8 +588,8 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
     : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" });
   write(`dist/pref/${p}.html`, layout({
-    title: isHiroshima ? `広島県の神楽 日程【${yearsOf(list)}】月別公演・会場一覧 | ${cfg.siteName}` : `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
-    desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${isHiroshima ? "月ごとの公演予定・会場・料金を確認できます。" : ""}${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
+    title: `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
+    desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
     path: prefHref(p), noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
