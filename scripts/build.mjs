@@ -588,7 +588,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
     : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" });
   write(`dist/pref/${p}.html`, layout({
-    title: `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
+    title: isHiroshima ? `広島県の神楽 日程【${yearsOf(list)}】月別公演・会場一覧 | ${cfg.siteName}` : `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
     desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
     path: prefHref(p), noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
