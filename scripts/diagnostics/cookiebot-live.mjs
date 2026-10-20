@@ -101,6 +101,10 @@ try {
         hasResponse: window.Cookiebot?.hasResponse ?? null,
         statisticsConsent: window.Cookiebot?.consent?.statistics ?? null,
         consentMethod: window.Cookiebot?.consent?.method ?? null,
+        userCountry: window.Cookiebot?.userCountry || null,
+        gdprApplies: window.Cookiebot?.regulations?.gdprApplies ?? null,
+        ccpaApplies: window.Cookiebot?.regulations?.ccpaApplies ?? null,
+        consentCookiePresent: document.cookie.split(";").some(x=>x.trim().startsWith("CookieConsent=")),
         dialog: visual(d), widget: visual(w),
         frames: [...document.querySelectorAll("iframe")].filter(x=>/cookiebot|consentcdn/i.test(x.src)).length,
         ga4Allowed: window.kaguraGa4Allowed ?? null
@@ -110,6 +114,23 @@ try {
   });
   console.log("BROWSER_STATE", status.result?.value);
   console.log("COOKIEBOT_NETWORK", JSON.stringify(requests.map(({ url, status }) => ({ url, status: status ?? null })).slice(0, 20)));
+  // Inspect PUBLIC settings only; avoid raw settings text or account identifiers.
+  const publicSettings = await fetch("https://consentcdn.cookiebot.com/consentconfig/6a4ea6ee-9934-4406-b303-5cc8e491a686/settings.json");
+  const raw = await publicSettings.text();
+  let obj; try { obj = JSON.parse(raw); } catch { obj = null; }
+  const relevant = [];
+  const collect = (value, prefix = "", depth = 0) => {
+    if (depth > 8 || relevant.length > 35 || !value || typeof value !== "object") return;
+    for (const [key, v] of Object.entries(value)) {
+      const path = prefix ? prefix + "." + key : key;
+      if (/geo|distribut|countr|region|consent|banner|method|explicit|implied|strict|level|gdpr/i.test(key) && (typeof v === "string" || typeof v === "number" || typeof v === "boolean")) {
+        relevant.push({ key: path.slice(0, 140), value: String(v).slice(0, 100) });
+      }
+      if (typeof v === "object") collect(v, path, depth + 1);
+    }
+  };
+  collect(obj);
+  console.log("PUBLIC_SETTINGS", JSON.stringify({ httpStatus: publicSettings.status, contentType: publicSettings.headers.get("content-type"), bytes: raw.length, topKeys: obj ? Object.keys(obj).slice(0, 30) : [], relevant }));
   console.log("COOKIEBOT_NETWORK_FAILURES", JSON.stringify(failed.slice(0, 15)));
   console.log("CONSOLE_ERRORS", JSON.stringify([...new Set(errors)].slice(0, 30)));
 } catch (e) {
