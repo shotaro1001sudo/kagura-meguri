@@ -45,12 +45,14 @@ export function identityTests({ ok, section, OUT, build }) {
   ok(/@media print\{body:before,body:after\{display:none\}\}/.test(css), "印刷では、文様を出さない");
   ok(/img-src[^;]*data:/.test(home('meta[http-equiv="Content-Security-Policy"]').attr("content")), "CSP: 文様(data: の画像)の表示が、許可されている");
 
-  section("見出しの背景の情景(月と社)");
-  const ms = home(".home-hero svg.ms");
-  ok(ms.length === 1 && ms.attr("aria-hidden") === "true" && ms.attr("focusable") === "false" && home(".enso").length === 0, "見出しの背景は「月と社」の情景(飾りなので、読み上げない)。以前の円は残っていない");
-  ok(["ms-sky", "ms-kasumi", "ms-land", "ms-stars"].every((c) => ms.find(`g.${c}`).length === 1) && ms.find("circle.ms-moon").length === 1 && ms.find("path.ms-torii").length === 1 && ms.find("path.ms-k").length === 2, "月(空)・霞・地(山と鳥居)・星の層がある");
+  section("見出しの背景の絵(夜の神楽殿)");
+  const art = home(".home-hero picture.hero-art");
+  ok(art.length === 1 && home(".home-hero svg.ms").length === 0 && home(".enso").length === 0, "見出しの背景は、夜の神楽殿の絵(以前の「月と社」のSVGと、円は残っていない)");
+  const heroImg = art.find("img"), heroSrc = art.find("source");
+  ok(heroImg.attr("src") === "/hero-pc.webp" && heroSrc.attr("srcset") === "/hero-sp.webp" && /max-width:\s*640px/.test(heroSrc.attr("media")), "PC用とスマホ用の画像を、画面の幅で切り替える");
+  ok(!!heroImg.attr("alt") && +heroImg.attr("width") > 0 && +heroImg.attr("height") > 0 && heroImg.attr("fetchpriority") === "high", "絵には、代替テキストと縦横の大きさ(表示のずれ防止)があり、先に読み込む");
+  ok(["hero-pc.webp", "hero-sp.webp"].every((f) => existsSync(join(OUT, f)) && statSync(join(OUT, f)).size < 300 * 1024), "画像は、1枚300KB未満(表示を重くしない)");
   const homeHtml = read(join(OUT, "index.html"));
-  ok(["msHalo", "msMist", "msFar", "msNear", "msEdge", "msMask"].every((id) => (homeHtml.match(new RegExp(`id="${id}"`, "g")) ?? []).length === 1), "SVG の中の名前(id)が、ページの中で重ならない");
   ok(/@media\(max-width:560px\)\{[^@]*\.ms\{display:none\}/.test(css) && /@media print\{[^}]*\.ms[,{]/.test(css), "スマホ(文字の邪魔になる)と印刷では、情景を出さない");
   ok(/\.intro \.ms-sky\{animation:moonrise/.test(css) && /\.js \.ms-sky\{translate:0 calc\(var\(--py,0px\)\*\.42\)\}/.test(css) && /\.js \.ms-land\{translate:0 calc\(var\(--py,0px\)\*\.18\)\}/.test(css), "動き: 最初の訪問で月が昇り、スクロールでは層ごとに違う速さで動く(奥行き)");
   ok(/\.js \.ms-k1\{animation:kasumi/.test(css) && /\.js \.ms-stars circle\{animation:twinkle/.test(css) && !/(^|\})\.ms-k1\{animation/.test(css), "霞の漂いと星の瞬きは、JS が動く(動きを減らさない)ときだけ");
