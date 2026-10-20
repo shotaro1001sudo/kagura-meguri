@@ -26,6 +26,7 @@ import { editorialTests } from "./editorial.mjs";
 import { uxTests } from "./ux.mjs";
 import { affiliateTests } from "./affiliate.mjs";
 import { ga4ConsentTests } from "./ga4-consent.mjs";
+import { monetizationUxTests } from "./monetization-ux.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -295,6 +296,7 @@ consistencyTests({ ok, section, OUT });
 editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });
 affiliateTests({ ok, section, OUT, build });
+monetizationUxTests({ ok, section, OUT, build });
 ga4ConsentTests({ ok, section, build });
 await adminTests({ ok, section });
 

@@ -5,6 +5,8 @@ import { runInNewContext } from "node:vm";
 import * as cheerio from "cheerio";
 
 const code = readFileSync("scripts/client/ga4-consent.js", "utf8");
+const homeCode = readFileSync("scripts/client/home.js", "utf8");
+const transitionCode = readFileSync("scripts/vt.js", "utf8");
 
 function simulate({ requireConsent = true, cb = undefined } = {}) {
   const added = [], listeners = {}, sent = [];
@@ -92,8 +94,12 @@ export function ga4ConsentTests({ ok, section, build }) {
     "明示的な統計同意後だけGA4を1回読み込む");
   ok(waiting.calls().some((x) => x[0] === "consent" && x[1] === "update" &&
     x[2].analytics_storage === "granted"), "同意後analytics_storageをgrantedにする");
-  ok(waiting.calls().some((x) => x[0] === "config" && x[1] === "G-TEST123456"),
-    "同意後に既存測定IDで計測を開始する");
+  ok(waiting.calls().filter((x) => x[0] === "config" && x[1] === "G-TEST123456").length === 1 &&
+    waiting.calls().filter((x) => x[0] === "event" && x[1] === "page_view").length === 0,
+    "同意通知が重なっても自動page_viewのconfigは1回だけで、手動の重複送信をしない");
+  ok(!/(?:gtag|dataLayer|history\.(?:pushState|replaceState)|location\.reload)\s*\(/.test(homeCode) &&
+    !/history\.(?:pushState|replaceState)|location\.reload\s*\(/.test(transitionCode),
+    "トップの絞り込みとページ遷移演出はGA4送信・SPA履歴変更・再読み込みを行わない");
 
   const returning = simulate({ cb: response(true) });
   ok(returning.added.length === 1, "過去の明示的同意が保存されている場合も開始する");
