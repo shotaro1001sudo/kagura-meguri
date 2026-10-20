@@ -9,8 +9,9 @@ const dir = mkdtempSync(join(tmpdir(), "kagura-cookiebot-"));
 const port = 19237;
 let chrome, ws;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const errors = [], requests = [], failed = [];
+const errors = [], requests = [], failed = [], ga4Requests = [];
 let nextId = 0;
+let phaseName = "initial";
 const waiting = new Map();
 
 try {
@@ -58,6 +59,10 @@ try {
       const url = msg.params?.request?.url || "";
       if (/cookiebot|consentcdn|consent\.cookiebot|imgsct/i.test(url)) {
         requests.push({ id: msg.params.requestId, url: url.split("?")[0].slice(0, 200) });
+      }
+      if (/googletagmanager\.com\/gtag\/js|google-analytics\.com\/(?:g\/collect|collect)/i.test(url)) {
+        const parsed = new URL(url);
+        ga4Requests.push({ id: msg.params.requestId, origin: parsed.origin, path: parsed.pathname, phase: phaseName });
       }
     }
     if (msg.method === "Network.loadingFailed" &&
@@ -133,6 +138,63 @@ try {
   console.log("PUBLIC_SETTINGS", JSON.stringify({ httpStatus: publicSettings.status, contentType: publicSettings.headers.get("content-type"), bytes: raw.length, topKeys: obj ? Object.keys(obj).slice(0, 30) : [], relevant }));
   console.log("COOKIEBOT_NETWORK_FAILURES", JSON.stringify(failed.slice(0, 15)));
   console.log("CONSOLE_ERRORS", JSON.stringify([...new Set(errors)].slice(0, 30)));
+  // Exercise the public banner UI in an ephemeral browser profile. No booking/affiliate links.
+  const evaluate = async (expression) => {
+    const x = await call("Runtime.evaluate", { expression, returnByValue: true });
+    if (x.exceptionDetails) throw Error("Browser evaluation: " + (x.exceptionDetails.text || ""));
+    return x.result?.value;
+  };
+  const state = () => evaluate(`JSON.stringify((() => ({
+    hasResponse: window.Cookiebot?.hasResponse ?? null,
+    statistics: window.Cookiebot?.consent?.statistics ?? null,
+    method: window.Cookiebot?.consent?.method ?? null,
+    ga4Allowed: window.kaguraGa4Allowed ?? null,
+    dialogVisible: (() => { const d = document.querySelector("#CybotCookiebotDialog"); return !!d && getComputedStyle(d).display !== "none" && d.getBoundingClientRect().height > 0; })()
+  }))())`);
+  const buttons = await evaluate(`JSON.stringify([...document.querySelectorAll("#CybotCookiebotDialog button, #CybotCookiebotDialog [role=button]")].map(x => ({ id: x.id, text: x.textContent.trim().slice(0, 75) })).slice(0, 25))`);
+  console.log("CONSENT_BUTTONS", buttons);
+  const choose = (reject) => evaluate(`(() => {
+    const nodes = [...document.querySelectorAll("#CybotCookiebotDialog button, #CybotCookiebotDialog [role=button]")];
+    const patterns = ${JSON.stringify(["decline", "deny", "reject", "拒否", "同意しない"])}.map(x=>new RegExp(x, "i"));
+    const yes = ${JSON.stringify(["allow all", "accept all", "agree all", "すべて許可", "すべて同意", "allowall", "acceptall", "同意する"])}.map(x=>new RegExp(x, "i"));
+    const p = reject ? patterns : yes;
+    const btn = nodes.find(x => p.some(rx => rx.test(x.id+" "+x.textContent.trim())));
+    if (!btn) return JSON.stringify({ found: false });
+    const result = { found: true, id: btn.id, label: btn.textContent.trim().slice(0, 70) };
+    btn.click();
+    return JSON.stringify(result);
+  })()`);
+  const before = ga4Requests.length;
+  phaseName = "reject";
+  const reject = await choose(true);
+  await sleep(3500);
+  const afterReject = await state();
+  console.log("REJECT_ACTION", reject);
+  console.log("REJECT_STATE", afterReject);
+  console.log("REJECT_GA4_REQUESTS", JSON.stringify(ga4Requests.slice(before)));
+
+  phaseName = "reset";
+  await call("Network.clearBrowserCookies");
+  await call("Network.clearBrowserCache");
+  await call("Page.reload", { ignoreCache: true });
+  await sleep(7000);
+  console.log("BEFORE_ACCEPT_STATE", await state());
+  const acceptStart = ga4Requests.length;
+  phaseName = "accept";
+  const accept = await choose(false);
+  await sleep(7000);
+  const afterAccept = await state();
+  console.log("ACCEPT_ACTION", accept);
+  console.log("ACCEPT_STATE", afterAccept);
+  console.log("ACCEPT_GA4_REQUESTS", JSON.stringify(ga4Requests.slice(acceptStart)));
+  const wasRejected = JSON.parse(afterReject || "{}");
+  const wasAccepted = JSON.parse(afterAccept || "{}");
+  const collected = ga4Requests.slice(acceptStart);
+  const success = JSON.parse(reject).found && JSON.parse(accept).found &&
+    wasRejected.ga4Allowed === false && ga4Requests.slice(before, acceptStart).length === 0 &&
+    wasAccepted.ga4Allowed === true && wasAccepted.method === "explicit" &&
+    wasAccepted.statistics === true && collected.some(x => x.path === "/gtag/js");
+  console.log("CONSENT_E2E_RESULT", success ? "PASS" : "NEEDS_INVESTIGATION");
 } catch (e) {
   console.log("DIAGNOSTIC_ERROR", String(e));
   process.exitCode = 1;
