@@ -70,7 +70,7 @@ html{scroll-padding-top:84px}
 .home-hero h1{margin:0;font-size:var(--fs-2xl);line-height:1.75;letter-spacing:.14em;white-space:nowrap}
 @media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
 @media(max-width:640px){
-  main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
+  main .home-hero{min-height:clamp(370px,94vw,450px)}
   .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
     --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,#000 36%,#000 80%,transparent)}
 }
@@ -109,6 +109,19 @@ html{scroll-padding-top:84px}
 .afflist a{display:grid;grid-template-columns:1fr;column-gap:12px;align-items:center;padding:12px 14px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
 .afflist a:first-child{border-left:0;padding-left:0}.afflist a:hover{background:var(--card)}
 .afflist b{font-weight:500;font-size:var(--fs-s)}.afflist small{color:var(--mut);font-size:var(--fs-2xs)}
+/* トップ: 和のキービジュアルを残し、探すための入口を直下に配置する */
+.home-find{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:8px 0 12px;padding:14px 18px;background:var(--card);border:1px solid var(--line);border-radius:4px}
+.home-find p{margin:0;line-height:1.65;font-size:var(--fs-s);color:var(--mut)}
+.home-find .btn{margin:0;flex:none;white-space:normal;letter-spacing:.04em;font-weight:500}
+@media(max-width:640px){.home-find{display:grid;gap:10px;margin:0 0 12px;padding:12px 14px}.home-find .btn{display:flex;width:100%;text-align:center}}
+/* 広島県: 月別の公演目次は広告と混ぜず、月へ移動できるシンプルなリンク群にする */
+.pref-month-nav{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:14px 0 16px;margin:20px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pref-month-nav span{font-size:var(--fs-s);color:var(--mut);margin-right:4px}
+.pref-month-nav a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:4px;text-decoration:none;color:var(--fg);font-size:var(--fs-s);background:var(--card)}
+.pref-month-nav a:hover,.pref-month-nav a:focus-visible{border-color:var(--ac);color:var(--ac)}
+.pref-month h2{scroll-margin-top:94px}
+.pref-stay{scroll-margin-top:94px}
+@media(max-width:560px){.pref-month-nav span{flex-basis:100%}.pref-month-nav a{flex:1 1 auto;justify-content:center;text-align:center}}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
