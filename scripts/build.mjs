@@ -220,6 +220,7 @@ const sparksHtml =`<div class="sparks" aria-hidden="true">${"<i></i>".repeat(SPA
 const lf = (s) => s.replace(/\r\n?/g, "\n");
 const motionCss = lf(readFileSync("scripts/motion.css", "utf8")) + "\n" + sparkCss;
 const MOTION_JS = lf(readFileSync("scripts/motion.js", "utf8"));
+const VT_JS = lf(readFileSync("scripts/vt.js", "utf8"));
 const clientJs = (name) => `<script>${lf(readFileSync(`scripts/client/${name}.js`, "utf8")).trim()}</script>`;
 // 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
 // 動きを付けないページ(規約・運営者情報など、読むための文書)。js クラスを付けないので、出現・視差などの動きがすべて止まる
@@ -256,6 +257,7 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
 <script>${HEAD_MOTION}</script>
+<script>${VT_JS}</script><link rel="expect" href="#main" blocking="render">
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${alternates}${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
