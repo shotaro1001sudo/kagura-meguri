@@ -3,12 +3,15 @@
   var d = document, h = d.documentElement, w = window;
   if (!h.classList.contains('js')) return;
 
-  /* オープニング(トップの最初の訪問だけ): 押す・キーを押すと、すぐ消す。消えたあとは、画面から外す */
+  /* オープニング(トップの最初の訪問だけ): 押す・キーを押すと、すぐ消す。消えたあとは、画面から外す。
+     画面が消えはじめたら(トップが見えはじめたら)、押しても受け止めない。メニューなどを、すぐ押せるようにする */
   var splash = d.querySelector('.splash');
   if (splash && h.classList.contains('intro')) {
-    var skip = function () { h.classList.add('unsplash'); };
+    var passThrough = function () { splash.style.pointerEvents = 'none'; };
+    var skip = function () { h.classList.add('unsplash'); passThrough(); };
     splash.addEventListener('click', skip);
     w.addEventListener('keydown', skip, { once: true });
+    splash.addEventListener('animationstart', function (e) { if (e.target === splash) passThrough(); });
     splash.addEventListener('animationend', function (e) { if (e.target === splash) splash.remove(); });
   }
 
