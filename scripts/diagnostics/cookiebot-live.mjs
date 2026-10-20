@@ -154,6 +154,7 @@ try {
   const buttons = await evaluate(`JSON.stringify([...document.querySelectorAll("#CybotCookiebotDialog button, #CybotCookiebotDialog [role=button]")].map(x => ({ id: x.id, text: x.textContent.trim().slice(0, 75) })).slice(0, 25))`);
   console.log("CONSENT_BUTTONS", buttons);
   const choose = (reject) => evaluate(`(() => {
+    const reject = ${reject};
     const nodes = [...document.querySelectorAll("#CybotCookiebotDialog button, #CybotCookiebotDialog [role=button]")];
     const patterns = ${JSON.stringify(["decline", "deny", "reject", "拒否", "同意しない"])}.map(x=>new RegExp(x, "i"));
     const yes = ${JSON.stringify(["allow all", "accept all", "agree all", "すべて許可", "すべて同意", "allowall", "acceptall", "同意する"])}.map(x=>new RegExp(x, "i"));
