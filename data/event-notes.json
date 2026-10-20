@@ -589,5 +589,38 @@
         "url": "https://kyodonewsprwire.jp/release/202610147844"
       }
     ]
+  },
+  {
+    "ids": [
+      "tohyama-shimotsuki-nakago-2026",
+      "tohyama-shimotsuki-kodouki-kawai-2026",
+      "tohyama-shimotsuki-kizawa-2026",
+      "tohyama-shimotsuki-kamimachi-2026",
+      "tohyama-shimotsuki-shimokuri-2026",
+      "tohyama-shimotsuki-hodono-2026",
+      "tohyama-shimotsuki-yaegouchi-2026",
+      "tohyama-shimotsuki-wada-2026"
+    ],
+    "paras": [
+      "霜月祭は、鎌倉時代に遠山谷が鶴岡八幡宮の社領だったころに導入された、荘園の儀礼が起源とする説が有力です。江戸時代に面の行道が加わったと考えられています。"
+    ],
+    "points": [
+      "遠山の霜月祭は、旧暦11月(霜月)に行われる湯立神楽です。現在は12月に、遠山谷の8つの神社で、日をずらして行われます(上村4社、南信濃4社)。",
+      "釜で湯を沸かして神々を迎え、面をつけた神々が、煮え湯をはねる「湯切り」などが、夜を徹して行われます。国の重要無形民俗文化財(1979年指定)です。",
+      "一般の人が入れるのは、原則として、釜のある舞殿までです。社殿は混雑し、湯切りや人の押し合いで、やけどやけがのおそれがあります。荷物は最小限にしましょう。",
+      "防寒は、特に足元を十分に。化学繊維の上着は、火の粉で穴があくことがあります。外灯がない神社もあるため、懐中電灯があると安心です。降雪や路面の凍結にも、注意してください。",
+      "撮影では、三脚・脚立・自撮り棒・椅子の使用や、床への座り込みは禁止です。舞い手や氏子の前に出ないこと。面の正面でのフラッシュは、舞い手の視力に影響するため、避けます。",
+      "日程や時間割は目安で、当日の状況により前後します。地元の方の指示が、サイトの案内と違うときは、その指示に従ってください。"
+    ],
+    "refs": [
+      {
+        "name": "飯田市「遠山の霜月祭」",
+        "url": "https://www.city.iida.lg.jp/site/bunkazai/shimotsukimatsuri.html"
+      },
+      {
+        "name": "南信濃の情報サイト(日程)",
+        "url": "https://mg.minami.nagano.jp/group/shimotsuki"
+      }
+    ]
   }
 ]
