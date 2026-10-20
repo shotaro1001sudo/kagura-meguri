@@ -592,7 +592,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${isHiroshima ? "月ごとの公演予定・会場・料金を確認できます。" : ""}${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
     path: prefHref(p), noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-    body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽${isHiroshima ? " 公演日程" : ""}`, countLine(list.length, reg.length))}
+    body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}日時や会場は変わることがあるので、出かける前に各ページの公式情報をご確認ください。</p>
 ${monthNavigation}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${stayHtml}`,
   }));
