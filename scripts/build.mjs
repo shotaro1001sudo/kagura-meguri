@@ -297,12 +297,21 @@ const sameSeries = (e) => events.filter((x) => x.id !== e.id && seriesKey(x) ===
 // 時刻の表記: 「13:00〜」。1日に複数回あれば「11:00〜・13:00〜」。時間未定は、決まった言い方にそろえる
 const TIME_UNKNOWN = "時間は公式情報をご確認ください";
 const startTimes = (e) => (e.sessions?.length ? e.sessions.map((x) => x.slice(0, 5) + "〜").join("・") : `${e.start.slice(11, 16)}〜`);
-const card = (e, h = "h3") => {
+// 広島県の比較用一覧だけで表示する。取得日を編集部の確認日として扱わない。
+const cardFacts = (e) => {
+  const sourceUrl = [e.sourceUrl, e.url].find((url) => HTTP_URL.test(url ?? ""));
+  const sourceName = esc(e.source || "掲載情報");
+  const source = sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">${sourceName}</a>` : sourceName;
+  const checked = e.checked ? `確認日: ${esc(jpDate(e.checked))}`
+    : e.auto && e.lastSeen ? `取得日: ${esc(jpDate(e.lastSeen))}（内容の確認日は未登録）` : "確認日: 未登録";
+  return `<div class="meta event-facts"><div>会場: ${esc(e.venue || "要確認")}</div><div>料金: ${esc(e.fee || "要確認")}</div><div>予約要否: ${esc(e.reservation || "要確認")}</div><div>出典: ${source}</div><div>${checked}</div></div>`;
+};
+const card = (e, h = "h3", withFacts = false) => {
   const p = parts(e.start);
   return `<div class="card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <${h}><a href="/events/${e.id}.html">${esc(e.name)}</a></${h}>
-<div class="meta">${sameSeries(e).length ? '<span class="rep">定例開催</span> ・ ' : ""}${e.timeUnknown ? TIME_UNKNOWN : startTimes(e)} ・ ${esc(e.prefecture)} ${esc(e.city)}${e.fee ? ` ・ ${esc(e.fee)}` : ""}</div>
-${kaguraTag(e.kagura)}</div></div>`;
+<div class="meta">${sameSeries(e).length ? '<span class="rep">定例開催</span> ・ ' : ""}${e.timeUnknown ? TIME_UNKNOWN : startTimes(e)} ・ ${esc(e.prefecture)} ${esc(e.city)}${!withFacts && e.fee ? ` ・ ${esc(e.fee)}` : ""}</div>
+${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div></div>`;
 };
 const regCard = (r) => `<div class="card reg"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
 <h3><a href="/regular/${r.id}.html">${esc(r.name)}</a></h3>
@@ -582,7 +591,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ? `<nav class="pref-month-nav" aria-label="広島県の神楽公演を開催月から探す"><span class="meta">開催月から探す</span>${monthLinks}${hasAffiliate ? `<a class="tag" href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
     : "";
   const scheduleHtml = isHiroshima && list.length
-    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の神楽公演</h2>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e)).join("")}</section>`).join("")
+    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の神楽公演</h2>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e, "h3", true)).join("")}</section>`).join("")
     : list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : "";
   const stayHtml = isHiroshima
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`

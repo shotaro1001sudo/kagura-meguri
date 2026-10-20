@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { runInNewContext } from "node:vm";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -57,14 +58,50 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(h(".pref-month .card").length > 0 &&
     h(".pref-month .card").length === h(".pref-month .card a").closest(".card").length,
     "公演カードへのリンクと月別一覧を保持する");
+  ok(h(".pref-month .event-facts").length === h(".pref-month .card").length &&
+    h(".event-facts").toArray().every((node) => {
+      const rows = h(node).children("div").map((_, row) => h(row).text()).get();
+      return rows.length === 5 && rows[0].startsWith("会場:") && rows[1].startsWith("料金:") &&
+        rows[2].startsWith("予約要否:") && rows[3].startsWith("出典:") &&
+        /^(確認日|取得日):/.test(rows[4]);
+    }), "広島のカードを会場・料金・予約・出典・確認日の順で比較できる");
+  ok(h(".event-facts a").toArray().every((node) =>
+    /^https?:\/\//.test(h(node).attr("href")) && h(node).attr("rel").includes("noopener")),
+    "出典には安全な外部リンクを使用する");
+  ok(css.includes(".event-facts a{position:relative;z-index:1}"),
+    "出典リンクがカード全体の詳細リンクに遮られない");
   ok(h(".pref-month-nav a[href='#hiroshima-stay']").length === 0 &&
     h("#hiroshima-stay .aff").length === 1,
     "広告設定がない場合は宿探しの目次だけを表示しない");
 
   const other = cheerio.load(read(join(OUT, "pref/宮崎県.html")));
-  ok(other(".pref-month-nav,.pref-month").length === 0 &&
+  ok(other(".pref-month-nav,.pref-month,.event-facts").length === 0 &&
     other("h2").filter((_, n) => other(n).text() === "開催予定").length === 1,
     "広島以外の県の一覧は変更しない");
+  ok(home(".event-facts").length === 0, "トップの公演カードの情報量は変更しない");
+
+  // ビルドと同じ関数を単独で検証。公演データや外部サイトには書き込まない。
+  const source = read("scripts/build.mjs");
+  const declarations = ["HTTP_URL", "esc", "jpDate"].map((name) =>
+    source.split("\n").find((line) => line.startsWith(`const ${name} =`))).join("\n");
+  const factsCode = source.slice(source.indexOf("const cardFacts ="), source.indexOf('const card ='));
+  const facts = (event) => runInNewContext(`${declarations}\n${factsCode}\ncardFacts(event)`, { event });
+  const missing = cheerio.load(facts({}));
+  ok(missing(".event-facts").text().includes("料金: 要確認") &&
+    missing(".event-facts").text().includes("予約要否: 要確認") &&
+    missing(".event-facts").text().includes("確認日: 未登録"),
+    "未登録を無料・予約不要・今日確認済みに置き換えない");
+  const automatic = cheerio.load(facts({ auto: true, lastSeen: "2026-10-19", source: "取得元", sourceUrl: "https://example.org/source", url: "https://example.org/event" }));
+  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日（内容の確認日は未登録）") &&
+    automatic("a").attr("href") === "https://example.org/source",
+    "自動取得日は取得日と明記し、取得元のURLを優先する");
+  const known = cheerio.load(facts({ venue: "<会場>", fee: "無料（条件あり）", reservation: "事前予約制", checked: "2026-10-10", source: "観光情報誌", sourceUrl: "javascript:alert(1)", url: "https://example.org/event" }));
+  ok(known(".event-facts").text().includes("会場: <会場>") && known("会場").length === 0 &&
+    known(".event-facts").text().includes("予約要否: 事前予約制") &&
+    known(".event-facts").text().includes("確認日: 2026年10月10日") &&
+    known("a").attr("href") === "https://example.org/event" &&
+    !known(".event-facts").text().includes("公式"),
+    "登録値をエスケープし、危険な出典URLや公式情報との誤表示を避ける");
 
   const built = build("tests/fixtures/events.test.json", "dist-test-revenue-ux", {
     TEST_AFF_TRAVEL: "1", TEST_GA: "G-TEST123456", TEST_CB: "test-consent-id"
