@@ -26,7 +26,7 @@ export async function motionTests({ ok, section, OUT }) {
   // 本文の一部だけを動かさない: スクロールで一部だけ現れる動き・トップの一覧だけの導入を、使わない
   ok(!/\.js :is\(/.test(noKeyframes) && !/\.in\{/.test(noKeyframes) && !/\.intro (\.home-hero h1|\.home-hero \.copy|\.quick|\.regions|#list)/.test(noKeyframes), "本文の一部だけが動く規則(スクロールでの出現・一覧だけの導入)がない");
   const animated = [...noKeyframes.matchAll(/([^{}]+)\{[^{}]*animation:(?!none)[^{}]*\}/g)].map((m) => m[1].trim().replace(/^.*\}/, "")).filter((x) => !/^@/.test(x));
-  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.top /.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・ヘッダーだけ", animated.join(" | "));
+  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.top |^::view-transition-(old|new)\(root\)$/.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・ヘッダーだけ", animated.join(" | "));
   // 統一性: 加速の付け方は1種類、遷移の速さは3段階の基準だけ、ホバーで浮き上がり・拡大しない
   const plain = css.replace(/\/\*[\s\S]*?\*\//g, "");
   ok([...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].length === 1 && /--ease:cubic-bezier/.test(plain), "加速の付け方(cubic-bezier)は、基準の1種類だけ", [...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].join(" "));
@@ -118,4 +118,13 @@ export async function motionTests({ ok, section, OUT }) {
     t.w.dispatchEvent(new t.w.Event("scroll"));
     ok(t.h.style.getPropertyValue("--py") === "", "狭い画面: スクロール量を渡さない(動かさない)");
   }
+
+  section("動き: ページの移動(View Transitions)");
+  const vtHtml = readFileSync(join(OUT, "index.html"), "utf8");
+  const head = vtHtml.slice(0, vtHtml.indexOf("</head>"));
+  ok(head.includes("pagereveal") && head.includes("pageswap") && /<link rel="expect" href="#main" blocking="render">/.test(head), "切り替えのスクリプトは <head> にあり、本文が読み込まれるまで最初の描画を待つ(移動の瞬間に、題名と見出しをつなぐため)");
+  const mcss = readFileSync("scripts/motion.css", "utf8");
+  ok(/@media \(prefers-reduced-motion:no-preference\)\{\s*@view-transition\{navigation:auto\}/.test(mcss), "切り替えは、動きを減らす設定の人には行わない");
+  ok(/\.top\{view-transition-name:site-header\}/.test(mcss) && /\.vt main\{animation:none\}/.test(mcss), "ヘッダーは移動中も動かさず、切り替えたページでは本文の出現の動きを重ねない");
+  ok(!/view-transition-name:ev-title/.test(vtHtml), "題名と見出しの名前は、前もってページに書かない(同じ開催が2回並ぶと、名前が重なって切り替えが失敗するため)");
 }
