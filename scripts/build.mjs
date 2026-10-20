@@ -249,7 +249,7 @@ const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
 const OG_URL = `${cfg.baseUrl}/og.png`;
-const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's guide", ["/en/guide.html"]], ["/en/kagura.html", "Styles by region", ["/en/kagura.html"]], ["/en/history.html", "History", ["/en/history.html"]], ["/", "日本語", ["/"]]];
+const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's guide", ["/en/guide.html"]], ["/en/kagura.html", "Kagura styles", ["/en/kagura.html"]], ["/en/history.html", "History", ["/en/history.html"]], ["/", "日本語", ["/"]]];
 const EN_FOOTER = `<footer>Event listings are in Japanese, but your browser can translate them. <a href="/calendar.html" hreflang="ja">Calendar</a> ・ <a href="/map.html" hreflang="ja">Map</a><br><a href="/about.html" hreflang="ja">About (Japanese)</a> ・ <a href="/contact.html" hreflang="ja">Contact (Japanese)</a> ・ <a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a> ・ <a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a><br>© Kagura Meguri</footer>`;
 const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [] }) => {
   const en = lang === "en";
@@ -778,7 +778,10 @@ ${otherWays("/this-month.html")}`,
 
 // ---------- English entry pages (/en/): 海外からの旅行者向け。開催情報の詳細は日本語のまま ----------
 {
-  const pages = englishPages({ esc, upcoming, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null) });
+  // 英語の種類一覧は、開催予定か定期公演がある種類だけ(日本語の「種類で探す」で、検索に載せている種類と同じ)
+  const styles = kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k))
+    .map((k) => ({ key: k, prefs: [...new Set([...upcoming, ...regular].filter((x) => x.kagura === k).map((x) => x.prefecture))] }));
+  const pages = englishPages({ esc, upcoming, styles, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null) });
   const JA = { index: "/", guide: "/guide.html", kagura: "/kagura/", history: "/history/" };
   for (const [key, pg] of Object.entries(pages)) {
     const path = key === "index" ? "/en/" : `/en/${key}.html`;

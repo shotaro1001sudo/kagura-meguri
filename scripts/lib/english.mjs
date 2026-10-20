@@ -10,11 +10,7 @@ import { figure, flow, table, icon, stageDiagram } from "./figures.mjs";
 export const CHECKED = "2026-10-20";
 export const SITE_EN = "Kagura Meguri";
 
-const EXTRA_SOURCES = [
-  { id: "horowasan", name: "保呂羽山の霜月神楽", by: "るるぶ&more.(横手市教育委員会)", url: "https://rurubu.jp/andmore/spot/20000345" },
-  { id: "onmatsuri", name: "春日若宮おん祭 お渡り式・桟敷席", by: "奈良市観光協会(プレスリリース)", url: "https://kyodonewsprwire.jp/release/202610147844" },
-  { id: "shiromi", name: "銀鏡神楽(銀鏡神社大祭)", by: "西都市観光協会", url: "https://www.saito-kanko.jp/tourisms/%E9%8A%80%E9%8F%A1%E7%A5%9E%E6%A5%BD/" },
-];
+const EXTRA_SOURCES = [];
 const ALL_SOURCES = [...GUIDE_SOURCES, ...HISTORY_SOURCES.filter((s) => !GUIDE_SOURCES.some((g) => g.id === s.id)), ...EXTRA_SOURCES];
 
 // 都道府県の英語名
@@ -28,34 +24,22 @@ export const PREF_EN = {
   "福岡県": "Fukuoka", "佐賀県": "Saga", "長崎県": "Nagasaki", "熊本県": "Kumamoto", "大分県": "Oita", "宮崎県": "Miyazaki", "鹿児島県": "Kagoshima", "沖縄県": "Okinawa",
 };
 
-// 神楽の種類の英語名と紹介(日本語の紹介ページと同じ内容)。key は、日本語の神楽の種類名
+// 神楽の種類の英語名(日本語の種類名 → 英語名)。紹介文は載せない(特定の神楽を取り上げないため。すべての種類を同じ扱いにする)
 export const KAGURA_EN = [
-  { key: "石見神楽", name: "Iwami Kagura", where: "Shimane (Iwami region)", season: "Year-round in hot-spring towns; shrine festivals in autumn",
-    text: "Known for its fast, driving rhythm (hachi-choshi), costumes embroidered with gold and silver thread, and papier-mache masks made from local Sekishu washi paper. The highlight is the Orochi dance, in which giant serpents with light, collapsible bodies breathe fire and smoke. Regular shows are held in Hamada, Masuda, Gotsu (Arifuku Onsen) and Yunotsu Onsen.", cites: ["wiki-iwami", "shimane"] },
-  { key: "高千穂神楽", name: "Takachiho Kagura", where: "Miyazaki (Takachiho)", season: "Every night, all year; all-night village kagura from mid-November to early February",
-    text: "Every night at 20:00, Takachiho Shrine presents four of the 33 traditional dances in a performance lasting about an hour. From mid-November to early February, around 20 villages also hold yokagura, all-night kagura staged in private homes or community halls. Takachiho Kagura was designated an Important Intangible Folk Cultural Property of Japan in 1978.", cites: ["takachiho", "wiki-takachiho"] },
-  { key: "広島神楽", name: "Hiroshima Kagura", where: "Hiroshima", season: "Weekly shows; festivals and competitions in autumn",
-    text: "Hiroshima is home to several styles. In the mountain villages of the north, kagura is fast and flashy, with lightning-quick costume changes; along the coast, the styles are slower and more ritual in character. There is a regular show every Wednesday.", cites: ["hiroshima", "hiroshima-city"] },
-  { key: "備中神楽", name: "Bitchu Kagura", where: "Okayama (Bitchu region)", season: "Monthly shows at Korakuen Garden and in Takahashi",
-    text: "Designated an Important Intangible Folk Cultural Property in 1979, Bitchu Kagura blends Shinto ritual with dramatic retellings of myths, and features a comic character who banters with the drummer. Regular shows are held at Korakuen, one of Japan's Three Great Gardens (garden admission required).", cites: ["wiki-bitchu"] },
-  { key: "花祭", name: "Hanamatsuri", where: "Aichi (Toei Town)", season: "November to January, in one village after another",
-    text: "An all-night winter festival said to date back more than 700 years, and designated an Important Intangible Folk Cultural Property. Masked demons and gods dance around a fire and a cauldron of boiling water. Admission is free; visitors who bring a small cash offering receive a local gift in return.", cites: ["aichinow"] },
-  { key: "遠山の霜月祭", name: "Tohyama Shimotsuki Festival", where: "Nagano (Iida, Tohyama valley)", season: "December, at one shrine after another",
-    text: "An overnight hot-water ritual (yudate kagura) held at eight shrines in the Tohyama valley, in which masked gods appear and splash boiling water. It was designated an Important Intangible Folk Cultural Property in 1979.", cites: ["iida"] },
-  { key: "伊勢大神楽", name: "Ise Daikagura", where: "Mie (Kuwana)", season: "Grand performance every December 24",
-    text: "Lion dances and traditional acrobatics, including plate spinning, performed by troupes that tour the country all year round. Every December 24, all the troupes return to Masuda Shrine in Kuwana to perform the full repertoire. It was designated an Important Intangible Folk Cultural Property in 1981.", cites: ["wiki-ise"] },
-  { key: "土佐の神楽", name: "Tosa Kagura", where: "Kochi (mountain villages)", season: "Autumn shrine festivals",
-    text: "The kagura of the Shikoku mountains, designated an Important Intangible Folk Cultural Property in 1980. It is known for sword dances, acrobatic dances with trays and halberds, and dramatic scenes in which a demon is out-argued and runs away.", cites: ["tosa"] },
-  { key: "庄内神楽", name: "Shonai Kagura", where: "Oita (Yufu)", season: "Third Saturday, May to October; Shonai Kagura Festival in autumn",
-    text: "A lively kagura set to fast drumming and flute. A record of a performance in 1778 still survives. Regular shows take place on the kagura stage at Shonai Sports Park.", cites: ["wiki-shonai"] },
-  { key: "御嶽神楽", name: "Ondake Kagura", where: "Oita (Bungo-ono)", season: "Monthly shows at Kagura Kaikan; April festival",
-    text: "Dynamic, powerful dances based on Japanese myths, with a repertoire of 33 pieces passed down through the generations. It is an Important Intangible Folk Cultural Property, and regular performances are held at Kagura Kaikan in Kiyokawa.", cites: ["ondake"] },
-  { key: "銀鏡神楽", name: "Shiromi Kagura", where: "Miyazaki (Saito)", season: "December 12-16 (main all-night kagura: Dec 14-15)",
-    text: "Performed during the annual festival of Shiromi Shrine. Thirty-three kagura pieces are danced through the night, and the festival closes the next afternoon with 'Shishitogiri', a hunting-themed piece, and 'Kamiokuri', a farewell to the gods.", cites: ["shiromi"] },
-  { key: "保呂羽山の霜月神楽", name: "Horowasan Shimotsuki Kagura", where: "Akita (Yokote)", season: "November 7-8, overnight",
-    text: "An overnight hot-water (yudate) kagura of 33 dances, held at the village shrine (satomiya) of Hauchiwake Shrine in Yokote. A shrine maiden dances and delivers an oracle, and the climax comes when water from the sacred cauldron is sprinkled over worshippers with bamboo leaves. It is a nationally designated Important Intangible Folk Cultural Property. Admission is free, though a small offering is customary.", cites: ["horowasan"] },
-  { key: "春日若宮おん祭", name: "Kasuga Wakamiya On-matsuri", where: "Nara (Kasuga Taisha)", season: "December 17 (procession and night rites)",
-    text: "The December festival of Wakamiya, a subsidiary shrine of Kasuga Taisha. On December 17, a procession of performers makes its way to the Otabisho, the temporary shrine, where shrine maidens' kagura, dengaku and bugaku are performed late into the night. Grandstand seats can be reserved.", cites: ["onmatsuri"] },
+  { key: "石見神楽", name: "Iwami Kagura" },
+  { key: "高千穂神楽", name: "Takachiho Kagura" },
+  { key: "広島神楽", name: "Hiroshima Kagura" },
+  { key: "安芸高田神楽", name: "Akitakata Kagura" },
+  { key: "備中神楽", name: "Bitchu Kagura" },
+  { key: "花祭", name: "Hanamatsuri" },
+  { key: "遠山の霜月祭", name: "Tohyama Shimotsuki Festival" },
+  { key: "伊勢大神楽", name: "Ise Daikagura" },
+  { key: "土佐の神楽", name: "Tosa Kagura" },
+  { key: "庄内神楽", name: "Shonai Kagura" },
+  { key: "御嶽神楽", name: "Ondake Kagura" },
+  { key: "銀鏡神楽", name: "Shiromi Kagura" },
+  { key: "保呂羽山の霜月神楽", name: "Horowasan Shimotsuki Kagura" },
+  { key: "春日若宮おん祭", name: "Kasuga Wakamiya On-matsuri" },
 ];
 
 const kName = (jp) => KAGURA_EN.find((k) => k.key === jp)?.name;
@@ -85,8 +69,10 @@ const fmtDate = (s) => new Date(`${s.slice(0, 10)}T00:00:00Z`).toLocaleDateStrin
  * @param {(s:string)=>string} x.esc
  * @param {Array} x.upcoming これからの開催(日付順)
  * @param {(k:string)=>string|null} x.kaguraHref 日本語の神楽の種類ページの URL(なければ null)
+ * @param {{key:string, prefs:string[]}[]} x.styles サイトに載っている神楽の種類(日本語の「種類で探す」と同じ順番)と、都道府県
  */
-export function englishPages({ esc, upcoming, kaguraHref }) {
+export function englishPages({ esc, upcoming, kaguraHref, styles: styleList = [] }) {
+  const styles = styleList.map((x) => ({ ...x, en: kName(x.key), href: kaguraHref(x.key) })).filter((x) => x.href);
   const pages = {};
 
   // ---------- Home ----------
@@ -103,7 +89,7 @@ export function englishPages({ esc, upcoming, kaguraHref }) {
       body: () => `
 <p>Kagura is music and dance performed as an offering to the gods at Shinto shrines. Masked dancers bring Japanese myths to life to the beat of drums, flutes and gongs. Japan has more than 4,000 kagura traditions, and many are still kept alive by local people in village shrines, theatres and festivals.${cite("kyogikai")}</p>
 <p>This site lists kagura performances from all over Japan. The event pages are in Japanese, but your browser can translate them for you (see the <a href="/en/guide.html">first-timer's guide</a>).</p>
-<p><a class="btn" href="/en/guide.html">First-timer's guide</a> <a class="btn ghost" href="/en/kagura.html">Kagura styles by region</a> <a class="btn ghost" href="/en/history.html">History</a></p>
+<p><a class="btn" href="/en/guide.html">First-timer's guide</a> <a class="btn ghost" href="/en/kagura.html">Kagura styles</a> <a class="btn ghost" href="/en/history.html">History</a></p>
 
 <h2>Why see kagura?</h2>
 <div class="gcards">
@@ -120,16 +106,9 @@ ${picks.map((e) => `<tr><th scope="row">${fmtDate(e.start)}</th><td data-k="Styl
 <p><a class="btn" href="/calendar.html" hreflang="ja">All performances (Japanese)</a> <a class="btn ghost" href="/map.html" hreflang="ja">Map (Japanese)</a> <a class="btn ghost" href="/weekend.html" hreflang="ja">This weekend (Japanese)</a></p>
 
 <h2>Where to see kagura</h2>
-<p>Regular shows run on fixed days, which makes them easy to plan around. Festival performances take place on set dates, often at night.</p>
-${table(["Where", "Schedule", "Style"], [
-  ["Takachiho Shrine, Miyazaki", "Every night, 20:00-21:00", "Takachiho Kagura"],
-  ["Hiroshima Prefectural Cultural Centre", "Every Wednesday", "Hiroshima Kagura"],
-  ["Hot-spring towns and shrines in Shimane (Hamada, Masuda, Gotsu, Yunotsu)", "Most weekends, in the evening", "Iwami Kagura"],
-  ["Korakuen Garden, Okayama", "Monthly, usually the second Sunday", "Bitchu Kagura"],
-  ["Kagura Kaikan, Oita (Kiyokawa)", "Monthly", "Ondake Kagura"],
-  ["Toei Town, Aichi", "November to January", "Hanamatsuri"],
-], "Where to see kagura", "chk")}
-<p><a href="/en/kagura.html">See every style and where to find it</a></p>
+<p>Kagura is performed at shrine festivals, in community halls and on theatre stages all over Japan. Some venues hold regular shows on fixed days, which makes them easy to plan around; festival performances take place on set dates, often at night.</p>
+<p>To find what is on near you or along your route, use the calendar, the map or the list of all kagura styles. These pages are in Japanese, but your browser can translate them.</p>
+<p><a class="btn" href="/calendar.html" hreflang="ja">Calendar (Japanese)</a> <a class="btn ghost" href="/map.html" hreflang="ja">Map (Japanese)</a> <a class="btn ghost" href="/en/kagura.html">All kagura styles</a></p>
 ${sourcesHtml()}`,
     };
   }
@@ -196,17 +175,28 @@ ${sourcesHtml()}`,
   }
 
   // ---------- Kagura styles ----------
+  // 特定の神楽を取り上げないよう、紹介文は載せず、サイトに載っているすべての種類を、日本語の「種類で探す」と同じ順番・同じ扱いで並べる
   {
     const { cite, sourcesHtml } = makeCiter(esc);
     pages.kagura = {
-      title: `Kagura Styles by Region in Japan | ${SITE_EN}`,
-      h1: "Kagura styles by region",
-      sub: "Where to see each style, and when",
-      desc: "From Iwami and Takachiho to Hanamatsuri and Ise Daikagura: Japan's main kagura styles and when and where to see them.",
+      title: `Kagura Styles in Japan | ${SITE_EN}`,
+      h1: "Kagura styles",
+      sub: "Every style featured on this site, listed equally",
+      desc: "The main lineages of kagura, plus a full list of every kagura style featured on this site, with links to dates and venues.",
       body: () => `
-<p>Kagura varies from region to region. Below are the main styles featured on this site, along with where and when to see each one. For details of upcoming events, follow the link to each style's Japanese page.</p>
-<h2>Main styles</h2>
-${KAGURA_EN.map((k) => { const href = kaguraHref(k.key); return `<section class="gcard" id="${esc(k.name.toLowerCase().replace(/[^a-z]+/g, "-"))}" style="margin:12px 0"><h3>${esc(k.name)} <small lang="ja" translate="no">${esc(k.key)}</small></h3><p><b>Where:</b> ${esc(k.where)}<br><b>When:</b> ${esc(k.season)}</p><p>${esc(k.text)}${cite(...k.cites)}</p>${href ? `<p><a href="${href}" hreflang="ja">Upcoming ${esc(k.name)} events (Japanese)</a></p>` : ""}</section>`; }).join("")}
+<p>Kagura takes many forms. The music, costumes and plays differ from region to region, and often from one village to the next.</p>
+<h2>The main lineages</h2>
+<p>Kagura is broadly divided into mikagura, performed at the imperial court, and sato-kagura, performed at shrines and in communities throughout Japan. Sato-kagura is usually grouped into four lineages, although the categories and names vary between dictionaries and researchers.${cite("kotobank")}</p>
+${table(["Lineage", "Characteristics"], [
+  ["Miko kagura", "Based on rites of possession, oracles and the calming of spirits performed by priests and shrine maidens."],
+  ["Izumo style", "Typified by the Shichiza rites and shinno plays of Sada Shrine in Shimane, combining dances with ritual objects and myth plays."],
+  ["Ise style", "Derived from the hot-water (yudate) kagura of Ise Shrine, in which water is boiled in a cauldron before the gods."],
+  ["Shishi kagura", "Lion dances that use the power of the lion's head to drive away evil, prevent fires and pray for good health."],
+], "The main lineages of kagura", "chk")}
+
+<h2>All styles on this site</h2>
+<p class="meta">Listed in the same order as the Japanese "browse by style" page. Each link opens the Japanese page with upcoming dates and venues.</p>
+${table(["Style", "Prefecture", "Dates and venues"], styles.map((k) => [esc(k.en || k.key) + (k.en ? ` <small lang="ja" translate="no">${esc(k.key)}</small>` : ""), esc(k.prefs.map((x) => PREF_EN[x] || x).join(", ")), `<a href="${k.href}" hreflang="ja">Japanese page</a>`]), "All kagura styles on this site", "styles")}
 <p><a class="btn" href="/en/guide.html">First-timer's guide</a> <a class="btn ghost" href="/kagura/" hreflang="ja">Browse by style (Japanese)</a></p>
 ${sourcesHtml()}`,
     };
