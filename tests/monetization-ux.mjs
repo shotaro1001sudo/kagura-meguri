@@ -55,6 +55,20 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     const linkText = h(".pref-month-nav a[href='#" + id + "']").text();
     return count > 0 && linkText.includes(count + "件");
   }), "各月の表示件数と、実際の公演カード数が一致する");
+  ok(months.toArray().every((node) => {
+    const section = h(node);
+    const key = section.find("h2").attr("id").replace("hiroshima-", "");
+    const reciprocal = section.find(`a[href='/month/${key}.html']`);
+    return section.find("h2").text().endsWith("の開催予定") && reciprocal.length === 1 &&
+      reciprocal.text() === section.find("h2").text().replace("の開催予定", "の全国日程を見る");
+  }), "広島の各開催予定から同じ月の全国日程へ移動できる");
+  const november = cheerio.load(read(join(OUT, "month/2026-11.html")));
+  ok(november(`.lead a[href='/pref/${encodeURIComponent("広島県")}.html']`).length === 1 &&
+    h(".pref-month a[href='/month/2026-11.html']").length === 1,
+    "2026年11月は月別ページと広島県ページを相互に案内する");
+  ok(h(".pref-month h2").toArray().every((node) => h(node).text().includes("開催予定")) &&
+    h(".pref-month h2").toArray().every((node) => !h(node).text().includes("終了")),
+    "県ページの月別区分は終了済みを混ぜず、開催予定と明記する");
   ok(h(".pref-month .card").length > 0 &&
     h(".pref-month .card").length === h(".pref-month .card a").closest(".card").length,
     "公演カードへのリンクと月別一覧を保持する");
