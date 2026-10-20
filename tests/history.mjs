@@ -43,4 +43,13 @@ export function historyTests({ ok, section, OUT }) {
   const order = ["kodai", "chusei", "kinsei", "kindai"];
   ok(order.every((s, i) => { const $ = pages[`history/${s}.html`]; return (i === 0 || $(".hnav .prev").attr("href") === `/history/${order[i - 1]}.html`) && (i === order.length - 1 ? $(".hnav .next").attr("href") === "/history/" : $(".hnav .next").attr("href") === `/history/${order[i + 1]}.html`); }), "時代のページに、前後(古代→中世→近世→近代)への案内がある");
   ok(cheerio.load(read(join(OUT, "index.html")))('footer a[href="/history/"]').length === 1, "フッターから、神楽の歴史へ行ける");
+
+  section("図と表(ガイド・歴史)");
+  const guide = cheerio.load(read(join(OUT, "guide.html")));
+  const all = [["guide.html", guide], ...files.map((f) => [f, pages[f]])];
+  ok(all.every(([, $]) => $("svg title").length === 0 && $("svg").get().every((v) => !!$(v).attr("aria-label") && $(v).attr("role") === "img" && !!$(v).attr("viewBox"))), "絵(SVG)は、代替の説明(aria-label)と viewBox があり、<title> でページの題と取り違えない");
+  ok(all.every(([, $]) => $("figure.fig").get().every((f) => $(f).find("figcaption").text().trim().length >= 20)), "図には、文章の説明(figcaption)が付く");
+  ok(all.every(([, $]) => $("ol.flow").get().every((o) => !!$(o).attr("aria-label") && $(o).find("li").length >= 3)) && all.every(([, $]) => $(".tblwrap").get().every((w) => $(w).attr("tabindex") === "0" && $(w).attr("role") === "region" && !!$(w).attr("aria-label"))), "流れ図と表には名前があり、表は、キーボードで横にスクロールできる");
+  ok(guide("figure.fig").length >= 2 && guide("table.chk tbody tr").length >= 3 && guide("ol.flow.h li").length === 5, "ガイド: 舞台の見方の図・観に行くまでの流れ(5段階)・持ち物チェック表がある", `${guide("figure.fig").length}`);
+  ok(pages["history/index.html"](".tree .tr-l2 > li").length === 4 && pages["history/kodai.html"]("ol.flow.v li").length === 6 && pages["history/chusei.html"]("svg.dg").length === 1 && pages["history/kinsei.html"]("table.nw tbody tr").length >= 6 && pages["history/kindai.html"]("table tbody tr").length >= 5, "歴史: 分類のツリー(里神楽の4系統)・天岩戸の流れ(6段階)・湯立の図・江戸時代の表・指定年の表がある");
 }

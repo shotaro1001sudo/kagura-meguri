@@ -341,3 +341,37 @@ body{overflow-x:clip}
 .history h2{margin-top:36px}
 @media(max-width:640px){.tl{margin:8px -18px 0;padding:6px 18px 14px;scroll-padding-inline:18px}.tl-item{width:200px}.era-grid{grid-template-columns:1fr}.hnav a{min-width:46%}}
 @media print{.tl{overflow:visible}.tl-list{flex-wrap:wrap;width:auto}}
+
+/* 図と表(はじめての神楽ガイド・神楽の歴史) */
+.fig{margin:22px 0;padding:16px 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.fig figcaption{margin-top:12px;font-size:var(--fs-s);color:var(--mut);line-height:1.8}
+.fig-h{font-family:var(--serif);font-size:var(--fs-m);font-weight:500;margin:22px 0 6px}
+.ic{width:1.15em;height:1.15em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;margin-right:.35em;color:var(--ac);flex:none}
+.dg{width:100%;max-width:520px;height:auto;display:block;margin:0 auto;font-family:var(--sans)}
+.dg-box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}.dg-stage{fill:color-mix(in srgb,var(--ac2) 12%,var(--bg));stroke:var(--ac2);stroke-width:1.2}.dg-seat{fill:color-mix(in srgb,var(--ac) 8%,var(--bg))}
+.dg-t{fill:var(--fg)}.dg-m{fill:var(--mut)}.dg-ac{fill:var(--ac)}.dg-dot{fill:var(--ac2)}
+.dg-aclin,.dg-arrow,.dg-fire{stroke:var(--ac);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}.dg-arrow{stroke-width:2}
+.dg-line{stroke:var(--mut);stroke-width:2;stroke-linecap:round;fill:none}.dg-steam{stroke:var(--mut);stroke-width:1.6;opacity:.6;stroke-linecap:round;fill:none}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:none}
+.flow li{position:relative;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:12px 14px 12px 44px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.flow li:not(:last-child):after{content:"↓";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);color:var(--ac);font-size:var(--fs-s);line-height:1}
+.flow .n{position:absolute;left:12px;top:12px;width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--onac);font-size:var(--fs-xs);display:grid;place-items:center}
+.flow b{font-weight:500}.flow .d{flex-basis:100%;color:var(--mut);font-size:var(--fs-s)}
+@media(min-width:761px){
+  .flow.h{flex-direction:row;gap:22px}.flow.h li{flex:1;min-width:0;flex-direction:column;align-items:flex-start;padding:44px 12px 12px}
+  .flow.h .n{left:12px;top:12px}
+  .flow.h li:not(:last-child):after{content:"›";left:auto;right:-16px;top:50%;bottom:auto;transform:translateY(-50%);font-size:var(--fs-xl)}
+}
+.tree{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.tr-root{align-self:center;padding:8px 26px;background:var(--ac);color:var(--onac);border-radius:999px;font-family:var(--serif);font-size:var(--fs-l)}
+.tr-l1,.tr-l2{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.tr-l1{grid-template-columns:1fr}.tr-l2{grid-template-columns:1fr;margin-top:10px}
+.tr-n{padding:10px 14px;background:var(--bg);border:1px solid var(--line);border-top:3px solid var(--ac2);border-radius:6px}
+.tr-n b{display:block;font-weight:500}.tr-n .d{display:block;color:var(--mut);font-size:var(--fs-s);margin-top:2px}
+.tr-l1>li>.tr-n{border-top-color:var(--ac)}
+@media(min-width:761px){.tr-l1{grid-template-columns:1fr 2fr;align-items:start}.tr-l2{grid-template-columns:repeat(2,1fr)}}
+.tblwrap:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+
+.dg-pot{fill:color-mix(in srgb,var(--mut) 14%,var(--bg));stroke:var(--mut);stroke-width:2}.dg-leaf{stroke:var(--ac2);stroke-width:3;stroke-linecap:round;fill:none}.dg-drop{fill:var(--ac2)}.dg-num{fill:var(--onac);text-anchor:middle}
+@media(min-width:761px){.flow.h li{flex-wrap:nowrap}.flow.h .d{flex-basis:auto}}
+@media(min-width:561px){.tbl.cmp.nw td:nth-child(2){white-space:nowrap}}
