@@ -69,8 +69,12 @@ export async function motionTests({ ok, section, OUT }) {
     const t = await run("index.html");
     ok(t.h.classList.contains("js") && t.h.classList.contains("intro"), "ふつうの環境: トップの最初の訪問で、js と intro が付く");
     ok(t.errs.length === 0, "スクリプトのエラーがない", t.errs.join(";"));
-    t.d.querySelector(".splash").dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
-    ok(t.h.classList.contains("unsplash"), "オープニング: 押すと、すぐ消す(unsplash が付く)");
+    const spEl = t.d.querySelector(".splash");
+    spEl.dispatchEvent(new t.w.Event("animationstart"));
+    ok(spEl.style.pointerEvents === "none" && !t.h.classList.contains("unsplash"), "オープニング: 画面が消えはじめたら、押しても受け止めない(下のメニューを、すぐ押せる)");
+    spEl.style.pointerEvents = "";
+    spEl.dispatchEvent(new t.w.MouseEvent("click", { bubbles: true }));
+    ok(t.h.classList.contains("unsplash") && spEl.style.pointerEvents === "none", "オープニング: 押すと、すぐ消す(unsplash が付き、以後は押しても受け止めない)");
     const heroIO = t.ios.find((io) => io.els.length === 1);
     ok(t.ios.length === 1 && !t.d.querySelector(".in"), "スクロールで一部だけを出す観察はしない(視差の観察だけ)", String(t.ios.length));
     // 視差
