@@ -9,27 +9,38 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   section("収益化UX: スマホトップ・広島県の月別導線");
   const home = cheerio.load(read(join(OUT, "index.html")));
   const css = read("scripts/style.css");
-  ok(home(".home-find a[href='/calendar.html']").length === 1,
-    "トップのビジュアル直後に日付・地域検索へのリンクがある");
-  ok(home(".home-hero").next().hasClass("home-find") &&
-     home(".home-find").next().hasClass("quick"),
-    "ヒーロー→日付と地域の検索→今週末・今月の順");
+  ok(home(".home-find").length === 0 &&
+    home(".home-search-link a.tag[href='/calendar.html']").length === 1,
+    "新しい広告風カードを追加せず、元のリンク書式で日付・地域検索へ案内する");
+  ok(home(".home-hero").next().hasClass("quick") &&
+    home(".quick").next().hasClass("home-search-link"),
+    "元の見た目のまま、ヒーロー→今週末・今月→詳細検索の順に並べる");
   ok(home(".quick a").length === 2 &&
-     home(".quick a[href='/weekend.html']").length === 1 &&
-     home(".quick a[href='/this-month.html']").length === 1,
-    "既存の今週末・今月のリンクは残す");
-  ok(/main \.home-hero\{min-height:clamp\(370px,94vw,450px\)\}/.test(css),
-    "スマホ時のヒーロー高さを縮めながら下限・上限を設ける");
-  ok(/\.home-find \.btn\{display:flex;width:100%/.test(css),
-    "スマホでは日付・地域CTAをタップしやすい幅にする");
+    home(".quick a[href='/weekend.html']").length === 1 &&
+    home(".quick a[href='/this-month.html']").length === 1,
+    "既存の今週末・今月への入口を維持する");
+  ok(home(".home-hero .copy h1").text().includes("神話を受け継ぐ") &&
+    home(".hero-art img").attr("src") === "/hero-pc.webp" &&
+    home(".hero-art source").attr("srcset") === "/hero-sp.webp",
+    "元の縦書き見出しとPC・スマホの絵をそのまま残す");
+  ok(css.includes("main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}"),
+    "スマホの元のヒーローサイズとレイアウトを保持する");
+  ok(!css.includes(".home-find{") &&
+    !css.includes("main .home-hero{min-height:clamp(") &&
+    css.includes(".pref-month-nav") &&
+    css.includes(".home-search-link"),
+    "追加した新デザインの背景・ボタンを除き、余白と月別の配置だけを調整する");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
-  ok(h("title").text().includes("月別公演") &&
-    h("h1").text().includes("広島県の神楽") &&
-    (h('meta[name="description"]').attr("content") || "").includes("月ごとの公演予定"),
-    "広島のタイトル・H1・説明文を公演探しのニーズに合わせる");
+  ok(h("title").text().startsWith("広島県の神楽 日程【") &&
+    h("h1").text().trim() === "広島県の神楽" &&
+    (h('meta[name="description"]').attr("content") || "").includes("公式情報をもとに"),
+    "広島の元のタイトル・H1・説明文を維持する");
   const months = h(".pref-month");
   const nav = h(".pref-month-nav a[href^='#hiroshima-2']");
+  ok(h(".pref-month-nav .meta").length === 1 &&
+    h(".pref-month-nav a").toArray().every((x) => h(x).hasClass("tag")),
+    "広島の目次を従来のtagとmeta書式で表示する");
   ok(months.length > 0 && months.length === nav.length,
     "開催月の目次リンク数と月別セクション数が一致する");
   const hrefs = nav.map((_, a) => h(a).attr("href").slice(1)).get();
