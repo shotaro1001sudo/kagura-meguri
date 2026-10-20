@@ -744,7 +744,7 @@ ${otherWays("/this-month.html")}`,
   const title = "はじめての神楽ガイド 見どころ・マナー・服装";
   write("dist/guide.html", layout({
     title: `${title} | ${cfg.siteName}`,
-    desc: "はじめて神楽を観る方へ。能や歌舞伎との違い、石見・広島・備中・高千穂・御嶽神楽の見どころ、撮影やご祝儀のマナー、夜の寒さに備えた服装と持ち物を、各地の公式情報をもとにまとめました。",
+    desc: "はじめて神楽を観る方へ。能や歌舞伎との違い、神楽ならではの楽しみ方、撮影やご祝儀のマナー、夜の寒さに備えた服装と持ち物を、各地の公式情報をもとにまとめました。",
     path: "/guide.html", active: "/guide.html", alts: [["en", "/en/guide.html"]],
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,

@@ -31,11 +31,10 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(firstSeen.every((h, i) => h === `#src-${i + 1}`), "番号は、本文に初めて出てくる順");
   ok($("main").text().includes(`確認日: ${CHECKED.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日")}`) && $("main").text().includes("現地の案内を優先"), "確認日と、現地の案内を優先する旨");
   const toc = $(".toc a").map((_, a) => $(a).attr("href")).get();
-  ok(toc.length === 6 && toc.every((h) => $(h).is("h2.gsec")) && $("h2.gsec .no").map((_, n) => $(n).text()).get().join() === "01,02,03,04,05,06", "目次の6章が、番号つきの章の見出しに飛ぶ");
+  ok(toc.length === 5 && toc.every((h) => $(h).is("h2.gsec")) && $("h2.gsec .no").map((_, n) => $(n).text()).get().join() === "01,02,03,04,05", "目次の5章が、番号つきの章の見出しに飛ぶ");
   // 項目ごとのまとまり: 章の中は、見出しつきのカード
-  ok($(".gcard").length >= 20 && $(".gcard").get().every((c) => $(c).children("h3").length === 1), "項目は、見出しつきのカードにまとまっている", String($(".gcard").length));
-  const local = $("#highlights").nextUntil("h2").find(".gcard h3").map((_, h) => $(h).text()).get().join(" ");
-  ok(["石見神楽", "広島神楽", "備中神楽", "高千穂神楽", "御嶽神楽"].every((k) => local.includes(k)), "各地の見どころ: 石見・広島・備中・高千穂・御嶽", local);
+  ok($(".gcard").length >= 15 && $(".gcard").get().every((c) => $(c).children("h3").length === 1), "項目は、見出しつきのカードにまとまっている", String($(".gcard").length));
+  ok($("#highlights").length === 0, "特定の神楽を取り上げる章(各地の見どころ)は置かない(公正さのため)");
   const cmp = $("table.cmp:not(.chk) thead th").map((_, th) => $(th).text()).get();
   ok(cmp.join() === ",神楽,能,歌舞伎" && $("table.cmp:not(.chk) tbody tr").length >= 3, "能・歌舞伎との比較表がある");
   ok($("table.cmp:not(.chk) tbody td").get().every((td, i) => $(td).attr("data-k") === ["神楽", "能", "歌舞伎"][i % 3]), "比較表の各欄に列名がある(スマホで縦に積んだときに表示する)");
@@ -43,17 +42,17 @@ export function guideTests({ ok, section, OUT, build }) {
   const internal = $("main a[href^='/']").map((_, a) => $(a).attr("href").split("#")[0]).get();
   const fileOf = (h) => join(D, decodeURIComponent(h.endsWith("/") ? h + "index.html" : h));
   ok(internal.length > 0 && internal.every((h) => existsSync(fileOf(h))), "サイト内のリンクが、すべて実在するページにつながる", internal.filter((h) => !existsSync(fileOf(h))).join(", "));
-  ok(internal.filter((h) => h.startsWith("/regular/")).length === 0 && internal.filter((h) => h.startsWith("/kagura/") && h !== "/kagura/").length >= 5, "神楽の種類(5件)のページへリンクし、定期公演のページへはリンクしない");
+  ok(internal.filter((h) => h.startsWith("/regular/")).length === 0 && internal.filter((h) => h.startsWith("/kagura/") && h !== "/kagura/").length === 0, "個別の神楽の種類・定期公演のページへはリンクしない(特定の神楽を取り上げない)");
   ok(/guide\.html<\/loc><lastmod>/.test(read(join(D, "sitemap.xml"))) && read(join(D, "sitemap.xml")).includes(`guide.html</loc><lastmod>${CHECKED}<`), "サイトマップに載り、lastmod は確認日");
   // 入口(トップ・フッター・各開催ページ)
   const home = cheerio.load(read(join(OUT, "index.html")));
   ok(home('.quick a[href="/guide.html"]').length === 0 && home('.top nav a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 1, "ガイドへは、メニューとフッターから(トップの入口はメニューと重なるので置かない)");
   const ev = cheerio.load(read(join(OUT, "events/t-full.html"))), rg = cheerio.load(read(join(OUT, "regular/r-nightly.html")));
   ok(ev('main a[href="/guide.html"]').length === 1 && rg('main a[href="/guide.html"]').length === 1, "開催・定期公演のページから、ガイドへリンクしている");
-  // 「各地の神楽の見どころ」以外の章は、特定の神楽・地域によらない、一般的な内容にする
+  // ガイドは、特定の神楽・地域によらない、一般的な内容にする(出典の一覧は除く)
   const g = cheerio.load(read(join(D, "guide.html")));
-  g("#highlights").nextUntil("h2").remove(); g("#highlights").remove(); g("ol.sources").remove();
+  g("ol.sources").remove();
   const general = g("main .guide").text().match(/.{0,12}(石見|広島|高千穂|御嶽|備中|安芸高田|島根|宮崎|大分|岡山).{0,12}/g) ?? [];
-  ok(general.length === 0, "見どころの章以外は、特定の神楽・地域の名前を出さない(一般的な内容)", general.join(" / "));
+  ok(general.length === 0, "本文に、特定の神楽・地域の名前を出さない(一般的な内容)", general.join(" / "));
   rmSync(D, { recursive: true, force: true });
 }
