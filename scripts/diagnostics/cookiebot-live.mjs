@@ -158,7 +158,7 @@ try {
     const patterns = ${JSON.stringify(["decline", "deny", "reject", "拒否", "同意しない"])}.map(x=>new RegExp(x, "i"));
     const yes = ${JSON.stringify(["allow all", "accept all", "agree all", "すべて許可", "すべて同意", "allowall", "acceptall", "同意する"])}.map(x=>new RegExp(x, "i"));
     const p = ${reject ? "patterns" : "yes"};
-    const btn = nodes.find(x => p.some(rx => rx.test(x.id+" "+x.textContent.trim())));
+    const btn = reject ? nodes.find(x => p.some(rx => rx.test(x.id+" "+x.textContent.trim()))) : nodes.find(x => /^(?:allow all|accept all|すべて許可|すべて同意)$/i.test(x.textContent.trim()) || /AllowAll$/i.test(x.id));
     if (!btn) return JSON.stringify({ found: false });
     const result = { found: true, id: btn.id, label: btn.textContent.trim().slice(0, 70) };
     btn.click();
