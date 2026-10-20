@@ -275,7 +275,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 <div class="wrap"><main id="main">${body}</main>
 ${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}</div>
-${withForm ? `<script>${formScript(cfg)}</script>` : ""}<script>${MOTION_JS}</script></body></html>`;
+${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
