@@ -37,7 +37,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     }
   }
   ok(new Set(entries.map((e) => e.loc)).size === entries.length, "サイトマップ: URLが重複していない");
-  for (const [p, $] of pages) if (!isNoindex($) && p !== "/404.html") ok(smPaths.has(p === "/index.html" ? "/" : p === "/kagura/index.html" ? "/kagura/" : p), `${p}: index されるページは、サイトマップに載っている`);
+  for (const [p, $] of pages) if (!isNoindex($) && p !== "/404.html") ok(smPaths.has(p.endsWith("/index.html") ? p.slice(0, -"index.html".length) : p), `${p}: index されるページは、サイトマップに載っている`);
 
   // --- 各ページのメタ情報 ---
   const descs = new Map();
