@@ -12,6 +12,7 @@ export function externalServices(ctx) {
     { name: "OpenStreetMap(OpenStreetMap Foundation)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
   ];
   if (ctx.hasAds) rows.push({ name: "Google AdSense(Google LLC)", purpose: "広告の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、閲覧履歴に基づく情報", when: "広告を表示するページ" });
+  if (ctx.hasVcBanner) rows.push({ name: "バリューコマース(株式会社バリューコマース)", purpose: "バナー広告(アフィリエイト)の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、参照元のサイト名", when: "バナー広告を表示するページ(開催の詳細・種類・都道府県・定期公演)" });
   if (ctx.hasGC) rows.push({ name: "GoatCounter(アクセス解析)", purpose: "アクセス状況の把握(集計した件数だけ)", sent: "閲覧したページのURL、参照元、ブラウザとOSの種類、画面の幅、言語、IPアドレス(国の推定と、再訪問の判定に一時的に使い、保存されない)", when: "すべてのページ" });
   if (ctx.hasGA) rows.push({ name: "Googleアナリティクス(Google LLC)", purpose: "アクセス状況の分析", sent: "IPアドレス(匿名化の設定による)、Cookie等の識別子、閲覧したページ、ブラウザの種類、おおよその地域", when: "すべてのページ" });
   if (ctx.hasCB) rows.push({ name: "Cookiebot(Usercentrics)", purpose: "Cookie等の利用への同意の取得と記録", sent: "IPアドレス(一部を伏せて記録)、同意した内容と日時、ブラウザの種類", when: "すべてのページ" });

@@ -53,7 +53,7 @@ export async function policyTests({ ok, section, OUT, build }) {
 
   section("ポリシー: 実際の動作との一致");
   // (1) 通信できる外部は、すべてポリシーに載っている
-  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms", "gc.zgo.at": "GoatCounter", "consent.cookiebot.com": "Cookiebot", "consentcdn.cookiebot.com": "Cookiebot", "imgsct.cookiebot.com": "Cookiebot" };
+  const names = { "unpkg.com": "unpkg", "tile.openstreetmap.org": "OpenStreetMap", "fonts.googleapis.com": "Google Fonts", "fonts.gstatic.com": "Google Fonts", "api.web3forms.com": "Web3Forms", "gc.zgo.at": "GoatCounter", "ad.jp.ap.valuecommerce.com": "バリューコマース", "consent.cookiebot.com": "Cookiebot", "consentcdn.cookiebot.com": "Cookiebot", "imgsct.cookiebot.com": "Cookiebot" };
   const origins = new Set();
   for (const f of walk(OUT).filter((x) => x.endsWith(".html"))) for (const d of ["script-src", "style-src", "img-src", "font-src", "connect-src", "frame-src"]) for (const tok of (cspOf(f).split(";").map((s) => s.trim()).find((s) => s.startsWith(d + " ")) ?? "").split(/\s+/).slice(1)) if (/^https:\/\//.test(tok)) origins.add(new URL(tok).hostname);
   ok(origins.size >= 3, "通信できる外部が、CSPから読み取れる", [...origins].join(","));
@@ -120,6 +120,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     const jh = new URL($(jl).attr("href"));
     ok(jh.origin + jh.pathname === "https://ck.jp.ap.valuecommerce.com/servlet/referral" && jh.searchParams.get("sid") === prodCfg.affiliate.valueCommerceSid && jh.searchParams.get("pid") === prodCfg.affiliate.jalanPid && /^https:\/\/www\.jalan\.net\/uw\/uwp2011\/uww2011init\.do\?keyword=/.test(jh.searchParams.get("vc_url")) && /sponsored/.test($(jl).attr("rel")), "本番: じゃらんのリンクはバリューコマース経由(行き先は会場の市町村の宿の検索。sponsored・PR 表示つき)", $(jl).attr("href").slice(0, 160));
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
+    ok($(".stay .vcbanner script[src='https://ad.jp.ap.valuecommerce.com/servlet/jsbanner?sid=" + prodCfg.affiliate.valueCommerceSid + "&pid=" + prodCfg.affiliate.valueCommerceBanner + "']").length === 1 && $(".stay .pr").length === 1 && p.includes("バリューコマース(株式会社バリューコマース)"), "本番: バナー広告が、ブロックの「PR」注記つきで入り、外部送信の表にも載る");
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
     const pub = prodCfg.adsense.client;
     ok(/^ca-pub-\d{16}$/.test(pub) && read(join(d, "index.html")).includes(`adsbygoogle.js?client=${pub}`) && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense のコード・ads.txt・ポリシーの広告の項目がそろう(審査の準備)");

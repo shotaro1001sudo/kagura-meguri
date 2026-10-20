@@ -34,6 +34,11 @@ export function cspFor(html, cfg) {
     d["img-src"].push("https:");
     d["connect-src"].push("https://*.google.com", "https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google-analytics.com");
   }
+  if (cfg.affiliate?.valueCommerceSid && cfg.affiliate?.valueCommerceBanner) {
+    // バリューコマースのバナー広告: スクリプトと画像の配信元だけを許可する
+    d["script-src"].push("https://ad.jp.ap.valuecommerce.com");
+    d["img-src"].push("https://ad.jp.ap.valuecommerce.com");
+  }
   if (cfg.goatcounter) {
     // アクセス解析 GoatCounter: スクリプト(SRI付き)の配信元と、計測の送り先だけを許可する
     const gc = `https://${cfg.goatcounter}.goatcounter.com`;

@@ -28,7 +28,7 @@ if (process.env.TEST_GOATCOUNTER != null) cfg.goatcounter = process.env.TEST_GOA
 // アクセス解析 GoatCounter(Cookie を使わない)。コードは英小文字・数字・ハイフン(https://<コード>.goatcounter.com)
 if (cfg.goatcounter && !/^[a-z0-9-]+$/.test(cfg.goatcounter)) { console.error("config.json の goatcounter は、英小文字・数字・ハイフンのコードにしてください"); process.exit(1); }
 const GOATCOUNTER = cfg.goatcounter ? `<script data-goatcounter="https://${cfg.goatcounter}.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>` : "";
-if (process.env.TEST_AFF_OFF) cfg.affiliate = { rakutenAffiliateId: "", valueCommerceSid: "", jalanPid: "", amazonTag: "" }; // テスト用(アフィリエイト未設定の状態から確かめる)
+if (process.env.TEST_AFF_OFF) cfg.affiliate = { rakutenAffiliateId: "", valueCommerceSid: "", jalanPid: "", valueCommerceBanner: "", amazonTag: "" }; // テスト用(アフィリエイト未設定の状態から確かめる)
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
 if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: "1234567", jalanPid: "7654321" }; // テスト用(宿のアフィリエイト)
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
@@ -110,7 +110,8 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 const a = cfg.affiliate;
 // 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
 const rakutenOn = !!a.rakutenAffiliateId, jalanOn = !!(a.valueCommerceSid && a.jalanPid), amazonOn = !!a.amazonTag;
-const hasAffiliate = rakutenOn || jalanOn || amazonOn;
+const bannerOn = !!(a.valueCommerceSid && a.valueCommerceBanner);
+const hasAffiliate = rakutenOn || jalanOn || amazonOn || bannerOn;
 const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
 const vcJalan = (url) => (jalanOn ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&pid=${a.jalanPid}&vc_url=${encodeURIComponent(url)}` : url);
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
@@ -131,6 +132,13 @@ const rakutenStay = (x, day) => {
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const prNote = (on) => (on ? `<small class="meta"><span class="pr">PR</span> 広告(アフィリエイトリンク)を含みます。内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small>` : `<small class="meta">外部の予約サイトへのリンクです。内容は、<a href="/disclaimer.html">免責事項</a>をご覧ください。</small>`);
 
+// バリューコマースのバナー広告(スクリプト版)。広告である旨の「PR」を付け、未設定の間は何も出さない
+const vcBanner = () => {
+  if (!bannerOn) return "";
+  const q = `sid=${encodeURIComponent(a.valueCommerceSid)}&pid=${encodeURIComponent(a.valueCommerceBanner)}`;
+  return `<div class="vcbanner"><div class="vcb"><script src="https://ad.jp.ap.valuecommerce.com/servlet/jsbanner?${q}"></script><noscript><a href="https://ck.jp.ap.valuecommerce.com/servlet/referral?${q}" rel="sponsored nofollow noopener"><img src="https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?${q}" alt="広告" border="0"></a></noscript></div></div>`;
+};
+
 /** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
 function stayBlock(e) {
   const day = e.start.slice(0, 10), place = stayPlace(e);
@@ -138,7 +146,7 @@ function stayBlock(e) {
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場近くの宿</h2>
 <p>${!e.timeUnknown && +e.start.slice(11, 13) >= 17 ? "夜の公演です。" : ""}遠方から観に行くなら、${esc(place)}の宿もあわせて探せます。<br><span class="meta">${jpDate(day)}泊・大人2名で検索します(日付や人数は、予約サイトで変えられます)。</span></p>
 <p class="staylinks"><a class="btn ghost sm" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}>じゃらんで宿を探す</a> <a class="btn ghost sm" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}>楽天トラベルで宿を探す</a></p>
-${prNote(on)}</aside>`;
+${vcBanner()}${prNote(on || bannerOn)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
@@ -150,7 +158,7 @@ function affiliateBlock(e) {
   ];
   return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2><div class="afflist">${links
     .map(([t, s, u, on, k]) => `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
-    .join("")}</div>${prNote(links.some((l) => l[3]))}</aside>`;
+    .join("")}</div>${vcBanner()}${prNote(links.some((l) => l[3]) || bannerOn)}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -766,7 +774,7 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
 const policyCtx = {
   cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
-  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasCB: !!cfg.cookiebotId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
+  hasAds: !!cfg.adsense.client, hasVcBanner: bannerOn, hasGA: !!cfg.analyticsId, hasCB: !!cfg.cookiebotId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプライバシーポリシーです。取得する情報と利用目的、外部サービスへの情報の送信、Cookie、個人情報の開示・訂正・削除のご請求について定めています。`, privacyHtml(policyCtx));

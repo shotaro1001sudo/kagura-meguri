@@ -102,6 +102,7 @@ html{scroll-padding-top:84px}
 /* 開催ページの「会場近くの宿」 */
 .stay{margin:28px 0;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
 .stay h2{margin:0 0 8px;font-size:var(--fs-m)}.stay p{margin:6px 0}.staylinks{margin:12px 0 6px!important}
+.vcbanner{margin:14px 0 6px;text-align:center;overflow:hidden}.vcbanner .vcb{display:block;max-width:100%;margin-top:4px}.vcbanner img{max-width:100%;height:auto}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 
 /* フォーム・ボタン */
@@ -209,7 +210,7 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .taglist{display:flex;flex-wrap:wrap;gap:2px 0}.empty:empty,.monthlist:empty{display:none}
 
 /* 印刷: ナビ・広告・旅の案内を省く */
-@media print{.top,footer,.adwrap,.adph,.aff,.stay,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
+@media print{.top,footer,.vcbanner,.adwrap,.adph,.aff,.stay,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
 
 /* フォーム */
 .form{max-width:640px}
