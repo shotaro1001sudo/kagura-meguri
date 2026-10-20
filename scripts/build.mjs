@@ -255,10 +255,12 @@ const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's gu
 const EN_FOOTER = `<footer>Event listings are in Japanese, but your browser can translate them. <a href="/calendar.html" hreflang="ja">Calendar</a> ・ <a href="/map.html" hreflang="ja">Map</a><br><a href="/about.html" hreflang="ja">About (Japanese)</a> ・ <a href="/contact.html" hreflang="ja">Contact (Japanese)</a> ・ <a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a> ・ <a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a><br>© Kagura Meguri</footer>`;
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [] }) => {
   const en = lang === "en";
-  // Basic consent mode: initialize consent controls before the asynchronous Cookiebot script.
+  // Cookiebot automatic blocking must load synchronously as the first script in <head>.
+  const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
+  // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${cookieBotBootstrap}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
 <script>${HEAD_MOTION}</script>
 <script>${VT_JS}</script><link rel="expect" href="#main" blocking="render">
@@ -270,7 +272,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gf" rel="stylesheet" href="${FONT_URL}" media="print"><script>${FONT_SCRIPT}</script><noscript><link rel="stylesheet" href="${FONT_URL}"></noscript>
-${ga4Bootstrap}${cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" type="text/javascript" async></script>` : ""}<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
+${ga4Bootstrap}<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
 ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>

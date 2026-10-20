@@ -48,8 +48,17 @@ export function ga4ConsentTests({ ok, section, build }) {
         path + ": 同意ゲートを埋め込む");
       ok($('script[src*="googletagmanager.com/gtag/js"]').length === 0,
         path + ": 初期HTMLはGA4外部タグを読まない");
-      ok(html.indexOf('data-ga4-id="G-TEST123456"') < html.indexOf('id="Cookiebot"'),
-        path + ": Cookiebotより前に同意イベント待受を初期化");
+      const bot = $("head > script#Cookiebot");
+      ok(bot.length === 1 && bot.attr("data-cbid") === "test-consent-id",
+        path + ": 正しいCBIDを持つCookiebotが1回だけ設置される");
+      ok(bot.attr("data-blockingmode") === "auto" && bot.attr("async") === undefined,
+        path + ": 自動ブロック、非asyncで初期化する");
+      ok($("head script").first().attr("id") === "Cookiebot",
+        path + ": Cookiebotはhead内の最初のスクリプト");
+      ok(html.indexOf('id="Cookiebot"') < html.indexOf('data-ga4-id="G-TEST123456"'),
+        path + ": Cookiebotの後にGA4同意制御を初期化する");
+      ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('id="Cookiebot"'),
+        path + ": Cookiebot実行前にCSPを適用");
       ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"),
         path + ": スクリプトCSPハッシュあり");
     }
