@@ -25,7 +25,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
   ok(h("title").text().includes("月別公演") &&
-    h("h1").text().includes("公演日程") &&
+    h("h1").text().includes("広島県の神楽") &&
     (h('meta[name="description"]').attr("content") || "").includes("月ごとの公演予定"),
     "広島のタイトル・H1・説明文を公演探しのニーズに合わせる");
   const months = h(".pref-month");
