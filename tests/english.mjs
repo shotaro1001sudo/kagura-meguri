@@ -37,4 +37,10 @@ export function englishTests({ ok, section, OUT }) {
     const $ = load(p);
     ok($("sup.cite a").get().every((a) => $($(a).attr("href")).is("ol.sources > li")), `${p}: 出典の番号が、すべて出典の一覧につながる`);
   }
+  // 公正さのため、ガイドと歴史では、個別の神楽を取り上げない(歴史の、出雲流の典型の佐太神社を除く)
+  for (const f of ["/en/guide.html", "/en/history.html"]) {
+    const $ = load(f); $("ol.sources").remove();
+    const named = $("main .prose").text().match(/.{0,12}(Iwami|Takachiho|Bitchu|Tohyama|Hanamatsuri|Hiroshima|Tosa|Ondake|Shonai|Shiromi|Daikagura|Horowasan|Kasuga).{0,12}/g) ?? [];
+    ok(named.length === 0, `${f}: 本文で、個別の神楽を取り上げない`, named.join(" / "));
+  }
 }

@@ -168,7 +168,7 @@ ${figure(stageDiagram(), "An example of how a kagura stage is laid out; every ve
 <h2 id="getting">Getting there and booking</h2>
 <ul>
 <li>Shrine kagura often takes place at night, so a taxi or car is recommended. Shrines in town often have little or no parking.${cite("iwamiqa")}</li>
-<li>Some shows require a reservation. The nightly show at Takachiho Shrine, for example, opens online booking 30 days in advance and also sells a limited number of tickets at the door on the day.${cite("takachiho")}</li>
+<li>Some shows require a reservation. Online booking may open weeks in advance, and some venues keep a limited number of tickets for sale at the door on the day.${cite("takachiho")}</li>
 <li>Village kagura schedules can change from year to year. Check with the local tourist association about two weeks before you go.</li>
 <li>Some regular shows require advance tickets, so check the official page for each event.</li>
 </ul>
@@ -176,7 +176,7 @@ ${figure(stageDiagram(), "An example of how a kagura stage is laid out; every ve
 <h2 id="etiquette">Etiquette</h2>
 ${table(["", "Do", "Don't"], [
   [`${icon("camera")}Photos`, "Ask the troupe or shrine officials first. If photography is allowed, stay out of other people's way.", "Don't use a flash, tripod, selfie stick or stool, and never step in front of the dancers."],
-  [`${icon("voice")}The stage`, "Check with the organiser (often a member of the shrine committee) before going near or onto the performance area.", "Don't walk onto the dance floor (in Takachiho, this is strictly forbidden)."],
+  [`${icon("voice")}The stage`, "Check with the organiser (often a member of the shrine committee) before going near or onto the performance area.", "Don't walk onto the dance floor; at some kagura, this is strictly forbidden."],
   [`${icon("bin")}Rubbish`, "Take your rubbish home with you, even where eating and drinking are allowed.", "Don't leave anything behind."],
   [`${icon("flower")}Offerings`, "In some regions, it is customary to give the troupe a small cash tip (called ohana). It is always optional.", "Don't feel obliged. At some shrine kagura, a small offering is expected at the reception desk, so ask if you are unsure."],
 ], "Etiquette", "chk")}
@@ -219,20 +219,17 @@ ${sourcesHtml()}`,
       ["Myth", "The sun goddess Amaterasu hides in a cave, and the world is plunged into darkness. The goddess Ame-no-Uzume dances, the gods laugh, and light returns. This story is told as the origin of kagura.", ["wiki-iwato", "kotobank"]],
       ["807", "The word 'kagura' appears in writing for the first time (in the Kogo Shui).", ["kotobank"]],
       ["1002", "The imperial court's kagura ceremony begins (some sources say 1005). It later becomes an annual event held every December.", ["kotobank", "wiki-mikagura"]],
-      ["1189", "A document from Takachiho mentions a 'gojinraku' lasting seven days and nights.", ["wiki-takachiho"]],
       ["1608", "At Sada Shrine, priests are said to have created 'shinno', kagura plays modelled on noh theatre.", ["wiki-sada"]],
-      ["Edo period", "Ise's 'daidai kagura' spreads across the country, and Edo (now Tokyo) develops its own village kagura. In the early 1800s, Bitchu Kagura takes on its present form.", ["kotobank", "wiki-bitchu"]],
-      ["Early Meiji", "Priests are banned from performing kagura, and villagers take over as dancers. In Iwami, the fast 'hachi-choshi' rhythm catches on.", ["wiki-iwami", "matsue"]],
-      ["1976", "Japan begins designating Important Intangible Folk Cultural Properties, and Sada Shin-no is among the first.", ["wiki-juyo", "wiki-sada"]],
-      ["1978-81", "The kagura of Takachiho, Bitchu, Tohyama and Tosa, along with Ise Daikagura, are designated one after another.", ["wiki-takachiho", "wiki-bitchu", "iida", "tosa", "wiki-ise"]],
-      ["2011", "Sada Shin-no is inscribed on UNESCO's list of Intangible Cultural Heritage.", ["wiki-sada"]],
+      ["Edo period", "Ise's 'daidai kagura' spreads across the country, and Edo (now Tokyo) develops its own village kagura.", ["kotobank"]],
+      ["Early Meiji", "Priests are banned from performing kagura, and in many areas villagers take over as dancers.", ["wiki-iwami", "matsue", "kotobank"]],
+      ["1976", "Japan begins designating Important Intangible Folk Cultural Properties, and kagura from many regions come under national protection.", ["wiki-juyo"]],
       ["2025", "Kagura is selected as Japan's candidate for UNESCO's list, with the nomination planned for 2028.", ["wiki-kagura"]],
     ];
     pages.history = {
       title: `History of Kagura: From Myth to UNESCO | ${SITE_EN}`,
       h1: "A short history of kagura",
       sub: "From the age of the gods to the present day",
-      desc: "How kagura began and changed: the Amaterasu myth, imperial court rites, noh influence, Meiji reforms and UNESCO.",
+      desc: "How kagura began and changed: the Amaterasu myth, imperial court rites, noh influence, the Meiji reforms and UNESCO.",
       body: () => `
 <p>The word 'kagura' is generally thought to come from 'kamikura', meaning a seat for the gods.${cite("kotobank")} Kagura developed along two broad lines: mikagura, performed at the imperial court, and sato-kagura, the village kagura performed at shrines throughout Japan.${cite("kotobank")}</p>
 <h2>Timeline</h2>

@@ -14,7 +14,6 @@ export const SOURCES = [
   { id: "shimane", name: "石見神楽とは", by: "島根県観光連盟(しまね観光ナビ)", url: "https://www.kankou-shimane.com/pickup/46684.html" },
   { id: "hiroshima", name: "迫力満点！広島神楽の見どころチェック", by: "広島県(徹底解剖！ひろしまラボ)", url: "https://www.pref.hiroshima.lg.jp/lab/topics/20201204/01/" },
   { id: "akitakata", name: "ひろしま安芸高田神楽", by: "安芸高田市観光協会(あきたかたNAVI)", url: "https://akitakata-kankou.jp/main/kagura/" },
-  { id: "bitchu", name: "備中神楽", by: "文化庁 文化遺産オンライン", url: "https://online.bunka.go.jp/heritages/detail/170185" },
   { id: "ondake", name: "御嶽神楽", by: "文化庁 文化遺産オンライン", url: "https://online.bunka.go.jp/heritages/detail/160038" },
   { id: "noh", name: "能楽", by: "文化庁 文化遺産オンライン", url: "https://online.bunka.go.jp/heritages/detail/214083" },
   { id: "kabuki", name: "歌舞伎", by: "京都市観光協会(京都観光Navi)", url: "https://ja.kyoto.travel/traditionalculture/kabuki.php" },
@@ -24,7 +23,6 @@ export const SOURCES = [
 export const CHAPTERS = [
   ["where", "どこで観られる?"],
   ["charm", "神楽ならではの面白さ"],
-  ["highlights", "各地の神楽の見どころ"],
   ["manners", "観るときのマナー"],
   ["prepare", "服装・持ち物・交通"],
   ["check", "日程と予約の確かめ方"],
@@ -90,36 +88,6 @@ ${cards(
 <p>歌舞伎や能と同じように、新しくつくられた演目を持つ神楽もあります。${cite("iwamiqa")}</p>`))}
 
 ${chapter(2)}
-${cards(
-  card(kaguraLink("石見神楽"), `<p>笛と太鼓の囃子にのって、金糸・銀糸の豪華な衣装で舞います。</p>
-<ul>
-<li>いまの主流は、テンポの速い「八調子」。ゆっくり重厚に舞う「六調子」もあります。</li>
-<li>代表的な演目「大蛇(おろち)」では、提灯の仕組みを応用した蛇の胴を使い、大蛇が火や煙を吹きます。</li>
-<li>面には地元の石州和紙が使われています。${cite("shimane", "iwamiqa")}</li>
-</ul>`, "島根県"),
-  card(kaguraLink("広島神楽"), `<ul>
-<li>神や姫の役は、面をつけずに化粧をして舞います。舞い手の表情にも注目です。</li>
-<li>衣装や面が一瞬で変わる「早変わり」は、見逃せません。${cite("hiroshima")}</li>
-<li>${kaguraLink("安芸高田神楽")}には、古事記や日本書紀を題材にゆっくり舞う「旧舞」と、戦後に生まれた派手な「新舞」があります。${cite("akitakata")}</li>
-</ul>`, "広島県"),
-  card(kaguraLink("備中神楽"), `<p>国の重要無形民俗文化財です(1979年指定)。</p>
-<ul>
-<li>「神殿(こうどの)」と呼ばれる舞台をしつらえて演じます。</li>
-<li>「天岩戸開き」「国譲り」「大蛇退治」などの神話劇は、幕末に西林国橋が新しい様式に整えたとされています。${cite("bitchu")}</li>
-</ul>`, "岡山県"),
-  card(kaguraLink("高千穂神楽"), `<p>国の重要無形民俗文化財です(1978年指定)。</p>
-<ul>
-<li>全三十三番の神楽を、ひと晩かけて奉納します。</li>
-<li>とりわけ大切な「式三番」(神降・鎮守・杉登)は、必ず舞われます。</li>
-<li>終盤の山場は、夜明けごろの「岩戸五番」。天鈿女命(あめのうずめのみこと)の舞に神々が笑う場面が見どころです。${cite("takachiho")}</li>
-</ul>`, "宮崎県"),
-  card(kaguraLink("御嶽神楽"), `<p>国の重要無形民俗文化財です(2007年指定)。大分県南部に伝わり、御嶽神社の秋の祭礼で舞われます。</p>
-<ul>
-<li>神話を題材にした33の演目を伝えています。激しい動きの、勇ましい舞が持ち味です。</li>
-<li>最初に「五方礼始(ごほうれいし)」で場を清め、最後は必ず「大神(たいじん)」で天下太平を祝います。${cite("ondake")}</li>
-</ul>`, "大分県"))}
-
-${chapter(3)}
 <p>神楽は芸能であると同時に、神様への奉納でもあります。地域の人たちが守ってきた場にお邪魔する、という気持ちで観ましょう。</p>
 ${cards(
   card(`${icon("camera")}撮影は、許可を得てから`, `<ul>
@@ -136,7 +104,7 @@ ${cards(
   card(`${icon("eye")}雰囲気は、会場で違う`, `<p>ホールの公演や祭りでは、屋台のお酒を片手に気軽に観る人も多いと紹介されています。${cite("akitakata")}</p>
 <p>神事として行われる神楽には、地域ごとに観る側の心得があります。${cite("jta")} 迷ったときは、主催者や地元の方に尋ねてみましょう。</p>`))}
 
-${chapter(4)}
+${chapter(3)}
 ${cards(
   card(`${icon("snow")}夜と寒さに備える`, `<ul>
 <li>神社の神楽は、夜に行われることがよくあります。</li>
@@ -156,7 +124,7 @@ ${table(["場面", "あると便利なもの"], [
   ["どの季節でも", "飲み物・食べ物・折りたたみのいす・ひざ掛け"],
 ], "持ち物チェック表", "chk")}
 
-${chapter(5)}
+${chapter(4)}
 ${figure(flow([
   { t: `${icon("calendar")}日程を探す`, d: "このサイトの一覧や地図で、近くで開かれる神楽を見つける" },
   { t: `${icon("eye")}公式情報で確かめる`, d: "日時・会場・料金は変わることがある" },
