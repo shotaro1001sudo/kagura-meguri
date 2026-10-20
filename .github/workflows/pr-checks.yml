@@ -19,3 +19,6 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # Temporary live-browser diagnosis; does not change production or user settings.
+      - name: Cookiebot production browser diagnostic
+        run: node scripts/diagnostics/cookiebot-live.mjs
