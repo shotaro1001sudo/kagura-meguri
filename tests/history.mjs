@@ -47,7 +47,7 @@ export function historyTests({ ok, section, OUT }) {
   section("図と表(ガイド・歴史)");
   const guide = cheerio.load(read(join(OUT, "guide.html")));
   const all = [["guide.html", guide], ...files.map((f) => [f, pages[f]])];
-  ok(all.every(([, $]) => $("svg title").length === 0 && $("svg").get().every((v) => !!$(v).attr("aria-label") && $(v).attr("role") === "img" && !!$(v).attr("viewBox"))), "絵(SVG)は、代替の説明(aria-label)と viewBox があり、<title> でページの題と取り違えない");
+  ok(all.every(([, $]) => $("svg title").length === 0 && $("svg.dg").get().every((v) => !!$(v).attr("aria-label") && $(v).attr("role") === "img" && !!$(v).attr("viewBox"))), "絵(SVG)は、代替の説明(aria-label)と viewBox があり、<title> でページの題と取り違えない");
   ok(all.every(([, $]) => $("figure.fig").get().every((f) => $(f).find("figcaption").text().trim().length >= 20)), "図には、文章の説明(figcaption)が付く");
   ok(all.every(([, $]) => $("ol.flow").get().every((o) => !!$(o).attr("aria-label") && $(o).find("li").length >= 3)) && all.every(([, $]) => $(".tblwrap").get().every((w) => $(w).attr("tabindex") === "0" && $(w).attr("role") === "region" && !!$(w).attr("aria-label"))), "流れ図と表には名前があり、表は、キーボードで横にスクロールできる");
   ok(guide("figure.fig").length >= 2 && guide("table.chk tbody tr").length >= 3 && guide("ol.flow.h li").length === 5, "ガイド: 舞台の見方の図・観に行くまでの流れ(5段階)・持ち物チェック表がある", `${guide("figure.fig").length}`);

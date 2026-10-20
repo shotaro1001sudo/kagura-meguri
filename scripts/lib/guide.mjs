@@ -73,7 +73,7 @@ ${figure(stageDiagram(), "舞台の見方の一例です。会場によって、
 
 ${chapter(1)}
 <p>同じ日本の伝統芸能でも、神楽・能・歌舞伎は、成り立ちも見せ方も違います。</p>
-<div class="tblwrap"><table class="tbl cmp">
+<div class="tblwrap" role="region" aria-label="神楽・能・歌舞伎の比べ表" tabindex="0"><table class="tbl cmp">
 <thead><tr><th scope="col"></th><th scope="col">神楽</th><th scope="col">能</th><th scope="col">歌舞伎</th></tr></thead>
 <tbody>
 <tr><th scope="row">始まり</th><td data-k="神楽">神様に奉納する歌と舞。神事として受け継がれてきた${cite("iwamiqa", "hiroshima")}</td><td data-k="能">14世紀ごろに大成された歌舞劇${cite("noh")}</td><td data-k="歌舞伎">1603年、出雲阿国の「かぶき踊り」が始まりとされる${cite("kabuki")}</td></tr>
