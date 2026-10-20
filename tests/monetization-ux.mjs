@@ -80,6 +80,35 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "広島以外の県の一覧は変更しない");
   ok(home(".event-facts").length === 0, "トップの公演カードの情報量は変更しない");
 
+  section("広島県: 日程から既存の観覧準備情報へ案内");
+  const guide = cheerio.load(read(join(OUT, "guide.html")));
+  const preparation = h(".viewing-preparation");
+  ok(preparation.length === 1 && preparation.attr("aria-label") === "観覧前の準備" &&
+    preparation.find("a").length === 2,
+    "広島県一覧の公演情報付近に観覧準備の案内を1か所置く");
+  ok(preparation.find("a").toArray().every((node) => {
+    const href = h(node).attr("href");
+    return href.startsWith("/guide.html#") && guide(`[id='${href.split("#")[1]}']`).length === 1;
+  }), "案内先は既存ガイドの実在する章で、リンク切れがない");
+  ok(other(".viewing-preparation").length === 0 && home(".viewing-preparation").length === 0,
+    "他県一覧とトップには観覧準備リンクを追加しない");
+  const mapped = cheerio.load(read(join(OUT, "events/t-timeunknown.html")));
+  ok(mapped(".actions").next().hasClass("viewing-preparation") &&
+    mapped(".viewing-preparation").length === 1 &&
+    mapped(".viewing-preparation a[href='#venue-access']").length === 1 &&
+    mapped("#venue-access #map").length === 1 && mapped("#venue-access .routebtn a").length === 1,
+    "広島の公演詳細では要点のすぐ下から既存の会場地図・経路に移動できる");
+  ok(mapped("main a[href='/guide.html']").length === 0 &&
+    mapped("main a[href='/guide.html#prepare']").length === 1,
+    "広島の詳細にあった下部の一般ガイド案内を近接案内に置き換え、重複しない");
+  const noMap = cheerio.load(read(join(OUT, "events/t-minimal.html")));
+  ok(noMap(".viewing-preparation a").length === 2 && noMap("a[href='#venue-access'],#venue-access").length === 0,
+    "地図データがない公演には空の地図リンクを出さない");
+  const outside = cheerio.load(read(join(OUT, "events/t-full.html")));
+  ok(outside(".viewing-preparation,#venue-access").length === 0 &&
+    outside("main a[href='/guide.html']").length === 1,
+    "広島以外の公演詳細のガイド・地図配置を維持する");
+
   // ビルドと同じ関数を単独で検証。公演データや外部サイトには書き込まない。
   const source = read("scripts/build.mjs");
   const declarations = ["HTTP_URL", "esc", "jpDate"].map((name) =>
