@@ -6,6 +6,7 @@
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { cspFor } from "../scripts/lib/csp.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 const text = (f) => { const $ = cheerio.load(read(f)); $("script,style").remove(); return $("main").text().replace(/\s+/g, " "); };
@@ -172,4 +173,14 @@ export async function policyTests({ ok, section, OUT, build }) {
     : ds.includes("自動で取得して掲載することはしていません"),
   `本番の収集元の設定と、免責事項の記載が、一致している(有効な収集元 ${active.length} 件が、すべて載り、無効なものは載らない)`);
   for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none", "noform"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
+
+  section("CSP: 外部サービスが必要とする許可");
+  const dirOf = (csp, k) => (csp.split(";").map((x) => x.trim()).find((x) => x.startsWith(k + " ")) ?? "").split(/\s+/).slice(1);
+  const page = '<html><head><style>body{}</style><script>var a</script></head></html>';
+  const base = { form: {}, adsense: {} };
+  const plain = cspFor(page, base), cb = cspFor(page, { ...base, cookiebotId: "x" }), ad = cspFor(page, { ...base, adsense: { client: "ca-pub-1" } });
+  ok(dirOf(plain, "style-src-elem").length === 0 && !dirOf(plain, "style-src").includes("'unsafe-inline'"), "同意管理を使わない間は、<style> もハッシュだけで許可する");
+  ok(dirOf(cb, "style-src-elem").includes("'unsafe-inline'") && !dirOf(cb, "style-src-elem").some((x) => x.startsWith("'sha256-")), "Cookiebot を使うときは、同意バナーの <style> を許可する(ハッシュがあると unsafe-inline が無視されるので、<style> 用の指定にハッシュを入れない)");
+  ok(!dirOf(cb, "script-src").includes("'unsafe-inline'") && dirOf(cb, "script-src").some((x) => x.startsWith("'sha256-")), "Cookiebot を使っても、スクリプトはハッシュで許可したまま(緩めない)");
+  ok(["script-src", "frame-src", "connect-src"].every((k) => dirOf(ad, k).includes("https:")) && ["script-src", "frame-src", "connect-src"].every((k) => !dirOf(plain, k).includes("https:")), "AdSense を使うときだけ、スクリプト・埋め込み・通信を HTTPS なら許可する(Google はドメインの許可リストに対応していないため)");
 }
