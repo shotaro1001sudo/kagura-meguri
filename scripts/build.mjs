@@ -234,6 +234,7 @@ const NAV = [
   ["/map.html", "地図で探す", ["/map.html"]],
   ["/kagura/", "種類で探す", ["/kagura/"]],
   ["/guide.html", "神楽を初めて観る方へ", ["/guide.html"]],
+  ["/history/", "神楽の歴史", ["/history/"]],
   ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"]],
 ];
 const navLink = ([h, t, group], active) => {
