@@ -65,10 +65,9 @@ html{scroll-padding-top:84px}
   --mx:linear-gradient(90deg,transparent 0,#000 38%,#000 84%,transparent);--my:linear-gradient(180deg,transparent 0,#000 12%,#000 76%,transparent);
   -webkit-mask-image:var(--mx),var(--my);mask-image:var(--mx),var(--my);-webkit-mask-composite:source-in;mask-composite:intersect}
 .home-hero .vert{display:none}
-/* 見出しは縦書き: 右から「見出し2行 → 説明1行」と並ぶ。絵にかかる部分も読めるよう、文字のまわりを地色で、うっすらぼかす */
+/* 見出しは縦書き(2行)。絵にかかる部分も読めるよう、文字のまわりを地色で、うっすらぼかす */
 .home-hero .copy{flex:none;writing-mode:vertical-rl;display:flex;flex-direction:column;text-shadow:0 0 10px var(--bg),0 0 18px var(--bg)}
-.home-hero h1{margin:0 0 0 16px;font-size:var(--fs-2xl);line-height:1.75;letter-spacing:.14em;white-space:nowrap}
-.home-hero .copy p{margin:0;line-height:1.9;letter-spacing:.22em;white-space:nowrap}
+.home-hero h1{margin:0;font-size:var(--fs-2xl);line-height:1.75;letter-spacing:.14em;white-space:nowrap}
 @media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
 @media(max-width:640px){
   main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
