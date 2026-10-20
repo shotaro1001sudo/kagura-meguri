@@ -32,7 +32,14 @@ export function englishTests({ ok, section, OUT }) {
   ok(rows.length >= 3 && rows.get().every((r) => idx(r).find("a[lang='ja'][translate='no'][hreflang='ja']").length === 1), "英語トップの開催の表: 日本語のイベント名は、lang=ja・translate=no で、翻訳で崩さず、日本語ページへつなぐ", `${rows.length}件`);
   ok(rows.get().every((r) => /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(idx(r).find("th").text().trim())) && rows.get().every((r) => Object.values(PREF_EN).some((p) => idx(r).find("td").last().text().startsWith(p))), "開催の表: 日付は英語の書式、場所は英語の都道府県名から始まる");
   const kag = load("/en/kagura.html");
-  ok(kag("section.gcard").length === KAGURA_EN.length && kag("section.gcard h3 small[lang='ja'][translate='no']").length === KAGURA_EN.length, "神楽の種類のページ: すべての種類に、英語名と、翻訳しない日本語名がある", `${kag("section.gcard").length}件`);
+  // 種類の一覧は、紹介文を載せず、日本語の「種類で探す」に載る全種類を、同じ順番・同じ扱いで並べる(特定の神楽を取り上げない)
+  const jaKinds = load("/kagura/")("main .card h3 a").map((_, a) => decodeURIComponent(load("/kagura/")(a).attr("href"))).get();
+  const rowsK = kag("table.styles tbody tr");
+  const enKinds = rowsK.map((_, r) => decodeURIComponent(kag(r).find("a").attr("href"))).get();
+  ok(kag("section.gcard").length === 0 && rowsK.length > 0 && JSON.stringify(enKinds) === JSON.stringify(jaKinds.filter((h) => enKinds.includes(h))) && enKinds.length === jaKinds.filter((h) => existsSync(toFile(OUT, h))).length, "神楽の種類のページ: 紹介文なしで、日本語の「種類で探す」と同じ順番に、すべての種類を並べる", `${rowsK.length}件`);
+  ok(rowsK.get().every((r) => kag(r).find("th").text().trim().length > 0 && kag(r).find("a[hreflang='ja']").length === 1), "神楽の種類のページ: 各行に、名前と日本語ページへのリンクがある");
+  const where = idx("h2").filter((_, h) => idx(h).text() === "Where to see kagura").nextUntil("h2").text();
+  ok(where.length > 0 && !/(Iwami|Takachiho|Bitchu|Hiroshima|Hanamatsuri|Ondake|Korakuen|Kiyokawa|Shimane|Okayama|Oita|Aichi|Miyazaki)/.test(where), "英語トップの「Where to see kagura」は、特定の神楽・会場を挙げない");
   for (const p of ["/en/guide.html", "/en/kagura.html", "/en/history.html", "/en/"]) {
     const $ = load(p);
     ok($("sup.cite a").get().every((a) => $($(a).attr("href")).is("ol.sources > li")), `${p}: 出典の番号が、すべて出典の一覧につながる`);
