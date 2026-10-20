@@ -24,6 +24,7 @@ import { sourcesTests } from "./sources.mjs";
 import { consistencyTests } from "./consistency.mjs";
 import { editorialTests } from "./editorial.mjs";
 import { uxTests } from "./ux.mjs";
+import { affiliateTests } from "./affiliate.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -292,6 +293,7 @@ sourcesTests({ ok, section });
 consistencyTests({ ok, section, OUT });
 editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });
+affiliateTests({ ok, section, OUT, build });
 await adminTests({ ok, section });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
