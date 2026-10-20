@@ -72,6 +72,10 @@ GitHub Pages は、**任意のHTTPヘッダーを付けられません**。公�
 
 広告(AdSense)は、動的にスクリプトやiframeを読み込むため、`config.json` の `adsense.client` を設定すると、CSPが自動で**緩くなります**(`script-src` に `unsafe-inline` / `unsafe-eval` と、Googleのドメインを追加)。これは、広告を出す場合の標準的な妥協です。広告を入れない間は、厳しい設定のままです。
 
+AdSense が使う通信先は随時変わり、Google はドメインを並べる許可リストには対応していません([AdSense ヘルプ: コンテンツ セキュリティ ポリシー](https://support.google.com/adsense/answer/16283098))。公式に推奨されるのは、表示のたびに乱数(nonce)を発行する方式ですが、静的サイトでは作れません。そのため、広告を使うときだけ、`script-src`・`frame-src`・`connect-src` を **HTTPS なら許可**(`https:`)にしています。これがないと、広告の品質チェック(`adtrafficquality.google`)や表示速度の計測(`csi.gstatic.com`)が止まります。
+
+同意管理(Cookiebot)を使うときは、同意バナーが見た目を `<style>` で書き込むため、`<style>` だけを担当する `style-src-elem` で、中身を問わず許可しています。`style-src` にハッシュがあると `unsafe-inline` が無視されるため、指定を分けています。スクリプトの許可は、ハッシュのままです。
+
 ## 問題を見つけたら
 
 `/.well-known/security.txt` に、連絡先を載せています。脆弱性の報告は、[お問い合わせ](https://kagurameguri.jp/contact.html)から受け付けます。

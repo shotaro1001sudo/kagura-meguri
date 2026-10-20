@@ -1,7 +1,7 @@
 // セキュリティヘッダ相当の設定を、<meta> で配る(GitHub Pages は任意のHTTPヘッダを付けられないため)。
 // - インラインの <script>/<style> は、中身のハッシュで許可する(= 'unsafe-inline' を使わない)
 // - 許可する外部は、地図(unpkg: SRI付き)・地図タイル(OpenStreetMap)・Webフォント・フォーム送信先だけ
-// - AdSense / アナリティクスを設定したときだけ、必要な Google ドメインを追加で許可する
+// - AdSense / アナリティクス / 同意管理を設定したときだけ、必要な許可を追加する(AdSense は HTTPS なら許可。理由は SECURITY.md)
 import { createHash } from "node:crypto";
 
 // ブラウザは、HTMLを読むときに改行を LF にそろえてからハッシュを計算する。こちらも同じにしないと、CSPが一致しない
@@ -33,6 +33,10 @@ export function cspFor(html, cfg) {
     d["frame-src"] = ["https://*.googlesyndication.com", "https://*.google.com", "https://*.doubleclick.net"];
     d["img-src"].push("https:");
     d["connect-src"].push("https://*.google.com", "https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google-analytics.com");
+    // AdSense は使う通信先が随時変わり、Google はドメインを並べる許可リストに対応していない(公式の案内)。
+    // 広告の品質チェック(adtrafficquality.google)や表示速度の計測(csi.gstatic.com)などが止まらないよう、
+    // 広告を使うときだけ、スクリプト・埋め込み・通信は HTTPS なら許可する
+    for (const k of ["script-src", "frame-src", "connect-src"]) d[k].push("https:");
   }
   if (cfg.goatcounter) {
     // アクセス解析 GoatCounter: スクリプト(SRI付き)の配信元と、計測の送り先だけを許可する
@@ -52,6 +56,10 @@ export function cspFor(html, cfg) {
     d["connect-src"].push("https://consent.cookiebot.com", "https://consentcdn.cookiebot.com");
     d["img-src"].push("https://imgsct.cookiebot.com", "https://consent.cookiebot.com");
     d["frame-src"] = d["frame-src"][0] === "'none'" ? ["https://consentcdn.cookiebot.com"] : [...d["frame-src"], "https://consentcdn.cookiebot.com"];
+    // 同意バナーは、見た目(CSS)を <style> でページに書き込む。<style> だけは中身を問わず許可する
+    // (style-src にハッシュがあると 'unsafe-inline' は無視されるため、<style> 専用の style-src-elem を分ける。
+    //  スクリプトの許可は、これまでどおりハッシュのまま。CSS の書き込みは、スクリプトの実行より危険が小さい)
+    d["style-src-elem"] = ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"];
   }
   return Object.entries(d).map(([k, v]) => `${k} ${[...new Set(v)].join(" ")}`).join("; ") + "; upgrade-insecure-requests";
 }
