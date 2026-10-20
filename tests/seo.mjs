@@ -58,7 +58,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     if (/^\/kagura\/./.test(p) && p !== "/kagura/index.html") ok(title.includes($("h1").text()), `${p}: タイトルに神楽の種類名`);
     if (/^\/month\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに年月`);
     // OGP・共有
-    ok(/^https:\/\/.+\/og\.png$/.test($('meta[property="og:image"]').attr("content") ?? "") && $('meta[name="twitter:card"]').attr("content") === "summary_large_image", `${p}: 共有画像(og:image / twitter:card)`);
+    ok((p.startsWith("/en/") ? /^https:\/\/.+\/og-en\.jpg$/ : /^https:\/\/.+\/og\.jpg$/).test($('meta[property="og:image"]').attr("content") ?? "") && $('meta[name="twitter:card"]').attr("content") === "summary_large_image", `${p}: 共有画像(og:image / twitter:card)`);
     ok($('meta[property="og:title"]').attr("content") === title && $('meta[property="og:description"]').attr("content") === desc, `${p}: OGPのタイトル・説明が、ページと一致`);
     // 本文量
     const main = $("main").clone(); main.find("script,style").remove();
@@ -120,8 +120,14 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
   ok(cal('main a[href="/events.ics"], main a[href="/feed.xml"]').length === 0, "カレンダー: 日程ファイル・フィードへの直接のリンクは出さない(Googleカレンダーだけにする)");
   ok(ics.includes(`X-WR-CALNAME:`) && ics.includes("X-WR-TIMEZONE:Asia/Tokyo"), "events.ics: Googleカレンダーで表示される名前と、時区がある");
   const evCount = (ics.match(/BEGIN:VEVENT/g) ?? []).length; ok(evCount === (ics.match(/END:VEVENT/g) ?? []).length && (ics.match(/^UID:/gm) ?? []).length === evCount, `events.ics: VEVENT が対になり、UID がある(${evCount}件)`);
-  const png = readFileSync(join(dir, "og.png"));
-  ok(png.slice(0, 8).toString("hex") === "89504e470d0a1a0a" && png.readUInt32BE(16) === 1200 && png.readUInt32BE(20) === 630 && png.length < 100_000, "og.png: PNG・1200x630・100KB未満");
+  // 共有用の画像: JPEG の大きさ(SOF の縦横)を読む
+  const jpegSize = (b) => { for (let i = 2; i + 9 < b.length;) { const m = b[i + 1], len = b.readUInt16BE(i + 2); if (m >= 0xc0 && m <= 0xc2) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)]; i += 2 + len; } return null; };
+  for (const f of ["og.jpg", "og-en.jpg"]) {
+    const jpg = readFileSync(join(dir, f));
+    ok(jpg.slice(0, 2).toString("hex") === "ffd8" && String(jpegSize(jpg)) === "1200,630" && jpg.length < 300_000, `${f}: JPEG・1200x630・300KB未満`, String(jpegSize(jpg)));
+  }
+  const ogOf = (p) => pages.get(p)?.('meta[property="og:image"]').attr("content") ?? "";
+  ok(ogOf("/index.html").endsWith("/og.jpg") && ogOf("/en/index.html").endsWith("/og-en.jpg") && pages.get("/index.html")('meta[name="twitter:image"]').attr("content") === ogOf("/index.html"), "共有用の画像: 日本語は og.jpg、英語は og-en.jpg を使う", `${ogOf("/index.html")} / ${ogOf("/en/index.html")}`);
   ok(/^Sitemap: https:\/\/.+\/sitemap\.xml$/m.test(read(join(dir, "robots.txt"))) && !/Disallow: \/\s*$/m.test(read(join(dir, "robots.txt"))), "robots.txt: サイトマップを知らせ、全面禁止していない");
   return { pages, seen };
 }

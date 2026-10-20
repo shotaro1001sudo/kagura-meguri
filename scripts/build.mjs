@@ -3,7 +3,6 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSyn
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
-import { ogImagePng, OG_SIZE } from "./lib/ogimage.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
 import { historyPages, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
@@ -248,7 +247,9 @@ const NAV_SCRIPT = `(function(){var h=document.documentElement,w=window,q=false;
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
 const FONT_SCRIPT = `(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()`;
 
-const OG_URL = `${cfg.baseUrl}/og.png`;
+// 共有用の画像(1200x630)。トップの絵とサイト名から、scripts/make-og.mjs で作って assets/ に置いている
+const OG_SIZE = { width: 1200, height: 630 };
+const ogUrl = (en) => `${cfg.baseUrl}/${en ? "og-en.jpg" : "og.jpg"}`;
 const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's guide", ["/en/guide.html"]], ["/en/kagura.html", "Kagura styles", ["/en/kagura.html"]], ["/en/history.html", "History", ["/en/history.html"]], ["/", "日本語", ["/"]]];
 const EN_FOOTER = `<footer>Event listings are in Japanese, but your browser can translate them. <a href="/calendar.html" hreflang="ja">Calendar</a> ・ <a href="/map.html" hreflang="ja">Map</a><br><a href="/about.html" hreflang="ja">About (Japanese)</a> ・ <a href="/contact.html" hreflang="ja">Contact (Japanese)</a> ・ <a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a> ・ <a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a><br>© Kagura Meguri</footer>`;
 const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [] }) => {
@@ -261,7 +262,7 @@ const layout = ({ title, desc, path, body, ld, head = "", active = "", noindex =
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${alternates}${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
-<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${en ? "Kagura Meguri" : esc(cfg.siteName)}"><meta property="og:locale" content="${en ? "en_US" : "ja_JP"}"><meta property="og:image" content="${OG_URL}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${OG_URL}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${en ? "Kagura Meguri" : esc(cfg.siteName)}"><meta property="og:locale" content="${en ? "en_US" : "ja_JP"}"><meta property="og:image" content="${ogUrl(en)}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogUrl(en)}">
 <meta name="theme-color" content="#f3eee4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -621,7 +622,7 @@ for (const e of events) {
     url: `${cfg.baseUrl}/events/${e.id}.html`,
   };
   if (e.end) ld.endDate = e.timeUnknown ? e.end.slice(0, 10) : e.end + JST;
-  ld.image = [OG_URL];
+  ld.image = [ogUrl(false)];
   if (e.description) ld.description = e.description;
   if (e.fee) ld.offers = { "@type": "Offer", description: e.fee, url: e.url || `${cfg.baseUrl}/events/${e.id}.html`, availability: "https://schema.org/InStock", ...(/無料/.test(e.fee) && !/円/.test(e.fee) ? { price: "0", priceCurrency: "JPY" } : /[\d,]+円/.test(e.fee) ? { price: e.fee.match(/([\d,]+)円/)[1].replace(/,/g, ""), priceCurrency: "JPY" } : {}) }; // 金額があれば、最初の金額(一般・大人の料金)を価格にする
   if (/無料/.test(e.fee ?? "") && !/円/.test(e.fee ?? "")) ld.isAccessibleForFree = true;
@@ -749,7 +750,7 @@ ${otherWays("/this-month.html")}`,
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
       author: ORG_LD, publisher: ORG_LD,
-      mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: OG_URL,
+      mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: ogUrl(false),
     }],
     body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
       esc,
@@ -769,7 +770,7 @@ ${otherWays("/this-month.html")}`,
       title: `${pg.title} | ${cfg.siteName}`, desc: clip(pg.desc, 160), path, active: "/history/", alts: key === "index" ? [["en", "/en/history.html"]] : [],
       ld: [crumbsLd(crumbs.map(([t, h]) => [t, h])), {
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
-        author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: OG_URL,
+        author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
       body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>`,
     }));
@@ -788,7 +789,7 @@ ${otherWays("/this-month.html")}`,
     const crumbs = key === "index" ? [["Home"]] : [["Home", "/en/"], [pg.h1]];
     write(`dist${key === "index" ? "/en/index.html" : path}`, layout({
       lang: "en", title: pg.title, desc: pg.desc, path, active: path, alts: [["ja", JA[key]]],
-      ld: [...(key === "index" ? [] : [crumbsLd(crumbs)]), { "@context": "https://schema.org", "@type": "Article", headline: pg.h1, inLanguage: "en", datePublished: EN_CHECKED, dateModified: EN_CHECKED, author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: OG_URL }],
+      ld: [...(key === "index" ? [] : [crumbsLd(crumbs)]), { "@context": "https://schema.org", "@type": "Article", headline: pg.h1, inLanguage: "en", datePublished: EN_CHECKED, dateModified: EN_CHECKED, author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(true) }],
       body: `${key === "index" ? "" : `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([t, h]) => (h ? `<li><a href="${h}">${esc(t)}</a></li>` : `<li aria-current="page">${esc(t)}</li>`)).join("")}</ol></nav>`}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose en">${pg.body()}</div>`,
     }));
   }
@@ -873,9 +874,9 @@ const feedItems = [...upcoming.map((e) => ({ id: e.id, title: e.name, href: `/ev
   .sort((a, b) => b.day.localeCompare(a.day)).slice(0, 30);
 write("dist/feed.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ja"><title>${xml(cfg.siteName)} 新着の開催情報</title><subtitle>${xml(cfg.description)}</subtitle><link href="${cfg.baseUrl}/feed.xml" rel="self"/><link href="${cfg.baseUrl}/"/><id>${cfg.baseUrl}/</id><updated>${allDay}T00:00:00+09:00</updated><author><name>${xml(op.name)}</name></author>${feedItems.map((i) => `<entry><title>${xml(i.title)}</title><link href="${cfg.baseUrl}${i.href}"/><id>${cfg.baseUrl}${i.href}</id><updated>${i.day}T00:00:00+09:00</updated><summary>${xml(i.summary.trim())}</summary></entry>`).join("")}</feed>\n`);
 write("dist/events.ics", vcal(upcoming));
-mkdirSync(OUT, { recursive: true }); writeFileSync(`${OUT}/og.png`, ogImagePng());
+mkdirSync(OUT, { recursive: true });
 // 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
-for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
+for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
 // 検索エンジンや古いブラウザは、/favicon.ico を直接見に行く。シンボルの画像から作って置く
 writeFileSync(`${OUT}/favicon.ico`, pngToIco(readFileSync("assets/favicon-48.png")));
 
