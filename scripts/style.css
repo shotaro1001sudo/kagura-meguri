@@ -6,10 +6,13 @@
 /* 文字の大きさの基準(全ページ共通): 2xs=小さな印 / xs=狭い場所のラベル / s=補足・ボタン / m=本文と同じ / l=小見出し・カードの題 / xl=ロゴ・縦書き / 2xl=日付の数字 */
 :root{--fs-2xs:.78rem;--fs-xs:.85rem;--fs-s:.92rem;--fs-m:1rem;--fs-l:1.12rem;--fs-xl:1.3rem;--fs-2xl:2rem;--fs-h1:clamp(1.6rem,4.6vw,2.3rem)}
 @media(prefers-color-scheme:dark){:root{--bg:#171513;--fg:#e4ddd0;--mut:#aaa093;--line:#3a352e;--ac:#cf7a68;--ac2:#b3a272;--card:#1e1b18;--onac:#171513}}
+/* 背景の和紙の質感(楮の繊維・ムラ・砂目)。地色(--bg)の上に、半透明で重ねる。scripts/make-washi.mjs で作る */
+:root{--paper:url(/washi.svg)}
+@media(prefers-color-scheme:dark){:root{--paper:url(/washi-dark.svg)}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.95 var(--sans);letter-spacing:.04em;overflow-wrap:anywhere;
-background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4 0 0 0 0 .35 0 0 0 0 .3 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+background-image:var(--paper)}
 a{color:var(--ac);text-underline-offset:4px;text-decoration-thickness:1px}
 .wrap{max-width:860px;margin:0 auto;padding:0 24px}
 h1,h2,h3,h4{font-family:var(--serif);font-weight:500;letter-spacing:.1em}
