@@ -161,7 +161,7 @@ export async function collectTests({ ok, section }) {
   let b = buildWith();
   ok(b.status === 0 && /built: 4 events/.test(b.stdout), "自動で掲載したデータで、サイトのビルドが通る(掲載4件 = 自動3 + 手動1。保留は含まれない)", b.stderr + b.stdout);
   const pg = cheerio.load(read(`${T}/site/events/${byName("神楽A")[0].id}.html`));
-  ok(pg("body").text().includes("プログラムで取得し、自動の検査を経て、掲載しています") && pg("body").text().includes("取得)"), "自動で掲載したページに、自動取得であることと、取得日が表示される");
+  ok(pg("body").text().includes("プログラムで取得し、自動の検査を通したうえで掲載しています") && pg("body").text().includes("取得)"), "自動で掲載したページに、自動取得であることと、取得日が表示される");
   ok(!existsSync(`${T}/site/events/${byName("遠い神楽")[0].id}.html`), "保留のものは、ページが作られない");
   // 再取得(変更なし)
   x = await run(week(0)); ok(sum().published === 0 && evs().length === 7 - 1 + 0 || evs().length >= 6, "同じページを再取得しても、増えない");

@@ -264,7 +264,7 @@ section("0件のサイト / 不正データ");
 r = build("tests/fixtures/events.empty.json", "dist-test-empty", { REGULAR_FILE: "tests/fixtures/events.empty.json" });
 ok(r.status === 0, "0件でもビルドできる", r.stderr);
 const e0 = cheerio.load(read("dist-test-empty/index.html"));
-ok(e0("#list").text().includes("現在掲載中の開催情報はありません"), "0件の一覧に案内が出る");
+ok(e0("#list").text().includes("いま掲載している開催情報はありません"), "0件の一覧に案内が出る");
 ok(e0(".regions").length === 0 && e0(".later").length === 0, "0件では、地方のボタンと月のボタンを出さない");
 ok(read("dist-test-empty/kagura/index.html").includes("まだありません"), "0件の神楽の種類ページに案内が出る");
 r = build("tests/fixtures/events.invalid.json", "dist-test-invalid");

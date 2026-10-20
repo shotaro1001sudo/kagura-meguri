@@ -57,4 +57,4 @@ export const yudateDiagram = () => `<svg class="dg" viewBox="0 0 360 300" role="
 <circle class="dg-ac" cx="190" cy="98" r="9"/><text class="dg-num" x="190" y="102" text-anchor="middle" font-size="11">2</text>
 <circle class="dg-ac" cx="268" cy="106" r="9"/><text class="dg-num" x="268" y="110" text-anchor="middle" font-size="11">3</text>
 <rect class="dg-box" x="10" y="226" width="340" height="66" rx="6"/>
-<text class="dg-t" x="24" y="248" font-size="13">1  神前の釜で、湯を沸かす</text><text class="dg-t" x="24" y="266" font-size="13">2  巫女が、笹を湯に浸す</text><text class="dg-t" x="24" y="284" font-size="13">3  自分や周りの人に、湯を振りかける</text></svg>`;
+<text class="dg-t" x="24" y="248" font-size="13">1  神前の釜で湯を沸かす</text><text class="dg-t" x="24" y="266" font-size="13">2  巫女が笹を湯に浸す</text><text class="dg-t" x="24" y="284" font-size="13">3  自分や周りの人に湯を振りかける</text></svg>`;
