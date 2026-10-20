@@ -51,6 +51,7 @@ export function guideHtml({ esc, kaguraLink }) {
   const body = `
 <p>神楽(かぐら)は、神社の祭りなどで神様に奉納される歌と舞です。地域ごとに、囃子(はやし)の速さや衣装、演目が大きく違います。</p>
 <p>このページでは、はじめて神楽を観る方に向けて、観られる場所と見どころ、マナー、服装を、各地の公式情報をもとにまとめました。</p>
+<p>神楽が、いつ、どのように生まれ、広まったのかを知りたい方は、<a href="/history/">神楽の歴史</a>もどうぞ。年表で、神話の時代から現代までを、たどれます。</p>
 <nav class="toc" id="toc" aria-label="このページの目次"><ol>${CHAPTERS.map(([id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol></nav>
 
 ${chapter(0)}
@@ -154,7 +155,7 @@ ${cards(
 
 ${toToc}
 <h2>神楽を探す</h2>
-<p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・場所で探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a></p>`;
+<p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・場所で探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a> <a class="btn ghost" href="/history/">神楽の歴史</a></p>`;
 
   // 出典の一覧(番号順)。本文で使っていない出典は、ここで気づけるようにする
   const unused = SOURCES.filter((s) => !order.includes(s.id));

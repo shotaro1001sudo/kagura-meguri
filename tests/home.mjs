@@ -36,7 +36,7 @@ export async function homeTests({ ok, section, OUT, build }) {
 
   section("メインメニュー(探し方で並べる)");
   const navOf = (p) => { const q = cheerio.load(read(join(OUT, p))); return q(".top nav a").map((_, a) => ({ t: q(a).text(), h: q(a).attr("href"), c: q(a).attr("aria-current") })).get(); };
-  ok(navOf("index.html").map((x) => x.t).join() === "開催予定,日付・場所で探す,地図で探す,種類で探す,神楽を初めて観る方へ,主催者の方へ", "メニューは「開催予定・日付・場所で探す・地図で探す・種類で探す・神楽を初めて観る方へ・主催者の方へ」");
+  ok(navOf("index.html").map((x) => x.t).join() === "開催予定,日付・場所で探す,地図で探す,種類で探す,神楽を初めて観る方へ,神楽の歴史,主催者の方へ", "メニューは「開催予定・日付・場所で探す・地図で探す・種類で探す・神楽を初めて観る方へ・神楽の歴史・主催者の方へ」");
   ok(!/data-guide/.test(read(join(OUT, "index.html"))) && !/a\[data-guide\]/.test(read("scripts/style.css")), "「神楽を初めて観る方へ」のタブは、ほかのタブと同じ見た目(枠で目立たせない)");
   const cur = (p) => navOf(p).filter((x) => x.c).map((x) => `${x.t}:${x.c}`).join();
   ok(cur("index.html") === "開催予定:page" && cur("organizers.html") === "主催者の方へ:page" && cur("submit.html") === "主催者の方へ:true" && cur("calendar.html") === "日付・場所で探す:page" && cur("weekend.html") === "日付・場所で探す:true" && cur("this-month.html") === "日付・場所で探す:true" && cur("month/2026-11.html") === "日付・場所で探す:true" && cur("kagura/index.html") === "種類で探す:page" && cur("guide.html") === "神楽を初めて観る方へ:page", "今いる場所: そのページなら page、日付の各ページでは「日付・場所で探す」を true で示す", ["weekend.html", "this-month.html", "month/2026-11.html"].map(cur).join(" / "));
