@@ -123,4 +123,33 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
        a('script[data-require-statistics-consent]').length === 1,
        "広告のPR表記とGA4の同意制御を維持する");
   }
+
+  section("広島県: 公式情報で確認した森林公園公演の料金・申込条件");
+  const eventId = "hiroshima-shinrin-kagura-2026-11";
+  const forest = JSON.parse(read("data/events.json")).find((e) => e.id === eventId);
+  ok(forest?.start === "2026-11-15T13:00" && forest?.end === "2026-11-15T15:00" &&
+    forest?.fee === "参加無料" && forest?.reservation === "不要（当日会場へ）",
+    "2026-10-21に市・公園公式で確認した開催時刻・料金・申込条件を保持する");
+  ok(forest?.url.startsWith("https://midori-gr.com/shinrin/2026/11/15/") &&
+    forest?.sourceUrl === "https://www.city.hiroshima.lg.jp/living/kosodate/1021253/1025917/1036698.html" &&
+    forest?.checked === "2026-10-21" && forest?.description.includes("雨天の場合は11月22日に延期"),
+    "公園の公演別案内と市の確認元、確認日、雨天延期の条件を残す");
+  const verified = build("data/events.json", "dist-test-verified-hiroshima");
+  ok(verified.status === 0, "公式確認済みの本番データでビルド成功", verified.stderr);
+  if (verified.status === 0) {
+    const pref = cheerio.load(read("dist-test-verified-hiroshima/pref/広島県.html"));
+    const facts = pref(`.card h3 a[href='/events/${eventId}.html']`).closest(".card").find(".event-facts");
+    ok(facts.text().includes("料金: 参加無料") && facts.text().includes("予約要否: 不要（当日会場へ）") &&
+      facts.find("a").attr("href") === forest.sourceUrl,
+      "広島県一覧に料金・予約要否・市公式の出典リンクが反映される");
+    const detail = cheerio.load(read(`dist-test-verified-hiroshima/events/${eventId}.html`));
+    ok(detail(".actions a").first().attr("href") === forest.url &&
+      detail("main").text().includes("事前申込不要") &&
+      detail("main").text().includes("雨天の場合は11月22日に延期"),
+      "公演詳細から公園公式へ移動でき、予約・雨天条件も確認できる");
+    const eventLd = detail('script[type="application/ld+json"]').toArray()
+      .flatMap((node) => JSON.parse(detail(node).text())).find((item) => item["@type"] === "Event");
+    ok(eventLd?.isAccessibleForFree === true && eventLd?.offers?.price === "0",
+      "確認済みの参加無料情報が構造化データにも反映される");
+  }
 }
