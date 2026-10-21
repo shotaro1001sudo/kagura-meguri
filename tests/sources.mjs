@@ -16,6 +16,14 @@ ${block("501", "2026年11月15日", "【広島県】あさきた神楽公演", "
 </body></html>`;
 
 export function sourcesTests({ ok, section }) {
+  section("収集元候補: 利用条件・アダプタ検証前は無効");
+  const allSources = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, ""));
+  const stagedIds = ["hanamaki-hayachine", "kagura-kaikan-oita", "miyazaki-kanko-events", "okayama-kanko-kagura", "hamada-yokagura", "shimane-kagura-calendar"];
+  const staged = allSources.filter((s) => stagedIds.includes(s.id));
+  ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
+  ok(staged.every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証候補は収集・自動掲載を起動しない");
+  ok(allSources.filter((s) => s.enabled !== false).length === 3, "実稼働中の3情報源は維持し、追加候補を勝手に有効化しない");
+
   section("収集元: NPO広島神楽芸術研究所(神楽日程表)");
   const cfg = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, "")).find((s) => s.id === "npo-hiroshima");
   ok(!!cfg && cfg.termsChecked && cfg.enabled && cfg.adapter === "npo-hiroshima" && /定期公演/.test(cfg.exclude), "収集元に登録済み(規約の確認日あり・定期公演は除く設定)");
