@@ -26,7 +26,7 @@ export async function motionTests({ ok, section, OUT }) {
   // 本文の一部だけを動かさない: スクロールで一部だけ現れる動き・トップの一覧だけの導入を、使わない
   ok(!/\.js :is\(/.test(noKeyframes) && !/\.in\{/.test(noKeyframes) && !/\.intro (\.home-hero h1|\.home-hero \.copy|\.quick|\.regions|#list)/.test(noKeyframes), "本文の一部だけが動く規則(スクロールでの出現・一覧だけの導入)がない");
   const animated = [...noKeyframes.matchAll(/([^{}]+)\{[^{}]*animation:(?!none)[^{}]*\}/g)].map((m) => m[1].trim().replace(/^.*\}/, "")).filter((x) => !/^@/.test(x));
-  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.top |\.splash|^::view-transition-(old|new)\(root\)$/.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・ヘッダー・オープニングだけ", animated.join(" | "));
+  ok(animated.length > 0 && animated.every((x) => /^\.js main$|\.ms|\.sparks|\.vert|\.ph|\.top |\.splash|^::view-transition-(old|new)\(root\)$/.test(x)), "アニメーションは、本文全体・トップの情景・火の粉・縦書き・見出しのフレーズ・ヘッダー・オープニングだけ", animated.join(" | "));
   // 統一性: 加速の付け方は1種類、遷移の速さは3段階の基準だけ、ホバーで浮き上がり・拡大しない
   const plain = css.replace(/\/\*[\s\S]*?\*\//g, "");
   ok([...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].length === 1 && /--ease:cubic-bezier/.test(plain), "加速の付け方(cubic-bezier)は、基準の1種類だけ", [...new Set(plain.match(/cubic-bezier\([^)]*\)/g) ?? [])].join(" "));
@@ -35,7 +35,7 @@ export async function motionTests({ ok, section, OUT }) {
   const hoverMoves = [...plain.matchAll(/([^{}]*:hover[^{}]*)\{([^{}]*)\}/g)].filter(([, sel, body]) => /translate|scale\(|scale:|transform/.test(body) && !/\.card:hover:before/.test(sel)).map(([, s]) => s.trim());
   ok(hoverMoves.length === 0, "ホバーでは、浮き上がり・拡大をしない(色と朱の線だけ。カードの線は伸びる)", hoverMoves.join(" | "));
   ok(!/@keyframes drop/.test(plain) && !/animation:drop/.test(plain), "弾む動き(ロゴの drop)は使わない");
-  ok(Number(statSync("scripts/motion.css").size) < 9000 && Number(statSync("scripts/motion.js").size) < 4000, "動きの CSS / JS が軽い(9KB / 4KB 未満)");
+  ok(Number(statSync("scripts/motion.css").size) < 9600 && Number(statSync("scripts/motion.js").size) < 4000, "動きの CSS / JS が軽い(9.6KB / 4KB 未満)");
   const sp = $(".sparks");
   ok(sp.length === 1 && sp.attr("aria-hidden") === "true" && sp.find("i").length === 12 && sp.find("a,button,input").length === 0, "火の粉: 装飾(aria-hidden)・12個・操作できる要素を含まない");
   ok((css.match(/\.sparks i:nth-child\(\d+\)\{/g) ?? []).length === 12, "火の粉の位置・速さの設定が、12個ぶんある");
