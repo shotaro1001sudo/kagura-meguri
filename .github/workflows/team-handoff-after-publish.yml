@@ -1,0 +1,54 @@
+name: team-handoff-after-publish
+# GitHub event-driven handoff. No polling, ChatGPT session, secret, billing or external API.
+on:
+  workflow_run:
+    workflows: [build-and-deploy]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: team-handoff-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  route:
+    # Handle only our default-branch deploys, not any fork or PR-generated payload.
+    if: ${{ github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24 }
+      - name: Identify user-facing file changes, without executing changed application code
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git diff-tree --no-commit-id --name-only -r "$RUN_SHA" > "$RUNNER_TEMP/kagura-files.txt"
+      - name: Route only verified publish completion or failure
+        id: route
+        env:
+          HANDOFF_CHANGED_FILES_FILE: ${{ runner.temp }}/kagura-files.txt
+        run: node scripts/handoff/event-router.mjs
+      - name: Create an idempotent, public evidence-only issue for the receiving team
+        if: ${{ steps.route.outputs.handoff == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HANDOFF_TITLE: ${{ steps.route.outputs.title }}
+          HANDOFF_BODY: ${{ steps.route.outputs.body }}
+        run: |
+          # Same commit/run -> same title. Do not open duplicates on reruns.
+          if gh issue list --state all --limit 100 --json title --jq '.[].title' | grep -Fqx -- "$HANDOFF_TITLE"; then
+            echo "既存の引継ぎIssueを確認。重複作成しません。" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          printf '%s\n' "$HANDOFF_BODY" > "$RUNNER_TEMP/kagura-handoff.txt"
+          gh issue create --title "$HANDOFF_TITLE" --body-file "$RUNNER_TEMP/kagura-handoff.txt" >/dev/null
+          echo "新規引継ぎIssueを作成。関係者は確認できた範囲のみ採用してください。" >> "$GITHUB_STEP_SUMMARY"

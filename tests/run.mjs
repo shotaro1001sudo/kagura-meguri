@@ -30,6 +30,7 @@ import { monetizationUxTests } from "./monetization-ux.mjs";
 import { valuecommerceTests } from "./valuecommerce.mjs";
 import { valuecommerceSummaryTests } from "./valuecommerce-summary.mjs";
 import { valuecommerceGASTests } from "./valuecommerce-gas.mjs";
+import { eventHandoffTests } from "./event-handoff.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -305,6 +306,7 @@ await adminTests({ ok, section });
 await valuecommerceTests({ ok, section });
 await valuecommerceSummaryTests({ ok, section });
 valuecommerceGASTests({ ok, section });
+eventHandoffTests({ ok, section });
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }
