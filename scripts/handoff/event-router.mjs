@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 
 export function isUserFacingChange(file) {
   if (typeof file !== "string" || file.includes("\u0000")) return false;
-  return /^(?:data\/(?:events|regular)\.json|scripts\/(?:build\.mjs|client\/)|(?:src|site|public|assets|styles|templates|pages)\/|(?:index|style|app)(?:\.[a-z0-9_-]+)*\.(?:html|css|js)|[^/]+\.(?:html|css))$/.test(file);
+  return /^(?:data\/(?:events|regular)\.json|scripts\/build\.mjs|scripts\/client\/.+|(?:src|site|public|assets|styles|templates|pages)\/.+|(?:index|style|app)(?:\.[a-z0-9_-]+)*\.(?:html|css|js)|[^/]+\.(?:html|css))$/.test(file);
 }
 
 export function classifyHandoff({event, repoName, changedFiles = []}) {
