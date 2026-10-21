@@ -1,0 +1,24 @@
+name: valuecommerce-private-sheets-sync
+# Manual-only: daily schedule must NOT be enabled until private storage, secrets and quotas are verified.
+on:
+  workflow_dispatch:
+
+permissions: { contents: read }
+concurrency: { group: valuecommerce-private-sheets-sync, cancel-in-progress: false }
+
+jobs:
+  monthly-summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24 }
+      - name: Aggregate order reports in memory and write only private monthly totals
+        env:
+          VALUECOMMERCE_CLIENT_KEY: ${{ secrets.VALUECOMMERCE_CLIENT_KEY }}
+          VALUECOMMERCE_CLIENT_SECRET: ${{ secrets.VALUECOMMERCE_CLIENT_SECRET }}
+          GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEETS_SPREADSHEET_ID: 13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY
+          VALUECOMMERCE_SITE_ID: '3784232'
+        run: node scripts/valuecommerce-monthly-sync.mjs
