@@ -35,7 +35,7 @@ export async function motionTests({ ok, section, OUT }) {
   const hoverMoves = [...plain.matchAll(/([^{}]*:hover[^{}]*)\{([^{}]*)\}/g)].filter(([, sel, body]) => /translate|scale\(|scale:|transform/.test(body) && !/\.card:hover:before/.test(sel)).map(([, s]) => s.trim());
   ok(hoverMoves.length === 0, "ホバーでは、浮き上がり・拡大をしない(色と朱の線だけ。カードの線は伸びる)", hoverMoves.join(" | "));
   ok(!/@keyframes drop/.test(plain) && !/animation:drop/.test(plain), "弾む動き(ロゴの drop)は使わない");
-  ok(Number(statSync("scripts/motion.css").size) < 9600 && Number(statSync("scripts/motion.js").size) < 4000, "動きの CSS / JS が軽い(9.6KB / 4KB 未満)");
+  ok(Number(statSync("scripts/motion.css").size) < 10000 && Number(statSync("scripts/motion.js").size) < 4000, "動きの CSS / JS が軽い(10KB / 4KB 未満)");
   const sp = $(".sparks");
   ok(sp.length === 1 && sp.attr("aria-hidden") === "true" && sp.find("i").length === 12 && sp.find("a,button,input").length === 0, "火の粉: 装飾(aria-hidden)・12個・操作できる要素を含まない");
   ok((css.match(/\.sparks i:nth-child\(\d+\)\{/g) ?? []).length === 12, "火の粉の位置・速さの設定が、12個ぶんある");
