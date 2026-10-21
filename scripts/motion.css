@@ -40,6 +40,7 @@
 /* ---------- 4. 開いた瞬間の演出(そのセッションの最初の、トップページだけ) ----------
    情景(地 → 月が昇る → 霞が流れ込む)とヘッダーが現れる。本文は、ほかのページと同じ「1. ページの出現」で現れる */
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes softin{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:none}}
 @keyframes moonrise{from{transform:translateY(38px);opacity:0}to{transform:none;opacity:1}}
 @keyframes kasumiin{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 /* オープニングのあとに始まるよう、--sd(オープニングの長さ)だけ遅らせる。押して飛ばしたら(.unsplash)、すぐ始める */
@@ -50,8 +51,8 @@
 /* ヘッダーは .wrap ごと出す(nav に付けると、スマホでメニューを開くたびに遅れて出る) */
 .intro .top .wrap{animation:fadein var(--t-m) calc(var(--sd) + .1s) var(--ease) both}
 .intro .vert{animation:fadein var(--t-l) calc(var(--sd) + .6s) var(--ease) both}
-/* 見出し: 日本語は、オープニングのあと一拍おいて、1文字ずつ読む順に(上から)現れる。英語は、フレーズごとに現れる */
-.intro .ch{animation:fadein var(--t-m) calc(var(--sd) + 1.4s + var(--i)*.14s) var(--ease) both}
+/* 見出し: 日本語は、オープニングのあと一拍おいて、1文字ずつ読む順に(上から)、ぼかしの奥からふわっと現れる。英語は、フレーズごとに現れる */
+.intro .ch{animation:softin var(--t-l) calc(var(--sd) + 1.4s + var(--i)*.14s) var(--ease) both}
 .intro[lang=en] .ph{animation:fadein var(--t-l) calc(var(--sd) + .5s) var(--ease) both}
 .intro[lang=en] .ph:nth-of-type(2){animation-delay:calc(var(--sd) + 1.1s)}
 .intro[lang=en] .ph:nth-of-type(3),.intro[lang=en] .ph3{animation-delay:calc(var(--sd) + 1.7s)}
