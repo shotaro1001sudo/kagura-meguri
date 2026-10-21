@@ -74,7 +74,8 @@ export function writeGitHubOutput(result, outputPath) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const raw = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
-  const files = (process.env.HANDOFF_CHANGED_FILES || "").split("\n").map(s=>s.trim()).filter(Boolean);
+  const changed = process.env.HANDOFF_CHANGED_FILES_FILE ? readFileSync(process.env.HANDOFF_CHANGED_FILES_FILE,"utf8") : (process.env.HANDOFF_CHANGED_FILES || "");
+  const files = changed.split("\n").map(s=>s.trim()).filter(Boolean);
   const result = classifyHandoff({event:raw,repoName:process.env.GITHUB_REPOSITORY,changedFiles:files});
   writeGitHubOutput(result,process.env.GITHUB_OUTPUT);
   if(process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
