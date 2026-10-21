@@ -225,7 +225,7 @@ const GA4_CONSENT_JS = lf(readFileSync("scripts/client/ga4-consent.js", "utf8"))
 // 動きを減らす設定のとき(と、IntersectionObserver がない環境)は、何も付けない = 動きの CSS が、一切、効かない
 // 動きを付けないページ(規約・運営者情報など、読むための文書)。js クラスを付けないので、出現・視差などの動きがすべて止まる
 const STILL_PAGES = ["/about", "/contact", "/privacy", "/terms", "/disclaimer"]; // 拡張子なし(/about と /about.html の両方で開けるため、.html を外して比べる)
-const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;if(${JSON.stringify(STILL_PAGES)}.indexOf(location.pathname.replace(/[.]html$/,""))>=0)return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
+const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;if(${JSON.stringify(STILL_PAGES)}.indexOf(location.pathname.replace(/[.]html$/,""))>=0)return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}else if(location.pathname==='/en/'||location.pathname==='/en/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro','unsplash');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)`;
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
@@ -818,13 +818,17 @@ ${otherWays("/this-month.html")}`,
     .map((k) => ({ key: k, prefs: [...new Set([...upcoming, ...regular].filter((x) => x.kagura === k).map((x) => x.prefecture))] }));
   const pages = englishPages({ esc, upcoming, styles, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null) });
   const JA = { index: "/", guide: "/guide.html", kagura: "/kagura/", history: "/history/" };
+  // 英語のトップ: 日本語のトップと同じ絵。見出しは横書きで、フレーズごとに順に現れる(題は「Kagura: …」を、コロンで分ける)
+  const heroEn = (h, p) => `<section class="hero home-hero">
+<picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="Watercolor of a masked dancer holding a paper wand, dancing in a kagura hall at night" fetchpriority="high" decoding="async"></picture>${sparksHtml}
+<div class="copy"><h1>${h.split(/(?<=:) /).map((t) => `<span class="ph">${esc(t)}</span>`).join(" ")}</h1><p><span class="ph ph3">${esc(p)}</span></p></div></section>`;
   for (const [key, pg] of Object.entries(pages)) {
     const path = key === "index" ? "/en/" : `/en/${key}.html`;
     const crumbs = key === "index" ? [["Home"]] : [["Home", "/en/"], [pg.h1]];
     write(`dist${key === "index" ? "/en/index.html" : path}`, layout({
       lang: "en", title: pg.title, desc: pg.desc, path, active: path, alts: [["ja", JA[key]]],
       ld: [...(key === "index" ? [] : [crumbsLd(crumbs)]), { "@context": "https://schema.org", "@type": "Article", headline: pg.h1, inLanguage: "en", datePublished: EN_CHECKED, dateModified: EN_CHECKED, author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(true) }],
-      body: `${key === "index" ? "" : `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([t, h]) => (h ? `<li><a href="${h}">${esc(t)}</a></li>` : `<li aria-current="page">${esc(t)}</li>`)).join("")}</ol></nav>`}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose en">${pg.body()}</div>`,
+      body: `${key === "index" ? "" : `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([t, h]) => (h ? `<li><a href="${h}">${esc(t)}</a></li>` : `<li aria-current="page">${esc(t)}</li>`)).join("")}</ol></nav>`}${key === "index" ? heroEn(pg.h1, pg.sub) : hero(esc(pg.h1), esc(pg.sub))}<div class="prose en">${pg.body()}</div>`,
     }));
   }
 }
