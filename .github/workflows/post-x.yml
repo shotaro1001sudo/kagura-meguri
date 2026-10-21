@@ -39,4 +39,5 @@ jobs:
           git push
       - if: ${{ failure() }}
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh issue create --title "X への自動投稿が失敗しました($(date -u +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          gh issue create --title "X への自動投稿が失敗しました($(date -u +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
