@@ -98,5 +98,85 @@
             "島根県": "石見神楽",
             "岡山県": "備中神楽"
         }
+    },
+    {
+        "id": "hanamaki-hayachine",
+        "name": "花巻観光協会（早池峰神楽・おおはさま神楽の日）",
+        "adapter": "selectors",
+        "url": "https://www.kanko-hanamaki.ne.jp/event/",
+        "kagura": "早池峰神楽",
+        "prefecture": "岩手県",
+        "nameHint": "神楽|早池峰|大償|岳神楽",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：公式イベントカレンダーに『おおはさま神楽の日』等。月別ページあり。規約・robots・HTML構造・複数日・イベント詳細へのリンク・収集セレクタ・既存データ重複を検証してから有効化。"
+    },
+    {
+        "id": "kagura-kaikan-oita",
+        "name": "大分県豊後大野市 神楽会館（一般公演のお知らせ）",
+        "adapter": "selectors",
+        "url": "https://www.kagura-kaikan.jp/category/performance",
+        "kagura": "豊後神楽",
+        "prefecture": "大分県",
+        "city": "豊後大野市",
+        "nameHint": "神楽|公演",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：公式サイトに2026年11月一般公演など。月次記事の開催日と記事投稿日を混同しない仕組み、出演団体・料金、ロボット制限・利用条件・セレクタ検証が必要。"
+    },
+    {
+        "id": "miyazaki-kanko-events",
+        "name": "宮崎県公式観光サイト みやざき観光ナビ（神楽イベント）",
+        "adapter": "selectors",
+        "url": "https://www.kanko-miyazaki.jp/event",
+        "kagura": "宮崎の神楽",
+        "prefecture": "宮崎県",
+        "nameHint": "神楽|かぐら|夜神楽|神話",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：公式イベント一覧に神話の高千穂夜神楽まつり、石見神楽高千穂公演等。ページネーション、宮崎県外の伝承区分、会期が複数日に及ぶ祭り、公式詳細ページ、robots/利用条件/セレクタ検証が必要。"
+    },
+    {
+        "id": "okayama-kanko-kagura",
+        "name": "岡山観光WEB（備中神楽・県内神楽イベント）",
+        "adapter": "selectors",
+        "url": "https://www.okayama-kanko.jp/event/index.html",
+        "kagura": "備中神楽",
+        "prefecture": "岡山県",
+        "nameHint": "神楽|かぐら|備中",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：岡山後楽園の2026年度備中神楽定期公演を掲載。6日程×1日2回など複数開催日の構造を検証し、既存の定期公演と重複する場合は統合・保留。規約/robots/ページネーションを確認。"
+    },
+    {
+        "id": "hamada-yokagura",
+        "name": "浜田市観光協会 夜神楽鑑賞公式予約サイト",
+        "adapter": "selectors",
+        "url": "https://hamada-yokagura.jp/",
+        "kagura": "石見神楽",
+        "prefecture": "島根県",
+        "city": "浜田市",
+        "nameHint": "神楽|公演",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：毎月の公演日・出演団体を公式サイトで掲載。既存data/regular.jsonに浜田定期公演があるため二重登録防止が必須。開催日/出演団体と予約リンクを結びつける専用アダプタ、規約/robots検証後に有効化。"
+    },
+    {
+        "id": "shimane-kagura-calendar",
+        "name": "島根県観光連盟 石見神楽の公演スケジュール",
+        "adapter": "selectors",
+        "url": "https://www.kankou-shimane.com/kaguraarizuki/archives/1237",
+        "kagura": "石見神楽",
+        "prefecture": "島根県",
+        "nameHint": "神楽|夜神楽|公演",
+        "enabled": false,
+        "termsChecked": "",
+        "reviewStatus": "候補・未接続",
+        "notes": "2026-10-21 候補確認：石見の神楽在月2026に地域別公演日程。シーズン情報の年次更新、月日と定期開催の展開、既存data/regular.jsonとの重複、ロボット制限/利用条件を確認。"
     }
 ]
