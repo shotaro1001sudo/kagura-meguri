@@ -408,6 +408,9 @@ const showAll = homeAll.length > HOME_CAP ? `<p class="more"><a class="btn ghost
 const prefButtons = regionsUsed.length ? `<div class="regions prefs" role="group" aria-label="都道府県で絞り込む" hidden><button type="button" data-p="" aria-pressed="true">すべての県</button>${prefsUsed.map((p) => `<button type="button" data-p="${esc(p)}" data-in="${regionOf(p)}" aria-pressed="false" hidden>${esc(p)}</button>`).join("")}</div>` : "";
 const laterLinks = laterMonths.length ? `<div class="laterwrap"><h3 class="mhead">この先の開催</h3><div class="taglist later">${laterMonths.map((k) => { const l = monthMap.get(k); return `<a class="tag" href="/month/${k}.html" data-n="${l.length}" data-c="${esc(regionCounts(l))}">${monthShort(k)} <span>${l.length}件</span></a>`; }).join("")}</div></div>` : "";
 const regionButtons = regionsUsed.length > 1 ? `<div class="regions" role="group" aria-label="地方で絞り込む" hidden><button type="button" data-r="" aria-pressed="true">全国</button>${regionsUsed.map((r) => `<button type="button" data-r="${r}" aria-pressed="false">${r}</button>`).join("")}</div>` : "";
+// 見出しは、1文字ずつ、読む順に(上から)現れる。--i が、何文字目か(motion.css の遅延になる)
+let heroCh = 0;
+const HERO_H1 = [["神話を受け継ぐ", "舞を、"], ["この目で。"]].map((line) => line.map((t) => `<span class="ph">${[...t].map((c) => `<span class="ch" style="--i:${heroCh++}">${c}</span>`).join("")}</span>`).join("")).join("<br>");
 write("dist/index.html", layout({
   // 検索結果で選ばれやすく: 「神楽 日程」「神楽 今週末」で探す人に、何ができるかが一目で分かる題と説明にする
   title: `全国の神楽の日程・今週末の公演 | ${cfg.siteName}`,
@@ -420,7 +423,7 @@ write("dist/index.html", layout({
   splash: `<div class="splash" aria-hidden="true"><img src="/symbol.png" width="96" height="96" alt=""><b>${esc(cfg.siteName)}</b></div>`,
   body: `<section class="hero home-hero">
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
-<div class="copy"><h1><span class="ph">神話を受け継ぐ</span><span class="ph">舞を、</span><br><span class="ph">この目で。</span></h1></div>
+<div class="copy"><h1>${HERO_H1}</h1></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
 <nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
 <p class="home-search-link"><span class="meta">全国の神楽を日付・地域・開催月から探せます。</span> <a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
