@@ -115,7 +115,7 @@
     {
         "id": "kagura-kaikan-oita",
         "name": "大分県豊後大野市 神楽会館（一般公演のお知らせ）",
-        "adapter": "selectors",
+        "adapter": "kagura-kaikan-oita",
         "url": "https://www.kagura-kaikan.jp/category/performance",
         "kagura": "豊後神楽",
         "prefecture": "大分県",
@@ -124,7 +124,7 @@
         "enabled": false,
         "termsChecked": "",
         "reviewStatus": "候補・未接続",
-        "notes": "2026-10-21 候補確認：公式サイトに2026年11月一般公演など。月次記事の開催日と記事投稿日を混同しない仕組み、出演団体・料金、ロボット制限・利用条件・セレクタ検証が必要。"
+        "notes": "2026-10-21 候補確認：公式サイトに2026年11月一般公演など。月次記事の開催日と記事投稿日を混同しない仕組み、出演団体・料金、ロボット制限・利用条件・セレクタ検証が必要。2026-10-22 専用抽出アダプタとテストを追加。実HTMLでのdry-run・既存重複検証未完了のため引き続き無効。"
     },
     {
         "id": "miyazaki-kanko-events",
