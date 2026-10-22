@@ -1387,6 +1387,9 @@
     "firstSeen": "2026-10-22",
     "lastSeen": "2026-10-22",
     "misses": 0,
-    "status": "published"
+    "status": "published",
+    "lat": 32.97193,
+    "lng": 131.51628,
+    "geoPrecision": "area"
   }
 ]
