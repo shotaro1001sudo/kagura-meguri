@@ -62,6 +62,16 @@ const hasFile = (urlPath) => {
 for (const f of ["index.html", "map.html", "calendar.html", "kagura/index.html", "404.html", "about.html", "contact.html", "privacy.html", "sitemap.xml", "robots.txt", "events.json", "CNAME"])
   ok(existsSync(join(OUT, f)), `出力に ${f} がある`);
 
+// ---------- プライバシーポリシー: 外部サービスの最新公表事項と一致 ----------
+section("プライバシーポリシー: Web3Formsの保存期間・国外処理");
+const privacyPage = read(join(OUT, "privacy.html"));
+const privacyText = cheerio.load(privacyPage)("main").text();
+ok(privacyText.includes("最大3年間") && privacyText.includes("送信日"), "Web3Formsによるフォーム送信データの最大3年保持を明示する");
+ok(privacyText.includes("12か月") && privacyText.includes("運営者が受け取ったメール等の保管方針"), "運営者の12か月保管方針と送信サービスの保持期間を区別する");
+ok(privacyText.includes("複数の国・地域") && privacyText.includes("CleanTalk") && privacyText.includes("Akismet"), "国外処理と迷惑送信対策の再委託先を明示する");
+ok(privacyPage.includes('href="https://web3forms.com/privacy"') && privacyPage.includes('rel="noopener"'), "Web3Forms公式プライバシーポリシーへの安全なリンクを表示する");
+ok(!privacyText.includes("事業者のサーバーには保存されません"), "Web3Formsが送信データを保存しないという旧記述が存在しない");
+ok(privacyText.includes("2026年10月22日 Web3Formsの保存期間") && privacyText.includes("最終更新: 2026年10月22日"), "改定履歴とプライバシーページの最終更新日を記載する");
 // ---------- 2. 各ページの基本品質 ----------
 section("各ページの基本(title / description / canonical / h1 / lang)");
 const titles = new Map();
