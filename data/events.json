@@ -1367,5 +1367,29 @@
     "lat": 32.77766,
     "lng": 131.80208,
     "geoPrecision": "area"
+  },
+  {
+    "id": "kagura-kaikan-oita-67890d3ae8",
+    "name": "神楽会館 令和8年12月一般公演(第211回)",
+    "kagura": "豊後神楽",
+    "prefecture": "大分県",
+    "city": "豊後大野市",
+    "venue": "神楽会館",
+    "start": "2026-12-20T12:30",
+    "end": "2026-12-20T15:30",
+    "fee": "",
+    "url": "https://www.kagura-kaikan.jp/performance/305.html",
+    "description": "",
+    "auto": true,
+    "sourceId": "kagura-kaikan-oita",
+    "source": "大分県豊後大野市 神楽会館（一般公演のお知らせ）",
+    "sourceUrl": "https://www.kagura-kaikan.jp/category/performance",
+    "firstSeen": "2026-10-22",
+    "lastSeen": "2026-10-22",
+    "misses": 0,
+    "status": "published",
+    "lat": 32.97193,
+    "lng": 131.51628,
+    "geoPrecision": "area"
   }
 ]

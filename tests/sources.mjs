@@ -22,12 +22,12 @@ export function sourcesTests({ ok, section }) {
   const stagedIds = ["hanamaki-hayachine", "kagura-kaikan-oita", "miyazaki-kanko-events", "okayama-kanko-kagura", "hamada-yokagura", "shimane-kagura-calendar"];
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
-  ok(staged.every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false).length === 3, "実稼働中の3情報源は維持し、追加候補を勝手に有効化しない");
+  ok(staged.filter((s) => s.id !== "kagura-kaikan-oita").every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り5候補は収集・自動掲載を起動しない");
+  ok(allSources.filter((s) => s.enabled !== false).length === 4, "既存3情報源と、実HTML検証済の神楽会館だけを有効化する");
 
   section("大分・神楽会館: 記事投稿日や予約開始日を開催日と誤認しない");
   const oita = allSources.find((s) => s.id === "kagura-kaikan-oita");
-  ok(oita && oita.adapter === "kagura-kaikan-oita" && oita.enabled === false && !oita.termsChecked, "専用アダプタを設定しても、検証前は本番無効のまま");
+  ok(oita && oita.adapter === "kagura-kaikan-oita" && oita.enabled === true && oita.termsChecked === "2026-10-22", "専用アダプタとライブ検証を確認済みの1件だけ有効化");
   const category = `<h1>公演のお知らせ</h1>
     <a href="/performance/304.html">令和8年11月一般公演（第210回）のご案内</a>
     <a href="/performance/305.html">令和8年12月自主公演のご案内</a>
@@ -56,6 +56,20 @@ export function sourcesTests({ ok, section }) {
   ok(rejectedMissing, "公演日時欄が消えた場合は投稿日・予約日で代用しない");
   const rec = reconcile({ events: [], candidates: [item, item], source: oita, now: new Date("2026-10-22T10:00:00+09:00"), cfg: { autoPublish: false } });
   ok(rec.summary.held.length === 1 && rec.summary.duplicates === 1 && rec.summary.published.length === 0, "dry-runは公開なし・同一日の重複を検出");
+
+  // 既存掲載の神楽会館11月公演と、公式サイト側の表記違いを二重掲載しない。
+  const existingOita = { name: "神楽会館 11月一般公演(御嶽神楽)", start: "2026-11-15T12:30",
+    prefecture: "大分県", city: "豊後大野市", venue: "神楽会館" };
+  const importedOita = { name: "神楽会館 令和8年11月一般公演(第210回)", start: "2026-11-15T12:30",
+    prefecture: "大分県", city: "豊後大野市", venue: "神楽会館" };
+  ok(sameEvent(existingOita, importedOita), "既存11月公演と公式一般公演を同じ1件と判定");
+  ok(!sameEvent(existingOita, { ...importedOita, start: "2026-11-15T15:00" }), "同会場でも異なる開演時刻は統合しない");
+  ok(!sameEvent(existingOita, { ...importedOita, city: "大分市" }), "同名会場でも異なる市町村は統合しない");
+  ok(!sameEvent(existingOita, { ...importedOita, venue: "" }), "会場が不明なら名前以外を根拠に重複としない");
+  const oitaDedup = reconcile({ events: [{ ...existingOita, id: "manual-oita", status: "published" }],
+    candidates: [importedOita], source: oita, now: new Date("2026-10-22T09:00:00Z") });
+  ok(oitaDedup.summary.duplicates === 1 && oitaDedup.summary.published.length === 0,
+    "既存の一般公演を維持し、同じ11月公演の自動再掲載は0件");
 
   section("収集元: NPO広島神楽芸術研究所(神楽日程表)");
   const cfg = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, "")).find((s) => s.id === "npo-hiroshima");

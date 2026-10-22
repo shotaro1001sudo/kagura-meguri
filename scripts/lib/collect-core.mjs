@@ -29,6 +29,14 @@ export const normName = (s) => String(s ?? "").normalize("NFKC").toLowerCase().r
 /** 同じ開催か: 同じ都道府県・同じ日で、名称が(ゆれを除いて)同じ、一方がもう一方を含む(4字以上)、または、先頭の12字以上が同じ */
 export function sameEvent(a, b) {
   if (a.prefecture !== b.prefecture || String(a.start).slice(0, 10) !== String(b.start).slice(0, 10)) return false;
+  // 公式側と手動登録側でタイトルが異なっても、会場・地域・開始時刻が全て一致するなら同一公演。
+  // 例: 神楽会館 令和8年11月一般公演(第210回) / 神楽会館 11月一般公演(御嶽神楽)。
+  // 異なる時刻・空の会場・別の市町村は統合しない。
+  const va = normName(a.venue), vb = normName(b.venue);
+  if (va === "神楽会館" && va === vb &&
+      normName(a.name).includes("神楽会館") && normName(b.name).includes("神楽会館") &&
+      a.city && b.city && a.city === b.city &&
+      String(a.start) === String(b.start)) return true;
   const x = normName(a.name), y = normName(b.name);
   if (x === y || (Math.min(x.length, y.length) >= 4 && (x.includes(y) || y.includes(x)))) return true;
   // 名称の前半が十分に同じ(例: 「道の駅舞ロードIC千代田「神楽の日」(11月)」と「…「神楽の日」大塚神楽団」)
