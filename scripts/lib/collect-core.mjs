@@ -33,7 +33,8 @@ export function sameEvent(a, b) {
   // 例: 神楽会館 令和8年11月一般公演(第210回) / 神楽会館 11月一般公演(御嶽神楽)。
   // 異なる時刻・空の会場・別の市町村は統合しない。
   const va = normName(a.venue), vb = normName(b.venue);
-  if (va.length >= 4 && va === vb &&
+  if (va === "神楽会館" && va === vb &&
+      normName(a.name).includes("神楽会館") && normName(b.name).includes("神楽会館") &&
       a.city && b.city && a.city === b.city &&
       String(a.start) === String(b.start)) return true;
   const x = normName(a.name), y = normName(b.name);
