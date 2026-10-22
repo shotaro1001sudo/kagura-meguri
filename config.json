@@ -36,8 +36,10 @@
   "privacy": {
     "retention": "対応が完了してから、12か月を目安に",
     "history": [
-      "2026年10月10日 制定"
-    ]
+      "2026年10月10日 制定",
+      "2026年10月22日 Web3Formsの保存期間・国外処理・再委託先の説明を改定"
+    ],
+    "updated": "2026年10月22日"
   },
   "seo": {
     "googleVerification": "KbL9gJRGHY5flHq-yVJ5GBDOgnOC4fS809E8yAwNRrw",
