@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { parse, urls, decode } from "../scripts/adapters/npo-hiroshima.mjs";
 import { reconcile, sameEvent } from "../scripts/lib/collect-core.mjs";
+import { parse as parseOita, discover as discoverOita } from "../scripts/adapters/kagura-kaikan-oita.mjs";
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -23,6 +24,38 @@ export function sourcesTests({ ok, section }) {
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
   ok(staged.every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証候補は収集・自動掲載を起動しない");
   ok(allSources.filter((s) => s.enabled !== false).length === 3, "実稼働中の3情報源は維持し、追加候補を勝手に有効化しない");
+
+  section("大分・神楽会館: 記事投稿日や予約開始日を開催日と誤認しない");
+  const oita = allSources.find((s) => s.id === "kagura-kaikan-oita");
+  ok(oita && oita.adapter === "kagura-kaikan-oita" && oita.enabled === false && !oita.termsChecked, "専用アダプタを設定しても、検証前は本番無効のまま");
+  const category = `<h1>公演のお知らせ</h1>
+    <a href="/performance/304.html">令和8年11月一般公演（第210回）のご案内</a>
+    <a href="/performance/305.html">令和8年12月自主公演のご案内</a>
+    <a href="/performance/301.html">令和8年度の神楽公演計画のご案内</a>
+    <a href="https://outside.example/performance/309.html">令和8年一般公演</a>`;
+  const links = discoverOita(category, oita);
+  ok(links.length === 2 && links[0].endsWith("/304.html") && links[1].endsWith("/305.html"), "一般/自主公演の記事だけを発見。年間計画・他ドメインは除外", links.join(" / "));
+  const page = `<html><body><h1>お知らせ</h1>
+    <p>投稿日：2026年10月16日</p><h2>令和８年１１月一般公演（第２１０回）のご案内 ～１０月２０日から予約受付～</h2>
+    <p>チケットは令和8年10月20日から予約開始</p>
+    <table><tr><th>公演日時</th><td>令和８年１１月１５日（日）１２時３０分～１５時３０分</td></tr>
+    <tr><th>出演団体／演目</th><td>浅草流松尾神楽／未定</td></tr>
+    <tr><th>入場料</th><td>一般1,200円／中学生以下500円</td></tr>
+    </table></body></html>`;
+  const item = parseOita(page, oita, links[0])[0];
+  ok(item?.start === "2026-11-15T12:30" && item?.end === "2026-11-15T15:30" && item?.url === links[0], "公演日時欄のみから11/15 12:30-15:30を抽出（10/16投稿日・10/20予約開始を除外）", JSON.stringify(item));
+  ok(item?.name.includes("一般公演") && !item?.name.includes("予約受付") && item?.prefecture === "大分県" && item?.venue === "神楽会館" && /1,200/.test(item?.fee ?? ""), "タイトル、地域、会場、料金を必要最小限取得", JSON.stringify(item));
+  const noTime = parseOita('<h2>令和8年12月自主公演のご案内</h2><dl><dt>公演日時</dt><dd>令和8年12月20日(日)</dd></dl>', oita, links[1])[0];
+  ok(noTime?.start === "2026-12-20T00:00" && noTime?.timeUnknown, "時刻未発表は時間未定、勝手な開演時刻を付けない", JSON.stringify(noTime));
+  ok(parseOita('<h2>令和8年度の神楽公演計画</h2><time>2026年2月4日</time>', oita, links[0]).length === 0, "年度計画や投稿日のみの記事は除外");
+  let rejectedBadDate = false;
+  try { parseOita('<h2>令和8年11月一般公演</h2><table><tr><th>公演日時</th><td>令和8年13月40日 12時30分</td></tr></table>', oita, links[0]); } catch { rejectedBadDate = true; }
+  ok(rejectedBadDate, "不正な公演日は例外にして収集元を変更しない");
+  let rejectedMissing = false;
+  try { parseOita('<h2>令和8年11月一般公演</h2><time>2026年10月16日</time><p>予約開始 10月20日</p>', oita, links[0]); } catch { rejectedMissing = true; }
+  ok(rejectedMissing, "公演日時欄が消えた場合は投稿日・予約日で代用しない");
+  const rec = reconcile({ events: [], candidates: [item, item], source: oita, now: new Date("2026-10-22T10:00:00+09:00"), cfg: { autoPublish: false } });
+  ok(rec.summary.held.length === 1 && rec.summary.duplicates === 1 && rec.summary.published.length === 0, "dry-runは公開なし・同一日の重複を検出");
 
   section("収集元: NPO広島神楽芸術研究所(神楽日程表)");
   const cfg = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, "")).find((s) => s.id === "npo-hiroshima");
