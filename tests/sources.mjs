@@ -57,6 +57,20 @@ export function sourcesTests({ ok, section }) {
   const rec = reconcile({ events: [], candidates: [item, item], source: oita, now: new Date("2026-10-22T10:00:00+09:00"), cfg: { autoPublish: false } });
   ok(rec.summary.held.length === 1 && rec.summary.duplicates === 1 && rec.summary.published.length === 0, "dry-runは公開なし・同一日の重複を検出");
 
+  // 既存掲載の神楽会館11月公演と、公式サイト側の表記違いを二重掲載しない。
+  const existingOita = { name: "神楽会館 11月一般公演(御嶽神楽)", start: "2026-11-15T12:30",
+    prefecture: "大分県", city: "豊後大野市", venue: "神楽会館" };
+  const importedOita = { name: "神楽会館 令和8年11月一般公演(第210回)", start: "2026-11-15T12:30",
+    prefecture: "大分県", city: "豊後大野市", venue: "神楽会館" };
+  ok(sameEvent(existingOita, importedOita), "既存11月公演と公式一般公演を同じ1件と判定");
+  ok(!sameEvent(existingOita, { ...importedOita, start: "2026-11-15T15:00" }), "同会場でも異なる開演時刻は統合しない");
+  ok(!sameEvent(existingOita, { ...importedOita, city: "大分市" }), "同名会場でも異なる市町村は統合しない");
+  ok(!sameEvent(existingOita, { ...importedOita, venue: "" }), "会場が不明なら名前以外を根拠に重複としない");
+  const oitaDedup = reconcile({ events: [{ ...existingOita, id: "manual-oita", status: "published" }],
+    candidates: [importedOita], source: oita, now: new Date("2026-10-22T09:00:00Z") });
+  ok(oitaDedup.summary.duplicates === 1 && oitaDedup.summary.published.length === 0,
+    "既存の一般公演を維持し、同じ11月公演の自動再掲載は0件");
+
   section("収集元: NPO広島神楽芸術研究所(神楽日程表)");
   const cfg = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, "")).find((s) => s.id === "npo-hiroshima");
   ok(!!cfg && cfg.termsChecked && cfg.enabled && cfg.adapter === "npo-hiroshima" && /定期公演/.test(cfg.exclude), "収集元に登録済み(規約の確認日あり・定期公演は除く設定)");
