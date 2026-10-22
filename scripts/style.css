@@ -74,7 +74,7 @@ html{scroll-padding-top:84px}
   .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
     --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,#000 36%,#000 80%,transparent)}
 }
-@media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 16%,#000 44%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,transparent 24%,#000 46%,#000 80%,transparent)}}
+@media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 16%,#000 44%,#000 86%,transparent)}}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
 .ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity var(--t-m) var(--ease);--moon:#b39a5c}
