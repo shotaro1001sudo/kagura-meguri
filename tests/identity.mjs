@@ -11,7 +11,7 @@ const pngSize = (p) => { const b = readFileSync(p); return b.subarray(0, 8).equa
 export function identityTests({ ok, section, OUT, build }) {
   const cfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
   section("運営者の表示(名前・シンボル)");
-  ok(cfg.operator.name === "神楽日和編集部", "運営者名は「神楽日和編集部」");
+  ok(cfg.operator.name === "神楽めぐり編集部", "運営者名は「神楽めぐり編集部」");
   for (const [f, w] of [["symbol.png", 330], ["symbol-96.png", 96], ["favicon-48.png", 48], ["apple-touch-icon.png", 180]]) {
     const s = existsSync(join(OUT, f)) ? pngSize(join(OUT, f)) : null;
     ok(s && s[0] === w && s[1] === w, `${f}: 正方形の PNG(${w}px)が公開される`, JSON.stringify(s));
@@ -21,7 +21,7 @@ export function identityTests({ ok, section, OUT, build }) {
   ok(home(".top .logo img").attr("src") === "/symbol-96.png" && home(".top .logo img").attr("alt") === "" && home(".top .logo").text() === cfg.siteName, "ヘッダーに、シンボルとサイト名(画像は飾りなので、読み上げない)");
   const ld = (q) => q('script[type="application/ld+json"]').map((_, s) => JSON.parse(q(s).text())).get().flat();
   const pub = ld(home).find((x) => x["@type"] === "WebSite")?.publisher;
-  ok(pub?.name === "神楽日和編集部" && pub.logo?.url === `${cfg.baseUrl}/symbol.png` && pub.logo.width === 330, "構造化データ: 運営者として、名前とロゴ(シンボル)を示す");
+  ok(pub?.name === "神楽めぐり編集部" && pub.logo?.url === `${cfg.baseUrl}/symbol.png` && pub.logo.width === 330, "構造化データ: 運営者として、名前とロゴ(シンボル)を示す");
   // 検索結果の見た目: サイト名(ドメイン名でなく「神楽めぐり」)・ファビコン・題と説明
   const site = ld(home).find((x) => x["@type"] === "WebSite");
   ok(site?.name === cfg.siteName && site.url === `${cfg.baseUrl}/` && site.alternateName?.includes("かぐらめぐり"), "サイト名: トップの構造化データに、名前・別名・URL(検索結果にサイト名を出す)");
@@ -31,9 +31,9 @@ export function identityTests({ ok, section, OUT, build }) {
   const ht = home("title").text(), hd = home('meta[name="description"]').attr("content");
   ok(/日程/.test(ht) && /今週末/.test(ht) && ht.endsWith(cfg.siteName) && hd.startsWith("今週末、どこで神楽が観られる？"), "トップの題と説明: 「神楽 日程」「神楽 今週末」で探す人に向けた言葉", `${ht} / ${hd}`);
   const about = cheerio.load(read(join(OUT, "about.html")));
-  ok(about("main").text().includes("神楽日和編集部") && about('.symbol img[src="/symbol.png"]').attr("alt") === "神楽日和編集部のシンボル", "運営者情報に、名前とシンボル(代替テキストつき)");
+  ok(about("main").text().includes("神楽めぐり編集部") && about('.symbol img[src="/symbol.png"]').attr("alt") === "神楽めぐり編集部のシンボル", "運営者情報に、名前とシンボル(代替テキストつき)");
   const pv = read(join(OUT, "privacy.html"));
-  ok(pv.includes("運営者: 神楽日和編集部") && pv.includes("保有する個人データのご本人から求めがあった場合は、個人情報保護法に基づき、運営者の氏名と住所を遅滞なくお知らせします") && !pv.includes("ご請求があれば"), "プライバシーポリシー: 運営者名と、氏名・住所は「保有個人データのご本人」から求めがあったときだけ知らせる旨(個人情報保護法32条)");
+  ok(pv.includes("運営者: 神楽めぐり編集部") && pv.includes("保有する個人データのご本人から求めがあった場合は、個人情報保護法に基づき、運営者の氏名と住所を遅滞なくお知らせします") && !pv.includes("ご請求があれば"), "プライバシーポリシー: 運営者名と、氏名・住所は「保有個人データのご本人」から求めがあったときだけ知らせる旨(個人情報保護法32条)");
 
   section("背景の文様(青海波)");
   const css = home("style").text();
