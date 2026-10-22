@@ -259,7 +259,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   // Cookiebot automatic blocking must load synchronously as the first script in <head>.
   const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
   // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
-  const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
+  const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${cookieBotBootstrap}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
@@ -281,7 +281,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 <div class="wrap"><main id="main">${body}</main>
 ${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}</div>
-${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") : ""}<script>${MOTION_JS}</script></body></html>`;
+${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -675,7 +675,7 @@ for (const e of events) {
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? "" : '<span class="tag">終了しました</span>'}`)}
 <div class="keyinfo"><table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
 <tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table></div>
-<p class="actions">${e.url ? `<a class="btn" href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
+<p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${showPreparation ? preparationLinks(e.lat != null) : ""}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
 <p>${esc(e.description)}</p>
@@ -699,7 +699,7 @@ for (const r of regular) {
     head: r.lat != null ? LEAFLET : "",
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table></div>
-${r.url ? `<p class="actions"><a class="btn" href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
+${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
 ${mapBlock(r)}

@@ -8,26 +8,33 @@ const code = readFileSync("scripts/client/ga4-consent.js", "utf8");
 const homeCode = readFileSync("scripts/client/home.js", "utf8");
 const transitionCode = readFileSync("scripts/vt.js", "utf8");
 
-function simulate({ requireConsent = true, cb = undefined } = {}) {
+function simulate({ requireConsent = true, cb = undefined, search = "", stored = "", storageError = false, hostname = "kagurameguri.jp" } = {}) {
   const added = [], listeners = {}, sent = [];
   let reloads = 0;
   const window = {
     Cookiebot: cb,
     addEventListener(name, cb) { listeners[name] = cb; },
-    location: { reload() { reloads++; } }
+    location: { search, hostname, href: "https://" + hostname + "/events/test.html" + search, reload() { reloads++; } },
+    localStorage: {
+      getItem() { if (storageError) throw new Error("blocked"); return stored; },
+      setItem(_key, value) { if (storageError) throw new Error("blocked"); stored = value; },
+      removeItem() { if (storageError) throw new Error("blocked"); stored = ""; }
+    },
+    dispatchEvent(event) { listeners[event.type]?.(); }
   };
   const document = {
     currentScript: {
-      getAttribute(name) { return name === "data-ga4-id" ? "G-TEST123456" : null; },
+      getAttribute(name) { return name === "data-ga4-id" ? "G-TEST123456" : name === "data-ga4-host" ? "kagurameguri.jp" : null; },
       hasAttribute(name) { return requireConsent && name === "data-require-statistics-consent"; }
     },
     createElement(type) { return { tagName: type }; },
     head: { appendChild(script) { added.push(script); } }
   };
-  runInNewContext(code, { window, document, encodeURIComponent, Date });
+  const run = () => runInNewContext(code, { window, document, encodeURIComponent, Date, URL, URLSearchParams, Event });
+  run();
   const notify = (name) => listeners[name]?.();
   return {
-    window, document, added, sent, notify,
+    window, document, added, sent, notify, run,
     get reloads() { return reloads; },
     calls() { return [...(window.dataLayer || [])].map((args) => Array.from(args)); }
   };
@@ -103,6 +110,22 @@ export function ga4ConsentTests({ ok, section, build }) {
 
   const returning = simulate({ cb: response(true) });
   ok(returning.added.length === 1, "過去の明示的同意が保存されている場合も開始する");
+  returning.run();
+  ok(returning.added.length === 1, "スクリプト自体が二重挿入されても1回しか起動しない");
+  for (const options of [{search:"?analytics=off"}, {stored:"1"}, {search:"?analytics=off",storageError:true},
+    {search:"?gtm_debug=x"}, {search:"?debug_mode=true"}, {hostname:"localhost"}]) {
+    const excluded = simulate({cb:response(true), ...options});
+    ok(excluded.added.length === 0 && !excluded.window.kaguraGa4Allowed && excluded.window.kaguraAnalytics.status === "excluded",
+      "自己/Preview/ローカル閲覧を同意済みでも除外: " + JSON.stringify(options));
+  }
+  ok(simulate({cb:response(true),stored:"1",search:"?analytics=on"}).added.length === 1, "本人が除外を解除できる");
+  const privateQuery = simulate({cb:response(true), search:"?email=private%40example.com&utm_source=x&utm_medium=social&utm_campaign=autumn&utm_content=post_01#private"});
+  const config = privateQuery.calls().find(x => x[0] === "config")?.[2];
+  ok(config?.page_location === "https://kagurameguri.jp/events/test.html?utm_source=x&utm_medium=social&utm_campaign=autumn&utm_content=post_01",
+    "許可したUTMだけ保持し、任意クエリとハッシュを送らない");
+  privateQuery.added[0].onerror();
+  ok(privateQuery.window.kaguraAnalytics.status === "tag_error" && !privateQuery.window.kaguraGa4Allowed,
+    "タグ読込失敗をローカル診断で区別し、クリック計測も停止する");
   waiting.window.Cookiebot = response(false);
   waiting.notify("CookiebotOnDecline");
   ok(waiting.window.kaguraGa4Allowed === false && waiting.reloads === 1 &&
