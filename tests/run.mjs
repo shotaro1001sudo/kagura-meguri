@@ -67,7 +67,7 @@ section("プライバシーポリシー: Web3Formsの保存期間・国外処理
 const privacyPage = read(join(OUT, "privacy.html"));
 const privacyText = cheerio.load(privacyPage)("main").text();
 ok(privacyText.includes("最大3年間") && privacyText.includes("送信日"), "Web3Formsによるフォーム送信データの最大3年保持を明示する");
-ok(privacyText.includes("12か月") && privacyText.includes("運営者が受け取ったメール等の保管方針"), "運営者の12か月保管方針と送信サービスの保持期間を区別する");
+ok(privacyText.includes("12か月") && privacyText.includes("運営者が受け取ったメール等の方針"), "運営者の12か月保管方針と送信サービスの保持期間を区別する");
 ok(privacyText.includes("複数の国・地域") && privacyText.includes("CleanTalk") && privacyText.includes("Akismet"), "国外処理と迷惑送信対策の再委託先を明示する");
 ok(privacyPage.includes('href="https://web3forms.com/privacy"') && privacyPage.includes('rel="noopener"'), "Web3Forms公式プライバシーポリシーへの安全なリンクを表示する");
 ok(!privacyText.includes("事業者のサーバーには保存されません"), "Web3Formsが送信データを保存しないという旧記述が存在しない");
