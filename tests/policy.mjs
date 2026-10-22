@@ -22,7 +22,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const pv = text(join(OUT, "privacy.html")), ds = text(join(OUT, "disclaimer.html"));
   for (const h of ["運営者", "取得する情報", "利用目的", "外部サービスの利用と、情報の送信", "投稿フォーム・お問い合わせフォームについて", "第三者への提供", "保存期間", "開示・訂正・削除", "この方針の改定"]) ok(pv.includes(h), `プライバシーポリシーに「${h}」の項目がある`);
   ok(pv.includes("迷惑投稿") && pv.includes("個人情報の保護に関する法律"), "迷惑投稿対策と、関係する法令への言及がある");
-  ok(pv.includes(`最終更新: ${cfg.operator.updated}`) && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "最終更新日と、改定の履歴が出る");
+  ok(pv.includes(`最終更新: ${cfg.privacy?.updated ?? cfg.operator.updated}`) && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "最終更新日と、改定の履歴が出る");
   section("利用規約・法令に沿った記載");
   const tm = text(join(OUT, "terms.html"));
   ok(["適用", "開催情報の投稿", "禁止事項", "違反への対応", "知的財産権", "免責", "規約の変更", "分離可能性", "準拠法・管轄裁判所"].every((t) => tm.includes(`(${t})`)), "利用規約に、適用・投稿・禁止事項・知的財産・免責・変更・準拠法と管轄の各条がある");
