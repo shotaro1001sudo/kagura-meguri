@@ -48,11 +48,24 @@ for (const s of sources) {
     // 読むページ: アダプタが月ごとなどの複数のページを示せば、それをすべて(間隔をあけて)読む。1つでも失敗したら、この収集元は変更しない
     const pages = adapter.urls ? adapter.urls(s, now) : [s.url];
     const items = [];
-    for (const [i, pageUrl] of pages.entries()) {
+    for (let i = 0; i < pages.length; i++) {
+      const pageUrl = pages[i];
       if (i) await sleep(DELAY_MS);
       const res = await fetch(pageUrl, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}(${pageUrl})`);
       const body = adapter.decode ? adapter.decode(new Uint8Array(await res.arrayBuffer())) : await res.text();
+      // 詳細記事が別URLの収集元だけ: 一覧に出た同一サイトの記事を、件数制限付きで追加取得する。
+      // robots.txt は各URLごとに確認。途中で失敗したら、この収集元の掲載状態は一切変更しない。
+      if (adapter.discover && i === 0) {
+        const links = adapter.discover(body, s, pageUrl);
+        if (!Array.isArray(links) || !links.length || links.length > 12) throw new Error("詳細リンクの検出件数が不正");
+        for (const url of links) {
+          if (new URL(url).origin !== new URL(s.url).origin) throw new Error("収集元と別のドメインは取得しません");
+          const allow = await robotsAllows(url, UA);
+          if (!allow.ok) throw new Error(`詳細ページがrobots.txtで禁止されています: ${url}`);
+          if (!pages.includes(url)) pages.push(url);
+        }
+      }
       const got = adapter.parse(body, s, pageUrl);
       items.push(...got);
       if (got.skippedPeriod) items.skippedPeriod = (items.skippedPeriod ?? 0) + got.skippedPeriod;
