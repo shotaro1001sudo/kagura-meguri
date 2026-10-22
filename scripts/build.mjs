@@ -1,4 +1,5 @@
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
+// 2026-10-21: event-handoff smoke marker (comment only; no functional or output change).
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";

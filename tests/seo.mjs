@@ -11,6 +11,9 @@ import * as cheerio from "cheerio";
 
 const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const read = (p) => readFileSync(p, "utf8");
+const kaguraInfoKeys = new Set(Object.keys(JSON.parse(read("data/kagura-info.json").replace(/^﻿/, ""))));
+// 申請から掲載した神楽など、紹介情報(kagura-info.json)がない神楽のページは、運営が個別に確認するので、文字数の基準を外す
+const noInfoKagura = (p) => /^\/kagura\/./.test(p) && p !== "/kagura/index.html" && !kaguraInfoKeys.has(decodeURIComponent(p.slice("/kagura/".length, -".html".length)));
 
 function checkSite({ ok, section, dir, label, base, strictText }) {
   section(`SEO: ${label}`);
@@ -48,7 +51,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     const title = $("title").text(), desc = $('meta[name="description"]').attr("content") ?? "";
     const key = p.startsWith("/events/") || p.startsWith("/regular/") ? "detail" : /^\/(kagura|pref|month)\//.test(p) || ["/index.html", "/map.html", "/calendar.html"].includes(p) ? "list" : "static";
     if (key !== "static") {
-      ok(desc.length >= 55 && desc.length <= 125, `${p}: 説明文が、検索結果で読みやすい長さ(55〜125字)`, `${desc.length}字`);
+      if (!(strictText && noInfoKagura(p))) ok(desc.length >= 55 && desc.length <= 125, `${p}: 説明文が、検索結果で読みやすい長さ(55〜125字)`, `${desc.length}字`);
       ok(!descs.has(desc), `${p}: 説明文が他ページと重複しない`, desc);
       descs.set(desc, p);
     } else ok(desc.length >= 50 && desc.length <= 125, `${p}: 説明文が、中身の分かる長さ(50〜125字)`, `${desc.length}字`);
@@ -63,7 +66,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     // 本文量
     const main = $("main").clone(); main.find("script,style").remove();
     const chars = main.text().replace(/\s+/g, "").length;
-    if (strictText && key !== "static") ok(chars >= (key === "detail" ? 250 : 150), `${p}: 本文が薄すぎない`, `${chars}字`);
+    if (strictText && key !== "static" && !noInfoKagura(p)) ok(chars >= (key === "detail" ? 250 : 150), `${p}: 本文が薄すぎない`, `${chars}字`);
     // 見出しの階層(h1の次に h3 が来る、のような飛びがない)
     const hs = $("main h1,main h2,main h3,main h4").map((_, e) => +e.tagName[1]).get();
     let skip = false; for (let i = 1; i < hs.length; i++) if (hs[i] - hs[i - 1] > 1) skip = true;
