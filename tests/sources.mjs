@@ -22,12 +22,12 @@ export function sourcesTests({ ok, section }) {
   const stagedIds = ["hanamaki-hayachine", "kagura-kaikan-oita", "miyazaki-kanko-events", "okayama-kanko-kagura", "hamada-yokagura", "shimane-kagura-calendar"];
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
-  ok(staged.every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false).length === 3, "実稼働中の3情報源は維持し、追加候補を勝手に有効化しない");
+  ok(staged.filter((s) => s.id !== "kagura-kaikan-oita").every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り5候補は収集・自動掲載を起動しない");
+  ok(allSources.filter((s) => s.enabled !== false).length === 4, "既存3情報源と、実HTML検証済の神楽会館だけを有効化する");
 
   section("大分・神楽会館: 記事投稿日や予約開始日を開催日と誤認しない");
   const oita = allSources.find((s) => s.id === "kagura-kaikan-oita");
-  ok(oita && oita.adapter === "kagura-kaikan-oita" && oita.enabled === false && !oita.termsChecked, "専用アダプタを設定しても、検証前は本番無効のまま");
+  ok(oita && oita.adapter === "kagura-kaikan-oita" && oita.enabled === true && oita.termsChecked === "2026-10-22", "専用アダプタとライブ検証を確認済みの1件だけ有効化");
   const category = `<h1>公演のお知らせ</h1>
     <a href="/performance/304.html">令和8年11月一般公演（第210回）のご案内</a>
     <a href="/performance/305.html">令和8年12月自主公演のご案内</a>
