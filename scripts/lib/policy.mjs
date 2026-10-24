@@ -3,6 +3,15 @@
 // 動いていないものを「使っています」と書かない / 動き出したものを書き忘れない、ためにこうしている。
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// 機能の改定履歴は、フォームの接続設定と分けて管理する。
+const QUIZ_REVISION = '2026年10月25日';
+export function privacyUpdated(cfg) {
+  const configured = cfg.privacy?.updated ?? cfg.operator?.updated ?? '';
+  const m = configured.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  const day = m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : '';
+  return day > '2026-10-25' ? configured : QUIZ_REVISION;
+}
+
 // 外部サービスごとの、送られる情報(ブラウザが直接つながる先)
 export function externalServices(ctx) {
   const rows = [
@@ -24,7 +33,7 @@ export function privacyHtml(ctx) {
   const site = esc(cfg.siteName);
   const rows = externalServices(ctx);
   const retention = esc(cfg.privacy?.retention ?? "対応が完了してから、12か月を目安に");
-  const history = cfg.privacy?.history ?? [];
+  const history = [...new Set([...(cfg.privacy?.history ?? []), `${QUIZ_REVISION} 神楽の好み診断の回答処理・利用回数の計測と、案内の表示済み情報の一時保存を追記`])];
   const num = (() => { let n = 0; return () => ++n; })();
   const h = (t) => `<h2>${num()}. ${t}</h2>`;
   return `
@@ -102,7 +111,7 @@ ${h("この方針の改定")}
 <p>この方針は、法令の変更や機能の追加(広告・アクセス解析・アフィリエイトの導入など)、運営の変更に応じて見直します。内容を変更するときは、このページに掲載し、改定の履歴を残します。</p>
 <h3>改定の履歴</h3>
 <ul>${history.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-<p class="meta">最終更新: ${esc(cfg.privacy?.updated ?? op.updated)}</p>`;
+<p class="meta">最終更新: ${esc(privacyUpdated(cfg))}</p>`;
 }
 
 export function disclaimerHtml(ctx) {
