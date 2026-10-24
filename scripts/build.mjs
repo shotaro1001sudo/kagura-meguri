@@ -12,6 +12,7 @@ import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
+import { questions, axes, programs, programEvents, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -256,6 +257,7 @@ const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's gu
 const EN_FOOTER = `<footer>Event listings are in Japanese, but your browser can translate them. <a href="/calendar.html" hreflang="ja">Calendar</a> ・ <a href="/map.html" hreflang="ja">Map</a><br><a href="/about.html" hreflang="ja">About (Japanese)</a> ・ <a href="/contact.html" hreflang="ja">Contact (Japanese)</a> ・ <a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a> ・ <a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a><br>© Kagura Meguri</footer>`;
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [] }) => {
   const en = lang === "en";
+  const quizOffer = !en && !noindex && !withForm && (path === '/' || /^\/(calendar|map|weekend|this-month)\.html$/.test(path) || /^\/(events|regular|pref|month|kagura)\//.test(path));
   // Cookiebot automatic blocking must load synchronously as the first script in <head>.
   const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
   // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
@@ -279,8 +281,9 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 <div class="wrap"><main id="main">${body}</main>
-${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
+${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/quiz.html">神楽の好み診断</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}</div>
+${quizOffer ? `<dialog id="quiz-offer" class="quiz-offer" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc"><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる ×</button><p id="quiz-offer-title">あなたが惹かれる神楽はどれ？</p><p id="quiz-offer-desc">10問で、好きな舞の雰囲気を見つけてみませんか。</p><a class="btn" href="/quiz.html">診断をはじめる</a></dialog>${clientJs('quiz-offer')}` : ''}
 ${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
@@ -443,6 +446,27 @@ ${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">
 ${prefs.length ? `<h2>都道府県で探す</h2><div class="taglist">${prefs.map((p) => `<a class="tag" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</div>` : ""}
 ${kaguras.length ? `<h2>種類で探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}
 ${clientJs("home")}`,
+}));
+
+// PLAN-004: 回答はブラウザ内のみ。公式演目が確認できた未来公演だけを対応させる。
+const quizEvents = programEvents.flatMap(match => {
+  const e = upcoming.find(e => e.id === match.id && e.start.startsWith(match.day) && e.url === match.source);
+  return e ? [{ id:e.id, name:e.name, start:e.start, program:match.program, source:match.source }] : [];
+});
+const quizData = JSON.stringify({ questions, axes, programs, events:quizEvents }).replace(/</g,'\\u003c');
+const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* scoreAnswers */',scoreAnswers.toString());
+write('dist/quiz.html',layout({
+  title:`あなたが惹かれる神楽はどれ？10問の好み診断 | ${cfg.siteName}`,
+  desc:padDesc('10問に答えて、舞の動き・面や衣装・物語・雰囲気から自分の好みを探してみませんか。回答に合わせた演目の一例と、公式演目が確認できた公演をご案内します。登録不要で、回答はブラウザ内だけで計算します。'),
+  path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
+  body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたが惹かれる神楽はどれ？','10問で、好きな舞の雰囲気を探してみませんか。')}
+<p class="meta annotation">性格や適性を判定するものではありません。回答に合わせて編集部が選ぶ、神楽との出会いのヒントです。登録不要。回答は保存・外部送信しません。</p>
+<section id="quiz" aria-label="10問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>10問の診断をはじめる</button>
+<noscript><p>診断にはJavaScriptが必要です。<a href="/calendar.html">公演を探す</a>・<a href="/guide.html">はじめての神楽ガイド</a>もご利用ください。</p></noscript>
+<form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
+<section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
+<p class="meta annotation">写真や音の再生はありません。石見神楽の少数の演目を例にした初版です。地域や演者によって表現は異なります。</p>
+<script id="quiz-data" type="application/json">${quizData}</script><script>${quizJs}</script>`
 }));
 
 // ---------- 地図 (Leaflet + OpenStreetMap) ----------
@@ -906,6 +930,7 @@ doc("/disclaimer.html", "免責事項・情報の取り扱い", `${cfg.siteName}
 const staticDay = (() => { const m = String(op.updated ?? "").match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : nowJst.slice(0, 10); })();
 const allDay = lastmodOf([...upcoming, ...regular]);
 const sm = [
+  ['/quiz.html', QUIZ_CHECKED],
   ["/", allDay], ["/map.html", allDay], ["/calendar.html", allDay], ["/kagura/", allDay],
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],

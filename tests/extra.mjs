@@ -60,7 +60,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
     ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/.test(html) && !/<a\b[^>]*href=["']mailto:/.test(html) && !(cfg.operator.contact && html.includes(cfg.operator.contact)), `${name}: メールアドレスがHTMLに直接書かれていない`);
   }
   for (const f of htmls) for (const m of read(f).matchAll(/<script(?![^>]*\bsrc=)(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g)) {
-    let err = ""; try { new vm.Script(m[1]); } catch (e) { err = e.message; }
+    let err = ""; try { if (/type=["']application\/json["']/.test(m[0])) JSON.parse(m[1]); else new vm.Script(m[1]); } catch (e) { err = e.message; }
     ok(!err, `${rel(f)}: インラインscriptに文法エラーがない`, err);
   }
   const st = read(join(OUT, ".well-known/security.txt"));
