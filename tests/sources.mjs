@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { parse, urls, decode } from "../scripts/adapters/npo-hiroshima.mjs";
 import { reconcile, sameEvent } from "../scripts/lib/collect-core.mjs";
 import { parse as parseOita, discover as discoverOita } from "../scripts/adapters/kagura-kaikan-oita.mjs";
+import { hanamakiTests } from './hanamaki.mjs';
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -17,6 +18,7 @@ ${block("501", "2026年11月15日", "【広島県】あさきた神楽公演", "
 </body></html>`;
 
 export function sourcesTests({ ok, section }) {
+  hanamakiTests({ok,section});
   section("収集元候補: 利用条件・アダプタ検証前は無効");
   const allSources = JSON.parse(readFileSync("data/sources.json", "utf8").replace(/^﻿/, ""));
   const stagedIds = ["hanamaki-hayachine", "kagura-kaikan-oita", "miyazaki-kanko-events", "okayama-kanko-kagura", "hamada-yokagura", "shimane-kagura-calendar"];
