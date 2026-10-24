@@ -13,16 +13,16 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(home(".home-find").length === 0 &&
     home(".home-search-link a.tag[href='/calendar.html']").length === 1,
     "新しい広告風カードを追加せず、元のリンク書式で日付・地域検索へ案内する");
-  ok(home(".home-hero").next().hasClass("quick") &&
-    home(".quick").next().hasClass("home-search-link"),
-    "元の見た目のまま、ヒーロー→今週末・今月→詳細検索の順に並べる");
+  ok(home(".home-discovery").next().hasClass("home-hero") &&
+    home(".home-discovery .quick").length === 1,
+    "初訪問で探し始められるよう、日付・地域の検索入口をヒーローより前に出す");
   ok(home(".home-search-link .meta").text() === "全国の神楽を日付・地域・開催月から探せます。" &&
     home(".home-search-link a[href='/calendar.html']").length === 1,
     "SNSからの初訪問でも、何を探せるサイトかと検索入口を簡潔に示す");
-  ok(home(".quick a").length === 2 &&
+  ok(home(".quick a").length === 3 &&
     home(".quick a[href='/weekend.html']").length === 1 &&
     home(".quick a[href='/this-month.html']").length === 1,
-    "既存の今週末・今月への入口を維持する");
+    "今週末・今月・日付地域検索の3つの入口を表示する");
   ok(home(".home-hero .copy h1").text().includes("神話を受け継ぐ") &&
     home(".hero-art img").attr("src") === "/hero-pc.webp" &&
     home(".hero-art source").attr("srcset") === "/hero-sp.webp",

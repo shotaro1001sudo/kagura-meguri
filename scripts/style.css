@@ -98,6 +98,14 @@ html{scroll-padding-top:84px}
 .cta-end{margin-top:40px}
 .card :is(h3,h4){margin:0 0 2px;font-size:var(--fs-l);line-height:1.6}.card :is(h3,h4) a{color:var(--fg);text-decoration:none}.card :is(h3,h4) a:after{content:"";position:absolute;inset:0}
 .meta{color:var(--mut);font-size:var(--fs-s)}
+/* 注釈だけを本文より小さく。日時・料金・検索操作の .meta は維持する。 */
+.meta.annotation,small.meta{font-size:var(--fs-xs);line-height:1.8}
+.home-discovery{padding:20px 0 8px}
+.discovery-title{margin:0 0 8px;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg)}
+.home-discovery .quick{grid-template-columns:repeat(3,minmax(0,1fr))}
+.discovery-prefs{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
+.discovery-prefs a{display:inline-flex;gap:6px;align-items:center;min-height:44px;color:var(--ac);font-size:var(--fs-s)}
+.discovery-prefs span{font-size:var(--fs-xs);color:var(--mut)}
 .tag{display:inline-block;font-size:var(--fs-s);color:var(--ac2);text-decoration:none;margin:0 14px 0 0;padding:8px 0 4px;border-bottom:1px solid var(--line);position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 .tag:hover{color:var(--ac);border-color:var(--ac)}
 .tag.gold{color:var(--ac)}
@@ -124,6 +132,7 @@ html{scroll-padding-top:84px}
 .quick b{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.quick b::after{content:" ›";color:var(--ac)}
 .quick small{color:var(--mut);font-size:var(--fs-s)}
 @media(max-width:560px){.quick{grid-template-columns:repeat(2,1fr)}.quick a{padding:10px 4px;min-height:52px;justify-content:center;align-items:center;text-align:center}.quick b{font-size:var(--fs-xs);letter-spacing:0;white-space:nowrap}.quick small{display:none}}
+@media(max-width:560px){.home-discovery .quick{grid-template-columns:repeat(2,minmax(0,1fr))}.home-discovery .quick a:last-child{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
 .adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
 .adwrap{margin:28px 0;min-height:0}
 /* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */

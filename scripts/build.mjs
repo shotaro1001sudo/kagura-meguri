@@ -337,14 +337,14 @@ const listNames = (arr, n = 3) =>arr.slice(0, n).map((x) => x.name.replace(/\s*[
 const sourceNote = (x) => {
   if (!x.source && !x.checked && !x.auto) return "";
   const day = x.checked ?? x.lastSeen; // 自動取得したものは、最後に取得元で確認できた日
-  return `<p class="meta">出典: ${esc(x.source ?? "")}${day ? `(${jpDate(day)}${x.auto ? "取得" : "確認"})` : ""}。日時などは変わることがあります。お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項</a>)。</p>${x.auto ? '<p class="meta">この情報は、公開されている情報をプログラムで取得し、自動の検査を通したうえで掲載しています。誤りに気づいたら、お問い合わせからお知らせください。</p>' : ""}`;
+  return `<p class="meta annotation">出典: ${esc(x.source ?? "")}${day ? `(${jpDate(day)}${x.auto ? "取得" : "確認"})` : ""}。日時などは変わることがあります。お出かけの前に公式情報をご確認ください(<a href="/disclaimer.html">免責事項</a>)。</p>${x.auto ? '<p class="meta annotation">この情報は、公開されている情報をプログラムで取得し、自動の検査を通したうえで掲載しています。誤りに気づいたら、お問い合わせからお知らせください。</p>' : ""}`;
 };
 // Googleカレンダーで、全開催の日程(events.ics)を購読する画面を開くリンク(URLで追加 = 新しい開催も、自動で反映される)
 const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${cfg.domain}/events.ics`)}`;
 const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 // 新しい解説を作らず、既存ガイドの該当章と、その公演の地図へ案内する。
 const preparationLinks = (withMap = false) => `<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a>${withMap ? '<a class="tag" href="#venue-access">会場地図・経路</a>' : ""}</nav>`;
-const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta">※ 地図のピンは市区町村のおおよその位置です。正確な場所は公式情報でご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta">※ 地図のピンは町名ごとのおおよその位置です。正確な場所は公式情報でご確認ください。</p>' : "");
+const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta annotation">※ 地図のピンは市区町村のおおよその位置です。正確な場所は公式情報でご確認ください。</p>' : x.geoPrecision === "area" ? '<p class="meta annotation">※ 地図のピンは町名ごとのおおよその位置です。正確な場所は公式情報でご確認ください。</p>' : "");
 const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
 const mapBlock = (x) => (x.lat != null ? `<div class="mapbox"><div id="map" class="dmap" role="region" aria-label="会場周辺の地図" data-lat="${x.lat}" data-lng="${x.lng}" data-zoom="${zoomOf(x)}"></div><button type="button" class="maplock" id="mapbig" aria-expanded="false">地図を大きく見る</button></div>${clientJs("detailmap")}${geoNote(x)}<p class="routebtn"><a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
@@ -422,11 +422,15 @@ write("dist/index.html", layout({
     itemListLd("開催予定の神楽", upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })))].filter(Boolean),
   // オープニング(最初の訪問だけ、ロゴが現れて消える)。main の外に置く(main は出現の動きで translate するため、fixed の基準が main になってしまう)
   splash: `<div class="splash" aria-hidden="true"><img src="/symbol.png" width="96" height="96" alt=""><b>${esc(cfg.siteName)}</b></div>`,
-  body: `<section class="hero home-hero">
+  body: `<section class="home-discovery" aria-label="神楽の公演を探す">
+<p class="discovery-title">全国の神楽、公演日程を探す</p>
+<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/calendar.html"><b>日付・地域で探す</b><small>条件を選んで絞り込み</small></a></nav>
+${prefs.length ? `<nav class="discovery-prefs" aria-label="掲載地域から探す">${prefs.map((p) => `<a href="${prefHref(p)}">${esc(p)}</a>`).join("")}</nav>` : ""}
+</section>
+<section class="hero home-hero">
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
 <div class="copy"><h1>${HERO_H1}</h1></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a></nav>
 <p class="home-search-link"><span class="meta">全国の神楽を日付・地域・開催月から探せます。</span> <a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
