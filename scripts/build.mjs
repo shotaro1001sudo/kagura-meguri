@@ -374,7 +374,7 @@ const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
 rmSync(OUT, { recursive: true, force: true });
 
 // クライアント用の軽量データ (地図・日付と場所の検索)
-const lite = events.map(({ id, name, kagura, prefecture, city, venue, start, end, lat, lng, fee, timeUnknown }) => ({ id, name, kagura, prefecture, city, venue, start, end, lat, lng, fee, timeUnknown, up: isUpcoming({ start, end, timeUnknown }) }));
+const lite = events.map(({ id, name, kagura, prefecture, city, venue, description, start, end, lat, lng, fee, timeUnknown }) => ({ id, name, kagura, prefecture, city, venue, description, start, end, lat, lng, fee, timeUnknown, up: isUpcoming({ start, end, timeUnknown }) }));
 write("dist/events.json", JSON.stringify(lite));
 write("dist/regular.json", JSON.stringify(regular.map(({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }) => ({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }))));
 
@@ -480,10 +480,11 @@ ${clientJs("map")}`,
 const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some((e) => e.prefecture === p))]).filter(([, ps]) => ps.length);
 write("dist/calendar.html", layout({
   title: `日付・場所で神楽を探す | 開催日程の検索 | ${cfg.siteName}`,
-  desc: clip(`神楽の開催予定を、日付(今週末・今月・来月・日付の指定)と地方・都道府県で絞り込んで探せます。${months.length ? months.slice(0, 4).map(monthLabel).join("・") + "などの開催を、" : ""}公式情報をもとに掲載しています。`),
+  desc: clip(`神楽の開催予定を、公演名・会場・市町村・出演団体のキーワードと日付・地域で絞り込めます。公式情報をもとに日程を掲載しています。`),
   path: "/calendar.html", active: "/calendar.html", ld: crumbsLd([["ホーム", "/"], ["日付・場所で探す"]]),
-  body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す"]])}${hero("日付・場所で探す", "いつ、どこで観たいかを選ぶと、当てはまる開催が一覧で表示されます。")}
+  body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す"]])}${hero("日付・場所で探す", "公演名や会場のキーワード、日付・地域を組み合わせて探せます。")}
 <form class="finder" id="finder" role="search" aria-label="開催を探す" hidden>
+<div class="keyword"><label for="keyword">キーワード</label><input type="search" id="keyword" name="q" maxlength="100" placeholder="公演名・会場・市町村・神楽団名" aria-describedby="keyword-help"><p class="meta annotation" id="keyword-help">スペースで区切ると、すべての言葉を含む公演を探せます。出演団体は掲載されている名称・説明から検索します。</p></div>
 <fieldset><legend>いつ</legend><div class="regions" role="group" aria-label="期間"><button type="button" data-w="all" aria-pressed="true">すべて</button><button type="button" data-w="weekend" aria-pressed="false">今週末</button><button type="button" data-w="month" aria-pressed="false">今月</button><button type="button" data-w="next" aria-pressed="false">来月</button><button type="button" data-w="range" aria-pressed="false">日付を指定</button></div>
 <div class="range" id="range" hidden><label><input type="date" id="from" aria-label="いつから"> から</label><label><input type="date" id="to" aria-label="いつまで"> まで</label></div></fieldset>
 <fieldset><legend>どこ</legend><div class="where"><label for="region" class="sr">地方</label><select id="region"><option value="">全国</option>${finderPrefs.map(([r]) => `<option value="${r}">${r}</option>`).join("")}</select>
@@ -501,6 +502,8 @@ ${months.length ? `<h2>月ごとの一覧</h2><p class="meta">月ごとの開催
 (function(){
 var f=document.getElementById('finder'),out=document.getElementById('results'),cnt=document.getElementById('count');
 var rg=document.getElementById('region'),pf=document.getElementById('pref'),fr=document.getElementById('from'),to=document.getElementById('to'),rangeBox=document.getElementById('range'),rs=document.getElementById('reset');
+var kw=document.getElementById('keyword');
+function normalize(v){return String(v||'').normalize('NFKC').toLowerCase().trim()}
 var list=[],loaded=false,failed=false,when='all',regionOf={};
 [].forEach.call(pf.options,function(o){if(o.value)regionOf[o.value]=o.dataset.r});
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
@@ -523,32 +526,38 @@ function syncPrefs(){
   if(pf.value&&regionOf[pf.value]!==rg.value&&rg.value)pf.value='';
 }
 function draw(){
-  var sp=span(),a=sp[0],b=sp[1];
+  var sp=span(),a=sp[0],b=sp[1],words=normalize(kw.value).split(/\\s+/).filter(Boolean);
   var hit=list.filter(function(x){
     if(!x.up)return false;
     var s=x.start.slice(0,10),e=(x.end||x.start).slice(0,10);
     if(a&&e<a)return false;if(b&&s>b)return false;
+    var text=normalize([x.name,x.kagura,x.prefecture,x.city,x.venue,x.description].join(' '));
+    if(!words.every(function(w){return text.indexOf(w)>=0}))return false;
     if(pf.value)return x.prefecture===pf.value;
     if(rg.value)return regionOf[x.prefecture]===rg.value;
     return true;
   });
   out.innerHTML=hit.map(function(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
     return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><br><span class="meta">'+(x.kagura?esc(x.kagura)+' ・ ':'')+esc(x.prefecture)+esc(x.city||'')+(x.timeUnknown?'':' ・ '+x.start.slice(11,16)+'〜')+'</span></span></li>'}).join('');
-  cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'当てはまる開催は、いまのところありません。期間や場所を広げて探してみてください。';
+  cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'当てはまる開催は、いまのところありません。キーワードを短くするか、期間・地域を広げて探してみてください。';
   var q=new URLSearchParams();if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value);
+  if(kw.value.trim())q.set('q',kw.value.trim());
   var s=q.toString();try{history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}
   rs.parentNode.hidden=!s;
 }
 function setWhen(v){when=v;[].forEach.call(f.querySelectorAll('[data-w]'),function(b){b.setAttribute('aria-pressed',String(b.dataset.w===v))});rangeBox.hidden=v!=='range'}
 f.addEventListener('click',function(ev){var b=ev.target.closest('[data-w]');if(!b)return;setWhen(b.dataset.w);draw();if(when==='range'&&!fr.value){fr.focus();try{fr.showPicker()}catch(e){}}});
-rs.addEventListener('click',function(){setWhen('all');rg.value='';pf.value='';fr.value='';to.value='';syncPrefs();draw();f.querySelector('[data-w=all]').focus()});
+rs.addEventListener('click',function(){setWhen('all');rg.value='';pf.value='';fr.value='';to.value='';kw.value='';syncPrefs();draw();f.querySelector('[data-w=all]').focus()});
+kw.addEventListener('input',function(ev){if(!ev.isComposing)draw()});
+kw.addEventListener('compositionend',draw);
 rg.addEventListener('change',function(){syncPrefs();draw()});
 pf.addEventListener('change',function(){if(pf.value)rg.value=regionOf[pf.value];syncPrefs();draw()});
 fr.addEventListener('change',function(){if(to.value&&fr.value&&to.value<fr.value)to.value=fr.value;draw()});
 to.addEventListener('change',function(){if(fr.value&&to.value&&fr.value>to.value)fr.value=to.value;draw()});
-f.addEventListener('submit',function(ev){ev.preventDefault()});
+f.addEventListener('submit',function(ev){ev.preventDefault();draw()});
 // URL の条件を戻す(共有されたリンク・戻る)
 var u=new URLSearchParams(location.search),okDate=function(v){return /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(v||'')};
+kw.value=(u.get('q')||'').slice(0,100);
 if(['weekend','month','next','range'].indexOf(u.get('when'))>=0)setWhen(u.get('when'));
 if(okDate(u.get('from')))fr.value=u.get('from');if(okDate(u.get('to')))to.value=u.get('to');
 if(u.get('region')&&[].some.call(rg.options,function(o){return o.value&&o.value===u.get('region')}))rg.value=u.get('region');
