@@ -125,6 +125,7 @@ html{scroll-padding-top:84px}
 .pref-month h2,.pref-stay{scroll-margin-top:94px}
 /* カード全体の詳細リンクより、出典リンクを手前に置く。 */
 .event-facts a{position:relative;z-index:1}
+.comparison-facts,.comparison-facts>span{display:block}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}

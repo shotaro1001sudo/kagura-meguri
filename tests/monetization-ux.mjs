@@ -92,10 +92,14 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "広告設定がない場合は宿探しの目次だけを表示しない");
 
   const other = cheerio.load(read(join(OUT, "pref/宮崎県.html")));
-  ok(other(".pref-month-nav,.pref-month,.event-facts").length === 0 &&
+  ok(other(".pref-month-nav,.pref-month").length === 0 && other(".event-facts").length === other(".card").length &&
     other("h2").filter((_, n) => other(n).text() === "開催予定").length === 1,
-    "広島以外の県の一覧は変更しない");
-  ok(home(".event-facts").length === 0, "トップの公演カードの情報量は変更しない");
+    "広島以外も同じ公演比較情報を表示し、独自の月別目次は追加しない");
+  ok(home(".event-facts").length === home(".card").length, "トップの開催・定期公演も会場・料金・予約を比較できる");
+  for (const path of ['month/2026-11.html','weekend.html','this-month.html','kagura/石見神楽.html']) {
+    const page = cheerio.load(read(join(OUT,path)));
+    ok(page('.event-facts').length === page('.card').length, `${path}: 公演比較情報が各カードに1回表示される`);
+  }
 
   section("広島県: 日程から既存の観覧準備情報へ案内");
   const guide = cheerio.load(read(join(OUT, "guide.html")));
