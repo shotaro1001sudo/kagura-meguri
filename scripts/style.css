@@ -126,6 +126,20 @@ html{scroll-padding-top:84px}
 /* カード全体の詳細リンクより、出典リンクを手前に置く。 */
 .event-facts a{position:relative;z-index:1}
 .comparison-facts,.comparison-facts>span{display:block}
+/* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
+.quiz-offer{position:fixed;inset:auto 20px 20px auto;margin:0;z-index:100;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:20px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003}
+.quiz-offer #quiz-offer-title{font-family:var(--serif);font-size:var(--fs-l);margin:8px 0}
+.quiz-offer #quiz-offer-desc{font-size:var(--fs-s);margin:8px 0 16px}
+.quiz-close{display:block;margin-left:auto;min-height:44px}
+#quiz{max-width:40em;margin:28px 0}
+#quiz fieldset{border:0;padding:0;margin:0;min-width:0}
+#quiz legend{font-family:var(--serif);font-size:var(--fs-l);margin-bottom:16px}
+.quiz-choice{display:flex;align-items:center;gap:12px;min-height:52px;padding:12px;margin-bottom:10px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:var(--card)}
+.quiz-choice:has(input:checked){border-color:var(--ac);outline:1px solid var(--ac)}
+.quiz-choice input{width:20px;height:20px;flex:none;accent-color:var(--ac)}
+.quiz-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+#quiz button:disabled{opacity:.55;cursor:default}
+@media(max-width:560px){.quiz-offer{right:16px;bottom:16px}}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}

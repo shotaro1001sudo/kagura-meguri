@@ -69,8 +69,8 @@ export async function policyTests({ ok, section, OUT, build }) {
     for (const k of s.matchAll(/sessionStorage\.(?:get|set)Item\('([^']+)'/g)) keys.add(k[1]);
   }
   ok(bad.length === 0, "Cookie・localStorage・IndexedDB を使っていない(使うなら、ポリシーの更新が必要)", bad.join(","));
-  ok([...keys].sort().join() === "intro,lastSend", "保存するのは sessionStorage の intro と lastSend だけ(ポリシーの記載と同じ)", [...keys].join(","));
-  ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません"), "ポリシーに、Cookieを設定しないこと・セッションストレージの2項目・外部に送らないことが書かれている");
+  ok([...keys].sort().join() === "intro,km-quiz-offer,lastSend", "保存するのは sessionStorage の intro・km-quiz-offer・lastSend だけ", [...keys].join(","));
+  ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");
   // (3) 画面に出す「広告・アフィリエイト」の表示は、実態に合っている
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(ev(".staylinks a[href]").length === 2 && ev(".staylinks a[rel~=sponsored], .stay .pr").length === 0 && ev(".stay .meta").text().includes("外部の予約サイトへのリンク"), "アフィリエイト未設定の間は、宿のリンクに sponsored も「PR」も付けない");
