@@ -16,6 +16,28 @@ const read = (p) => readFileSync(p, "utf8");
 const J = (p) => JSON.parse(read(p).replace(/^﻿/, ""));
 
 export async function collectTests({ ok, section }) {
+  // ISS-005 / #62: 12月公演への手動補完を、公式の料金抽出が空の次回収集でも維持する。
+  section("神楽会館12月公演: 料金・予約案内の収集後の保持");
+  const liveEvents = J("data/events.json");
+  const december = liveEvents.find((e) => e.id === "kagura-kaikan-oita-67890d3ae8");
+  const kaikanSource = { id: "kagura-kaikan-oita", name: december.source, url: december.sourceUrl };
+  const nextCollection = reconcile({
+    events: liveEvents,
+    candidates: [{ ...december, fee: "", description: "" }],
+    source: kaikanSource,
+    now: new Date("2026-10-26T05:00:00+09:00"),
+  });
+  const afterCollection = nextCollection.events.find((e) => e.id === december.id);
+  ok(afterCollection.fee === december.fee && afterCollection.description === december.description,
+    "次回収集の料金・説明が空でも、手動補完を保持する");
+  ok(afterCollection.lastSeen === "2026-10-26" && afterCollection.misses === 0 && afterCollection.status === "published",
+    "補完後も公式情報源による生存確認が継続する");
+  ok(nextCollection.events.length === liveEvents.length && nextCollection.summary.published.length === 0,
+    "12月公演を新しい公演として重複登録しない");
+  const november = liveEvents.find((e) => e.id === "kagura-kaikan-ondake-2026-11");
+  ok(JSON.stringify(nextCollection.events.find((e) => e.id === november.id)) === JSON.stringify(november),
+    "11月の手動登録公演を変更しない");
+
   // ---------- 1. 検査 ----------
   section("自動収集: 1件ずつの検査(guardEvent)");
   const base = { name: "高宮神楽まつり", kagura: "安芸高田神楽", prefecture: "広島県", city: "安芸高田市", venue: "広場", start: "2026-11-23T19:00", url: "https://example.com/a" };
