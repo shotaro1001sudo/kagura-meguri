@@ -1,15 +1,50 @@
 {
-  "date": "2026-10-19",
+  "date": "2026-10-26",
   "autoPublish": true,
-  "published": 0,
-  "held": 0,
+  "published": 1,
+  "held": 1,
   "withdrawn": 0,
   "errors": 0,
   "inactive": 0,
-  "needsAttention": false,
+  "needsAttention": true,
+  "affiliate": {
+    "missingIds": [],
+    "expiring": [],
+    "counts": {
+      "learn_unmatched": 1,
+      "furusato_unmatched": 1
+    },
+    "unlinkedTotal": 1,
+    "unlinked": [
+      {
+        "id": "akitakata-5f97589558",
+        "missing": [
+          "本・グッズ",
+          "ふるさと納税"
+        ]
+      }
+    ]
+  },
   "items": {
-    "published": [],
-    "held": [],
+    "published": [
+      {
+        "name": "神楽門前湯治村キャンドルナイト 秋の灯火 ～音楽と灯りに包まれて～",
+        "start": "2026-11-07T00:00",
+        "prefecture": "広島県",
+        "city": "安芸高田市",
+        "url": "https://akitakata-kankou.jp/event/22533/"
+      }
+    ],
+    "held": [
+      {
+        "name": "竹あかり DE まちづくり in 安芸高田市 ～Vol.3～",
+        "start": "2026-11-28T00:00",
+        "prefecture": "広島県",
+        "city": "安芸高田市",
+        "url": "https://akitakata-kankou.jp/event/22537/",
+        "reason": "名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)"
+      }
+    ],
     "withdrawn": []
   }
 }
