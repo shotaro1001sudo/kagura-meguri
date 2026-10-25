@@ -128,4 +128,52 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(sent.filter(s=>s[1]==='affiliate_view').length===1&&sent.filter(s=>s[1]==='affiliate_click').length===1,'可視表示1回とクリックを別々に計測');
   ok(sent.every(s=>s[2].affiliate_category==='supplies'&&s[2].affiliate_placement==='guide_supplies')&&!JSON.stringify(sent).includes('secret')&&!JSON.stringify(sent).includes('http'),'カテゴリと公開IDだけを送りリンククエリ・注文・個人情報を送らない');
   w.kaguraGa4Allowed=false;link.click();ok(sent.length===2,'同意撤回後は再度送信しない');dom.window.close();
+
+  section('楽天の車移動・じゃらん体験: 実際の生成リンクのGA4回帰');
+  const directoryHtml=experienceDirectory(aff);
+  const directoryPage=cheerio.load(directoryHtml);
+  const areaIds=directoryPage('a[data-affiliate-id]').toArray().map(a=>directoryPage(a).attr('data-affiliate-id'));
+  ok(areaIds.length===47&&new Set(areaIds).size===47&&areaIds.every(id=>/^experience-pref-\d{6}$/.test(id)), '体験IDは既存の公開地域コードから作り、47県で重複しない');
+  const nearbyHtml=experienceSection({prefecture:'高知県'},today,aff);
+  ok(cheerio.load(nearbyHtml)('a[data-affiliate-id]').attr('data-affiliate-id')===directoryPage('a[aria-label^="高知県"]').attr('data-affiliate-id'),'同じ地域のIDは全国入口と公演内で安定している');
+  const rendered=[
+    directoryHtml,nearbyHtml,
+    ...['guide_rental','event_rental','regular_rental'].map(placement=>rentalSearch(supplied,{guide:true},today,placement)),
+    offerCards(settings,'experiences',context,today,'event_experiences'),
+    offerCards(settings,'rental',context,today,'event_rental'),
+  ].join('');
+  function exercise(markup,expectAllowed) {
+    const d=new JSDOM(markup,{url:'https://kagurameguri.jp/experiences.html?private=secret',runScripts:'outside-only',pretendToBeVisual:true});
+    const win=d.window,events=[],observed=[];let emit;
+    win.IntersectionObserver=class {constructor(fn){emit=fn}observe(a){observed.push(a)}unobserve(){}};
+    win.gtag=(...args)=>events.push(args);win.kaguraGa4Allowed=false;
+    win.document.addEventListener('click',e=>e.preventDefault()); // 外部遷移・実広告クリックを発生させない
+    win.eval(readFileSync('scripts/client/affiliate.js','utf8'));
+    const links=[...win.document.querySelectorAll('a[data-affiliate-category]')];
+    const show=(ratio=1)=>emit(links.map(target=>({target,isIntersecting:true,intersectionRatio:ratio})));
+    show();links.forEach(a=>a.click());ok(events.length===0,'同意前・自己除外ゲートfalseでは新しい広告も送らない');
+    win.kaguraGa4Allowed=true;observed.length=0;win.dispatchEvent(new win.Event('kagura:analytics-ready'));
+    ok(links.every(a=>observed.includes(a)),'同意準備完了時に可視状態を再観測する');
+    show(.49);ok(events.length===0,'可視50%未満は送信しない');
+    Object.defineProperty(win.document,'visibilityState',{value:'hidden',configurable:true});show();
+    ok(events.length===0,'非表示タブでは表示数を送らない');
+    Object.defineProperty(win.document,'visibilityState',{value:'visible',configurable:true});
+    win.document.dispatchEvent(new win.Event('visibilitychange'));show(.5);show();
+    links.forEach(a=>{(a.querySelector('span')||a).click();a.click();});
+    const views=events.filter(e=>e[1]==='affiliate_view'),clicks=events.filter(e=>e[1]==='affiliate_click');
+    ok(views.length===(expectAllowed?links.length:0)&&clicks.length===(expectAllowed?links.length*2:0),'許可リンクは要素ごと表示1回・実操作ごとクリック1回、未許可は両方0回');
+    if(expectAllowed)ok(views.every(([type,name,p],i)=>type==='event'&&p.affiliate_partner===links[i].dataset.affiliatePartner&&p.affiliate_content_id===links[i].dataset.affiliateId&&p.affiliate_placement===links[i].dataset.affiliatePlacement&&p.affiliate_category===links[i].dataset.affiliateCategory&&p.affiliate_page_path==='/experiences.html'&&Object.keys(p).length===5)&&!JSON.stringify(events).includes('secret'),'既存の5項目だけを送り、URLクエリや新しい識別情報を含めない');
+    const count=events.length;win.kaguraGa4Allowed=false;show();links.forEach(a=>a.click());
+    win.kaguraGa4Allowed=true;win.dispatchEvent(new win.Event('kagura:analytics-ready'));show();
+    ok(events.length===count,'同意撤回中は送らず、再同意しても表示を二重計測しない');
+    win.gtag=undefined;links.forEach(a=>a.click());show();ok(events.length===count,'GA4未読込時も送信しない');
+    win.close();
+  }
+  exercise(rendered,true);
+  const sample=cheerio.load(nearbyHtml)('a[data-affiliate-category]').first().toString();
+  const rejected=[
+    ['data-affiliate-partner','unknown-provider'],['data-affiliate-placement','unknown-placement'],
+    ['data-affiliate-category','unknown-category'],['data-affiliate-id',''],['data-affiliate-id','private@example.test'],['rel','noopener'],
+  ].map(([key,value])=>{const p=cheerio.load(sample);p('a').attr(key,value);return p('a').toString();}).join('');
+  exercise(rejected,false);
 }
