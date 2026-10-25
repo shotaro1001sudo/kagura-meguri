@@ -498,3 +498,48 @@ html[lang=en] .home-hero .copy{writing-mode:horizontal-tb;max-width:min(26em,62%
 html[lang=en] .home-hero h1{font-size:var(--fs-h1);line-height:1.35;letter-spacing:.02em;white-space:normal;margin:0 0 10px}
 html[lang=en] .home-hero p{color:var(--fg)}
 @media(max-width:640px){html[lang=en] .home-hero .copy{max-width:100%}}
+
+/* 余白: 塊と塊の間に、ひと呼吸おく(文字の大きさ・色は変えない) */
+h2{margin:64px 0 20px}
+.hero{padding-bottom:32px}
+.lead{margin:12px 0 24px}
+.card{gap:24px;padding:26px 0}
+.card :is(h3,h4){margin-bottom:6px}
+.event-facts{margin:10px 0 12px}
+.card.reg{padding-left:16px;padding-right:16px}
+.mhead{margin:40px 0 6px}
+.home-discovery{padding:28px 0 16px}
+.discovery-title{margin-bottom:14px}
+.discovery-prefs{margin-top:14px}
+.home-search-link{margin:12px 0 24px}
+.regions{margin:16px 0 10px}
+.taglist{gap:8px 0}
+.more{margin:24px 0 0}
+.keyinfo{padding:8px 22px;margin:24px 0 28px}
+.actions{margin:0 0 14px}
+.share{margin:0 0 32px}
+main>p:not([class]){margin:20px 0}
+.dates{margin:24px 0}
+.mapbox{margin-top:32px}
+.routebtn{margin:16px 0 24px}
+.detail p,.about p{margin:12px 0}
+.detail h2,.about h2,.history h2{margin-top:48px}
+.stay{margin:40px 0;padding:24px 26px}
+.stay p{margin:10px 0}.staylinks{margin:18px 0 10px!important}
+.aff{margin:64px 0 8px;padding-top:28px}
+.monthlist li{padding:16px 0}
+.venuelist li{padding:14px 0}
+.count{margin-top:28px}
+.finder{gap:22px}
+.quick a{padding:18px 20px}
+.prose p{margin:14px 0}.prose h2{margin:52px 0 14px}.prose li{margin:8px 0}
+.gcards{gap:16px;margin:20px 0 24px}.gcard{padding:20px 22px}
+.quiz-program{padding:8px 0 10px}.quiz-event{padding:14px 0}
+footer{margin-top:96px;padding-top:36px}
+@media(max-width:560px){
+  h2{margin:52px 0 16px}
+  .card{gap:16px;padding:22px 0}
+  .keyinfo{padding:6px 16px}
+  .stay{padding:20px 18px}
+  .quick a{padding:12px 4px}
+}

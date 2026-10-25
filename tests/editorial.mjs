@@ -36,7 +36,7 @@ export function editorialTests({ ok, section, OUT, build }) {
   section("編集: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金", "開催ページの欄名は「日時・会場・所在地・料金」(「場所」と「会場」の紛れをなくす)");
-  ok(!full("main").text().includes("移動先") && full(".stay").text().includes("予約サイトで変えられます"), "宿の案内: 「移動先」ではなく「予約サイトで変えられます」");
+  ok(!full("main").text().includes("移動先") && full(".stay").text().includes("泊・大人2名で検索します。"), "宿の案内: 「移動先」と書かず、検索の条件だけを短く示す");
   ok(full(".stay").text().includes("夜の公演です。"), "夜(17時以降)の公演では、夜の公演であることを書く");
   const src = full("main").text();
   ok(!src.includes("情報の出典:"), "出典の文を短くする(「出典: 〇〇(日付確認)」)");

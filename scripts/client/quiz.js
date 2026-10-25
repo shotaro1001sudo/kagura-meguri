@@ -64,7 +64,6 @@
       if(k.program)box.append(el('p',`代表的な演目「${k.program.name}」: ${k.program.text}`,'quiz-sample'));
       result.append(box);
     });
-    result.append(el('p','特徴は、各神楽の解説ページ(出典つき)をもとに編集部がまとめたものです。演目の上演を約束するものではありません。','meta annotation'));
     // その神楽の、これからの公演(近い順に6件まで)と定期公演
     const want=new Set(kinds.map(x=>x.kind)),nowJst=new Date(Date.now()+9*3600e3).toISOString().slice(0,16);
     const matches=data.events.filter(e=>want.has(e.kind)&&e.start>nowJst).sort((a,b)=>a.start<b.start?-1:1);
@@ -81,7 +80,6 @@
       link.append(el('b','定期公演'),el('span',r.name));line.append(link,el('p',[r.kind,r.schedule].filter(Boolean).join(' ・ '),'meta annotation'));result.append(line);
     });
     if(matches.length>6)result.append(el('p',`ほかに${matches.length-6}件の公演があります。各神楽のページから探せます。`,'meta'));
-    result.append(el('p','日程・演目は変更されることがあります。お出かけ前に公式情報をご確認ください。','meta annotation'));
     const search=el('a','ほかの公演を探す','btn');search.href='/calendar.html';search.addEventListener('click',()=>event('quiz_search_click'));
     const restart=el('button','もう一度診断する','btn ghost');restart.type='button';restart.addEventListener('click',begin);
     const actions=el('p',null,'quiz-actions');actions.append(search,restart);result.append(actions);heading.focus();event('quiz_complete');
