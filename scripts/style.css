@@ -150,7 +150,9 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .event-facts>.src:nth-child(4):before{content:"";display:block;margin-top:2px}
 /* 折り返すときは「・」を行末に残し、次の行を「確認日」から始める(行頭に「・」を置かない) */
 .event-facts>.src+.src{white-space:nowrap}.event-facts>.src:has(+.src):after{content:"\a0・ "}
-@media(min-width:561px){.event-facts>div:not(.src){display:grid;grid-template-columns:5.6em 1fr}}
+/* 1件の高さを詰める: 料金と予約要否は同じ行に並べる。広い画面では会場も同じ行に続ける(長い会場名は、そのまま折り返す) */
+.event-facts>div:nth-child(2),.event-facts>div:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.event-facts>div:first-child{display:inline;margin-right:1.4em}}
 /* カード全体が詳細へのリンク: 乗せたとき・キーボードで選んだときに、題を朱にして、選んでいる場所を示す */
 @media(hover:hover){.card:hover :is(h3,h4) a{color:var(--ac)}}
 .card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
@@ -503,9 +505,9 @@ html[lang=en] .home-hero p{color:var(--fg)}
 h2{margin:64px 0 20px}
 .hero{padding-bottom:32px}
 .lead{margin:12px 0 24px}
-.card{gap:24px;padding:26px 0}
+.card{gap:24px;padding:22px 0}
 .card :is(h3,h4){margin-bottom:6px}
-.event-facts{margin:10px 0 12px}
+.event-facts{margin:6px 0 8px}
 .card.reg{padding-left:16px;padding-right:16px}
 .mhead{margin:40px 0 6px}
 .home-discovery{padding:28px 0 16px}
@@ -538,7 +540,7 @@ main>p:not([class]){margin:20px 0}
 footer{margin-top:96px;padding-top:36px}
 @media(max-width:560px){
   h2{margin:52px 0 16px}
-  .card{gap:16px;padding:22px 0}
+  .card{gap:16px;padding:18px 0}
   .keyinfo{padding:6px 16px}
   .stay{padding:20px 18px}
   .quick a{padding:12px 4px}
@@ -547,4 +549,11 @@ footer{margin-top:96px;padding-top:36px}
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
   .discovery-prefs::-webkit-scrollbar{display:none}
   .discovery-prefs a{flex:none}
+  /* 公演カード: 出典の名前は1行に収め、はみ出す分は「…」で省く(全文は開催ページと、リンク先で読める)。確認日は次の行 */
+  .event-facts{line-height:1.7}
+  .event-facts>.src:nth-child(4){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .event-facts>.src:nth-child(4) a:focus-visible{outline-offset:-2px}
+  .event-facts>.src:nth-child(4):before{display:none}.event-facts>.src:has(+.src):after{content:none}
+  .card .tag{padding-top:4px}
+  .card>div:last-child{min-width:0}
 }
