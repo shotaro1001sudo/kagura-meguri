@@ -569,3 +569,15 @@ main>p:not([class]){max-width:42em}
   .actions .btn:not(.ghost){display:flex;width:100%;min-height:48px;margin-right:0}
   .share{margin-bottom:24px}
 }
+
+/* 日付・場所で探す: 条件の入力を1つの面にまとめ、結果の件数を見出しのように扱う。
+   結果の会場・料金・予約要否は、公演カードと同じく詰めて並べる(料金と予約要否は同じ行。広い画面では会場も同じ行) */
+.finder{padding:20px 22px 22px;background:var(--card);border:1px solid var(--line);border-radius:4px;max-width:44em}
+.finder input,.finder select{background:var(--bg)}
+.count{font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em;margin-top:36px}
+.comparison-facts>span:nth-child(2),.comparison-facts>span:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.comparison-facts>span:first-child{display:inline;margin-right:1.4em}}
+/* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
+   結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
+@media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
+  #results li{flex-direction:column;gap:2px}#results .md{width:auto}}

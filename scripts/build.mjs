@@ -572,7 +572,7 @@ function draw(){
     return true;
   });
   out.innerHTML=hit.map(function(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><br><span class="meta">'+(x.kagura?esc(x.kagura)+' ・ ':'')+esc(x.prefecture)+esc(x.city||'')+(x.timeUnknown?'':' ・ '+x.start.slice(11,16)+'〜')+'</span><span class="meta comparison-facts"><span>会場: '+esc(x.venue||'要確認')+'</span><span>料金: '+esc(x.fee||'要確認')+'</span><span>予約要否: '+esc(x.reservation||'要確認')+'</span></span></span></li>'}).join('');
+    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><br><span class="meta">'+(x.kagura?esc(x.kagura)+'&nbsp;・ ':'')+esc(x.prefecture)+esc(x.city||'')+(x.timeUnknown?'':'&nbsp;・ '+x.start.slice(11,16)+'〜')+'</span><span class="meta comparison-facts"><span>会場: '+esc(x.venue||'要確認')+'</span><span>料金: '+esc(x.fee||'要確認')+'</span><span>予約要否: '+esc(x.reservation||'要確認')+'</span></span></span></li>'}).join('');
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'当てはまる開催は、いまのところありません。キーワードを短くするか、期間・地域を広げて探してみてください。';
   var q=new URLSearchParams();if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value);
   if(kw.value.trim())q.set('q',kw.value.trim());
