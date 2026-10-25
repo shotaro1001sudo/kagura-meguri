@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import * as cheerio from 'cheerio';
 import {JSDOM} from 'jsdom';
-import {RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
+import {CARSHARE_BANNER,RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
 import {PREFECTURES} from '../scripts/lib/util.mjs';
 
 export function visitorPlanningTests({ok,section,OUT,build}) {
@@ -68,6 +68,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const expired=cheerio.load(rentalSearch(supplied,{},'2026-11-25','guide_rental'));
   ok(expired('img,[rel~=sponsored]').length===0&&expired('[data-rental-search]').length===1,'バナー期限切れで広告を消し、通常の公式リンクを保持');
 
+  const carshare=supplied.offers.find(o=>o.provider==='rakuten-carshare');
+  const cars=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
+  const shareLink=cars('[data-affiliate-partner=rakuten-carshare]');
+  ok(validOffer(carshare,today)&&shareLink.length===1&&shareLink.attr('href')===CARSHARE_BANNER.url&&shareLink.find('img').attr('src')===CARSHARE_BANNER.imageUrl,'カーシェアも本人発行のURLと画像を保持');
+  ok(shareLink.attr('aria-label').includes('カーシェア')&&!shareLink.attr('aria-label').includes('レンタカー')&&shareLink.closest('article').text().includes('対応エリア・ステーション'),'サービス名と対応エリアの確認を案内しレンタカーと混同しない');
+  ok(!validOffer({...carshare,provider:'rakuten-rental'},today)&&!validOffer({...ownerRental,provider:'rakuten-carshare'},today)&&!validOffer({...carshare,imageUrl:RENTAL_BANNER.imageUrl},today),'カーシェアとレンタカーのコード・画像の取り違えを拒否');
+  ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},today).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},today).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
   ok(fullPage('.stay h2').text().includes('夜の観覧後')&&!dayPage('.stay h2').text().includes('夜')&&!unknownPage('.stay h2').text().includes('夜'),'夜公演だけ宿泊を強調し、昼・時刻不明は夜と断定しない');
   ok(fullPage('.stay').text().includes('最終チェックイン')&&fullPage('.stay').text().includes('人数・宿泊日はリンク先で変更'),'宿泊条件の変更と距離・最終チェックインの確認を案内');
@@ -94,7 +101,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     if(issued.status===0){
       const actual=cheerio.load(readFileSync(join(issuedOutput,'guide.html'),'utf8'));
       const csp=actual('meta[http-equiv="Content-Security-Policy"]').attr('content')||'';
-      ok(actual('[data-affiliate-category=supplies]').length===3&&actual('[data-affiliate-category=rental]').length===1&&actual('.planning-banner img').attr('src')===RENTAL_BANNER.imageUrl,'実ビルドで用品3商品とレンタカーバナー1件を併載');
+      ok(actual('[data-affiliate-category=supplies]').length===3&&actual('[data-affiliate-category=rental]').length===2&&actual('.planning-banner img').attr('src')===RENTAL_BANNER.imageUrl,'実ビルドで用品3商品と車移動のバナー2件を併載');
       ok(/img-src[^;]*https:\/\/hbb\.afl\.rakuten\.co\.jp/.test(csp)&&!/script-src[^;]*hbb\.afl/.test(csp),'画像配信元だけCSPで許可し、スクリプトには許可しない');
     }
     const partial={...settings,categories:{supplies:{enabled:true},experiences:{enabled:false},rental:{enabled:false}}};writeFileSync(file,JSON.stringify(partial));
