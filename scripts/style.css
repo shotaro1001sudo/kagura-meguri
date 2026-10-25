@@ -148,7 +148,8 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .event-facts .tbd{color:var(--mut)}
 .event-facts>.src{display:inline;font-size:var(--fs-xs)}
 .event-facts>.src:nth-child(4):before{content:"";display:block;margin-top:2px}
-.event-facts>.src+.src{white-space:nowrap}.event-facts>.src+.src:before{content:" ・ "}
+/* 折り返すときは「・」を行末に残し、次の行を「確認日」から始める(行頭に「・」を置かない) */
+.event-facts>.src+.src{white-space:nowrap}.event-facts>.src:has(+.src):after{content:"\a0・ "}
 @media(min-width:561px){.event-facts>div:not(.src){display:grid;grid-template-columns:5.6em 1fr}}
 /* カード全体が詳細へのリンク: 乗せたとき・キーボードで選んだときに、題を朱にして、選んでいる場所を示す */
 @media(hover:hover){.card:hover :is(h3,h4) a{color:var(--ac)}}
@@ -410,6 +411,13 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 .prose h2[id]{scroll-margin-top:16px}
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
+/* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
+   見出し・名前・短い説明は、Chrome・Edge では文節の境目で折り返す(auto-phrase)。長い本文は、いつもどおり字単位で詰める */
+body{line-break:strict;text-wrap:pretty}
+:is(h1,h2,h3,h4,a,button,label,summary,figcaption,td,th,dt,dd,li,small,.meta,.tagline,.d,.hero p){word-break:auto-phrase}
+:is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
+/* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
+.event-facts>.src:not(.src+.src){word-break:keep-all}
 
 /* 青海波(せいがいは)の文様: 広い画面の左右の余白に、うっすら敷く。
    重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */

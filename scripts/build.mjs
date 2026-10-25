@@ -312,16 +312,20 @@ const cardFacts = (e) => {
   const fact = (k, v) => `<div><span class="k">${k}:</span> ${v ? esc(v) : '<span class="tbd">要確認</span>'}</div>`;
   return `<div class="meta event-facts">${fact("会場", e.venue)}${fact("料金", e.fee)}${fact("予約要否", e.reservation)}<div class="src"><span class="k">出典:</span> ${source}</div><div class="src">${checked}</div></div>`;
 };
+// 地名と、名前の最後の「(会場名)」は、まとまりの途中で改行しない(.ph)。Safari など文節で折り返せないブラウザ向け
+const ph = (s) => `<span class="ph">${esc(s)}</span>`;
+const placePh = (pref, city) => [pref, city].filter(Boolean).map(ph).join(" ");
+const namePh = (s = "") => { const m = s.match(/^(.+?)([(（][^()（）]+[)）])$/); return m ? esc(m[1]) + ph(m[2]) : esc(s); };
 const card = (e, h = "h3", withFacts = true) => {
   const p = parts(e.start);
   return `<div class="card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
-<${h}><a href="/events/${e.id}.html">${esc(e.name)}</a></${h}>
-<div class="meta">${sameSeries(e).length ? '<span class="rep">定例開催</span> ・ ' : ""}${e.timeUnknown ? TIME_UNKNOWN : startTimes(e)} ・ ${esc(e.prefecture)} ${esc(e.city)}${!withFacts && e.fee ? ` ・ ${esc(e.fee)}` : ""}</div>
+<${h}><a href="/events/${e.id}.html">${namePh(e.name)}</a></${h}>
+<div class="meta">${sameSeries(e).length ? '<span class="rep">定例開催</span> ・ ' : ""}${e.timeUnknown ? TIME_UNKNOWN : startTimes(e)} ・ ${placePh(e.prefecture, e.city)}${!withFacts && e.fee ? ` ・ ${esc(e.fee)}` : ""}</div>
 ${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div></div>`;
 };
 const regCard = (r) => `<div class="card reg"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
-<h3><a href="/regular/${r.id}.html">${esc(r.name)}</a></h3>
-<div class="meta">${esc(r.schedule)} ・ ${esc(r.prefecture)} ${esc(r.city ?? "")}</div>
+<h3><a href="/regular/${r.id}.html">${namePh(r.name)}</a></h3>
+<div class="meta">${esc(r.schedule)} ・ ${placePh(r.prefecture, r.city)}</div>
 ${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
 const write = (p, c) => { p = p.replace(/^dist(?=\/)/, OUT); mkdirSync(p.replace(/[\\/][^\\/]*$/, "") || ".", { recursive: true }); writeFileSync(p, c); };
 const hero = (h, p) => `<section class="hero"><h1>${h}</h1>${p ? `<p>${p}</p>` : ""}</section>`;
