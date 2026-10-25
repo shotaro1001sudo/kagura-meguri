@@ -428,6 +428,10 @@ body{line-break:strict;text-wrap:pretty}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
 /* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
 .event-facts>.src:not(.src+.src){word-break:keep-all}
+/* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。
+   行の頭のかぎ括弧は半角ぶん詰めて、左の線をそろえる。どちらも対応していないブラウザでは、今までどおりの表示になる */
+@supports (text-autospace:normal){body{text-autospace:normal}:is(.date,.monthlist .md){text-autospace:no-autospace}}
+@supports (text-spacing-trim:trim-start){body{text-spacing-trim:trim-start}}
 
 /* 青海波(せいがいは)の文様: 広い画面の左右の余白に、うっすら敷く。
    重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */
