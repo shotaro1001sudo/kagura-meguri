@@ -84,6 +84,23 @@
       "reason": "公共交通を確認したうえで、車での移動も比べたい方へ。全国の検索から出発場所と日時を選べます。",
       "criteria": "利用する地域・出発場所・日時・返却店舗と営業時間、補償条件をリンク先で確認。",
       "unnecessary": "公共交通で無理なく往復できる場合は不要です。会場の駐車場、終演後の返却・移動時間も確認してください。"
+    },
+    {
+      "id": "rakuten-carshare-stations",
+      "category": "rental",
+      "provider": "rakuten-carshare",
+      "scope": "national",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人が発行HTMLを提供し、サービス名は楽天カーシェアと明示。hrefと画像URLをそのまま採用。実画像・最終遷移・成果は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/hsc/58cd09f6.7960bea0.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6MjEzODQyNiwiYW1wIjpmYWxzZX0%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58cd09f6.7960bea0.585fa57b.dad29d3a/?me_id=2101064&me_adv_id=2138426&t=pict",
+      "title": "楽天カーシェアの対応エリアを確認する",
+      "reason": "会場への移動に車を使いたい方へ。訪問先で利用できるか、対応エリアとステーションから確認できます。",
+      "criteria": "利用登録の条件、訪問先のステーション、利用日時、料金・補償、返却条件を公式案内で確認。",
+      "unnecessary": "開催地域での利用可否や車両の空きは未確認です。公共交通で往復できる場合は不要です。会場の駐車場も確認してください。"
     }
   ]
 }
