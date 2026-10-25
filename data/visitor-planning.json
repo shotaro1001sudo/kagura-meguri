@@ -4,5 +4,70 @@
     "experiences": { "enabled": false },
     "rental": { "enabled": false }
   },
-  "offers": []
+  "offers": [
+    {
+      "id": "cold-night-blanket",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": false,
+      "approved": false,
+      "verifiedAt": "",
+      "expiresAt": "",
+      "approvalReference": "",
+      "url": "",
+      "destinationUrl": "https://search.rakuten.co.jp/search/mall/%E3%81%B2%E3%81%96%E6%8E%9B%E3%81%91/",
+      "title": "冷える夜に、持ち運べるひざ掛け",
+      "reason": "夜や屋外での観覧に、手持ちの防寒具で足りない場合の候補です。",
+      "criteria": "収納時の大きさ・重さ、洗える素材かを確認。",
+      "unnecessary": "暖房のある屋内や暑い日、手持ちの羽織りで足りる場合は不要です。"
+    },
+    {
+      "id": "portable-seat-cushion",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": false,
+      "approved": false,
+      "verifiedAt": "",
+      "expiresAt": "",
+      "approvalReference": "",
+      "url": "",
+      "destinationUrl": "https://search.rakuten.co.jp/search/mall/%E6%90%BA%E5%B8%AF%E3%82%AF%E3%83%83%E3%82%B7%E3%83%A7%E3%83%B3/",
+      "title": "長く座って観る日の携帯クッション",
+      "reason": "座って長く観る予定で、座面の硬さが気になる方の選択肢です。",
+      "criteria": "席に収まる幅・収納サイズ・持ち運びやすさを確認。",
+      "unnecessary": "座席に十分なクッションがある場合は不要です。持ち込み可否は会場へ確認してください。"
+    },
+    {
+      "id": "portable-phone-battery",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": false,
+      "approved": false,
+      "verifiedAt": "",
+      "expiresAt": "",
+      "approvalReference": "",
+      "url": "",
+      "destinationUrl": "https://search.rakuten.co.jp/search/mall/%E3%83%A2%E3%83%90%E3%82%A4%E3%83%AB%E3%83%90%E3%83%83%E3%83%86%E3%83%AA%E3%83%BC/",
+      "title": "地図や連絡に備えるモバイルバッテリー",
+      "reason": "外出が長く、スマートフォンの充電に不安がある場合の候補です。",
+      "criteria": "端子の対応・容量・重さ、表示や販売元を確認。",
+      "unnecessary": "短時間で充電に余裕がある場合は不要です。高温の車内や直射日光の当たる場所に放置しないでください。"
+    },
+    {
+      "id": "kagura-intro-books",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": false,
+      "approved": false,
+      "verifiedAt": "",
+      "expiresAt": "",
+      "approvalReference": "",
+      "url": "",
+      "destinationUrl": "https://search.rakuten.co.jp/search/mall/%E7%A5%9E%E6%A5%BD+%E6%9C%AC/",
+      "title": "観る地域や物語に合わせた神楽の本",
+      "reason": "演目や地域の背景を知りたい方が、自分に合う入門書を探すための候補です。",
+      "criteria": "目次で対象地域・演目・初心者向けの説明を確認。",
+      "unnecessary": "まずは公式解説、このサイトのガイドや図書館の本でも準備できます。"
+    }
+  ]
 }

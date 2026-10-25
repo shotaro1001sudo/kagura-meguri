@@ -31,6 +31,12 @@
 
 各offerの必須項目：`id`（公開用の英小文字・数字・ハイフン）、`category`（supplies/experiences/rental）、`provider`（rakuten-ichiba/vc-asoview/vc-jalan-rental）、`enabled:true`、`approved:true`、`verifiedAt`、`expiresAt`（YYYY-MM-DD）、`approvalReference`（秘密を含まない確認記録）、`url`（公式作成コードのリンクをそのまま）、`title`、`reason`、`criteria`、`unnecessary`。体験・車はさらに `prefecture` と `city`。必要なら `eventIds` で当該公演に限定。
 
+### 2026-10-25 選定一任を受けた用品候補
+
+本人の「なんでもいいよ（選定一任）」を受け、ひざ掛け・携帯クッション・モバイルバッテリー・神楽の本の4件を選定。候補先は楽天市場の検索ページで、特定商品の使用経験・評価・最安・在庫は主張しない。`destinationUrl` は選定用の一般検索先であり、サイトへ描画する広告URLではない。`url`・承認・確認日・有効期限は未設定、各候補とカテゴリを無効にしてある。
+
+楽天の公式ヘルプはAPI用IDと商品リンク用IDが別物と説明している（ https://webservice.faq.rakuten.net/hc/ja/articles/900001970666 ）。URLからの作成は https://affiliate.rakuten.co.jp/guides/link/ の公式手順に従う。既存IDから作成した候補リンクは接続ツールで遷移を確認できず、有効な発行コード・成果計測を確認したとは扱わない。レンタカーは専用リンク経由が成果条件（ https://travel.rakuten.co.jp/affiliate/guide/ ）。発行済みの公開用URLを入手したカテゴリから、正確なリンクをそのまま設定して有効化する。APIキー・ログイン情報・注文データは不要。
+
 カテゴリのスイッチとoffer双方の承認・期限・リンク形式を満たすものだけ描画。確認未来日・90日超・期限切れ・地域不一致・不正URLは非表示。用品最大5件、他は3件。楽天の遷移先は市場/商品/書籍、VCの遷移先は当該広告主のみ。レンタカーへの宿泊遷移は不可。URLを補修したりトラッキング値を自動で付け替えたりしない。ASP公式コードが対応外なら、検証済み形式として扱わず別途レビューする。
 
 対象地域を公演から推測しない。公演詳細は県/市町村が一致するものだけ、県ページは確認できた当該県の体験だけを紹介する。一般ページは地域名を明示して案内する。
