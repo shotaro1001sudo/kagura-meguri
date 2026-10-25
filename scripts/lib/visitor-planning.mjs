@@ -109,5 +109,5 @@ export function rentalSearch(settings,context,today,placement) {
   return ads||`<p><a class="btn ghost sm" data-rental-search href="https://travel.rakuten.co.jp/cars/" target="_blank" rel="noopener noreferrer">楽天トラベルでレンタカーを探す</a></p><p class="meta annotation">全国の検索ページです。${context.prefecture?`${esc(context.prefecture)}${esc(context.city??'')}への移動に合わせて、`:''}出発場所・利用日時・返却店舗をリンク先で選んでください。このリンクは広告ではありません。</p>`;
 }
 export function transportSection(settings,context,today,placement) {
-  return `<section class="planning-section" aria-labelledby="rental-h"><h2 id="rental-h">車で行くなら</h2><p class="planning-lead">レンタカー・カーシェアを比べられます。</p><details class="pc-more"><summary>移動の注意</summary><p class="meta annotation">会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p></details>${rentalSearch(settings,context,today,placement)}</section>`;
+  return `<section class="planning-section" aria-labelledby="rental-h"><h2 id="rental-h">車で行くなら</h2><p class="planning-lead">レンタカーやカーシェアは、ここから探せます。</p><details class="pc-more"><summary>移動の注意</summary><p class="meta annotation">会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p></details>${rentalSearch(settings,context,today,placement)}</section>`;
 }
