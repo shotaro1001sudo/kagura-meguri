@@ -6,7 +6,7 @@ function harness() {
   const props={},tabs=new Map(),calls=[],triggers=[];
   let released=0;
   const diagnostics=[];
-  const state={coerceDates:false,sheetZone:"Asia/Tokyo",brokenRunRead:false,gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
+  const state={coerceOverallId:false,coerceDates:false,sheetZone:"Asia/Tokyo",brokenRunRead:false,gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
   const ss={getSpreadsheetTimeZone:()=>state.sheetZone,getId:()=>"13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",getSheetByName:name=>tabs.get(name),insertSheet(name){
     const s={values:[],maxRows:1000,getLastRow(){return this.values.length;},getMaxRows(){return this.maxRows;},
       insertRowsAfter(_at,count){this.maxRows+=count;},setFrozenRows(){},getRange(r,c,n,width){return {
@@ -17,6 +17,7 @@ function harness() {
             const offset=state.sheetZone==='Asia/Tokyo'?'+09:00':'-07:00';
             value=new FixedDate(value.replace(' ','T')+(value.length===10?'T00:00:00':'')+offset);
           }
+          if(state.coerceOverallId && name==='14_計測実行' && r-1+i>0 && c-1+j===0 && typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) value=new FixedDate(value+'T00:00:00'+(state.sheetZone==='Asia/Tokyo'?'+09:00':'-07:00'));
           if(state.brokenRunRead && name==='14_計測実行' && r-1+i>0 && c-1+j===3)return 'corrupt';
           if(state.brokenFunnelRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page_event"&&j===7)return "corrupt";
           if(state.brokenPageRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page"&&s.values[r-1+i]?.[1]==="GSC"&&j===7)return "corrupt";
@@ -76,6 +77,33 @@ export function analyticsSyncTests({ok,section}) {
     ok(dates.run().status==='success'&&dates.calls.length===count,`Date履歴再読込でも同日重複抑止 ${zone}`);
     ok(dates.records('13_計測内訳').some(r=>r[2]==='page_event')&&dates.records('13_計測内訳').some(r=>r[1]==='GSC'&&r[2]==='device'),'追加内訳まで保存する');
   }
+  for(const zone of ['Asia/Tokyo','America/Los_Angeles']) {
+    const ids=harness();ids.ready();ids.state.coerceDates=true;ids.state.coerceOverallId=true;ids.state.sheetZone=zone;
+    ok(ids.run().status==='success'&&ids.props.KAGURA_ANALYTICS_LAST_SUCCESS==='2026-10-24',`全体IDがDateでも全体readbackを確認 ${zone}`);
+    const before=ids.calls.length;ids.run();
+    ok(ids.calls.length===before&&ids.records('14_計測実行').filter(r=>r[0]==='2026-10-24').length===1,`旧Date IDを同じキーに正規化し全体行重複なし ${zone}`);
+    ok(ids.records('14_計測実行').some(r=>r[0]==='2026-10-24-GA4')&&ids.records('14_計測実行').some(r=>r[0]==='2026-10-24-GSC'),'媒体別IDのsuffix維持');
+  }
+  const ids=harness(),DId=ids.context.Date,header=['ID','status','fetched_at_JST','notes'];
+  const cmpId=(id,name='14_計測実行')=>ids.context.kaguraComparable_([header,[id,'success','2026-10-24 07:30:00','verified']],header,'Asia/Tokyo',name);
+  ok(cmpId(new DId('2026-10-23T15:00:00Z'))===cmpId('2026-10-24'),'全体IDの暦日はJSTで照合');
+  ok(cmpId(new DId('2026-10-23T15:00:00Z'))!==cmpId('2026-10-25'),'別日のIDは不一致');
+  ok(cmpId(new DId('2026-10-23T15:00:00Z'))!==cmpId('2026-10-24-GA4'),'Date IDと媒体suffix IDは不一致');
+  ok(cmpId(46319)!==cmpId('46319'),'数値IDと文字列IDを同一視しない');
+  ok(cmpId(new DId('2026-10-23T15:00:00Z'),'12_計測日次')!==cmpId('2026-10-24','12_計測日次'),'別シートのIDは日付正規化しない');
+  for(const raw of ['invalid','2026-10-23T15:00:01Z','2026-10-23T15:00:00.001Z']) {let rejected=false;try{cmpId(new DId(raw));}catch(_){rejected=true;}ok(rejected,'不正/非0時/ミリ秒IDを拒否 '+raw);}
+  const retryId=harness();retryId.ready();retryId.run();
+  const ledger=retryId.tabs.get('14_計測実行'),DateId=retryId.context.Date;
+  ledger.values.find(r=>r[0]==='2026-10-24')[0]=new DateId('2026-10-23T15:00:00Z');
+  ledger.values.push(['2026-10-24','success','2026-10-24 07:30:00','unverified duplicate']);
+  ledger.values.push([new DateId('2026-10-22T15:00:00Z'),'error','2026-10-23 07:30:00','historical']);
+  delete retryId.props.KAGURA_ANALYTICS_LAST_SUCCESS;
+  retryId.state.coerceOverallId=true;retryId.state.coerceDates=true;
+  const requestCount=retryId.calls.length;
+  ok(retryId.run().status==='success'&&retryId.calls.length===requestCount&&retryId.props.KAGURA_ANALYTICS_LAST_SUCCESS==='2026-10-24','媒体成功/全体未確認からAPI再取得なしで全体readback成功後にガード更新');
+  ok(retryId.records('14_計測実行').filter(r=>r[0]==='2026-10-24').length===1&&retryId.records('14_計測実行').some(r=>r[0]==='2026-10-23'&&r[3]==='historical'),'Dateと文字列の同日IDを更新で集約し別日の履歴を保持');
+  delete retryId.props.KAGURA_ANALYTICS_LAST_SUCCESS;retryId.state.brokenRunRead=true;
+  ok(retryId.run().error==='SHEET_READBACK_MISMATCH'&&!retryId.props.KAGURA_ANALYTICS_LAST_SUCCESS&&retryId.calls.length===requestCount,'全体記録に本当の不一致があればガード未更新、API再取得なし');
   const cmp=harness(),compare=(rows,header)=>cmp.context.kaguraComparable_(rows,header,'Asia/Tokyo');
   const D=cmp.context.Date;
   ok(compare([['date'],[new D('2026-10-19T15:00:00Z')]],['date'])===compare([['date'],['2026-10-20']],['date']),'UTC前日でも日付はシート暦日を保持');

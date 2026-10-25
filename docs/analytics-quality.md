@@ -189,3 +189,13 @@ SheetsのgetValuesはDate型を返す場合がある。日付文字列をsetValu
 ローカルではSheetsのDate変換を模したテストで再現・修正を確認。実行環境のDate型/時間帯を直接計測した結果ではなく、報告されたスタックと日付セルの状態に一致する有力原因。実GAS反映と次回承認された実行で、媒体別/全体readback、内訳更新、成功ガードを確認するまでは復旧済みと扱わない。手動再実行はこの作業では行わない。
 
 仕様: https://developers.google.com/apps-script/reference/spreadsheet/range#getValues() 、 https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet#getSpreadsheetTimeZone()
+
+### 全体実行IDの追加対策
+
+実環境の追加証拠では、実行台帳の全体ID（2026-10-26）がDATEセルの数値46321として保存されていた。媒体別の保存・readback成功後も、この全体行のreadbackが未確認のため、表示上のsuccessだけで全体完了と扱わない。
+
+14_計測実行かつRUN_HEADER完全一致の場合に限り、ID列のDateをシート時間帯の暦日へ復元する。比較だけでなく既存行のupsertキーにも適用し、Date IDと文字列IDを別行として追加しない。異なる日付やGA4/GSC接尾辞、数値と文字列の相違は維持。不正Date/非0時/ミリ秒は拒否。他シートのIDは対象外。
+
+ローカルの再試行テストでは、媒体別成功ガードがある一方で全体成功ガードがない状態を再現する。API再取得なしで全体行を更新し、readback成功後だけ全体ガードを更新。日付型IDの既存行・同日重複を一行に集約し、別日の履歴を保持。本当のreadback不一致では引き続き全体ガードを更新しない。
+
+GitHub公開と実GAS反映は別工程。既存プロジェクトの対象ファイルだけを反映し、承認された検証実行で全体readbackと成功ガードを確認する。媒体別の同日成功ガードを編集して再取得させない。

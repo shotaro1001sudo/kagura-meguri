@@ -31,8 +31,16 @@ function kaguraErrorCode_(error) {
 function kaguraSafeCell_(value) {
   return typeof value === "string" && /^[=+@-]/.test(value) ? "'" + value : value;
 }
-function kaguraComparable_(rows, header, sheetZone) {
+// Only the overall execution ledger uses a bare calendar date as its ID.
+function kaguraOverallId_(value, name, header, sheetZone) {
+  if(name !== KAGURA_ANALYTICS_SYNC.RUNS || header.join() !== KAGURA_ANALYTICS_SYNC.RUN_HEADER.join() || !(value instanceof Date)) return value;
+  if(!Number.isFinite(value.getTime()) || value.getUTCMilliseconds() !== 0 ||
+    Utilities.formatDate(value, sheetZone, "HH:mm:ss") !== "00:00:00") throw kaguraFailure_("SHEET_READBACK_MISMATCH");
+  return Utilities.formatDate(value, sheetZone, "yyyy-MM-dd");
+}
+function kaguraComparable_(rows, header, sheetZone, name) {
   return JSON.stringify(rows.map((row, r)=>row.map((v, c)=>{
+    if(r > 0 && c === 0) v = kaguraOverallId_(v, name, header, sheetZone);
     // Sheets may coerce date-looking strings to Date objects. Recover the sheet's
     // wall-clock text, not UTC or the GA4/GSC reporting timezone. Never coerce metrics.
     const dateOnly = ["date","from","to"].includes(header[c]);
@@ -54,9 +62,10 @@ function kaguraTable_(ss,name,header) {
   return {sheet,rows};
 }
 function kaguraUpsert_(ss,name,header,rows,replaceSource) {
-  const table=kaguraTable_(ss,name,header);
-  const records=new Map(table.rows.slice(1).filter(row=>row[0] && (!replaceSource || row[1]!==replaceSource)).map(row=>[String(row[0]),row]));
-  rows.forEach(row=>records.set(String(row[0]),row.map(kaguraSafeCell_)));
+  const table=kaguraTable_(ss,name,header),sheetZone=ss.getSpreadsheetTimeZone();
+  const canonicalRow=row=>[kaguraOverallId_(row[0],name,header,sheetZone),...row.slice(1)];
+  const records=new Map(table.rows.slice(1).map(canonicalRow).filter(row=>row[0] && (!replaceSource || row[1]!==replaceSource)).map(row=>[String(row[0]),row]));
+  rows.map(canonicalRow).forEach(row=>records.set(String(row[0]),row.map(kaguraSafeCell_)));
   const values=[header].concat(Array.from(records.values()));
   if(values.length>20000) throw kaguraFailure_("SHEET_ROW_LIMIT");
   if(table.sheet.getMaxRows()<values.length) table.sheet.insertRowsAfter(table.sheet.getMaxRows(),values.length-table.sheet.getMaxRows());
@@ -66,8 +75,7 @@ function kaguraUpsert_(ss,name,header,rows,replaceSource) {
   table.sheet.getRange(1,1,values.length,header.length).setWrap(true);
   SpreadsheetApp.flush();
   const saved=table.sheet.getRange(1,1,values.length,header.length).getValues();
-  const sheetZone=ss.getSpreadsheetTimeZone();
-  if(kaguraComparable_(saved,header,sheetZone)!==kaguraComparable_(values,header,sheetZone)) throw kaguraFailure_("SHEET_READBACK_MISMATCH");
+  if(kaguraComparable_(saved,header,sheetZone,name)!==kaguraComparable_(values,header,sheetZone,name)) throw kaguraFailure_("SHEET_READBACK_MISMATCH");
 }
 function kaguraReportRows_(report,dimensions,metrics,optionalMetrics) {
   if(!report || !Array.isArray(report.dimensionHeaders) || !Array.isArray(report.metricHeaders) ||
