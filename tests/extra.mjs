@@ -28,7 +28,7 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
   ok(cheerio.load(rd("kagura/高千穂神楽.html"))("body").text().includes("毎晩の神楽"), "神楽の種類ページに定期公演が出る");
   const rn = cheerio.load(rd("regular/r-nightly.html"));
   const th = rn("table.info th").map((_, e) => rn(e).text()).get();
-  ok(["公演日時", "休演日", "会場", "所在地", "料金", "予約"].every((x) => th.includes(x)), "定期公演の詳細に 公演日時・休演日・会場・所在地・料金・予約 が出る", th.join(","));
+  ok(["公演日時", "休演日", "会場", "所在地", "料金", "予約要否", "予約・受付方法"].every((x) => th.includes(x)), "定期公演の詳細に 公演日時・休演日・会場・所在地・料金・予約要否・予約受付方法 が出る", th.join(","));
   ok(rn("body").text().includes("おおよその位置"), "定期公演の詳細にも、おおよその位置の注意書きが出る");
   ok(rn("body").text().includes("出典: テスト協会(2026年10月9日確認)"), "出典と確認日が出る");
   const rx = rd("regular/r-xss.html");

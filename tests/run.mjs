@@ -1,3 +1,4 @@
+import { reservationTests } from './reservation.mjs';
 // 自動テスト: node tests/run.mjs   (npm test)
 // 1) テスト用データと固定の日時でビルド → 2) 出力を機械的に検査 → 3) 0件・不正データの挙動も検査
 import { execFileSync, spawnSync } from "node:child_process";
@@ -319,6 +320,7 @@ editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });
 affiliateTests({ ok, section, OUT, build });
 monetizationUxTests({ ok, section, OUT, build });
+reservationTests({ ok, section });
 ga4ConsentTests({ ok, section, build });
 analyticsEventTests({ ok, section });
 analyticsSyncTests({ ok, section });
