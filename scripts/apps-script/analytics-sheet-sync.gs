@@ -112,22 +112,31 @@ function kaguraCollectGsc_(now,fetched) {
   const zone="America/Los_Angeles",from=kaguraDay_(now,zone,-KAGURA_ANALYTICS_SYNC.DAYS),to=kaguraDay_(now,zone,-1),details=[];
   let observed=[];
   const flags=[];
-  for(const kind of ["daily","query"]) {
+  for(const kind of ["daily","query","page"]) {
     const response=UrlFetchApp.fetch("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(KAGURA_ANALYTICS_SYNC.SITE)+"/searchAnalytics/query",{
       method:"post",contentType:"application/json",followRedirects:false,muteHttpExceptions:true,
       headers:{Authorization:"Bearer "+ScriptApp.getOAuthToken()},
-      payload:JSON.stringify({startDate:from,endDate:to,dimensions:[kind==="daily"?"date":"query"],type:"web",dataState:"final",rowLimit:KAGURA_ANALYTICS_SYNC.LIMIT})
+      payload:JSON.stringify({startDate:from,endDate:to,dimensions:[kind==="daily"?"date":kind],type:"web",dataState:"final",rowLimit:KAGURA_ANALYTICS_SYNC.LIMIT})
     });
     const status=response.getResponseCode();
     if(status!==200) throw kaguraFailure_("GSC_HTTP_"+Number(status));
     let report;
     try {report=JSON.parse(response.getContentText());} catch(_) {throw kaguraFailure_("GSC_JSON_INVALID");}
     if(!report || report.error || (report.rows!==undefined && !Array.isArray(report.rows))) throw kaguraFailure_("GSC_SCHEMA_INVALID");
-    const rows=report.rows||[],quality="final; anonymized queries omitted; top rows only"+(rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"; limit reached":"");
+    const rows=report.rows||[],quality=(kind==="page"
+      ?"final; top rows only; page aggregation differs from property totals; missing pages are not zero"
+      :"final; anonymized queries omitted; top rows only")+(rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"; limit reached; completeness not guaranteed":"");
+    if(rows.length>KAGURA_ANALYTICS_SYNC.LIMIT) throw kaguraFailure_("GSC_SCHEMA_INVALID");
+    const pageKeys=new Set();
     rows.forEach(row=>{
-      if(row.keys?.length!==1 || ![row.clicks,row.impressions,row.ctr,row.position].every(v=>Number.isFinite(v)&&v>=0) || row.ctr>1) throw kaguraFailure_("GSC_SCHEMA_INVALID");
+      if(!row || row.keys?.length!==1 || ![row.clicks,row.impressions,row.ctr,row.position].every(v=>Number.isFinite(v)&&v>=0) || row.ctr>1) throw kaguraFailure_("GSC_SCHEMA_INVALID");
+      if(kind==="page") {
+        const page=row.keys[0];
+        if(typeof page!=="string" || !page.startsWith(KAGURA_ANALYTICS_SYNC.SITE) || /[\s\u0000-\u001f\u007f]/.test(page) || pageKeys.has(page)) throw kaguraFailure_("GSC_SCHEMA_INVALID");
+        pageKeys.add(page);
+      }
       if(kind==="daily") observed.push([row.keys[0],row.clicks,row.impressions,row.ctr,row.position]);
-      else details.push(["GSC-query-"+to+"-"+row.keys[0],"GSC","query",from,to,zone,row.keys[0],JSON.stringify([row.clicks,row.impressions,row.ctr,row.position]),quality,fetched]);
+      else details.push(["GSC-"+kind+"-"+to+"-"+row.keys[0],"GSC",kind,from,to,zone,row.keys[0],JSON.stringify([row.clicks,row.impressions,row.ctr,row.position]),quality,fetched]);
     });
     flags.push(kind+": "+quality+(rows.length?"":"; no_rows"));
   }
@@ -145,7 +154,7 @@ function checkKaguraAnalyticsSetup() {
     readyForOwnerTest:free&&property&&bound&&typeof AnalyticsData!=="undefined",
     note:"OAuth scopes/API enablement and access still require owner test; no API requests made"};
 }
-/** Max 7 API calls/run; source-specific same-day success guard, <=2 attempts/source/day. */
+/** Max 8 API calls/run; source-specific same-day success guard, <=2 attempts/source/day. */
 function dailyKaguraAnalyticsSync() {
   const props=PropertiesService.getScriptProperties(),ss=SpreadsheetApp.getActiveSpreadsheet();
   if(!ss || ss.getId()!==KAGURA_ANALYTICS_SYNC.SPREADSHEET_ID) throw kaguraFailure_("BOUND_SHEET_REQUIRED");
