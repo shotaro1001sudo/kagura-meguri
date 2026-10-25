@@ -35,7 +35,7 @@ export function editorialTests({ ok, section, OUT, build }) {
 
   section("編集: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
-  ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金", "開催ページの欄名は「日時・会場・所在地・料金」(「場所」と「会場」の紛れをなくす)");
+  ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金,予約要否", "開催ページの欄名は「日時・会場・所在地・料金・予約要否」(「場所」と「会場」の紛れをなくす)");
   ok(full(".stay").length===0,"未設定では宿条件の案内も省略");
   ok(!full("main").text().includes("夜の公演です。"),"未設定の宿泊誘導文を省略");
   const src = full("main").text();

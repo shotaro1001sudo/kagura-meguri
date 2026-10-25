@@ -1,3 +1,4 @@
+import { reservationLabel } from '../scripts/lib/reservation.mjs';
 // Revenue UX regression: keep editorial navigation helpful and sponsored links intact.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -135,7 +136,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const declarations = ["HTTP_URL", "esc", "jpDate"].map((name) =>
     source.split("\n").find((line) => line.startsWith(`const ${name} =`))).join("\n");
   const factsCode = source.slice(source.indexOf("const cardFacts ="), source.indexOf('const card ='));
-  const facts = (event) => runInNewContext(`${declarations}\n${factsCode}\ncardFacts(event)`, { event });
+  const facts = (event) => runInNewContext(`${declarations}\n${factsCode}\ncardFacts(event)`, { event, reservationLabel });
   const missing = cheerio.load(facts({}));
   ok(missing(".event-facts").text().includes("料金: 要確認") &&
     missing(".event-facts").text().includes("予約要否: 要確認") &&
