@@ -5,12 +5,13 @@ const code=readFileSync("scripts/apps-script/analytics-sheet-sync.gs","utf8");
 function harness() {
   const props={},tabs=new Map(),calls=[],triggers=[];
   let released=0;
-  const state={gaFailure:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
+  const state={gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
   const ss={getId:()=>"13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",getSheetByName:name=>tabs.get(name),insertSheet(name){
     const s={values:[],maxRows:1000,getLastRow(){return this.values.length;},getMaxRows(){return this.maxRows;},
       insertRowsAfter(_at,count){this.maxRows+=count;},setFrozenRows(){},getRange(r,c,n,width){return {
         getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:width},(_,j)=>{
           const value=s.values[r-1+i]?.[c-1+j]??"";
+          if(state.brokenFunnelRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page_event"&&j===7)return "corrupt";
           if(state.brokenPageRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page"&&s.values[r-1+i]?.[1]==="GSC"&&j===7)return "corrupt";
           return state.brokenRead&&name==="12_計測日次"&&r===1&&i===1&&j===4?"corrupt":value;
         })),
@@ -30,11 +31,12 @@ function harness() {
     AnalyticsData:{Properties:{runReport(request){
       calls.push({source:"GA4",request});
       if(state.gaFailure)throw new Error("403 Permission denied: secret-response-token");
-      const dimension=request.dimensions[0].name;
+      const dimension=request.dimensions[0].name,funnel=request.dimensions.length===2;
+      if(funnel&&state.funnelStatus)throw new Error("403 secret-response");
       const value={date:"20261020",sessionSourceMedium:"google / organic",deviceCategory:"mobile",pagePath:"/",eventName:"page_view"}[dimension];
-      return {dimensionHeaders:request.dimensions,metricHeaders:request.metrics,rows:state.empty?[]:[{
-        dimensionValues:[{value}],metricValues:request.metrics.map(m=>({value:m.name==="engagementRate"?"0.5":"1"}))
-      }],rowCount:state.empty?0:1,metadata:{timeZone:state.zone}};
+      return {dimensionHeaders:request.dimensions,metricHeaders:request.metrics,rows:funnel&&state.funnelRows!==undefined?state.funnelRows:state.empty?[]:[{
+        dimensionValues:request.dimensions.map(d=>({value:d.name==="eventName"&&funnel?"affiliate_click":value})),metricValues:request.metrics.map(m=>({value:dimension==="sessionSourceMedium"&&m.name in state.gaMetrics?state.gaMetrics[m.name]:m.name==="engagementRate"?"0.5":"1"}))
+      }],rowCount:funnel&&state.funnelRowCount!==undefined?state.funnelRowCount:state.empty?0:1,metadata:{timeZone:state.zone}};
     }}},
     ScriptApp:{getOAuthToken:()=>"secret-oauth-token",getProjectTriggers:()=>triggers,
       newTrigger(handler){const builder={timeBased(){return this;},inTimezone(zone){this.zone=zone;return this;},
@@ -44,8 +46,8 @@ function harness() {
     },
     UrlFetchApp:{fetch(_url,options){
       const request=JSON.parse(options.payload);calls.push({source:"GSC",request});
-      const kind=request.dimensions[0],value=kind==="date"?"2026-10-20":kind==="page"?"https://kagurameguri.jp/guide.html":state.query;
-      return {getResponseCode:()=>kind==="page"?state.pageStatus:state.gscStatus,getContentText:()=>JSON.stringify({rows:kind==="page"&&state.pageRows!==undefined?state.pageRows:state.empty?[]:[{keys:[value],clicks:1,impressions:10,ctr:0.1,position:5}]})};
+      const kind=request.dimensions[0],value=kind==="date"?"2026-10-20":kind==="page"?"https://kagurameguri.jp/guide.html":kind==="device"?"MOBILE":state.query;
+      return {getResponseCode:()=>kind==="page"?state.pageStatus:kind==="device"?state.deviceStatus:state.gscStatus,getContentText:()=>JSON.stringify({rows:kind==="device"&&state.deviceRows!==undefined?state.deviceRows:kind==="page"&&state.pageRows!==undefined?state.pageRows:state.empty?[]:[{keys:[value],clicks:1,impressions:10,ctr:0.1,position:5}]})};
     }}
   };
   runInNewContext(code,context);
@@ -64,18 +66,18 @@ export function analyticsSyncTests({ok,section}) {
   h.props.KAGURA_ANALYTICS_FREE_CONFIRMED="yes";
   ok(h.run().error==="PROPERTY_ID_REQUIRED"&&h.calls.length===0,"プロパティ未設定もAPIなしで理由を区別する");
   h.ready();
-  ok(h.run().status==="success"&&h.calls.length===8,"1回の正常実行は8読取で成功");
+  ok(h.run().status==="success"&&h.calls.length===10,"1回の正常実行は10読取で成功");
   const daily=h.records("12_計測日次"),ga=daily.find(r=>r[0]==="GA4-2026-10-20"),gsc=daily.find(r=>r[0]==="GSC-2026-10-20");
   ok(daily.length===56&&ga[4]===1&&gsc[4]===""&&gsc[8]===1,"28日×2媒体を別定義で保存");
   ok(ga[3]==="Asia/Tokyo"&&gsc[3]==="America/Los_Angeles","GA4とGSCの異なる時間帯を保持");
   const missing=daily.find(r=>r[0]==="GA4-2026-10-23");
   ok(missing[4]===""&&missing[12].includes("not_returned"),"未返却日を明示して0アクセスと混同しない");
   ok(h.calls.find(c=>c.source==="GSC").request.endDate==="2026-10-22"&&h.calls[0].request.dateRanges[0].endDate==="2026-10-23","GSCのPT前日とGA4のプロパティ前日を使う");
-  h.run();ok(h.calls.length===8,"同日成功済みの媒体を再取得しない");
+  h.run();ok(h.calls.length===10,"同日成功済みの媒体を再取得しない");
   const details=h.records("13_計測内訳");
   const pageRequest=h.calls.find(c=>c.source==="GSC"&&c.request.dimensions[0]==="page").request;
   ok(JSON.stringify(pageRequest)==='{"startDate":"2026-09-25","endDate":"2026-10-22","dimensions":["page"],"type":"web","dataState":"final","rowLimit":1000}',"GSC page単独・PTの28日・final・最大1000件、追加filter/paginationなし");
-  ok(h.calls.filter(c=>c.source==="GSC").map(c=>c.request.dimensions.join()).join()==="date,query,page","既存date/queryとpageを別要求にし、query×pageを取得しない");
+  ok(h.calls.filter(c=>c.source==="GSC").map(c=>c.request.dimensions.join()).join()==="date,query,page,device","既存date/queryとpageを別要求にし、query×pageを取得しない");
   const page=details.find(r=>r[1]==="GSC"&&r[2]==="page");
   ok(page[0]==="GSC-page-2026-10-22-https://kagurameguri.jp/guide.html"&&page[3]==="2026-09-25"&&page[4]==="2026-10-22"&&page[5]==="America/Los_Angeles"&&page[7]==="[1,10,0.1,5]","page専用IDとURL・期間・時間帯・4指標を既存内訳列へ保存");
   ok(page[8].includes("page aggregation differs from property totals")&&h.log("2026-10-24-GSC")[3].includes("page:")&&h.log("2026-10-24-GSC")[3].includes("saved/readback verified"),"ページ集約と全体の差を注記し、page取得と保存読戻を実行記録へ残す");
@@ -88,7 +90,7 @@ export function analyticsSyncTests({ok,section}) {
   ok(partial.run().error==="SYNC_PARTIAL"&&partial.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4==="2026-10-24"&&!partial.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC,"GSC失敗でもGA4を保存し全体はpartial");
   ok(partial.log("2026-10-24-GSC")[3].includes("GSC_HTTP_403")&&!JSON.stringify(partial.records("14_計測実行")).includes("secret"),"HTTP原因を安全なコードで残しトークン/応答本文を残さない");
   partial.state.gscStatus=200;partial.run();
-  ok(partial.calls.filter(c=>c.source==="GA4").length===5&&partial.calls.filter(c=>c.source==="GSC").length===4,"再実行では失敗した媒体だけ取得");
+  ok(partial.calls.filter(c=>c.source==="GA4").length===6&&partial.calls.filter(c=>c.source==="GSC").length===5,"再実行では失敗した媒体だけ取得");
 
   const failed=harness();failed.ready();failed.state.gaFailure=true;failed.state.gscStatus=429;
   failed.run();failed.run();const count=failed.calls.length;failed.run();
@@ -114,7 +116,7 @@ export function analyticsSyncTests({ok,section}) {
   trigger.context.installKaguraAnalyticsDailyTrigger();trigger.context.installKaguraAnalyticsDailyTrigger();
   ok(trigger.triggers.length===2&&trigger.triggers[1].zone==="Asia/Tokyo"&&trigger.triggers[1].hour===7&&trigger.triggers[1].days===1,"本人起動のトリガー設定は日次7時台で冪等、VCトリガーを維持");
   const config=harness();config.ready();config.run();config.props.KAGURA_GA4_PROPERTY_ID="999999";config.run();
-  ok(config.calls.filter(c=>c.source==="GA4").length===10,"プロパティ設定変更時に別プロパティの成功記録を流用しない");
+  ok(config.calls.filter(c=>c.source==="GA4").length===12,"プロパティ設定変更時に別プロパティの成功記録を流用しない");
   config.props.KAGURA_GA4_PROPERTY_ID="777777";rejected=false;
   try{config.context.installKaguraAnalyticsDailyTrigger();}catch(_){rejected=true;}
   ok(rejected,"設定変更後に旧プロパティの成功でトリガーを作らない");
@@ -124,7 +126,7 @@ export function analyticsSyncTests({ok,section}) {
   section("GSCページ内訳: 上限・失敗・置換・読戻");
   const pageRow=(url="https://kagurameguri.jp/guide.html")=>({keys:[url],clicks:1,impressions:10,ctr:0.1,position:5});
   const capped=harness();capped.ready();capped.state.pageRows=Array.from({length:1000},(_,i)=>pageRow("https://kagurameguri.jp/events/test-"+i+".html"));
-  ok(capped.run().status==="success"&&capped.calls.length===8&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1000,"1000ページでも追加ページングせず1回で保存する");
+  ok(capped.run().status==="success"&&capped.calls.length===10&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1000,"1000ページでも追加ページングせず1回で保存する");
   ok(capped.log("2026-10-24-GSC")[3].includes("limit reached; completeness not guaranteed")&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").every(r=>r[8].includes("limit reached")),"上限到達を行と実行ログの両方に残し、全件とは扱わない");
   const gaSnapshot=JSON.stringify(capped.records("13_計測内訳").filter(r=>r[1]==="GA4"));
   const historicalDaily=[...capped.records("12_計測日次").find(r=>r[1]==="GSC")];historicalDaily[0]="GSC-2026-08-01";historicalDaily[2]="2026-08-01";
@@ -147,5 +149,62 @@ export function analyticsSyncTests({ok,section}) {
   const readback=harness();readback.ready();readback.state.brokenPageRead=true;
   ok(readback.run().error==="SYNC_PARTIAL"&&readback.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&!readback.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&readback.log("2026-10-24-GSC")[3].includes("SHEET_READBACK_MISMATCH"),"page保存の読戻不一致はGSC成功を更新せずGA4を保持");
   readback.state.brokenPageRead=false;
-  ok(readback.run().status==="success"&&readback.calls.filter(c=>c.source==="GA4").length===5&&readback.calls.filter(c=>c.source==="GSC").length===6&&readback.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1,"読戻失敗後はGSCだけ再取得し、pageを重複させず回復する");
+  ok(readback.run().status==="success"&&readback.calls.filter(c=>c.source==="GA4").length===6&&readback.calls.filter(c=>c.source==="GSC").length===8&&readback.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1,"読戻失敗後はGSCだけ再取得し、pageを重複させず回復する");
+
+  section("意思決定用内訳: 流入元品質・固定ページ導線・検索端末");
+  const sourceReq=h.calls.find(c=>c.source==="GA4"&&c.request.dimensions[0].name==="sessionSourceMedium").request;
+  ok(sourceReq.metrics.map(m=>m.name).join()==="sessions,engagedSessions,engagementRate"&&sourceReq.dimensions.length===1,"流入元の既存1要求に品質2指標だけを追加する");
+  const sourceRow=details.find(r=>r[1]==="GA4"&&r[2]==="source");
+  ok(sourceRow[7]==="[1,1,0.5]"&&sourceRow[8].includes("schema=2"),"sourceの旧sessions先頭を維持し、3指標の順序とschemaを明示");
+  const funnelReq=h.calls.find(c=>c.source==="GA4"&&c.request.dimensions.length===2).request;
+  const filters=funnelReq.dimensionFilter.andGroup.expressions.map(e=>e.filter),pages=filters[0].inListFilter.values,events=filters[1].inListFilter.values;
+  ok(funnelReq.dimensions.map(d=>d.name).join()==="pagePath,eventName"&&funnelReq.metrics.map(m=>m.name).join()==="eventCount"&&funnelReq.limit===1000&&funnelReq.dateRanges[0].startDate==="2026-09-26"&&funnelReq.dateRanges[0].endDate==="2026-10-23","ページ別導線はGA4時間帯28日・標準2dimension・eventCount・1000件上限");
+  ok(filters.map(f=>f.fieldName).join()==="pagePath,eventName"&&filters.every(f=>f.inListFilter.caseSensitive)&&events.join()==="official_link_click,affiliate_click,affiliate_view","API側で既存の公式/広告イベントだけをcase-sensitive完全一致で限定");
+  const regular=JSON.parse(readFileSync('data/regular.json','utf8')).map(r=>'/regular/'+r.id+'.html');
+  const fixed=['/','/index.html','/guide.html','/experiences.html','/weekend.html','/this-month.html','/map.html','/calendar.html','/kagura/index.html',...regular];
+  ok(pages.length===15&&new Set(pages).size===pages.length&&pages.every(p=>fixed.includes(p)),"許可パスはrepoの固定ページと実在定期公演だけで任意slugを含まない");
+  const browser=readFileSync('scripts/client/analytics-events.js','utf8')+readFileSync('scripts/client/affiliate.js','utf8');
+  ok(events.every(e=>browser.includes(e))&&!JSON.stringify(funnelReq).includes('pageLocation'),"新規イベントやフルURL・利用者IDの要求を追加しない");
+  const funnelRow=details.find(r=>r[2]==="page_event");
+  ok(funnelRow[0]==='GA4-page_event-2026-10-23-["/","affiliate_click"]'&&funnelRow[6]==='["/","affiliate_click"]'&&funnelRow[7]==='[1]'&&funnelRow[8].includes('not users or conversions'),"page_eventはJSONの複合dimension/IDで衝突を避け、イベント件数を人数や成約と区別");
+  const deviceReq=h.calls.find(c=>c.source==="GSC"&&c.request.dimensions[0]==="device").request;
+  ok(deviceReq.dimensions.length===1&&deviceReq.startDate==='2026-09-25'&&deviceReq.endDate==='2026-10-22'&&deviceReq.dataState==='final'&&deviceReq.type==='web'&&deviceReq.rowLimit===1000,"GSC deviceはPTの28日・final・webの単独集約");
+  const deviceRow=details.find(r=>r[1]==='GSC'&&r[2]==='device');
+  ok(deviceRow[0]==='GSC-device-2026-10-22-MOBILE'&&deviceRow[7]==='[1,10,0.1,5]'&&deviceRow[8].includes('not additive'),"GSC端末4指標とGA4端末sessionsを別媒体・別IDで保持");
+  const optional=harness();optional.ready();optional.state.gaMetrics={engagedSessions:null,engagementRate:''};
+  ok(optional.run().status==='success'&&optional.records('13_計測内訳').find(r=>r[2]==='source')[7]==='[1,null,null]'&&optional.log('2026-10-24-GA4')[3].includes('optional_metrics_missing (not zero)'),"任意品質指標の値欠損はnullと注記で保存し、sessionsや0と取り違えない");
+  for(const metrics of [{sessions:null},{engagedSessions:'NaN'},{engagedSessions:'-1'},{engagedSessions:'2'},{engagementRate:'1.1'},{engagementRate:'Infinity'}]) {
+    const invalid=harness();invalid.ready();invalid.state.gaMetrics=metrics;
+    ok(invalid.run().error==='SYNC_PARTIAL'&&!invalid.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&invalid.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&invalid.log('2026-10-24-GA4')[3].includes('GA4_METRIC_INVALID'),"必須sessions欠損・不正品質指標ではGA4を成功にせずGSC保存を継続");
+  }
+  const route=(path='/',event='affiliate_click',value='1')=>({dimensionValues:[{value:path},{value:event}],metricValues:[{value}]});
+  for(const rows of [[route('/guide.html?email=secret')],[route('/user/private-name.html')],[route('/events/private-name.html')],[route('/%67uide.html')],[route('/','purchase')],[route('/','affiliate_click',null)],[route(),route()]]) {
+    const invalid=harness();invalid.ready();invalid.state.funnelRows=rows;
+    ok(invalid.run().error==='SYNC_PARTIAL'&&!invalid.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&invalid.records('13_計測内訳').every(r=>r[1]==='GSC')&&!JSON.stringify(invalid.records('14_計測実行')).includes('private-name'),"返却側もパス/イベント/指標/複合ID重複を検証し、不正値を保存・ログ出力しない");
+  }
+  const replace=harness();replace.ready();replace.run();
+  const gscSnapshot=JSON.stringify(replace.records('13_計測内訳').filter(r=>r[1]==='GSC'));
+  replace.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4='';replace.state.funnelRows=[route('/guide.html','affiliate_click','2'),route('/guide.html','affiliate_view','3')];replace.state.gaMetrics={sessions:'4',engagedSessions:'2',engagementRate:'0.5'};
+  ok(replace.run().status==='success'&&replace.records('13_計測内訳').filter(r=>r[2]==='page_event').length===2&&replace.records('13_計測内訳').find(r=>r[2]==='source')[7]==='[4,2,0.5]'&&JSON.stringify(replace.records('13_計測内訳').filter(r=>r[1]==='GSC'))===gscSnapshot,'sourceを同じIDで更新し古いpage_eventを置換、GSC原本を保持');
+  const emptyNew=harness();emptyNew.ready();emptyNew.state.funnelRows=[];emptyNew.state.deviceRows=[];
+  ok(emptyNew.run().status==='success'&&emptyNew.records('13_計測内訳').every(r=>r[2]!=='page_event'&&!(r[1]==='GSC'&&r[2]==='device'))&&emptyNew.log('2026-10-24-GA4')[3].includes('page_event:')&&emptyNew.log('2026-10-24-GSC')[3].includes('missing devices are not zero; CTR/position are not additive; no_rows'),'新内訳が空でも日次があればsuccess、架空0行を作らずno_rowsを記録');
+  for(const rows of [[pageRow('PHONE')],[pageRow('mobile')],[pageRow('MOBILE'),pageRow('MOBILE')],[{...pageRow('TABLET'),ctr:2}]]) {
+    const invalid=harness();invalid.ready();invalid.state.deviceRows=rows;
+    ok(invalid.run().error==='SYNC_PARTIAL'&&invalid.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&!invalid.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&invalid.log('2026-10-24-GSC')[3].includes('GSC_SCHEMA_INVALID'),'GSC端末は3種の列挙値・重複なし・正しい数値だけを保存');
+  }
+  const failNew=harness();failNew.ready();failNew.run();const saved=JSON.stringify(failNew.records('13_計測内訳'));
+  failNew.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4='';failNew.state.funnelStatus=true;
+  ok(failNew.run().error==='SYNC_PARTIAL'&&JSON.stringify(failNew.records('13_計測内訳'))===saved&&failNew.calls.filter(c=>c.source==='GSC').length===4,'page_event要求失敗ではGA4の旧スナップショットを保持し成功済みGSCを再取得しない');
+  const corruptFunnel=harness();corruptFunnel.ready();corruptFunnel.state.brokenFunnelRead=true;
+  ok(corruptFunnel.run().error==='SYNC_PARTIAL'&&!corruptFunnel.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&corruptFunnel.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&corruptFunnel.log('2026-10-24-GA4')[3].includes('SHEET_READBACK_MISMATCH'),'複合dimension行のreadback不一致でも成功ガードを進めない');
+  corruptFunnel.state.brokenFunnelRead=false;
+  ok(corruptFunnel.run().status==='success'&&corruptFunnel.records('13_計測内訳').filter(r=>r[2]==='page_event').length===1&&corruptFunnel.calls.filter(c=>c.source==='GA4').length===12&&corruptFunnel.calls.filter(c=>c.source==='GSC').length===4,'読戻失敗はGA4だけ上限内で再取得し、重複なく回復する');
+  const truncated=harness();truncated.ready();truncated.state.funnelRowCount=1001;
+  ok(truncated.run().status==='success'&&truncated.records('13_計測内訳').find(r=>r[2]==='page_event')[8].includes('truncated')&&truncated.calls.length===10,'GA4返却件数が総行数より少なければ打切り注記、追加ページングなし');
+  const deviceFailure=harness();deviceFailure.ready();deviceFailure.run();const prior=JSON.stringify(deviceFailure.records('13_計測内訳'));
+  deviceFailure.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC='';deviceFailure.state.deviceStatus=429;
+  ok(deviceFailure.run().error==='SYNC_PARTIAL'&&JSON.stringify(deviceFailure.records('13_計測内訳'))===prior&&deviceFailure.log('2026-10-24-GSC')[3].includes('GSC_HTTP_429')&&deviceFailure.calls.filter(c=>c.source==='GA4').length===6,'device要求失敗でもGSC旧行を保持しGA4成功と取得回数を維持');
+  let badHeader=false;
+  try{h.context.kaguraReportRows_({dimensionHeaders:[{name:'sessionSourceMedium'}],metricHeaders:[{name:'sessions'}],rows:[]},['sessionSourceMedium'],['sessions','engagedSessions','engagementRate'],['engagedSessions','engagementRate']);}catch(_){badHeader=true;}
+  ok(badHeader,'任意指標でも列定義欠落はschemaエラーとし、旧配列を新schemaとして誤読しない');
 }

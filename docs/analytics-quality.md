@@ -83,7 +83,7 @@ GitHubへコードを保存してもGASは設置・実行されず、Googleへ�
 
 ### 取得・保存・再実行の規則
 
-- 上限は1実行8リクエスト（GA4 5回、GSC date/query/page各1回）、各最大1000行。直近28日を再取得し、媒体ごとの保存・読戻が終わってから成功時刻を進める。
+- 上限は1実行10リクエスト（GA4 6回、GSC date/query/page/device各1回）、各最大1000行。直近28日を再取得し、媒体ごとの保存・読戻が終わってから成功時刻を進める。
 - GA4/GSCは独立。GSCが403等でも取得済みGA4は保存する。再実行は失敗した媒体だけ。
 - 失敗試行は媒体ごとに1日最大2回、成功済みは同日再取得しない。プロパティ/時間帯変更時は旧設定の成功判定を流用しない。
 - GA4は設定時間帯で期間を計算し、API返却時間帯が異なれば保存を止める。GSCはPT・`dataState:final`。
@@ -103,7 +103,31 @@ GitHubへコードを保存してもGASは設置・実行されず、Googleへ�
 - 打切り/しきい値/サンプリングを注記し、GA4の処理更新可能性、GSCクエリ匿名化による全体との差を残す。
   旧01_アクセス分析・10_課題管理・VC/収益表はこのGASから自動上書きしない。
 
-### GSCページ別28日内訳の追加（2026-10-25、実GAS未反映）
+### 流入元品質・固定ページ導線・検索端末（ローカル検証、実GAS未反映）
+
+GSC page追加後の8要求に以下を加え、通常10要求（GA4 6＋GSC 4）。元のdate/queryのみの版からは7→10要求となる。すべて既存のreadonlyスコープ内で、28日・各APIの時間帯・保存先を維持。ブラウザ追跡や同意動作、manifest、トリガー、APIキー・権限・課金設定は変更しない。GA4は既に同意を得て収集されたデータの集計であり、同意のない利用者を補完しない。
+
+| 13_計測内訳のsource / breakdown | dimension列 | metrics_jsonの順序 | 判断すること |
+|---|---|---|---|
+| GA4 / source | sessionSourceMedium（従来どおり） | `[sessions,engagedSessions,engagementRate]` | 流入数と、エンゲージメントのある流入元 |
+| GA4 / page_event | JSON配列 `[pagePath,eventName]` | `[eventCount]` | 固定ページから公式・広告への導線と広告表示 |
+| GSC / device | DESKTOP / MOBILE / TABLET | `[clicks,impressions,ctr,position]` | Google検索段階の端末差。GA4の端末別sessionsとは別指標 |
+
+sourceは既存1要求の指標を増やすだけ。既存ID・先頭のsessionsを保持しqualityに `metrics=sessions,engagedSessions,engagementRate; schema=2` を記す。品質2指標の値欠損のみJSON null＋`optional_metrics_missing (not zero)` とする。必須sessions欠損、列定義の不足、NaN/負値、率>1、engagedSessions>sessionsはGA4エラーで旧原本を保持する。旧配列 `[sessions]` に追加指標が存在すると仮定しない。率は0〜1で、百分率表示時のみ100倍。単純平均して全体率を作らない。
+
+page_eventはAPI側のcase-sensitive inListFilterで、`FUNNEL_PAGES` の完全一致15パスと既存の `official_link_click / affiliate_click / affiliate_view` のみを要求。任意のslug、クエリ付きURL、利用者ページ、フォームや個別開催ページは対象外。現在はトップ（/と/index.html）、guide、experiences、weekend、this-month、map、calendar、kagura/indexと定期公演6ページ。公開パスであっても対象外は0件と解釈しない。追加する際は実在する公開ページか・PIIを含まないかをレビューして定数を更新する。未知の返却パス/イベントや重複複合キーは保存せず、応答本文もログへ出さない。新規の利用者ID・永続追跡は不要。
+
+IDは `GA4-page_event-<末日>-<JSON複合dimension>`、`GSC-device-<末日>-<端末>` とし、同じページの異なるイベントや他内訳との衝突を避ける。2内訳とも最新の媒体スナップショットで置換し、空応答では古い該当内訳を消してno_rowsを記録する。日次があれば媒体successでも内訳は空のことがある。未返却を0とせず、打切り/上位制限/しきい値/サンプリングの注記を読む。イベント数を人数・成約・ASP報酬と呼ばず、affiliate_viewとaffiliate_clickを合計しない。
+
+新要求に失敗した場合はその媒体全体が未確認となり、取得段階の失敗なら旧原本を保持。他媒体の成功は維持する。読戻不一致は成功を進めず、再取得は既存の媒体別1日2回上限内で実施。成功済み同日ガードは変更せず、旧コードで当日成功済みなら更新後も翌日の実行を待つ。
+
+Googleの標準フィールド・runReport/inListFilterとGSC device単独集約の仕様を確認した設計。**対象の実GA4プロパティでの組合せ互換性・実データ受信・API残枠は未検証**。実反映後、GA4/GSCの媒体別ログとreadback、source schema=2・page_eventのJSON dimension・GSC deviceの4指標、旧日次/実行履歴、空/上限注記を照合する。GSC pageを含め既存gsファイルを一度だけ置換し、同名関数を重複追加しない。GAS更新承認・次回実行確認は下記手順に従う。ローカルモック成功を実GAS成功とは報告しない。
+
+標準APIの利用枠は2要求分増えるが、追加サービス・課金設定は不要。残枠を確認できない場合は無料で無制限に使えるとは断定しない。新しい永続追跡や個人情報は集めず、意思決定の材料として使い、集客向上を保証しない。
+
+一次資料: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema / https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/runReport / https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FilterExpression
+
+### GSCページ別28日内訳の追加（PR #109、実GAS未反映）
 
 `kaguraCollectGsc_` に `dimensions:["page"]` の1要求を追加する。PTの前日を末日とする28日（両端含む）、`type:web`、`dataState:final`、`rowLimit:1000` を使用。query×page、ページング、追加トリガーは使わない。既存のSearch Console APIと `webmasters.readonly` の範囲で、認証スコープ・manifest・プロパティ・課金設定は変更しない。
 
@@ -122,7 +146,7 @@ GitHubへコードを保存してもGASは設置・実行されず、Googleへ�
 4. 次回実行後、14の全体行・GSC行の日時/状態と `page:`、`saved/readback verified`、上限/空応答注記を記録。13のpage行についてfrom/toがPTの28日、timezoneがAmerica/Los_Angeles、最大1000行、IDの一意性、返却4指標と取得日時を確認する。管理画面との比較は同じ期間・web・ページ集約で行い、実データを公開PRへ転載しない。
 5. GA4の独立保存、既存query、12の日次履歴、14の履歴とトリガー数不変も確認する。pageが0件ならno_rowsの記録を証拠とし、架空行を作らない。これらの実アカウントでの確認が済むまで「GAS反映・実測保存完了」と報告しない。
 
-通常取得が7→8回になるため無料APIの利用枠・GAS実行枠は消費する。既存の無料確認ゲートを保持し、新しい有料サービス・API・認証スコープは追加しない。アカウント残枠はローカルでは確認できない。ページ内訳は改善候補の判断材料であり、集客向上を保証しない。
+PR #109単体では通常取得が7→8回になるため無料APIの利用枠・GAS実行枠は消費する（上記3内訳の追加後は10回）。既存の無料確認ゲートを保持し、新しい有料サービス・API・認証スコープは追加しない。アカウント残枠はローカルでは確認できない。ページ内訳は改善候補の判断材料であり、集客向上を保証しない。
 
 仕様・負荷制限: https://developers.google.com/webmaster-tools/v1/searchanalytics/query / https://developers.google.com/webmaster-tools/limits
 
