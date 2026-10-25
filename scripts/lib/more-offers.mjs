@@ -19,6 +19,7 @@ export function validMoreOffer(o, today) {
   if (!p || p.category !== o.category || typeof o.id !== "string" || !/^[-a-z0-9]{1,48}$/.test(o.id)) return false;
   if (!["title", "note", "approvalReference"].every((k) => typeof o[k] === "string" && o[k].trim())) return false;
   if (o.category === "learn" && !(typeof o.kagura === "string" && o.kagura.trim())) return false; // 種類の名前、または "*"(全般)
+  if (o.kaguras !== undefined && (!Array.isArray(o.kaguras) || !o.kaguras.length || !o.kaguras.every(k => typeof k === "string" && k.trim() && k !== "*"))) return false;
   if (o.category === "furusato" && !["prefecture", "city"].every((k) => typeof o[k] === "string" && o[k].trim())) return false;
   try {
     if (typeof o.url !== "string" || /[\s\\\u0000-\u001f\u007f]/.test(o.url)) return false;
@@ -45,8 +46,10 @@ export function moreOffersFor(settings, category, context, today) {
   const seen = new Set();
   return settings.offers.filter((o) => {
     if (!validMoreOffer(o, today) || o.category !== category || seen.has(o.id) || seen.has(o.url)) return false;
-    if (category === "learn" && !(o.kagura === "*" || o.kagura === context.kagura)) return false;
+    if (category === "learn" && !(o.kaguras ? o.kaguras.includes(context.kagura) : o.kagura === "*" || o.kagura === context.kagura)) return false;
     if (category === "furusato" && o.prefecture !== context.prefecture) return false;
+    // 個別公演は開催市町村も一致させる。県の一覧ページは県単位のまま。
+    if (category === "furusato" && "city" in context && (!cityOf(context.city) || cityOf(o.city) !== cityOf(context.city))) return false;
     seen.add(o.id); seen.add(o.url); return true;
   }).sort((a, b) => (a.kagura === "*") - (b.kagura === "*")).slice(0, 3);
 }
