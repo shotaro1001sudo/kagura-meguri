@@ -221,7 +221,7 @@ export async function collectTests({ ok, section }) {
 
   // ---------- 5. 週次ワークフローの安全装置 ----------
   section("自動収集: 週次ワークフロー(GitHub Actions)の安全装置");
-  const wf = read(".github/workflows/collect.yml");
+  const wf = read(".github/workflows/collect.yml").replace(/\r\n?/g, "\n"); // 改行コード(CRLF で取り出した環境)に左右されない
   const at = (s) => wf.indexOf(s);
   // 書式の誤りがあると、GitHub はワークフローを読み込めず、何も動かない(手動実行のボタンも出ない)
   for (const f of [".github/workflows/collect.yml", ".github/workflows/deploy.yml", ".github/dependabot.yml"]) {
