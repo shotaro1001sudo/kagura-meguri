@@ -785,3 +785,15 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 /* 縦に並べるとき(右の列・スマホ)は、バナーの高さを画像のままにする(flex の伸び縮みで高さ0にならないように) */
 .d-side .aff .stay-banner{flex:none}
 @media(max-width:560px){.aff .stay-banner{flex:none}}
+
+/* ---------- ヘッダーのメニュー: ひと目で「押せるタブ」と分かる形に(PC・タブレット) ----------
+   メニュー全体を1本の帯(枠つき)にし、各項目を丸いタブにする。今いるページのタブは朱で塗る */
+@media(min-width:641px){
+  .top .wrap{max-width:1120px}
+  .top nav{gap:2px;padding:4px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);border-radius:999px;background:color-mix(in srgb,var(--card) 85%,transparent);box-shadow:var(--shadow)}
+  .top nav a{padding:0 12px;min-height:38px;border:0;border-radius:999px;color:var(--fg);letter-spacing:.02em;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease)}
+  .top nav a:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);color:var(--fg)}
+  .top nav a.on{background:var(--ac);color:var(--onac);font-weight:500}
+  .top nav a.on:hover{background:var(--ac);color:var(--onac)}
+  .top nav a:focus-visible{outline-offset:1px}
+}
