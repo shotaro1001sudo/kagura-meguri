@@ -632,3 +632,7 @@ main>p:not([class]){max-width:42em}
   .pref-month-nav::-webkit-scrollbar{display:none}
   .pref-month-nav>*{flex:none}
 }
+
+/* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */
+.planning-banner{display:inline-flex;flex-direction:column;gap:10px;max-width:100%;font-size:var(--fs-s)}
+.planning-banner img{display:block;max-width:100%;height:auto;border:0}

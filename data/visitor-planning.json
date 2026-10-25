@@ -1,8 +1,89 @@
 {
   "categories": {
-    "supplies": { "enabled": false },
-    "experiences": { "enabled": false },
-    "rental": { "enabled": false }
+    "supplies": {
+      "enabled": true
+    },
+    "experiences": {
+      "enabled": false
+    },
+    "rental": {
+      "enabled": true
+    }
   },
-  "offers": []
+  "offers": [
+    {
+      "id": "cold-night-blanket",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人が楽天の発行HTMLを提供。hrefを変更せず採用。対象商品の一致とHTTPS・ホスト・形式を確認。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ccdf5c.e64bfd5b.58ccdf5d.f0156d18/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcaptainstagstore%2F4560464284027%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiI4MHg4MCIsIm5hbSI6MSwibmFtcCI6InJpZ2h0IiwiY29tIjoxLCJjb21wIjoiZG93biIsInByaWNlIjoxLCJib3IiOjEsImNvbCI6MSwiYmJ0biI6MSwicHJvZCI6MCwiYW1wIjpmYWxzZX0%3D",
+      "destinationUrl": "https://item.rakuten.co.jp/captainstagstore/4560464284027/",
+      "title": "CAPTAIN STAG アプリール フリースブランケット UT-1023",
+      "reason": "冷える夜の観覧で、手持ちの防寒具で足りない場合の候補。ひざ掛け・肩掛けに使えるフリース製です。",
+      "criteria": "140×110cmの大きさが持ち歩く荷物に収まるか確認。",
+      "unnecessary": "暖房のある屋内や暑い日、手持ちの羽織りで足りる場合は不要です。",
+      "sourceUrl": "https://www.captainstag.net/products/aprire/",
+      "selectionCheckedAt": "2026-10-25",
+      "selectionNote": "本人提供の発行コードと対象商品の一致を確認。最新価格・在庫・配送日・実ネットワーク遷移・成果計測は未確認。"
+    },
+    {
+      "id": "portable-seat-cushion",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人が楽天の発行HTMLを提供。hrefを変更せず採用。対象商品の一致とHTTPS・ホスト・形式を確認。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ccdb57.3e47cc57.58ccdb58.acbbbf85/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fm-outdoor%2Fmchi30947%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiI4MHg4MCIsIm5hbSI6MSwibmFtcCI6InJpZ2h0IiwiY29tIjoxLCJjb21wIjoiZG93biIsInByaWNlIjoxLCJib3IiOjEsImNvbCI6MSwiYmJ0biI6MSwicHJvZCI6MCwiYW1wIjpmYWxzZX0%3D",
+      "destinationUrl": "https://item.rakuten.co.jp/m-outdoor/mchi30947/",
+      "title": "THERM-A-REST Zシート ソル 30947",
+      "reason": "長く座って観る日に、折りたたんで携帯できるクッションの候補です。",
+      "criteria": "展開時41×33cmが席に収まるか、持ち込み可能かを確認。",
+      "unnecessary": "座席に十分なクッションがある場合は不要です。持ち込み可否は会場へ確認してください。",
+      "sourceUrl": "https://item.rakuten.co.jp/m-outdoor/mchi30947/",
+      "selectionCheckedAt": "2026-10-25",
+      "selectionNote": "本人提供の発行コードと対象商品の一致を確認。最新価格・在庫・配送日・実ネットワーク遷移・成果計測は未確認。"
+    },
+    {
+      "id": "portable-phone-battery",
+      "category": "supplies",
+      "provider": "rakuten-ichiba",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人が楽天の発行HTMLを提供。hrefを変更せず採用。対象商品の一致とHTTPS・ホスト・形式を確認。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58cce0a4.f2b303a1.58cce0a5.5d298725/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Felecom%2F4549550304719%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiI4MHg4MCIsIm5hbSI6MSwibmFtcCI6InJpZ2h0IiwiY29tIjoxLCJjb21wIjoiZG93biIsInByaWNlIjoxLCJib3IiOjEsImNvbCI6MSwiYmJ0biI6MSwicHJvZCI6MCwiYW1wIjpmYWxzZX0%3D",
+      "destinationUrl": "https://item.rakuten.co.jp/elecom/4549550304719/",
+      "title": "ELECOM モバイルバッテリー DE-C45-5000WH",
+      "reason": "地図や連絡を使う外出で充電が不安な場合の候補。容量5000mAh、約112gの薄型モデルです。",
+      "criteria": "使用端末・ケーブルの対応、必要な容量を確認。充電回数は端末や使用状況で異なります。",
+      "unnecessary": "短時間で充電に余裕がある場合は不要です。高温の車内や直射日光の当たる場所に放置しないでください。",
+      "sourceUrl": "https://www.elecom.co.jp/products/DE-C45-5000WH.html",
+      "selectionCheckedAt": "2026-10-25",
+      "selectionNote": "本人提供の発行コードと対象商品の一致を確認。最新価格・在庫・配送日・実ネットワーク遷移・成果計測は未確認。"
+    },
+    {
+      "id": "rakuten-rental-national",
+      "category": "rental",
+      "provider": "rakuten-rental",
+      "scope": "national",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がレンタカー用として発行HTMLを提供。href・画像URL・パラメーターをそのまま採用。最終遷移・実画像・成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/hsc/58ccf272.42d284bf.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6Mjc2MjQ5NiwiYW1wIjpmYWxzZX0%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58ccf272.42d284bf.585fa57b.dad29d3a/?me_id=2100017&me_adv_id=2762496&t=pict",
+      "title": "神楽旅のレンタカーを探す",
+      "reason": "公共交通を確認したうえで、車での移動も比べたい方へ。全国の検索から出発場所と日時を選べます。",
+      "criteria": "利用する地域・出発場所・日時・返却店舗と営業時間、補償条件をリンク先で確認。",
+      "unnecessary": "公共交通で無理なく往復できる場合は不要です。会場の駐車場、終演後の返却・移動時間も確認してください。"
+    }
+  ]
 }
