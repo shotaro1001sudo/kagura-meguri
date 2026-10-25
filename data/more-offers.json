@@ -1,0 +1,11 @@
+{
+  "categories": {
+    "learn": {
+      "enabled": false
+    },
+    "furusato": {
+      "enabled": false
+    }
+  },
+  "offers": []
+}

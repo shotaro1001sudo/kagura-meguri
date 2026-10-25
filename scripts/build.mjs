@@ -13,6 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
+import { learnSection, furusatoSection } from "./lib/more-offers.mjs";
 import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
@@ -23,6 +24,7 @@ const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
 const visitorPlanning = readJson(process.env.VISITOR_PLANNING_FILE ?? 'data/visitor-planning.json');
+const moreOffers = readJson(process.env.MORE_OFFERS_FILE ?? 'data/more-offers.json'); // 本・グッズ・ふるさと納税(本人発行のリンクだけ)
 if(process.env.TEST_PLANNING_OFF === '1') visitorPlanning.categories = {}; // テストの無広告基準は本番の広告設定から独立させる。
 if (process.env.TEST_ADS_OFF) cfg.adsense = { client: "", slotList: "", slotDetail: "" }; // テスト用(広告未設定の状態から確かめる)
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
@@ -157,6 +159,8 @@ const rakutenStay = (x, day) => {
 // 外部リンク(アフィリエイト)の属性。報酬の出るリンクは sponsored。クリック数は、アクセス解析(GoatCounter)で数える
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
+// 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
+const tripBand = (id, heading) => { const b = stayBanners(id); return b ? `<aside class="aff trip-band" aria-labelledby="${id}-stay-h"><h2 id="${id}-stay-h">${heading}</h2><p class="stay-cond"><span>開催地の近くで探す</span></p>${b}${prNote(true)}</aside>` : ""; };
 const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotation">PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p>` : "");
 
 // 宿の案内: 提携IDがあるサービスは、画像バナー(発行コードのリンク)に置き換える。IDがないときだけ、文字のボタン(報酬なし)を出す
@@ -665,7 +669,8 @@ for (const k of kaguras) {
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
-${kaguraDetail(k, info)}`,
+${kaguraDetail(k, info)}
+${learnSection(moreOffers, { kagura: k }, today, "kagura_learn")}`,
   }));
 }
 
@@ -693,7 +698,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}`,
+${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${furusatoSection(moreOffers, { prefecture: p }, today, "pref_furusato")}`,
   }));
 }
 
@@ -850,6 +855,7 @@ const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2>
 ${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
 ${dailyBlock(wkDaily)}
+${items.length ? tripBand("weekend", "週末の宿を探す") : ""}
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
 ${otherWays("/weekend.html")}`,
   }));
@@ -869,6 +875,7 @@ ${tmEvents.map((e) => card(e)).join("") || empty(`${tmLabel}の、これから�
 ${months.includes(mk) ? `<p class="meta"><a href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
+${tmEvents.length ? tripBand("this-month", "今月の旅の宿を探す") : ""}
 ${late && nmEvents.length ? `<h2>来月(${monthLabel(nextMk)})の神楽</h2>${nmEvents.slice(0, 5).map((e) => card(e)).join("")}${nmEvents.length > 5 || months.includes(nextMk) ? `<p class="meta"><a href="/month/${nextMk}.html">${monthLabel(nextMk)}の開催一覧(${nmEvents.length}件)を見る ›</a></p>` : ""}` : ""}
 ${otherWays("/this-month.html")}`,
   }));
@@ -916,7 +923,7 @@ write('dist/experiences.html',layout({
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
-      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>`,
+      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>${key === "index" ? learnSection(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
     }));
   }
 }

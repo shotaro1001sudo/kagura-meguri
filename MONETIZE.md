@@ -57,3 +57,19 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
 - じゃらんの発行コードは JavaScript だったため、その出力(リンクと画像)を静的に書き直しています。見えない計測画像(1px)は、使いません。
 - クリックは、GoatCounter で `banner-rakuten/<ID>`・`banner-jalan/<ID>` として見られます。GA4(同意した人だけ)は、配置 `stay_banner` で、クリックと表示を送ります。
 - バナーを差し替えるときは、新しい発行コードの URL と画像を `STAY_BANNERS` に入れ替えてください。
+
+## 本・グッズ(神楽の種類・歴史のページ)と、ふるさと納税(県のページ)
+
+`data/more-offers.json` に、本人が楽天アフィリエイトで発行したリンクを登録すると表示されます(初期値は、どちらのカテゴリも無効・0件)。
+
+| カテゴリ | 表示する場所 | provider |
+|---|---|---|
+| `learn`(本・映像・グッズ) | 神楽の種類のページ(`kagura` に種類名)、神楽の歴史のトップ(`kagura: "*"` の全般向け) | `rakuten-books` / `rakuten-ichiba` |
+| `furusato`(ふるさと納税) | 県のページ(`prefecture` と `city` が必要) | `rakuten-furusato` |
+
+各項目に必要なもの: `id`・`category`・`provider`・`enabled:true`・`approved:true`・`verifiedAt`・`expiresAt`(確認から90日以内)・`approvalReference`・`url`(楽天の発行リンクをそのまま。`hb.afl.rakuten.co.jp/hgc/…` または `/ichiba/…` で `pc=` つき)・`title`・`note`(選ぶときの一言)。
+リンク先は、本は楽天ブックス、グッズは楽天市場の商品・検索、ふるさと納税は楽天市場の自治体の商品・楽天ふるさと納税のページに限ります。各ページ最大3件。クリックは GoatCounter で `more-learn/<id>`・`more-furusato/<id>`、GA4 は配置 `kagura_learn`・`history_learn`・`pref_furusato` で数えます。
+
+## 今週末・今月の宿
+
+今週末・今月のページで、開催の一覧の後に、宿のバナー(楽天トラベル・じゃらんnet)を出します。開催がない週は出しません。クリックは `banner-*/weekend`・`banner-*/this-month` で数えます。

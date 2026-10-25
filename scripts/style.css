@@ -768,3 +768,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .page-notes h2{margin:0 0 6px;font-size:var(--fs-2xs);font-family:inherit;font-weight:500;letter-spacing:.04em}
 .page-notes p{margin:0 0 4px;max-width:none}
 .page-notes .pr{font-size:var(--fs-2xs);border:0;padding:0}
+
+/* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
+.trip-band{margin-top:32px}
+.more-picks .picks{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
