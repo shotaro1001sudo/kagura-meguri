@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var at = [+el.dataset.lat, +el.dataset.lng];
   var m = L.map('map', { scrollWheelZoom: false, dragging: false, tap: false, zoomControl: false }).setView(at, +el.dataset.zoom || 15);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(m);
-  L.marker(at, { icon: L.divIcon({ className: 'pin ev', iconSize: [22, 22], iconAnchor: [11, 11] }), title: el.getAttribute('aria-label') }).addTo(m);
+  L.marker(at, { icon: L.divIcon({ className: 'pin ev', iconSize: [24, 24], iconAnchor: [12, 12] }), title: el.getAttribute('aria-label') }).addTo(m);
   var zc = L.control.zoom();
   if (btn) btn.addEventListener('click', function () {
     var big = btn.getAttribute('aria-expanded') !== 'true';

@@ -6,6 +6,9 @@
 /* 文字の大きさの基準(全ページ共通): 2xs=小さな印 / xs=狭い場所のラベル / s=補足・ボタン / m=本文と同じ / l=小見出し・カードの題 / xl=ロゴ・縦書き / 2xl=日付の数字 */
 :root{--fs-2xs:.78rem;--fs-xs:.85rem;--fs-s:.92rem;--fs-m:1rem;--fs-l:1.12rem;--fs-xl:1.3rem;--fs-2xl:2rem;--fs-h1:clamp(1.6rem,4.6vw,2.3rem)}
 @media(prefers-color-scheme:dark){:root{--bg:#171513;--fg:#e4ddd0;--mut:#aaa093;--line:#3a352e;--ac:#cf7a68;--ac2:#b3a272;--card:#1e1b18;--onac:#171513}}
+/* 入力欄・選択欄の枠: 地色と 3:1 以上の差をつけ、どこに入力するかが分かるようにする(WCAG 1.4.11)。区切りの罫(--line)より濃い */
+:root{--field:#857a69}
+@media(prefers-color-scheme:dark){:root{--field:#7d7262}}
 /* 背景の和紙の質感(楮の繊維・ムラ・砂目)。地色(--bg)の上に、半透明で重ねる。scripts/make-washi.mjs で作る */
 :root{--paper:url(/washi.svg)}
 @media(prefers-color-scheme:dark){:root{--paper:url(/washi-dark.svg)}}
@@ -249,6 +252,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .leaflet-popup-content ul{list-style:none;margin:6px 0 0;padding:0}.leaflet-popup-content li{margin:4px 0}.leaflet-popup-content .pd{color:var(--ac);font-family:var(--serif);margin-right:6px}
 #map.dmap{height:200px}.mapbox.big #map.dmap{height:min(60vh,480px)}
 @media(max-width:560px){#map.dmap{height:160px}}
+.leaflet-container .leaflet-control-attribution a{text-decoration:underline}/* 地図の出典のリンクを、まわりの文と色だけでなく下線でも見分けられるように */
 .leaflet-popup-content-wrapper{border-radius:2px;background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
 
 /* 日付・場所で探す */
@@ -259,7 +263,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .finder .range{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:10px;padding:10px 12px;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--ac);border-radius:4px}
 .finder .range label{display:inline-flex;align-items:center;gap:8px}
 .finder .where{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:30em}
-.finder input,.finder select{font:inherit;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-height:44px}
+.finder input,.finder select{font:inherit;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--field);border-radius:4px;padding:8px 10px;min-height:44px}
 .finder select{width:100%;min-width:0}
 .finder .keyword{min-width:0;max-width:36em}
 .finder .keyword label{display:block;font-size:var(--fs-s);margin-bottom:6px}
@@ -335,7 +339,7 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .form legend{font-family:var(--serif);letter-spacing:.1em;padding:0 10px 0 0;color:var(--fg)}
 .f{margin:18px 0}
 .f label{display:flex;align-items:center;gap:8px;font-size:var(--fs-s);margin-bottom:6px}
-.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:var(--fs-m);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:2px;min-height:44px}
+.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:var(--fs-m);background:var(--card);color:var(--fg);border:1px solid var(--field);border-radius:2px;min-height:44px}
 .f textarea{resize:vertical;line-height:1.7}
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--ac)}
 .f [aria-invalid="true"]{border-color:var(--ac);border-width:2px}

@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     var byVenue = {}, pts = [];
     order.forEach(function (k) {
-      var s = spots[k], cls = s.ev && s.reg ? 'mix' : s.ev ? 'ev' : 'reg', size = s.n > 1 ? 30 : 22;
+      var s = spots[k], cls = s.ev && s.reg ? 'mix' : s.ev ? 'ev' : 'reg', size = s.n > 1 ? 30 : 24; // 押せる大きさは 24px 以上(WCAG 2.2 2.5.8)
       var icon = L.divIcon({ className: 'pin ' + cls, html: s.n > 1 ? String(s.n) : '', iconSize: [size, size], iconAnchor: [size / 2, size / 2], popupAnchor: [0, -size / 2] });
       var html = s.vorder.map(function (v) { var g = s.venues[v]; return '<b>' + esc(g.name) + '</b><ul>' + g.items.map(function (h) { return '<li>' + h + '</li>'; }).join('') + '</ul>'; }).join('');
       var m = L.marker([s.lat, s.lng], { icon: icon, title: s.vorder.map(function (v) { return s.venues[v].name; }).join('、') + '(' + s.n + '件)' }).addTo(map).bindPopup(html, { maxWidth: 280 });
