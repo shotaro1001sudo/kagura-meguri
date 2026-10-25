@@ -18,12 +18,12 @@ document.addEventListener("click", (event) => {
   }
 
   const label = link.getAttribute("data-goatcounter-click") || "";
-  const match = /^(stay|aff)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
+  const match = /^(stay|aff|banner)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
   if (!match || typeof window.gtag !== "function") return;
 
   window.gtag("event", "affiliate_click", {
     affiliate_partner: match[2],
-    affiliate_placement: match[1] === "stay" ? "event_stay" : "travel_block",
+    affiliate_placement: match[1] === "stay" ? "event_stay" : match[1] === "banner" ? "stay_banner" : "travel_block",
     affiliate_content_id: match[3],
     affiliate_page_path: window.location.pathname
   });
@@ -39,13 +39,18 @@ document.addEventListener("click", (event) => {
     for(const entry of entries) {
       const link=entry.target;
       if(!entry.isIntersecting||entry.intersectionRatio<0.5||sent.has(link)||!link.relList.contains('sponsored'))continue;
+      const bm=/^banner-(jalan|rakuten)\/(.+)$/.exec(link.getAttribute('data-goatcounter-click')||'');
+      if(bm&&link.hasAttribute('data-banner-partner')) {
+        window.gtag('event','affiliate_view',{affiliate_partner:bm[1],affiliate_placement:'stay_banner',affiliate_content_id:bm[2],affiliate_page_path:window.location.pathname});
+        sent.add(link);observer.unobserve(link);continue;
+      }
       const category=link.getAttribute('data-affiliate-category'),partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');
       if(!['supplies','experiences','rental'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','event_experiences','event_rental','regular_experiences','regular_rental'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??''))continue;
       window.gtag('event','affiliate_view',{affiliate_partner:partner,affiliate_category:category,affiliate_placement:placement,affiliate_content_id:id,affiliate_page_path:window.location.pathname});
       sent.add(link);observer.unobserve(link);
     }
   },{threshold:0.5});
-  function observe(){for(const link of document.querySelectorAll('a[data-affiliate-category]'))if(!sent.has(link)){observer.unobserve(link);observer.observe(link);}}
+  function observe(){for(const link of document.querySelectorAll('a[data-affiliate-category],a[data-banner-partner]'))if(!sent.has(link)){observer.unobserve(link);observer.observe(link);}}
   window.addEventListener('kagura:analytics-ready',observe);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')observe();});
   observe();

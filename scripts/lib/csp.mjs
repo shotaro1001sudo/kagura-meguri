@@ -3,6 +3,7 @@
 // - 許可する外部は、地図(unpkg: SRI付き)・地図タイル(OpenStreetMap)・Webフォント・フォーム送信先だけ
 // - AdSense / アナリティクス / 同意管理を設定したときだけ、必要な許可を追加する(AdSense は HTTPS なら許可。理由は SECURITY.md)
 import { createHash } from "node:crypto";
+import { BANNER_IMG_HOSTS } from "./stay-banners.mjs";
 
 // ブラウザは、HTMLを読むときに改行を LF にそろえてからハッシュを計算する。こちらも同じにしないと、CSPが一致しない
 const sha = (s) => `'sha256-${createHash("sha256").update(s.replace(/\r\n?/g, "\n"), "utf8").digest("base64")}'`;
@@ -29,6 +30,9 @@ export function cspFor(html, cfg) {
   };
   // 本人提供の楽天画像バナーが存在するページだけ画像配信元を許可。
   if (/<img\b[^>]*\bsrc="https:\/\/hbb\.afl\.rakuten\.co\.jp\/hsb\//.test(html)) d["img-src"].push("https://hbb.afl.rakuten.co.jp");
+  // 宿の画像バナー(楽天トラベル・じゃらんnet)があるページだけ、その画像の配信元を許可する
+  for (const h of BANNER_IMG_HOSTS) if (html.includes(`src="${h}/`)) d["img-src"].push(h);
+  if (html.includes('src="https://hbb.afl.rakuten.co.jp/')) d["img-src"].push("https://ba.afl.rakuten.co.jp"); // 画像の転送先
   if (ads) {
     // AdSense は動的にスクリプト・iframe を読み込むため、ここだけ緩める(広告を入れる場合のみ)
     d["script-src"].push("'unsafe-inline'", "'unsafe-eval'", "https://pagead2.googlesyndication.com", "https://*.googlesyndication.com", "https://*.google.com", "https://*.doubleclick.net", "https://www.googletagservices.com", "https://partner.googleadservices.com", "https://adservice.google.com");

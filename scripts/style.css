@@ -250,12 +250,17 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .wrap.wide{max-width:1040px}
 .dpage{display:grid;grid-template-columns:minmax(0,1fr)}
 .d-side .stay,.d-side .aff{margin:4px 0 16px}
+.d-banners .stay-banners{margin:0 0 16px}
 @media(min-width:960px){
-  .dpage{grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
-  .d-top{grid-area:top}.d-rest{grid-area:rest}
+  .dpage{grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"top side" "banners side" "rest side";grid-template-rows:auto auto 1fr;column-gap:48px}
+  .d-top{grid-area:top}.d-rest{grid-area:rest}.d-banners{grid-area:banners}
   .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px}
   .d-side .afflist{grid-template-columns:1fr}
 }
+/* 宿の画像バナー: 文字のボタンの下に並べる。大きさは、画像のまま(幅は枠に収める) */
+.stay-banners{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+.stay-banner{display:block;max-width:100%;line-height:0;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.stay-banner img{display:block;max-width:100%;height:auto}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 
 /* フォーム・ボタン */

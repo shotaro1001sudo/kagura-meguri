@@ -49,6 +49,8 @@ export function affiliateTests({ ok, section, OUT, build }) {
   ok(good.length === 1 && good[0][0] === "event" && good[0][1] === "affiliate_click", "対象クリックで1イベントだけ送信");
   ok(good[0]?.[2]?.affiliate_partner === "rakuten" && good[0]?.[2]?.affiliate_content_id === "t-full" && good[0]?.[2]?.affiliate_page_path === "/events/t-full.html", "広告主・公演ID・ページ情報を送信");
   ok(fire({ label: "aff-jalan/広島県" })[0]?.[2]?.affiliate_placement === "travel_block", "県別広告も判定");
+  const bn = fire({ label: "banner-jalan/t-full" })[0]?.[2];
+  ok(bn?.affiliate_placement === "stay_banner" && bn?.affiliate_partner === "jalan" && bn?.affiliate_content_id === "t-full", "宿のバナーのクリックは、配置 stay_banner として判定");
   ok(fire({ consent: false }).length === 0, "統計同意なしでは送信しない");
   ok(fire({ sponsored: false }).length === 0, "非広告リンクは送信しない");
   ok(fire({ label: "share-line" }).length === 0, "共有リンクは除外");

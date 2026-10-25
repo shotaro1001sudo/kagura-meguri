@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
 import { runInNewContext } from "node:vm";
+import { STAY_BANNERS } from "../scripts/lib/stay-banners.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -173,6 +174,24 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
        a('script[data-require-statistics-consent]').length === 1,
        "広告のPR表記とGA4の同意制御を維持する");
   }
+
+  section("宿の画像バナー(楽天トラベル・じゃらんnet)");
+  const bn = STAY_BANNERS;
+  if (built.status === 0) {
+    const ev = cheerio.load(read("dist-test-revenue-ux/events/t-full.html"));
+    const links = ev(".d-banners a.stay-banner");
+    ok(links.length === 2 && ev(".d-banners").prev().hasClass("d-side"), "開催ページ: 宿のカードの次に、2つのバナーを置く");
+    ok(links.map((_, x) => ev(x).attr("href")).get().join() === [bn.rakuten.url, bn.jalan.url].join() && links.find("img").map((_, x) => ev(x).attr("src")).get().join() === [bn.rakuten.imageUrl, bn.jalan.imageUrl].join(), "発行されたリンクと画像を、1文字も変えずに出す");
+    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && ev(x).find("img").attr("alt")), "広告リンクの属性(sponsored・noopener)と、画像の代替テキストがある");
+    ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/t-full,banner-jalan/t-full", "GoatCounterのクリック名は banner-◯◯/開催ID");
+    const csp = ev('meta[http-equiv="Content-Security-Policy"]').attr("content");
+    ok(/img-src[^;]*i.imgvc.com/.test(csp) && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
+    ok(!ev("script[src*='valuecommerce'],img[src*='gifbanner'],noscript").toArray().some((x) => /valuecommerce/.test(ev.html(x))), "JavaScript の埋め込みと、見えない計測画像は、使わない");
+    const pf = cheerio.load(read("dist-test-revenue-ux/pref/広島県.html"));
+    ok(pf("#hiroshima-stay .stay-banner").length === 2, "県のページの宿の帯にも、バナーを出す");
+  }
+  const off = cheerio.load(read(join(OUT, "events/t-full.html")));
+  ok(off(".stay-banner,.d-banners").length === 0, "提携IDが未設定なら、バナーを出さない");
 
   section("広島県: 公式情報で確認した森林公園公演の料金・申込条件");
   const eventId = "hiroshima-shinrin-kagura-2026-11";
