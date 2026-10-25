@@ -433,22 +433,22 @@ write("dist/index.html", layout({
   splash: `<div class="splash" aria-hidden="true"><img src="/symbol.png" width="96" height="96" alt=""><b>${esc(cfg.siteName)}</b></div>`,
   body: `<section class="home-discovery" aria-label="神楽の公演を探す">
 <p class="discovery-title">全国の神楽、公演日程を探す</p>
-<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/calendar.html"><b>日付・地域で探す</b><small>条件を選んで絞り込み</small></a></nav>
+<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b><small>${esc(wkLabel)}${wkRenkyu ? `(${wkRenkyu})` : ""} ・ ${wkCount ? `${wkCount}件の開催・公演` : wkDaily.length ? "毎晩の定期公演あり" : "このあとの開催を見る"}</small></a><a href="/this-month.html"><b>今月の神楽</b><small>${tmLabel} ・ ${tmEvents.length ? `開催 ${tmEvents.length}件` : "定期公演・来月の予定"}</small></a><a href="/calendar.html"><b>日付・場所で探す</b><small>条件を選んで絞り込み</small></a></nav>
 ${prefs.length ? `<nav class="discovery-prefs" aria-label="掲載地域から探す">${prefs.map((p) => `<a href="${prefHref(p)}">${esc(p)}</a>`).join("")}</nav>` : ""}
 </section>
 <section class="hero home-hero">
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
 <div class="copy"><h1>${HERO_H1}</h1></div>
 <div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<p class="home-search-link"><a class="tag" href="/calendar.html">日付・地域から詳しく探す</a></p>
+<p class="home-search-link"><a class="tag" href="/calendar.html">日付・場所で詳しく探す</a></p>
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
-<div id="list">${homeList || empty("いま掲載している開催情報はありません。掲載のご依頼は、上のメニューの「主催者の方へ」からお寄せください。")}</div>
+<div id="list">${homeList || empty('いま掲載している開催情報はありません。掲載のご依頼は<a href="/organizers.html">主催者の方へ</a>から送れます。')}</div>
 ${showAll}
 <p class="empty" id="none" hidden>この地域の${laterMonths.length ? "、近いうちの開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
 ${laterLinks}
-${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>${regular.length > 3 ? `<p class="more" hidden><button type="button" class="btn ghost sm" id="regmore">定期公演をすべて表示(${regular.length}件)</button></p>` : ""}` : ""}
+${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>${regular.length > 3 ? `<p class="more" hidden><button type="button" class="btn ghost sm" id="regmore">定期公演をすべて見る(${regular.length}件)</button></p>` : ""}` : ""}
 ${prefs.length ? `<h2>都道府県で探す</h2><div class="taglist">${prefs.map((p) => `<a class="tag" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</div>` : ""}
 ${kaguras.length ? `<h2>種類で探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}
 ${clientJs("home")}`,
@@ -530,7 +530,7 @@ write("dist/calendar.html", layout({
 <p class="meta">毎晩・毎週の定期公演は、<a href="/weekend.html">今週末の神楽</a>・<a href="/this-month.html">今月の神楽</a>のページにまとめています。</p>
 ${adSlot(cfg.adsense.slotList)}
 ${months.length ? `<h2>月ごとの一覧</h2>${monthLinks()}` : ""}
-<p><a class="btn ghost gcal" href="${GCAL_SUBSCRIBE}" target="_blank" rel="noopener">すべての開催を、Googleカレンダーに追加する</a></p>
+<p><a class="btn ghost gcal" href="${GCAL_SUBSCRIBE}" target="_blank" rel="noopener">すべての開催をGoogleカレンダーに追加</a></p>
 <p class="meta">新しい開催も自動で反映されます。</p>
 <script>
 (function(){
