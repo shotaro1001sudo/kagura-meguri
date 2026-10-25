@@ -160,7 +160,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(built.status === 0, "実際のアフィリエイト設定を模したビルドが成功", built.stderr);
   if (built.status === 0) {
     const a = cheerio.load(read("dist-test-revenue-ux/pref/広島県.html"));
-    const links = a("#hiroshima-stay .afflist a");
+    const links = a("#hiroshima-stay .stay-banner");
     ok(a(".pref-month-nav a[href='#hiroshima-stay']").length === 1 &&
        a("#hiroshima-stay").length === 1,
        "広告を設定すると月の目次から宿探しへ移動できる");
@@ -168,7 +168,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
        links.toArray().every((x) => a(x).attr("rel")?.includes("sponsored")),
        "じゃらん・楽天トラベルの広告リンクとPR属性を維持する");
     ok(links.map((_, x) => a(x).attr("data-goatcounter-click")).get().sort().join() ===
-       "aff-jalan/広島県,aff-rakuten/広島県",
+       "banner-jalan/広島県,banner-rakuten/広島県",
        "GoatCounterの既存クリックラベルは維持する");
     ok(a("#hiroshima-stay .pr").length === 1 &&
        a('script[data-require-statistics-consent]').length === 1,
@@ -179,8 +179,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const bn = STAY_BANNERS;
   if (built.status === 0) {
     const ev = cheerio.load(read("dist-test-revenue-ux/events/t-full.html"));
-    const links = ev(".d-banners a.stay-banner");
-    ok(links.length === 2 && ev(".d-banners").prev().hasClass("d-side"), "開催ページ: 宿のカードの次に、2つのバナーを置く");
+    const links = ev(".d-side a.stay-banner");
+    ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 1 && ev(".d-side .staylinks").length === 0, "開催ページ: サイドの宿カードに、文字ボタンの代わりに2つのバナーを置く");
     ok(links.map((_, x) => ev(x).attr("href")).get().join() === [bn.rakuten.url, bn.jalan.url].join() && links.find("img").map((_, x) => ev(x).attr("src")).get().join() === [bn.rakuten.imageUrl, bn.jalan.imageUrl].join(), "発行されたリンクと画像を、1文字も変えずに出す");
     ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && ev(x).find("img").attr("alt")), "広告リンクの属性(sponsored・noopener)と、画像の代替テキストがある");
     ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/t-full,banner-jalan/t-full", "GoatCounterのクリック名は banner-◯◯/開催ID");
@@ -191,7 +191,16 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     ok(pf("#hiroshima-stay .stay-banner").length === 2, "県のページの宿の帯にも、バナーを出す");
   }
   const off = cheerio.load(read(join(OUT, "events/t-full.html")));
-  ok(off(".stay-banner,.d-banners").length === 0, "提携IDが未設定なら、バナーを出さない");
+  ok(off(".stay-banner").length === 0, "提携IDが未設定なら、バナーを出さない");
+
+  section("開催ページ: 見やすさ(開催までの日数・右の列の要点・共有の位置)");
+  ok(/^開催まで あと\d+日$|^(本日|明日)開催$/.test(off(".hero .until").text()), "見出しの下に、開催までの日数を出す", off(".hero .until").text());
+  const ss = off(".d-side .side-summary");
+  ok(ss.length === 1 && ss.find("a[data-official-side]").attr("href") === off("[data-official-link]").attr("href") && off("[data-official-link]").length === 1, "右の列に、日時・会場と公式情報のボタン(計測は別の印)を置く");
+  { const h = off("main").html(); ok(h.indexOf('class="share"') > h.indexOf('id="map"') && h.indexOf('id="map"') > 0 && h.indexOf('class="share"') > h.indexOf("desc-lead"), "共有のボタンは、説明・地図などの本文の後に置く"); }
+  ok(off(".d-top .share").length === 0 && off(".desc-lead").length === 1, "要点の直後は、説明文(共有ボタンは置かない)");
+  const ended = cheerio.load(read(join(OUT, "events/t-past.html")));
+  ok(ended(".until,.side-summary").length === 0, "終了した開催には、日数と右の列を出さない");
 
   section("広島県: 公式情報で確認した森林公園公演の料金・申込条件");
   const eventId = "hiroshima-shinrin-kagura-2026-11";

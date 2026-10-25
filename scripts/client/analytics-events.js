@@ -24,7 +24,7 @@
       if (url.origin === window.location.origin) {
         const target = /^\/(events|regular)\/([A-Za-z0-9_-]+)\.html$/.exec(url.pathname);
         if (target) send("select_event", { content_id: target[2], content_type: target[1], source_page: path });
-      } else if (detail && link.hasAttribute("data-official-link") && !link.relList.contains("sponsored")) {
+      } else if (detail && (link.hasAttribute("data-official-link") || link.hasAttribute("data-official-side")) && !link.relList.contains("sponsored")) {
         // Official information button only; do not record arbitrary external URLs.
         send("official_link_click", { content_id: detail[2], link_domain: url.hostname });
       }

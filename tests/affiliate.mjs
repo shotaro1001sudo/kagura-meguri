@@ -20,8 +20,8 @@ export function affiliateTests({ ok, section, OUT, build }) {
     ok(html.includes("affiliate_click"), "全ページ共通レイアウトにトラッカーが出る");
     ok($('script[src*="gtag/js"]').length === 0, "明示的な同意前にGA4外部タグを読み込まない");
     ok($('script[data-ga4-id="G-TEST123456"][data-require-statistics-consent]').length === 1, "同意ゲートを持つGA4初期化スクリプトを出力");
-    ok($('.staylinks a[rel*="sponsored"]').length === 2, "予約リンクをそのまま維持");
-    ok($('.staylinks a[data-goatcounter-click]').length === 2, "GoatCounter属性を維持");
+    ok($('.d-side a.stay-banner[rel*="sponsored"]').length === 2 && $(".staylinks").length === 0, "宿のバナー(発行済みリンク)を維持し、文字ボタンは置き換わる");
+    ok($('.d-side a.stay-banner[data-goatcounter-click]').length === 2, "GoatCounter属性を維持");
     ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"), "追加スクリプトがCSPのハッシュに含まれる");
   }
 

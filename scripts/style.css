@@ -250,17 +250,40 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .wrap.wide{max-width:1040px}
 .dpage{display:grid;grid-template-columns:minmax(0,1fr)}
 .d-side .stay,.d-side .aff{margin:4px 0 16px}
-.d-banners .stay-banners{margin:0 0 16px}
+/* 開催までの日数(見出しの下のタグの並び)。1週間以内は朱で強める */
+.until{display:inline-block;margin:6px 0 0;padding:3px 12px;font-size:var(--fs-s);letter-spacing:.06em;color:var(--ac2);border:1px solid var(--ac2);border-radius:999px;vertical-align:middle}
+.until.soon{color:var(--onac);background:var(--ac);border-color:var(--ac)}
+/* 右の列の要点(PCだけ。スマホでは、すぐ上の要点の表と重なるため出さない) */
+.side-summary{display:none}
+/* 説明文: 本文より少し大きく、要点のすぐ後の「何の公演か」を読みやすく */
+.desc-lead{font-size:var(--fs-l);line-height:1.9;margin:8px 0 24px}
+/* 観覧前の確認: 小さな文字のリンクから、押しやすいチップに */
+.d-top .viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 20px}
+.d-top .viewing-preparation .meta{flex-basis:100%;font-size:var(--fs-xs)}
+.d-top .viewing-preparation .tag{margin:0;padding:8px 14px;min-height:40px;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg)}
+.d-top .viewing-preparation .tag:hover{border-color:var(--ac);color:var(--ac)}
+.d-rest .share{margin-top:40px}
+/* 開催ページの交通・体験のカード: 列が狭いため、文字と余白を詰め、選び方の注意は小さく */
+.d-rest .planning-card{padding:16px 18px}.d-rest .planning-card :is(h3,h4){font-size:var(--fs-m);margin-bottom:8px}
+.d-rest .planning-card p{margin:6px 0 10px;font-size:var(--fs-s)}.d-rest .planning-card dl{font-size:var(--fs-xs);line-height:1.75;color:var(--mut)}.d-rest .planning-card dd{margin-bottom:8px}
+.d-rest .planning-card img{max-width:100%;height:auto}
 @media(min-width:960px){
-  .dpage{grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"top side" "banners side" "rest side";grid-template-rows:auto auto 1fr;column-gap:48px}
-  .d-top{grid-area:top}.d-rest{grid-area:rest}.d-banners{grid-area:banners}
-  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px}
+  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
+  .d-top{grid-area:top}.d-rest{grid-area:rest}
+  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:thin}
+  .side-summary.on{display:block}.side-summary{margin:0 0 14px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+  .side-summary p{margin:0}.ss-when{font-family:var(--serif);font-size:var(--fs-l);line-height:1.6}.ss-place{margin-top:6px!important;font-size:var(--fs-s)}.ss-fee{font-size:var(--fs-s);color:var(--mut)}
+  .side-summary .btn{display:flex;width:100%;margin-top:12px}
   .d-side .afflist{grid-template-columns:1fr}
 }
 /* 宿の画像バナー: 文字のボタンの下に並べる。大きさは、画像のまま(幅は枠に収める) */
 .stay-banners{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
 .stay-banner{display:block;max-width:100%;line-height:0;border:1px solid var(--line);border-radius:3px;overflow:hidden}
 .stay-banner img{display:block;max-width:100%;height:auto}
+/* 横長(468×60)のバナーは、サイドの幅いっぱいに縦に並べる。注意書きは、折りたたんで、ボタンとバナーを先に見せる */
+.d-side .stay-banners{flex-direction:column;gap:8px;margin:12px 0}.d-side .stay-banner{width:100%}.d-side .stay-banner img{width:100%}
+.stay-note{margin:8px 0 4px}.stay-note summary{cursor:pointer;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px}.stay-note[open] summary{margin-bottom:2px}
+.d-side .stay{padding:16px}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 
 /* フォーム・ボタン */
@@ -656,3 +679,34 @@ main>p:not([class]){max-width:42em}
 /* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */
 .planning-banner{display:inline-flex;flex-direction:column;gap:10px;max-width:100%;font-size:var(--fs-s)}
 .planning-banner img{display:block;max-width:100%;height:auto;border:0}
+
+/* ---------- 見た目の更新(角丸・影・余白): カードとボタンを、軽く・すっきり見せる ----------
+   左の太い罫(アクセント)をやめ、薄い枠と、やわらかな影で、まとまりを示す */
+:root{--radius:14px;--radius-s:10px;--shadow:0 1px 2px rgb(60 40 20/.05),0 12px 32px -20px rgb(60 40 20/.35)}
+@media(prefers-color-scheme:dark){:root{--shadow:0 1px 2px rgb(0 0 0/.3),0 12px 32px -18px rgb(0 0 0/.8)}}
+:is(.keyinfo,.stay,.aff,.side-summary,.planning-card){border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);background:var(--card)}
+.keyinfo{padding:6px 22px}
+.keyinfo table.info th,.keyinfo table.info td{border-bottom-color:color-mix(in srgb,var(--line) 60%,transparent)}
+.btn{border-radius:var(--radius-s);letter-spacing:.08em}
+.btn.ghost{border-color:var(--line)}.btn.ghost:hover{border-color:var(--ac);color:var(--ac);opacity:1}
+/* 宿のカード: 見出し → 条件のチップ → バナー → 注意(たたむ) */
+.stay h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin:0 0 10px}
+.stay-cond{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px!important}
+.stay-cond span{padding:2px 10px;font-size:var(--fs-2xs);letter-spacing:.06em;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:999px}
+.stay-banner{border-radius:8px;border-color:transparent;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+@media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
+.stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
+/* たたんだ注意書き: 小さく、薄く */
+:is(.stay-note,.pc-more){margin:8px 0 4px}
+:is(.stay-note,.pc-more) summary{cursor:pointer;width:fit-content;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px;list-style-position:inside}
+:is(.stay-note,.pc-more) summary:hover{color:var(--ac)}
+.pc-more dl{margin:6px 0 0}
+/* 右の列の要点 */
+.side-summary{padding:18px 20px}
+/* 交通・体験・準備のカード */
+.planning-lead{font-size:var(--fs-m);margin:0 0 6px}
+.planning-links>a{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;transition:border-color var(--t-s) var(--ease)}
+@media(hover:hover){.planning-links>a:hover{border-color:var(--ac)}}
+.planning-card{padding:18px 20px}
+/* 観覧前のチップ・開催までの日数 */
+.d-top .viewing-preparation .tag{border-radius:999px;box-shadow:0 1px 2px rgb(0 0 0/.05)}

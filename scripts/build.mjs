@@ -158,28 +158,37 @@ const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 const prNote = (on) => (on ? `<small class="meta"><span class="pr">PR</span> 広告(アフィリエイトリンク)を含みます。</small>` : "");
 
+// 宿の案内: 提携IDがあるサービスは、画像バナー(発行コードのリンク)に置き換える。IDがないときだけ、文字のボタン(報酬なし)を出す
+const stayLinks = (e, day, place) => {
+  const btn = (k, url, name) => `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(false, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
+  const btns = [jalanOn ? "" : btn("jalan", jalanStay(e, day), "じゃらん"), rakutenOn ? "" : btn("rakuten", rakutenStay(e, day), "楽天トラベル")].filter(Boolean).join(" ");
+  return btns ? `<p class="staylinks">${btns}</p>` : "";
+};
 /** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
 function stayBlock(e) {
   const day = e.start.slice(0, 10), place = stayPlace(e);
   const on = rakutenOn || jalanOn;
   const evening = !e.timeUnknown && (+e.start.slice(11,13)>=17 || (e.end && (+e.end.slice(11,13)>=17 || e.end.slice(0,10)>day)));
-  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${evening?"夜の観覧後に泊まる宿を探す":"会場エリアの宿を探す"}</h2>
-<p>${evening ? "夜の公演です。終演後の帰り道が気になる方は、宿泊も選択肢です。" : "遠方から観に行くなら、"}${esc(place)}の宿もあわせて探せます。<br><span class="meta annotation">${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。</span></p>
-<p class="staylinks"><a class="btn stay-btn" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}><span>じゃらんで宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a> <a class="btn stay-btn" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}><span>楽天トラベルで宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a></p>
-<p class="meta annotation">${esc(place)}のキーワード検索です。会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。深夜・翌朝までの公演は宿泊日も確認しましょう。</p>
+  // 文字のボタン(日付・人数つきの検索)があるときだけ、検索の条件を示す。バナーは、条件を引き継がないため、条件を書かない
+  const links = stayLinks(e, day, place), banners = stayBanners(e.id), [, mo, d] = day.split("-").map(Number);
+  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${evening ? "夜の観覧後の宿" : "会場周辺の宿"}</h2>
+<p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span>${evening ? "<span>夜の公演</span>" : ""}</p>
+${links}${banners}
+<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${evening ? "夜の公演です。終演後の帰り道が気になる方は、宿泊も選択肢です。" : ""}${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
 function affiliateBlock(e, { banners = true } = {}) {
+  const bn = banners ? stayBanners(e.prefecture) : "";
   const links = [
-    [`${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"],
-    [`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"],
+    ...(banners && jalanOn ? [] : [[`${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"]]),
+    ...(banners && rakutenOn ? [] : [[`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"]]),
     ...(amazonOn ? [["神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
   ];
-  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2><div class="afflist">${links
+  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${links.length ? `<div class="afflist">${links
     .map(([t, s, u, on, k]) => `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
-    .join("")}</div>${banners ? stayBanners(e.prefecture) : ""}${prNote(links.some((l) => l[3]))}</aside>`;
+    .join("")}</div>` : ""}${bn}${prNote(!!bn || links.some((l) => l[3]))}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -692,6 +701,17 @@ const gcalEvent = (e) => {
 const vcal = (list) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteName}//JA`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${ie(cfg.siteName)}`, "X-WR-TIMEZONE:Asia/Tokyo", ...list.flatMap(veventLines), "END:VCALENDAR"].join("\r\n") + "\r\n";
 // 共有: LINE で送る・リンクをコピー(押したときだけ、外部へ移動する。コピーはこのページの中だけで動く)
 const shareBlock = (path, title) => { const url = `${cfg.baseUrl}${path}`; return `<p class="share"><span class="meta">共有</span><a class="btn ghost sm" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}" target="_blank" rel="noopener" data-goatcounter-click="share-line">LINEで送る</a><button type="button" class="btn ghost sm" data-copy="${esc(url)}">リンクをコピー</button></p>${clientJs("share")}`; };
+// 開催までの日数(毎日のビルドで更新される)。当日・翌日は言葉で、それ以降は「あと◯日」
+const daysUntil = (ymd) => Math.round((Date.parse(`${ymd}T00:00Z`) - Date.parse(`${nowJst.slice(0, 10)}T00:00Z`)) / 864e5);
+const untilBadge = (e) => {
+  if (!isUpcoming(e)) return "";
+  const d = daysUntil(e.start.slice(0, 10));
+  return `<span class="until${d <= 7 ? " soon" : ""}">${d <= 0 ? "本日開催" : d === 1 ? "明日開催" : `開催まで あと${d}日`}</span>`;
+};
+/** 開催ページの右の列(PCだけ): スクロールしても、日時・会場と、公式情報のボタンが見えるように */
+const sideSummary = (e, when) => `<div class="side-summary"><p class="ss-when">${when}</p><p class="ss-place">${esc(e.venue || `${e.prefecture}${e.city ?? ""}`)}</p>${e.fee ? `<p class="ss-fee">${esc(e.fee)}</p>` : ""}${e.url ? `<a class="btn" data-official-side href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a>` : ""}</div>`;
+// 要点の表が画面の上に隠れたら、右の列に要点を出す(最初から出すと、すぐ左の表と重なるため)
+const SIDE_SUMMARY_JS = `(function(){var k=document.querySelector('.keyinfo'),s=document.querySelector('.side-summary');if(!k||!s||!window.IntersectionObserver)return;new IntersectionObserver(function(x){s.classList.toggle('on',!x[0].isIntersecting&&x[0].boundingClientRect.top<0)}).observe(k)})()`;
 // 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 公式情報のボタン・共有 → 説明・ほかの日程 → 地図・経路 → 出典 → 宿の案内 → あわせて観たい神楽 → 広告
 // あわせて観たい神楽: 同じ種類の開催予定を先に、同じ県の開催予定を後に(開催・定期公演のどちらのページでも使う)
 const related = (e) => {
@@ -726,21 +746,21 @@ for (const e of events) {
     desc: padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
     head: e.lat != null ? LEAFLET : "",
-    body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? "" : '<span class="tag">終了しました</span>'}`)}
+    body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
 <tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table></div>
 <p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${showPreparation ? preparationLinks(e.lat != null) : ""}</div>
-${isUpcoming(e) ? `<div class="d-side">${stayBlock(e)}</div>${stayBanners(e.id) ? `<div class="d-banners">${stayBanners(e.id)}</div>` : ""}` : ""}<div class="d-rest">
-${shareBlock(`/events/${e.id}.html`, e.name)}
-<p>${esc(e.description)}</p>
+${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}</div>` : ""}<div class="d-rest">
+<p class="desc-lead">${esc(e.description)}</p>
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${showPreparation && e.lat != null ? `<section id="venue-access" aria-label="会場の地図・経路">${mapBlock(e)}</section>` : mapBlock(e)}
 ${sourceNote(e)}${showPreparation ? "" : GUIDE_LINK}
 ${isUpcoming(e)?`${transportSection(visitorPlanning,e,today,'event_rental')}${planningLinks(e,today)}${experienceSection(e,today)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
+${shareBlock(`/events/${e.id}.html`, e.name)}
 ${related(e)}
-${adSlot(cfg.adsense.slotDetail)}</div></div>`,
+${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
   }));
 }
 
@@ -755,7 +775,7 @@ for (const r of regular) {
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table></div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r, { banners: false })}</div>${stayBanners(r.id) ? `<div class="d-banners">${stayBanners(r.id)}</div>` : ""}<div class="d-rest">
+<div class="d-side">${affiliateBlock(r)}</div><div class="d-rest">
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
 ${mapBlock(r)}

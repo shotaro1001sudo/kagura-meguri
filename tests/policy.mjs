@@ -3,6 +3,7 @@
 //   - サイトが実際に通信できる外部(CSPの許可リスト)は、すべて、ポリシーに載っているか
 //   - ブラウザに保存するもの(Cookie / localStorage / sessionStorage)は、ポリシーの記載と同じか
 //   - 広告・解析・アフィリエイト・フォーム送信先・自動取得を、有効にしたときだけ、その項目が現れるか
+import { STAY_BANNERS } from "../scripts/lib/stay-banners.mjs";
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
@@ -116,10 +117,9 @@ export async function policyTests({ ok, section, OUT, build }) {
     const prodCfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
     const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_ADS_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
-    const [jl, rk] = $(".staylinks a").get();
-    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\.[0-9a-f]{8}\/\?pc=/.test($(rk).attr("href")) && /sponsored/.test($(rk).attr("rel")) && $(".stay .pr").length === 1, "本番: 楽天トラベルのリンクは楽天アフィリエイト経由(PR 表示つき)");
-    const jh = new URL($(jl).attr("href"));
-    ok(jh.origin + jh.pathname === "https://ck.jp.ap.valuecommerce.com/servlet/referral" && jh.searchParams.get("sid") === prodCfg.affiliate.valueCommerceSid && jh.searchParams.get("pid") === prodCfg.affiliate.jalanPid && /^https:\/\/www\.jalan\.net\/uw\/uwp2011\/uww2011init\.do\?keyword=/.test(jh.searchParams.get("vc_url")) && /sponsored/.test($(jl).attr("rel")), "本番: じゃらんのリンクはバリューコマース経由(行き先は会場の市町村の宿の検索。sponsored・PR 表示つき)", $(jl).attr("href").slice(0, 160));
+    const banners = $(".d-side .stay-banner");
+    ok(banners.length === 2 && banners.map((_, x) => $(x).attr("href")).get().join() === [STAY_BANNERS.rakuten.url, STAY_BANNERS.jalan.url].join() && banners.toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").length === 1, "本番: 宿は、楽天トラベル・じゃらんnet の発行済みバナー(sponsored・PR表記つき)で案内する");
+    ok($(".staylinks").length === 0, "本番: 提携IDがあるサービスの文字ボタンは、バナーに置き換わる");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
     const pub = prodCfg.adsense.client;
@@ -128,10 +128,13 @@ export async function policyTests({ ok, section, OUT, build }) {
   { // 宿のアフィリエイト(楽天・バリューコマース)
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
-    const [jl, rk] = $(".staylinks a").map((_, x) => $(x).attr("href")).get();
-    ok(/^https:\/\/ck\.jp\.ap\.valuecommerce\.com\/servlet\/referral\?sid=1234567&pid=7654321&vc_url=https%3A%2F%2Fwww\.jalan\.net/.test(jl), "じゃらん: バリューコマースのリンク(サイトIDと提携IDの両方)", jl);
-    ok(/^https:\/\/hb\.afl\.rakuten\.co\.jp\/hgc\/test\.rakuten\/\?pc=https%3A%2F%2Fkw\.travel\.rakuten\.co\.jp/.test(rk), "楽天トラベル: 楽天アフィリエイトのリンク", rk);
-    ok($(".staylinks a[rel~=sponsored]").length === 2 && $(".stay .pr").text() === "PR" && $(".stay").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
+    const bn = $(".d-side .stay-banner");
+    ok(bn.length === 2 && bn.toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").text() === "PR" && $(".stay").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、バナーに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
+    { // IDが未設定のとき: 文字のボタン(報酬なしの、ふつうの検索リンク)で案内する
+      const q = cheerio.load(read(join(sub("plainstay", {}), "events/t-full.html")));
+      const [jl, rk] = q(".staylinks a").map((_, x) => q(x).attr("href")).get();
+      ok(/^https:\/\/www\.jalan\.net\/uw\/uwp2011\//.test(jl) && /^https:\/\/kw\.travel\.rakuten\.co\.jp\/keyword\/Search\.do\?/.test(rk) && q(".staylinks a[rel~=sponsored]").length === 0 && q(".stay-banner").length === 0, "宿の ID が未設定なら、じゃらん・楽天トラベルの文字ボタン(sponsored なし)だけを出す", jl + " " + rk);
+    }
     ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && !p.includes("楽天") && !p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる(提携先の名前は出さない)");
   }
   { // アクセス解析(GoatCounter)
