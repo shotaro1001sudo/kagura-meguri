@@ -281,7 +281,7 @@ const collectNotes = (body) => {
     const t = inner.trim();
     if (t && !notes.includes(t)) notes.push(t);
     return "";
-  }).replace(/<details class="pc-more"><summary>[^<]*<\/summary>\s*<\/details>/g, ""))).join("");
+  }).replace(/<details[^>]*><summary>[^<]*<\/summary>\s*<\/details>/g, ""))).join("");
   return notes.length ? `${out}<section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2>${notes.map((n) => `<p>${n}</p>`).join("")}</section>` : out;
 };
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
