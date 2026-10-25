@@ -308,7 +308,9 @@ const cardFacts = (e) => {
   const source = sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">${sourceName}</a>` : sourceName;
   const checked = e.checked ? `確認日: ${esc(jpDate(e.checked))}`
     : e.auto && e.lastSeen ? `取得日: ${esc(jpDate(e.lastSeen))}（内容の確認日は未登録）` : "確認日: 未登録";
-  return `<div class="meta event-facts"><div>会場: ${esc(e.venue || "要確認")}</div><div>料金: ${esc(e.fee || "要確認")}</div><div>予約要否: ${esc(e.reservation || "要確認")}</div><div>出典: ${source}</div><div>${checked}</div></div>`;
+  // 見出し(会場など)と値を分けて、値を読みやすくする。未定の値は「要確認」を薄く出す
+  const fact = (k, v) => `<div><span class="k">${k}:</span> ${v ? esc(v) : '<span class="tbd">要確認</span>'}</div>`;
+  return `<div class="meta event-facts">${fact("会場", e.venue)}${fact("料金", e.fee)}${fact("予約要否", e.reservation)}<div class="src"><span class="k">出典:</span> ${source}</div><div class="src">${checked}</div></div>`;
 };
 const card = (e, h = "h3", withFacts = true) => {
   const p = parts(e.start);
