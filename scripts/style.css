@@ -223,6 +223,10 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 
 /* フォーム・ボタン */
 select,input,button{font:inherit;font-size:var(--fs-s);padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
+/* 入力欄の例文: ブラウザ既定の灰色(#757575)は地色の上で 4.5:1 に届かないため、注釈と同じ薄い文字にする */
+::placeholder{color:var(--mut);opacity:1}
+/* スマホ・タブレットでは、入力欄の文字を 16px 以上にする(iPhone・iPad は 16px 未満の欄を押すと画面を拡大してしまう) */
+@media(pointer:coarse),(max-width:560px){:is(select,textarea,input:not([type=checkbox],[type=radio],[type=submit],[type=button])){font-size:var(--fs-m)!important}}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:var(--fs-s);letter-spacing:.12em;transition:opacity var(--t-s) var(--ease);margin:0 6px 8px 0}
 .btn:hover{opacity:.85}.btn.ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
 
