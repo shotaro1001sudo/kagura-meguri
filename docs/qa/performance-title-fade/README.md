@@ -28,7 +28,7 @@ The event is 庄内神楽祭り(由布市庄内町ふるさと祭り), reached f
 - `npm run build`: **73 events, 6 regular performances, 142 reported pages**. All 146 emitted HTML files have identical markup after removing scripts, styles, and the generated CSP hash meta.
 - Playwright with installed system Chromium: **37 rendered scenarios**; details in [results.json](results.json). Six before cases and 31 after cases.
 - Both detail families: card entry, back/forward, 1280/390/320. Long Japanese title: direct entry and ordinary text-link entry at all three widths. Ordinary link was inserted into the local calendar page to isolate non-card behavior.
-- Upcoming Hiroshima and past event pages: direct entry at all three widths.
+- Upcoming Hiroshima and past event pages: direct entry at all three widths. Release review corrected the originally expired/404 past-event URL to `/events/npo-hiroshima-474b6fadef.html` (呉の神楽 小坪神楽), and reran all seven additional scenarios with a non-404 heading assertion.
 - Reduced motion, JavaScript disabled, and IntersectionObserver unavailable: event and regular detail at 320. Additional simulated failure of the `pagereveal` handler after head JS runs: content still settles visibly.
 - All after cases settle at opacity 1, no title transition name, no horizontal page overflow, no running animation. All instrumented navigation cases report CLS 0. Back/forward was exercised in Chromium; persisted-document guard behavior is also covered by the unit test.
 - The six settled event/regular screenshot pairs (both variants × all three widths) are **pixel-identical** before/after. No final-layout change.

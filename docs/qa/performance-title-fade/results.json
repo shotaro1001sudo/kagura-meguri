@@ -34,11 +34,11 @@
     {"version": "after", "width": 320, "variant": "regular", "entry": "IntersectionObserver-unavailable", "settled": {"title": "高千穂神楽(高千穂神社 神楽殿)", "rect": {"x": 18, "y": 224.09375, "width": 284, "height": 76.78125}, "opacity": "1", "translate": "none", "mainOpacity": "1", "mainTranslate": "none", "mainAnimation": "none", "viewName": "none", "overflow": false, "reveal": null, "transitions": null, "cls": null, "animations": []}}
   ],
   "additional": [
-    {"width": 1280, "slug": "takamiya-kagura-matsuri-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "ページが見つかりません"}},
+    {"width": 1280, "slug": "npo-hiroshima-474b6fadef", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "呉の神楽 小坪神楽"}},
     {"width": 1280, "slug": "heiwa-no-mai-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "第四回 平和の舞〈神楽の学校2026 inアステールプラザ〉"}},
-    {"width": 390, "slug": "takamiya-kagura-matsuri-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "ページが見つかりません"}},
+    {"width": 390, "slug": "npo-hiroshima-474b6fadef", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "呉の神楽 小坪神楽"}},
     {"width": 390, "slug": "heiwa-no-mai-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "第四回 平和の舞〈神楽の学校2026 inアステールプラザ〉"}},
-    {"width": 320, "slug": "takamiya-kagura-matsuri-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "ページが見つかりません"}},
+    {"width": 320, "slug": "npo-hiroshima-474b6fadef", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "呉の神楽 小坪神楽"}},
     {"width": 320, "slug": "heiwa-no-mai-2026", "result": {"opacity": "1", "animation": "pagein", "overflow": false, "title": "第四回 平和の舞〈神楽の学校2026 inアステールプラザ〉"}},
     {"mode": "vt-handler-failure", "result": {"opacity": "1", "name": "none", "js": true}}
   ]
