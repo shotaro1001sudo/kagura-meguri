@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { robotsAllows, sleep } from "./lib/util.mjs";
 import { reconcile, DEFAULTS, today } from "./lib/collect-core.mjs";
+import { affiliateCoverage, coverageReport } from "./lib/affiliate-coverage.mjs";
 
 const readJson = (p, d) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : d);
 const EVENTS_FILE = process.env.EVENTS_FILE ?? "data/events.json";
@@ -19,6 +20,7 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const REJECTED_FILE = process.env.REJECTED_FILE ?? "data/rejected.json";
 const REPORT_FILE = process.env.REPORT_FILE ?? "data/collect-report.md";
 const SUMMARY_FILE = process.env.SUMMARY_FILE ?? "data/collect-summary.json";
+const PLANNING_FILE = process.env.VISITOR_PLANNING_FILE ?? "data/visitor-planning.json";
 
 const cfg = readJson("config.json", {});
 const ccfg = { ...DEFAULTS, ...(cfg.collect ?? {}) };
@@ -83,7 +85,10 @@ for (const s of sources) {
 
 writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
 const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.city ?? ""} ${e.venue ?? ""})[公式](${e.url})${e.note ? ` — ${e.note}` : ""}`;
-const attention = held.length > 0 || errors > 0 || notes > 0;
+// 新しく掲載した開催に、宿・体験・移動のアフィリエイトが紐づくか(リンクは公開時のビルドが自動で作る)
+const cov = affiliateCoverage({ events: published, affiliate: cfg.affiliate ?? {}, planning: readJson(PLANNING_FILE, {}), today: today(now) });
+const covReport = coverageReport(cov);
+const attention = held.length > 0 || errors > 0 || notes > 0 || covReport.attention;
 const text = `# 週次の自動収集レポート ${today(now)}
 
 ${attention ? "**⚠ 確認が必要な項目があります。**" : "確認が必要な項目は、ありません。"}${inactive ? `(ただし、規約の確認待ちで、止まっている収集元が ${inactive} つあります)` : ""}  自動掲載: ${ccfg.autoPublish ? "オン" : "オフ(すべて保留)"}
@@ -100,12 +105,16 @@ ${held.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}`).
 
 ## 取り下げたもの(${withdrawn.length}件)
 ${withdrawn.map((e) => `${li(e)}\n  - 理由: ${e.withdrawnReason}`).join("\n") || "- なし"}
+
+## アフィリエイトの紐づけ(新しく掲載した開催)
+${covReport.text}
 `;
 writeFileSync(REPORT_FILE, text);
 // 通知(LINE)用の明細。公開してよい事実(名称・日付・場所・URL・理由)だけ
 const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
 writeFileSync(SUMMARY_FILE, JSON.stringify({
   date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
+  affiliate: { missingIds: cov.missingIds, expiring: cov.expiring, unlinked: cov.rows.filter((r) => r.missing.length).map((r) => ({ id: r.id, missing: r.missing })) },
   items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
 }, null, 2));
 console.log(text);
