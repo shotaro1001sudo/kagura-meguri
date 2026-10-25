@@ -583,3 +583,18 @@ main>p:not([class]){max-width:42em}
    結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
 @media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
   #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
+
+/* 都道府県ページ: 先頭のリンクを整理する。「開催月から探す」は罫で挟んだ1本の帯にし、宿探しは月と線で分ける。
+   「観覧前に確認」は、その下に注釈の形で置く。スマホでは月の札を1行にして、横に送る */
+.pref-month-nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin:20px 0 6px;padding:6px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pref-month-nav .meta{display:inline;margin-right:4px;font-size:var(--fs-xs)}
+.pref-month-nav .tag{margin-right:0;font-size:var(--fs-xs);border-bottom-color:transparent;min-height:40px;display:inline-flex;align-items:center}
+.pref-month-nav .tag[href$="-stay"]{padding-left:18px;border-left:1px solid var(--line);border-bottom:0}
+.pref-month-nav+.viewing-preparation{display:block;margin:10px 0 0;padding-left:12px;border-left:2px solid var(--line);font-size:var(--fs-xs);color:var(--mut)}
+.pref-month-nav+.viewing-preparation .tag{font-size:var(--fs-xs);margin-right:12px;padding:6px 0 2px}
+@media(max-width:560px){
+  .pref-month-nav{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:4px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .pref-month-nav::-webkit-scrollbar{display:none}
+  .pref-month-nav>*{flex:none}
+}

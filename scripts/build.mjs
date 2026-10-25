@@ -656,7 +656,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${monthNavigation}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${stayHtml}`,
+${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${stayHtml}`,
   }));
 }
 
