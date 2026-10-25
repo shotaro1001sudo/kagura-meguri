@@ -40,6 +40,12 @@ export const KAGURA_EN = [
   { key: "銀鏡神楽", name: "Shiromi Kagura" },
   { key: "保呂羽山の霜月神楽", name: "Horowasan Shimotsuki Kagura" },
   { key: "春日若宮おん祭", name: "Kasuga Wakamiya On-matsuri" },
+  { key: "秩父神楽", name: "Chichibu Kagura" },
+  { key: "鷲宮催馬楽神楽", name: "Washinomiya Saibara Kagura" },
+  { key: "相模里神楽", name: "Sagami Sato Kagura" },
+  { key: "鎌倉神楽", name: "Kamakura Kagura" },
+  { key: "海南神社面神楽", name: "Kainan Shrine Men Kagura" },
+  { key: "鶴岡八幡宮の御神楽", name: "Mikagura of Tsurugaoka Hachimangu" },
 ];
 
 const kName = (jp) => KAGURA_EN.find((k) => k.key === jp)?.name;
