@@ -27,6 +27,8 @@ export function cspFor(html, cfg) {
     "base-uri": ["'none'"],
     "object-src": ["'none'"],
   };
+  // 本人提供の楽天画像バナーが存在するページだけ画像配信元を許可。
+  if (/<img\b[^>]*\bsrc="https:\/\/hbb\.afl\.rakuten\.co\.jp\/hsb\//.test(html)) d["img-src"].push("https://hbb.afl.rakuten.co.jp");
   if (ads) {
     // AdSense は動的にスクリプト・iframe を読み込むため、ここだけ緩める(広告を入れる場合のみ)
     d["script-src"].push("'unsafe-inline'", "'unsafe-eval'", "https://pagead2.googlesyndication.com", "https://*.googlesyndication.com", "https://*.google.com", "https://*.doubleclick.net", "https://www.googletagservices.com", "https://partner.googleadservices.com", "https://adservice.google.com");

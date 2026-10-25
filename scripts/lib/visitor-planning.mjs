@@ -19,6 +19,11 @@ const providers = {
   'vc-asoview':{category:'experiences',name:'アソビュー！',host:'ck.jp.ap.valuecommerce.com'},
   'vc-jalan-rental':{category:'rental',name:'じゃらんレンタカー',host:'ck.jp.ap.valuecommerce.com'}
 };
+// 本人提供の不透明なhscバナーは、この発行済みのURLと画像の組だけを許可。
+export const RENTAL_BANNER = {
+  "url": "https://hb.afl.rakuten.co.jp/hsc/58ccf272.42d284bf.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6Mjc2MjQ5NiwiYW1wIjpmYWxzZX0%3D",
+  "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58ccf272.42d284bf.585fa57b.dad29d3a/?me_id=2100017&me_adv_id=2762496&t=pict"
+};
 export function validOffer(o,today) {
   if(!o||o.enabled!==true||o.approved!==true||!date(today)||!date(o.verifiedAt)||!date(o.expiresAt)||o.verifiedAt>today||o.expiresAt<today||o.expiresAt<o.verifiedAt)return false;
   if(Date.parse(today)-Date.parse(o.verifiedAt)>90*864e5)return false;
@@ -33,6 +38,8 @@ export function validOffer(o,today) {
     if(typeof o.url!=='string'||/[\s\\\u0000-\u001f\u007f]/.test(o.url))return false;
     const u=new URL(o.url);
     if(u.protocol!=='https:'||u.hostname!==p.host||u.username||u.password||u.port||u.hash)return false;
+    if(u.pathname.startsWith('/hsc/'))return o.provider==='rakuten-rental'&&o.url===RENTAL_BANNER.url&&o.imageUrl===RENTAL_BANNER.imageUrl&&o.scope==='national';
+    if(o.imageUrl!==undefined)return false;
     if(o.provider==='rakuten-ichiba'||o.provider==='rakuten-rental') {
       if(!/^\/(hgc|ichiba)\/[A-Za-z0-9._/-]+\/$/.test(u.pathname))return false;
       if(o.provider==='rakuten-rental'&&!u.searchParams.has('pc'))return false;
@@ -69,7 +76,7 @@ export function offerCards(settings,category,context,today,placement) {
   const offers=offersFor(settings,category,context,today);
   if(!offers.length)return '';
   const labels={supplies:'観覧用品を探す',experiences:'体験プランを探す',rental:'レンタカーを探す'};
-  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 公演の公式予約とは別の外部サービスです。購入・予約により当サイトが報酬を受け取ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card">${category!=='supplies'?`<p class="meta">${o.scope==='national'?'全国の店舗を検索':`${esc(o.prefecture)} ${esc(o.city)}`}</p>`:''}<h3>${esc(o.title)}</h3><p>${esc(o.reason)}</p><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl><a class="btn ghost sm" href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(providers[o.provider].name)}で${labels[category]}（広告）</a><p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p></article>`).join('')}</div></section>`;
+  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 公演の公式予約とは別の外部サービスです。購入・予約により当サイトが報酬を受け取ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card">${category!=='supplies'?`<p class="meta">${o.scope==='national'?'全国の店舗を検索':`${esc(o.prefecture)} ${esc(o.city)}`}</p>`:''}<h3>${esc(o.title)}</h3><p>${esc(o.reason)}</p><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl><a class="${o.imageUrl?'planning-banner':'btn ghost sm'}" href="${esc(o.url)}" aria-label="${esc(providers[o.provider].name)}で${labels[category]}（広告）" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="" loading="lazy"><span>${esc(providers[o.provider].name)}で${labels[category]}（広告）</span>`:`${esc(providers[o.provider].name)}で${labels[category]}（広告）`}</a><p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p></article>`).join('')}</div></section>`;
 }
 export const experiences = [
   {id:'takachiho-boat',prefecture:'宮崎県',city:'高千穂町',name:'高千穂峡の貸しボート',place:'高千穂峡',reason:'峡谷の景色を水上から眺めたい方へ。神楽とは違う角度から土地の自然に触れる候補です。',detail:'予約方法・営業カレンダー・天候による休止を公式案内で確認してください。',source:'https://takachiho-kanko.info/boat/d/',by:'高千穂町観光協会',notice:'10月25日確認時点で、10月25・26日の営業休止が案内されています。再開状況も公式案内をご確認ください。'},

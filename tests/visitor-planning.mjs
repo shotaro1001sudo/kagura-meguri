@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import * as cheerio from 'cheerio';
 import {JSDOM} from 'jsdom';
-import {validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
+import {RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
 import {PREFECTURES} from '../scripts/lib/util.mjs';
 
 export function visitorPlanningTests({ok,section,OUT,build}) {
@@ -57,8 +57,16 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const published=cheerio.load(offerCards(supplied,'supplies',{},today,'guide_supplies'));
   ok(selected.length===3&&published('a[data-affiliate-category=supplies]').length===3,'本人提供の3商品だけを用品広告として表示');
   ok(published('a[data-affiliate-category=supplies]').toArray().every((a,i)=>published(a).attr('href')===selected[i].url&&new URL(selected[i].url).searchParams.get('pc')===selected[i].destinationUrl),'発行URLの全パラメーターを保持し、選定商品と遷移先が一致');
-  ok(!supplied.categories.experiences.enabled&&!supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験・レンタカーは無効、期限付きの価格・ポイントを固定表示しない');
+  ok(!supplied.categories.experiences.enabled&&supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験は無効、レンタカーのみ追加有効、期限付きの価格・ポイントを固定表示しない');
   ok(offersFor(supplied,'supplies',{},'2026-11-24').length===3&&offersFor(supplied,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
+
+  const ownerRental=supplied.offers.find(o=>o.provider==='rakuten-rental');
+  ok(validOffer(ownerRental,today),'本人発行のhsc画像バナーを承認条件つきで扱える');
+  for(const patch of [{url:ownerRental.url+'&pc=https://evil.test/'},{imageUrl:ownerRental.imageUrl.replace('2762496','1234567')},{url:ownerRental.url.replace('_RTLink152141','_RTLink111111')},{provider:'rakuten-ichiba'},{scope:undefined},{approved:false}])ok(!validOffer({...ownerRental,...patch},today),'バナーの組み替え・未承認・別用途を拒否: '+Object.keys(patch).join());
+  const banner=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
+  ok(banner('a[rel~=sponsored]').attr('href')===RENTAL_BANNER.url&&banner('img').attr('src')===RENTAL_BANNER.imageUrl&&banner('a').attr('aria-label').includes('レンタカー'),'本人発行のリンクと画像を保持し、画像に依存しないリンク名を持つ');
+  const expired=cheerio.load(rentalSearch(supplied,{},'2026-11-25','guide_rental'));
+  ok(expired('img,[rel~=sponsored]').length===0&&expired('[data-rental-search]').length===1,'バナー期限切れで広告を消し、通常の公式リンクを保持');
 
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
   ok(fullPage('.stay h2').text().includes('夜の観覧後')&&!dayPage('.stay h2').text().includes('夜')&&!unknownPage('.stay h2').text().includes('夜'),'夜公演だけ宿泊を強調し、昼・時刻不明は夜と断定しない');
@@ -79,6 +87,15 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
       ok(past('.planning-ads,.planning-links,#nearby-experiences').length===0&&other('a[data-affiliate-category]').length===0,'終了済み・地域不一致の公演に広告を出さない');
       ok(event('.staylinks a[rel~=sponsored]').length===2&&event('[data-official-link]').length===1,'既存の宿泊2件と公式情報ボタンを維持');
       ok(event('main').html().indexOf('data-official-link')<event('main').html().indexOf('planning-ads'),'公式予約情報を広告より先に表示');
+    }
+    const issuedOutput=join(temp,'issued');
+    const issued=build('tests/fixtures/events.test.json',issuedOutput,{VISITOR_PLANNING_FILE:'data/visitor-planning.json',TEST_PLANNING_OFF:'0',BUILD_NOW:today+'T12:00'});
+    ok(issued.status===0,'本人提供コードの実設定でビルド成功',issued.stderr);
+    if(issued.status===0){
+      const actual=cheerio.load(readFileSync(join(issuedOutput,'guide.html'),'utf8'));
+      const csp=actual('meta[http-equiv="Content-Security-Policy"]').attr('content')||'';
+      ok(actual('[data-affiliate-category=supplies]').length===3&&actual('[data-affiliate-category=rental]').length===1&&actual('.planning-banner img').attr('src')===RENTAL_BANNER.imageUrl,'実ビルドで用品3商品とレンタカーバナー1件を併載');
+      ok(/img-src[^;]*https:\/\/hbb\.afl\.rakuten\.co\.jp/.test(csp)&&!/script-src[^;]*hbb\.afl/.test(csp),'画像配信元だけCSPで許可し、スクリプトには許可しない');
     }
     const partial={...settings,categories:{supplies:{enabled:true},experiences:{enabled:false},rental:{enabled:false}}};writeFileSync(file,JSON.stringify(partial));
     const part=build('tests/fixtures/events.test.json',join(temp,'part'),{VISITOR_PLANNING_FILE:file,TEST_PLANNING_OFF:'0',BUILD_NOW:today+'T12:00'});
