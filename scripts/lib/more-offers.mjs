@@ -7,7 +7,7 @@ const cityOf = (s) => String(s ?? "").replace(/^.*郡/, "");
 
 // 提供元: 名前と、リンク先(楽天の pc= の行き先)として認めるホスト
 export const PROVIDERS = {
-  "rakuten-books": { category: "learn", name: "楽天ブックス", targets: ["books.rakuten.co.jp"] },
+  "rakuten-books": { category: "learn", name: "楽天ブックス", targets: ["books.rakuten.co.jp", "item.rakuten.co.jp"] }, // 楽天市場の「楽天ブックス」店(item.rakuten.co.jp/book/)も含む
   "rakuten-ichiba": { category: "learn", name: "楽天市場", targets: ["item.rakuten.co.jp", "search.rakuten.co.jp"] },
   "rakuten-furusato": { category: "furusato", name: "楽天ふるさと納税", targets: ["item.rakuten.co.jp", "event.rakuten.co.jp", "search.rakuten.co.jp"] },
 };
@@ -29,6 +29,12 @@ export function validMoreOffer(o, today) {
       const t = new URL(u.searchParams.get(key));
       if (t.protocol !== "https:" || t.username || t.password || t.port || !p.targets.includes(t.hostname)) return false;
     }
+    // 商品画像(任意): 同じ発行コードの画像URL(hbb.afl.rakuten.co.jp/hgb/<リンクと同じID>/)だけを認める
+    if (o.imageUrl !== undefined) {
+      if (typeof o.imageUrl !== "string" || /[\s\\\u0000-\u001f\u007f]/.test(o.imageUrl)) return false;
+      const img = new URL(o.imageUrl), id = u.pathname.split("/")[2];
+      if (img.protocol !== "https:" || img.hostname !== "hbb.afl.rakuten.co.jp" || img.pathname !== `/hgb/${id}/` || img.username || img.password || img.port) return false;
+    }
     return true;
   } catch { return false; }
 }
@@ -45,7 +51,7 @@ export function moreOffersFor(settings, category, context, today) {
   }).sort((a, b) => (a.kagura === "*") - (b.kagura === "*")).slice(0, 3);
 }
 
-const pick = (o, placement) => `<p class="pick"><span class="pr">PR</span><a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-${o.category}/${o.id}" data-affiliate-category="${o.category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(o.title)}</a><small>${esc(PROVIDERS[o.provider].name)}${o.category === "furusato" ? ` ・ ${esc(cityOf(o.city))}` : ""} ・ ${esc(o.note)}</small></p>`;
+const pick = (o, placement) => `<p class="pick${o.imageUrl ? " has-img" : ""}"><span class="pr">PR</span><a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-${o.category}/${o.id}" data-affiliate-category="${o.category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl ? `<img src="${esc(o.imageUrl)}" alt="" width="72" height="72" loading="lazy" decoding="async">` : ""}<span>${esc(o.title)}</span></a><small>${esc(PROVIDERS[o.provider].name)}${o.category === "furusato" ? ` ・ ${esc(cityOf(o.city))}` : ""} ・ ${esc(o.note)}</small></p>`;
 const adNote = '<p class="meta annotation"><span class="pr">PR</span> 紹介している商品・返礼品のリンクは広告(アフィリエイトリンク)です。購入・寄付で当サイトに報酬が入ることがあります。</p>';
 
 // 発行リンクがまだないときの代わり: 楽天の検索ページへの、ふつうのリンク(広告ではない・報酬なし)

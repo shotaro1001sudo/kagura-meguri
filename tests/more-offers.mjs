@@ -31,6 +31,10 @@ export function moreOffersTests({ ok, section }) {
   ok(f("h2").text() === "神楽の町を応援する" && f("a").attr("data-affiliate-category") === "furusato" && f("small").text().includes("北広島町") && f(".annotation").text().includes("寄付"), "ふるさと納税: 町の名前と、広告であることを示す");
   const esc = cheerio.load(learnBlock({ ...settings, offers: [{ ...book, title: "<img src=x onerror=alert(1)>" }] }, { kagura: "石見神楽" }, today, "kagura_learn"));
   ok(esc("img").length === 0, "タイトルなどは、エスケープする");
+  const img = "https://hbb.afl.rakuten.co.jp/hgb/test.books/?me_id=1&item_id=2&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2Fx.jpg";
+  ok(validMoreOffer({ ...book, imageUrl: img }, today) && !validMoreOffer({ ...book, imageUrl: img.replace("test.books", "other.id") }, today) && !validMoreOffer({ ...book, imageUrl: "https://example.com/x.jpg" }, today), "商品画像は、同じ発行コードの画像URLだけを認める");
+  const withImg = cheerio.load(learnBlock({ ...settings, offers: [{ ...book, imageUrl: img }] }, { kagura: "石見神楽" }, today, "kagura_learn"));
+  ok(withImg(".pick.has-img a img").attr("src") === img && withImg(".pick.has-img a img").attr("alt") === "" && withImg(".pick.has-img a span").text() === book.title, "画像つきの紹介: 画像と題名が1つのリンク(画像は飾りとして代替テキストなし)");
   const data = JSON.parse(readFileSync("data/more-offers.json", "utf8"));
   ok(data.offers.every((o) => validMoreOffer(o, today) || o.enabled !== true), "本番データ: 有効にしたものは、検査に通る");
   const js = readFileSync("scripts/client/affiliate.js", "utf8");

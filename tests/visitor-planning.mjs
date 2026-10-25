@@ -96,7 +96,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
       const g=cheerio.load(readFileSync(join(output,'guide.html'),'utf8')),event=cheerio.load(readFileSync(join(output,'events/t-full.html'),'utf8')),past=cheerio.load(readFileSync(join(output,'events/t-past.html'),'utf8')),other=cheerio.load(readFileSync(join(output,'events/t-xss.html'),'utf8'));
       ok(g('a[data-affiliate-category=supplies]').length===1&&g('a[data-affiliate-category=rental]').length===1,'ガイドの該当箇所に用品・レンタカーを表示');
       ok(event('a[data-affiliate-category=experiences]').length===1&&event('a[data-affiliate-category=rental]').length===1,'対象公演だけに体験・レンタカーを表示');
-      ok(past('.planning-ads,.planning-links,#nearby-experiences').length===0&&other('a[data-affiliate-category]').length===0,'終了済み・地域不一致の公演に広告を出さない');
+      ok(past('.planning-ads,.planning-links,#nearby-experiences').length===0&&other(':is(a[data-affiliate-category=supplies],a[data-affiliate-category=experiences],a[data-affiliate-category=rental])').length===0,'終了済み・地域不一致の公演に広告を出さない(本・ふるさと納税の紹介は別の仕組み)');
       ok(event('.d-side .staylinks a[rel~=sponsored]').length===2&&event('[data-official-link]').length===1,'既存の宿泊2件と公式情報ボタンを維持');
       ok(event('main').html().indexOf('data-official-link')<event('main').html().indexOf('planning-ads'),'公式予約情報を広告より先に表示');
     }

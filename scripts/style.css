@@ -798,3 +798,10 @@ input,select,textarea,button{border-radius:var(--radius-s)}
   .top nav a.on:hover{background:var(--ac);color:var(--onac)}
   .top nav a:focus-visible{outline-offset:1px}
 }
+/* 本・ふるさと納税の紹介: 商品画像つき(小さな正方形) */
+.pick.has-img a{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center;text-decoration:none;color:var(--fg)}
+.pick.has-img a img{width:72px;height:72px;object-fit:contain;border-radius:8px;background:#fff}
+.pick.has-img a span{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.pick.has-img a:hover span{color:var(--ac);text-decoration-color:var(--ac)}
+.pick.has-img small{margin-left:82px}
+.pick.has-img>.pr{display:inline-block;margin:0 0 6px}

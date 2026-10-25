@@ -1,11 +1,121 @@
 {
   "categories": {
     "learn": {
-      "enabled": false
+      "enabled": true
     },
     "furusato": {
-      "enabled": false
+      "enabled": true
     }
   },
-  "offers": []
+  "offers": [
+    {
+      "id": "sanin-kagura-photobook",
+      "category": "learn",
+      "provider": "rakuten-books",
+      "kagura": "*",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce8d42.f7335bd9.58ce8d43.0089d03a/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F15404541%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce8d42.f7335bd9.58ce8d43.0089d03a/?me_id=1213310&item_id=19064082&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Fbook%2Fcabinet%2F1049%2F9784866111049.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "山陰の神楽写真集(松浦敦男)",
+      "note": "山陰の神楽の写真集。舞や面の雰囲気を知る一冊に"
+    },
+    {
+      "id": "iwami-kagura-tokyo-dvd",
+      "category": "learn",
+      "provider": "rakuten-ichiba",
+      "kagura": "石見神楽",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce92b9.eb787d41.58ce92ba.4a9e5c23/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsaikashop%2F29056%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce92b9.eb787d41.58ce92ba.4a9e5c23/?me_id=1209249&item_id=10225879&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Fsaikashop%2Fcabinet%2F29056_thumb_r1.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "DVD 2019 石見神楽東京公演",
+      "note": "公演の映像で、舞の速さや囃子を予習できます"
+    },
+    {
+      "id": "hiroshima-kagura-dvd",
+      "category": "learn",
+      "provider": "rakuten-ichiba",
+      "kagura": "広島神楽",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce930b.9ff2191b.58ce930c.1d647f3f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcloverplain%2Fhk-101%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce930b.9ff2191b.58ce930c.1d647f3f/?me_id=1254968&item_id=10006395&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Fcloverplain%2Fcabinet%2Fcd_dvd%2Fhk-101-item01.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "DVD 広島神楽",
+      "note": "広島神楽の映像作品"
+    },
+    {
+      "id": "misato-iwami-mask",
+      "category": "furusato",
+      "provider": "rakuten-furusato",
+      "prefecture": "島根県",
+      "city": "邑智郡美郷町",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce9352.bce96ac5.58ce9353.b6230160/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff324485-misato%2F55580072%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce9352.bce96ac5.58ce9353.b6230160/?me_id=1384942&item_id=10000055&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff324485-misato%2Fcabinet%2F55580072_01_web_s.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "石見神楽面 般若",
+      "note": "民芸品としての石見神楽の面"
+    },
+    {
+      "id": "hamada-kagura-cards",
+      "category": "furusato",
+      "provider": "rakuten-furusato",
+      "prefecture": "島根県",
+      "city": "浜田市",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce93f8.dd6734d2.58ce93f9.b3ae002e/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff322024-hamada%2F21584%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce93f8.dd6734d2.58ce93f9.b3ae002e/?me_id=1361143&item_id=10002864&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff322024-hamada%2Fcabinet%2F08933082%2F08937334%2Fkagura_2_resize.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "石見神楽バトルカード 8枚セット",
+      "note": "石見神楽を題材にしたご当地カード(数量限定)"
+    },
+    {
+      "id": "kitahiroshima-kagura-mask",
+      "category": "furusato",
+      "provider": "rakuten-furusato",
+      "prefecture": "広島県",
+      "city": "山県郡北広島町",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce9478.3bf97a73.58ce9479.d258958d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff343692-kitahiroshima%2Fsu089_002%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce9478.3bf97a73.58ce9479.d258958d/?me_id=1371375&item_id=10000830&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff343692-kitahiroshima%2Fcabinet%2Fprodacts_all%2Fc_su089_002_1.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "広島神楽面《般若(中)》 神楽面師・管沢良典作",
+      "note": "神楽面師が手がける広島神楽の面"
+    },
+    {
+      "id": "takachiho-kagura-mask",
+      "category": "furusato",
+      "provider": "rakuten-furusato",
+      "prefecture": "宮崎県",
+      "city": "西臼杵郡高千穂町",
+      "enabled": true,
+      "approved": true,
+      "verifiedAt": "2026-10-25",
+      "expiresAt": "2026-11-24",
+      "approvalReference": "2026-10-25 本人がログインした楽天アフィリエイトの「商品リンク作成」で発行。href・画像URLは変更なし。成果計測は未確認。",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce944c.316a2cd4.58ce944d.21e838ae/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff454419-takachiho%2Fa-17%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
+      "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce944c.316a2cd4.58ce944d.21e838ae/?me_id=1332775&item_id=10000440&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff454419-takachiho%2Fcabinet%2F10110453%2F10110502%2F1.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
+      "title": "高千穂神楽面(手力雄命・白木)",
+      "note": "高千穂の装飾用の神楽面"
+    }
+  ]
 }
