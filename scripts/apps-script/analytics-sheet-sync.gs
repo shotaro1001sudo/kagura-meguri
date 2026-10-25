@@ -5,6 +5,11 @@
 const KAGURA_ANALYTICS_SYNC = Object.freeze({
   SPREADSHEET_ID: "13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",
   SITE: "https://kagurameguri.jp/", DAYS: 28, LIMIT: 1000, MAX_ATTEMPTS: 2,
+  // Exact public routes only; never accept arbitrary slugs, query strings or user paths.
+  FUNNEL_PAGES: ["/","/index.html","/guide.html","/experiences.html","/weekend.html","/this-month.html","/map.html","/calendar.html","/kagura/index.html",
+    "/regular/takachiho-jinja-kagura.html","/regular/hiroshima-kagura-teiki-2026.html","/regular/masuda-iwami-yokagura.html",
+    "/regular/hamada-yokagura-shusai.html","/regular/gotsu-arifuku-kagura.html","/regular/yunotsu-yokagura.html"],
+  FUNNEL_EVENTS: ["official_link_click","affiliate_click","affiliate_view"],
   DAILY: "12_計測日次", DETAIL: "13_計測内訳", RUNS: "14_計測実行",
   DAILY_HEADER: ["ID","source","date","timezone","active_users","sessions","PV","engagement_rate","clicks","impressions","CTR","position","quality","fetched_at_JST"],
   DETAIL_HEADER: ["ID","source","breakdown","from","to","timezone","dimension","metrics_json","quality","fetched_at_JST"],
@@ -51,15 +56,19 @@ function kaguraUpsert_(ss,name,header,rows,replaceSource) {
   const saved=table.sheet.getRange(1,1,values.length,header.length).getValues();
   if(kaguraComparable_(saved)!==kaguraComparable_(values)) throw kaguraFailure_("SHEET_READBACK_MISMATCH");
 }
-function kaguraReportRows_(report,dimensions,metrics) {
+function kaguraReportRows_(report,dimensions,metrics,optionalMetrics) {
   if(!report || !Array.isArray(report.dimensionHeaders) || !Array.isArray(report.metricHeaders) ||
     report.dimensionHeaders.map(x=>x.name).join()!==dimensions.join() ||
     report.metricHeaders.map(x=>x.name).join()!==metrics.join() ||
     (report.rows!==undefined && !Array.isArray(report.rows))) throw kaguraFailure_("GA4_SCHEMA_INVALID");
   return (report.rows||[]).map(row=>{
     if(row.dimensionValues?.length!==dimensions.length || row.metricValues?.length!==metrics.length) throw kaguraFailure_("GA4_SCHEMA_INVALID");
-    const numbers=row.metricValues.map(x=>{
-      if(x.value==null || String(x.value).trim()==="" || !Number.isFinite(Number(x.value)) || Number(x.value)<0) throw kaguraFailure_("GA4_METRIC_INVALID");
+    const numbers=row.metricValues.map((x,i)=>{
+      if(x?.value==null || String(x.value).trim()==="") {
+        if((optionalMetrics||[]).includes(metrics[i])) return null;
+        throw kaguraFailure_("GA4_METRIC_INVALID");
+      }
+      if(!Number.isFinite(Number(x.value)) || Number(x.value)<0) throw kaguraFailure_("GA4_METRIC_INVALID");
       return Number(x.value);
     });
     return row.dimensionValues.map(x=>x.value).concat(numbers);
@@ -85,25 +94,48 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
   let observed=[];
   const jobs=[
     ["daily",["date"],["activeUsers","sessions","screenPageViews","engagementRate"]],
-    ["source",["sessionSourceMedium"],["sessions"]],
+    ["source",["sessionSourceMedium"],["sessions","engagedSessions","engagementRate"]],
     ["device",["deviceCategory"],["sessions"]],
     ["page",["pagePath"],["screenPageViews"]],
-    ["event",["eventName"],["eventCount"]]
+    ["event",["eventName"],["eventCount"]],
+    ["page_event",["pagePath","eventName"],["eventCount"]]
   ];
   for(const [kind,dimensions,metrics] of jobs) {
-    const report=AnalyticsData.Properties.runReport({dateRanges:[{startDate:from,endDate:to}],
+    const request={dateRanges:[{startDate:from,endDate:to}],
       dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),limit:KAGURA_ANALYTICS_SYNC.LIMIT,returnPropertyQuota:true,
-      orderBys:dimensions.map(dimensionName=>({dimension:{dimensionName}}))},"properties/"+property);
-    const rows=kaguraReportRows_(report,dimensions,metrics);
+      orderBys:dimensions.map(dimensionName=>({dimension:{dimensionName}}))};
+    if(kind==="page_event") request.dimensionFilter={andGroup:{expressions:[
+      {filter:{fieldName:"pagePath",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_PAGES,caseSensitive:true}}},
+      {filter:{fieldName:"eventName",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_EVENTS,caseSensitive:true}}}
+    ]}};
+    const report=AnalyticsData.Properties.runReport(request,"properties/"+property);
+    const rows=kaguraReportRows_(report,dimensions,metrics,kind==="source"?["engagedSessions","engagementRate"]:[]);
+    if(rows.length>KAGURA_ANALYTICS_SYNC.LIMIT) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+    if(kind==="source" && rows.some(row=>(row[2]!==null&&row[2]>row[1])||(row[3]!==null&&row[3]>1))) throw kaguraFailure_("GA4_METRIC_INVALID");
+    if(kind==="page_event") {
+      const seen=new Set();
+      rows.forEach(row=>{
+        const key=JSON.stringify(row.slice(0,2));
+        if(!KAGURA_ANALYTICS_SYNC.FUNNEL_PAGES.includes(row[0]) || !KAGURA_ANALYTICS_SYNC.FUNNEL_EVENTS.includes(row[1]) || seen.has(key)) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+        seen.add(key);
+      });
+    }
     if(report.metadata?.timeZone!==zone) throw kaguraFailure_("GA4_TIMEZONE_MISMATCH");
     const quality=["processing/revisions possible; self/debug not certified",
-      report.rowCount>rows.length?"truncated":"",report.metadata?.subjectToThresholding?"thresholded":"",
+      report.rowCount>rows.length?"truncated":"",rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"limit reached; completeness not guaranteed":"",
+      kind==="source"?"metrics=sessions,engagedSessions,engagementRate; schema=2" : "",
+      kind==="source"&&rows.some(row=>row.slice(1).includes(null))?"optional_metrics_missing (not zero)":"",
+      kind==="page_event"?"fixed public routes only; metrics=eventCount; events are not users or conversions":"",
+      report.metadata?.subjectToThresholding?"thresholded":"",
       report.metadata?.samplingMetadatas?.length?"sampled":""].filter(Boolean).join("; ");
     flags.push(kind+": "+quality+(rows.length?"":"; no_rows"));
     if(kind==="daily") {
       observed=rows.map(row=>[String(row[0]).replace(/^(\d{4})(\d{2})(\d{2})$/,"$1-$2-$3"),...row.slice(1)]);
       if(observed.some(row=>row[4]>1)) throw kaguraFailure_("GA4_METRIC_INVALID");
-    } else rows.forEach(row=>details.push(["GA4-"+kind+"-"+to+"-"+row[0],"GA4",kind,from,to,zone,row[0],JSON.stringify(row.slice(1)),quality,fetched]));
+    } else rows.forEach(row=>{
+      const dimension=kind==="page_event"?JSON.stringify(row.slice(0,2)):row[0];
+      details.push(["GA4-"+kind+"-"+to+"-"+dimension,"GA4",kind,from,to,zone,dimension,JSON.stringify(row.slice(dimensions.length)),quality,fetched]);
+    });
   }
   return {daily:kaguraDailyRows_("GA4",from,to,zone,observed,flags[0],fetched),details,
     status:observed.length?"success":"no_data",note:flags.join(" / ")+"; missing_days="+(KAGURA_ANALYTICS_SYNC.DAYS-observed.length)};
@@ -112,7 +144,7 @@ function kaguraCollectGsc_(now,fetched) {
   const zone="America/Los_Angeles",from=kaguraDay_(now,zone,-KAGURA_ANALYTICS_SYNC.DAYS),to=kaguraDay_(now,zone,-1),details=[];
   let observed=[];
   const flags=[];
-  for(const kind of ["daily","query","page"]) {
+  for(const kind of ["daily","query","page","device"]) {
     const response=UrlFetchApp.fetch("https://www.googleapis.com/webmasters/v3/sites/"+encodeURIComponent(KAGURA_ANALYTICS_SYNC.SITE)+"/searchAnalytics/query",{
       method:"post",contentType:"application/json",followRedirects:false,muteHttpExceptions:true,
       headers:{Authorization:"Bearer "+ScriptApp.getOAuthToken()},
@@ -125,6 +157,7 @@ function kaguraCollectGsc_(now,fetched) {
     if(!report || report.error || (report.rows!==undefined && !Array.isArray(report.rows))) throw kaguraFailure_("GSC_SCHEMA_INVALID");
     const rows=report.rows||[],quality=(kind==="page"
       ?"final; top rows only; page aggregation differs from property totals; missing pages are not zero"
+      :kind==="device"?"final; device aggregation; missing devices are not zero; CTR/position are not additive"
       :"final; anonymized queries omitted; top rows only")+(rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"; limit reached; completeness not guaranteed":"");
     if(rows.length>KAGURA_ANALYTICS_SYNC.LIMIT) throw kaguraFailure_("GSC_SCHEMA_INVALID");
     const pageKeys=new Set();
@@ -134,6 +167,10 @@ function kaguraCollectGsc_(now,fetched) {
         const page=row.keys[0];
         if(typeof page!=="string" || !page.startsWith(KAGURA_ANALYTICS_SYNC.SITE) || /[\s\u0000-\u001f\u007f]/.test(page) || pageKeys.has(page)) throw kaguraFailure_("GSC_SCHEMA_INVALID");
         pageKeys.add(page);
+      }
+      if(kind==="device") {
+        if(!["DESKTOP","MOBILE","TABLET"].includes(row.keys[0]) || pageKeys.has(row.keys[0])) throw kaguraFailure_("GSC_SCHEMA_INVALID");
+        pageKeys.add(row.keys[0]);
       }
       if(kind==="daily") observed.push([row.keys[0],row.clicks,row.impressions,row.ctr,row.position]);
       else details.push(["GSC-"+kind+"-"+to+"-"+row.keys[0],"GSC",kind,from,to,zone,row.keys[0],JSON.stringify([row.clicks,row.impressions,row.ctr,row.position]),quality,fetched]);
@@ -154,7 +191,7 @@ function checkKaguraAnalyticsSetup() {
     readyForOwnerTest:free&&property&&bound&&typeof AnalyticsData!=="undefined",
     note:"OAuth scopes/API enablement and access still require owner test; no API requests made"};
 }
-/** Max 8 API calls/run; source-specific same-day success guard, <=2 attempts/source/day. */
+/** Max 10 API calls/run; source-specific same-day success guard, <=2 attempts/source/day. */
 function dailyKaguraAnalyticsSync() {
   const props=PropertiesService.getScriptProperties(),ss=SpreadsheetApp.getActiveSpreadsheet();
   if(!ss || ss.getId()!==KAGURA_ANALYTICS_SYNC.SPREADSHEET_ID) throw kaguraFailure_("BOUND_SHEET_REQUIRED");
