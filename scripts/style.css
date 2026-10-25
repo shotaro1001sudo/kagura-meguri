@@ -179,6 +179,9 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .planning-notice{padding-left:12px;border-left:2px solid var(--ac);font-size:var(--fs-s)}
 .planning-steps{padding-left:1.5em}.planning-steps li{margin-bottom:14px}
 .planning-ads{margin:24px 0}
+.experience-areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.experience-areas>a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card);text-decoration:none;scroll-margin-top:100px}
+.experience-areas>a:target{outline:2px solid var(--ac);outline-offset:2px}
 @media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a{padding:14px 18px}.planning-card{padding:18px}}
 /* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
 .quiz-offer{position:fixed;inset:auto 20px 20px auto;margin:0;z-index:100;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:20px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003}

@@ -1,0 +1,195 @@
+{
+  "checked": "2026-10-25",
+  "source": "https://www.jalan.net/activity/",
+  "provider": "じゃらん遊び・体験",
+  "regions": [
+    {
+      "prefecture": "北海道",
+      "url": "https://www.jalan.net/activity/010000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "青森県",
+      "url": "https://www.jalan.net/activity/020000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "岩手県",
+      "url": "https://www.jalan.net/activity/030000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "宮城県",
+      "url": "https://www.jalan.net/activity/040000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "秋田県",
+      "url": "https://www.jalan.net/activity/050000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "山形県",
+      "url": "https://www.jalan.net/activity/060000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "福島県",
+      "url": "https://www.jalan.net/activity/070000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "東京都",
+      "url": "https://www.jalan.net/activity/130000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "神奈川県",
+      "url": "https://www.jalan.net/activity/140000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "埼玉県",
+      "url": "https://www.jalan.net/activity/110000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "千葉県",
+      "url": "https://www.jalan.net/activity/120000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "茨城県",
+      "url": "https://www.jalan.net/activity/100000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "栃木県",
+      "url": "https://www.jalan.net/activity/080000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "群馬県",
+      "url": "https://www.jalan.net/activity/090000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "山梨県",
+      "url": "https://www.jalan.net/activity/150000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "長野県",
+      "url": "https://www.jalan.net/activity/160000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "新潟県",
+      "url": "https://www.jalan.net/activity/170000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "富山県",
+      "url": "https://www.jalan.net/activity/180000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "石川県",
+      "url": "https://www.jalan.net/activity/190000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "福井県",
+      "url": "https://www.jalan.net/activity/200000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "愛知県",
+      "url": "https://www.jalan.net/activity/230000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "岐阜県",
+      "url": "https://www.jalan.net/activity/220000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "三重県",
+      "url": "https://www.jalan.net/activity/240000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "大阪府",
+      "url": "https://www.jalan.net/activity/270000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "兵庫県",
+      "url": "https://www.jalan.net/activity/280000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "京都府",
+      "url": "https://www.jalan.net/activity/260000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "滋賀県",
+      "url": "https://www.jalan.net/activity/250000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "奈良県",
+      "url": "https://www.jalan.net/activity/290000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "和歌山県",
+      "url": "https://www.jalan.net/activity/300000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "岡山県",
+      "url": "https://www.jalan.net/activity/330000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "広島県",
+      "url": "https://www.jalan.net/activity/340000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "鳥取県",
+      "url": "https://www.jalan.net/activity/310000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "島根県",
+      "url": "https://www.jalan.net/activity/320000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "山口県",
+      "url": "https://www.jalan.net/activity/350000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "徳島県",
+      "url": "https://www.jalan.net/activity/360000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "香川県",
+      "url": "https://www.jalan.net/activity/370000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "愛媛県",
+      "url": "https://www.jalan.net/activity/380000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "高知県",
+      "url": "https://www.jalan.net/activity/390000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "福岡県",
+      "url": "https://www.jalan.net/activity/400000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "佐賀県",
+      "url": "https://www.jalan.net/activity/410000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "長崎県",
+      "url": "https://www.jalan.net/activity/420000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "熊本県",
+      "url": "https://www.jalan.net/activity/430000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "大分県",
+      "url": "https://www.jalan.net/activity/440000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "宮崎県",
+      "url": "https://www.jalan.net/activity/450000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "鹿児島県",
+      "url": "https://www.jalan.net/activity/460000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "沖縄県",
+      "url": "https://www.jalan.net/activity/470000/?fromPage=search-area"
+    },
+    {
+      "prefecture": "静岡県",
+      "url": "https://www.jalan.net/activity/210000/?fromPage=search-area"
+    }
+  ]
+}

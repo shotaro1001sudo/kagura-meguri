@@ -13,7 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
-import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceSection, planningLinks, transportSection } from './lib/visitor-planning.mjs';
+import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, transportSection } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -853,10 +853,10 @@ ${otherWays("/this-month.html")}`,
 
 // 周辺体験は、一般的な観覧ガイドと分けて地域・確認日を明示する。
 write('dist/experiences.html',layout({
-  title:`神楽の前後に楽しむ周辺体験・高千穂の立ち寄り案内 | ${cfg.siteName}`,
-  desc:padDesc('神楽の公演とあわせて楽しむ周辺体験を、公式案内をもとに紹介します。初版は高千穂の貸しボートとあまてらす鉄道。公演の時間を先に確認し、営業日・予約方法・移動の余裕を確かめて旅を計画しましょう。'),
+  title:`神楽の前後に楽しむ体験を全国47都道府県から探す | ${cfg.siteName}`,
+  desc:padDesc('神楽の公演前後に楽しむ体験を、全国47都道府県から探せます。開催地域に合わせて陶芸やものづくり、自然体験、日帰り温泉などを検討し、リンク先で日付・所要時間・会場からの距離を確認して旅の予定を組みましょう。'),
   path:'/experiences.html',ld:[crumbsLd([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']]),{'@context':'https://schema.org','@type':'Article',headline:'神楽の前後に楽しむ周辺体験',inLanguage:'ja',datePublished:PLANNING_CHECKED,dateModified:PLANNING_CHECKED,author:ORG_LD,publisher:ORG_LD,mainEntityOfPage:`${cfg.baseUrl}/experiences.html`,image:ogUrl(false)}],
-  body:`${crumbNav([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']])}${hero('神楽の前後も、土地を楽しむ','公演の時間を決めてから、もうひとつの寄り道を。')}<p>公演と同じ日に出かけるなら、まず受付と開演、帰りの交通を確認しましょう。体験の所要時間に、移動・待ち時間・食事の余裕を加えて考えるのがおすすめです。</p>${experienceSection({guide:true},today)||'<p>現在、確認済みの周辺体験案内はありません。最新の情報は各地域の観光協会などで確認してください。</p>'}${offerCards(visitorPlanning,'experiences',{guide:true},today,'experience_guide')}<h2>神楽の予定から旅を組み立てる</h2><p><a class="btn" href="/calendar.html">公演の日付・地域を探す</a> <a class="btn ghost" href="/guide.html#transport">行き帰りの交通を確認</a> <a class="btn ghost" href="/guide.html#packing">持ち物を選ぶ</a></p>`
+  body:`${crumbNav([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']])}${hero('神楽の前後も、土地を楽しむ','全国47都道府県から、もうひとつの寄り道を。')}<p>公演を観る日も、旅先を先に選ぶ日も。訪問する都道府県から、ものづくり・自然体験・日帰り温泉などを探してみませんか。日付・所要時間・移動の余裕を確かめて予定を組みましょう。</p>${experienceDirectory()}${offerCards(visitorPlanning,'experiences',{guide:true},today,'experience_guide')}<h2>神楽の予定から旅を組み立てる</h2><p><a class="btn" href="/calendar.html">公演の日付・地域を探す</a> <a class="btn ghost" href="/guide.html#transport">行き帰りの交通を確認</a> <a class="btn ghost" href="/guide.html#packing">持ち物を選ぶ</a></p>`
 }));
 
 // ---------- 神楽の歴史(総論と年表、古代・中世・近世・近代の4ページ) ----------

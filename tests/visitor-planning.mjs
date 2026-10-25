@@ -3,7 +3,8 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import * as cheerio from 'cheerio';
 import {JSDOM} from 'jsdom';
-import {validOffer,offersFor,offerCards,experiencesFor,experienceSection} from '../scripts/lib/visitor-planning.mjs';
+import {validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
+import {PREFECTURES} from '../scripts/lib/util.mjs';
 
 export function visitorPlanningTests({ok,section,OUT,build}) {
   section('観覧準備3企画: 広告の個別承認・期限・対象地域・安全なURL');
@@ -27,6 +28,18 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(experiencesFor(context,today).length===2&&experiencesFor({prefecture:'大分県',city:'高千穂町'},today).length===0,'公式確認済みの2体験を当該地域だけへ接続');
   ok(experiencesFor(context,'2027-02-01').length===0,'90日を超えた未再確認の体験を出し続けない');
   ok(experienceSection(context,today).includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止と移動の未確認を明示し、間に合うと断言しない');
+  const national=cheerio.load(experienceDirectory());
+  ok(experienceRegions.length===47&&new Set(experienceRegions.map(x=>x.url)).size===47&&PREFECTURES.every(p=>experienceRegions.some(x=>x.prefecture===p)),'全国47都道府県の実際の検索先が揃い、県とURLの重複がない');
+  ok(national('.experience-areas a').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
+  for(const prefecture of PREFECTURES){
+    const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today));
+    const expected=experienceRegions.find(x=>x.prefecture===prefecture);
+    ok(page('#nearby-experiences a').first().attr('href')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
+    ok(planningLinks({prefecture},today).includes('href="#nearby-experiences"'),`${prefecture}: 公演から当該県の案内へ進める`);
+  }
+  ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
+  ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
+  ok(national('.experience-areas a').toArray().every(a=>!national(a).attr('rel').includes('sponsored')&&!national(a).attr('data-affiliate-category')),'一般検索先は広告・成果リンクとして扱わない');
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   ok(guide('#packing .planning-card').length===4&&guide('#transport .planning-steps li').length===3,'持ち物4種類と公共交通→貸出返却→会場経路の順で案内');
