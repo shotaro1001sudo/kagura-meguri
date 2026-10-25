@@ -45,6 +45,14 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(guide('#packing .planning-card').length===4&&guide('#transport .planning-steps li').length===3,'持ち物4種類と公共交通→貸出返却→会場経路の順で案内');
   ok(guide('.planning-ads').length===0,'本番の新規3カテゴリは未承認なので広告を出さない');
 
+  const supplied=JSON.parse(readFileSync('data/visitor-planning.json','utf8'));
+  const selected=offersFor(supplied,'supplies',{},today);
+  const published=cheerio.load(offerCards(supplied,'supplies',{},today,'guide_supplies'));
+  ok(selected.length===3&&published('a[data-affiliate-category=supplies]').length===3,'本人提供の3商品だけを用品広告として表示');
+  ok(published('a[data-affiliate-category=supplies]').toArray().every((a,i)=>published(a).attr('href')===selected[i].url&&new URL(selected[i].url).searchParams.get('pc')===selected[i].destinationUrl),'発行URLの全パラメーターを保持し、選定商品と遷移先が一致');
+  ok(!supplied.categories.experiences.enabled&&!supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験・レンタカーは無効、期限付きの価格・ポイントを固定表示しない');
+  ok(offersFor(supplied,'supplies',{},'2026-11-24').length===3&&offersFor(supplied,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
+
   const temp=mkdtempSync(join(tmpdir(),'km-planning-'));
   try {
     const file=join(temp,'settings.json');writeFileSync(file,JSON.stringify(settings));
