@@ -772,3 +772,16 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 /* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
 .trip-band{margin-top:32px}
 .more-picks .picks{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+
+/* 右の列の小さな枠(本・ふるさと納税) */
+.side-box{margin:0 0 16px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.side-box h2{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.side-box h2:after{display:none}
+.side-box>p{margin:0 0 10px;font-size:var(--fs-xs);color:var(--mut)}
+.side-box .picks{margin:0}.side-box .pick{font-size:var(--fs-xs)}
+.search-links{display:grid;gap:6px;margin:0!important}
+.search-link{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;min-height:40px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--bg);color:var(--fg);text-decoration:none;font-size:var(--fs-xs)}
+.search-link:after{content:"›";color:var(--ac2)}.search-link:hover{border-color:var(--ac);color:var(--ac)}
+.more-picks .search-links{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+/* 縦に並べるとき(右の列・スマホ)は、バナーの高さを画像のままにする(flex の伸び縮みで高さ0にならないように) */
+.d-side .aff .stay-banner{flex:none}
+@media(max-width:560px){.aff .stay-banner{flex:none}}

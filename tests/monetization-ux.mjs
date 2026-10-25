@@ -187,13 +187,14 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     ok(/img-src[^;]*i.imgvc.com/.test(csp) && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
     ok(!ev("script[src*='valuecommerce'],img[src*='gifbanner'],noscript").toArray().some((x) => /valuecommerce/.test(ev.html(x))), "JavaScript の埋め込みと、見えない計測画像は、使わない");
     const wk = cheerio.load(read("dist-test-revenue-ux/weekend.html")), tm = cheerio.load(read("dist-test-revenue-ux/this-month.html"));
-    ok(wk(".trip-band .stay-banner").length === 2 && wk(".trip-band .pr").length >= 1 && wk(".trip-band").prevAll(".card").length > 0, "今週末: 開催の一覧の後に、宿のバナー(PR表示つき)を置く");
+    ok(wk(".d-side .trip-band .stay-banner").length === 2 && wk(".trip-band .pr").length >= 1 && wk(".d-top .card").length > 0 && wk(".d-side").prev().hasClass("d-top"), "今週末: 宿のバナー(PR表示つき)は右の列(スマホでは一覧の後)");
     ok(tm(".trip-band .stay-banner").map((_, x) => tm(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/this-month,banner-jalan/this-month", "今月: 宿のバナーのクリックは、ページ名で数える");
     const pf = cheerio.load(read("dist-test-revenue-ux/pref/広島県.html"));
     ok(pf("#hiroshima-stay .stay-banner").length === 2, "県のページの宿の帯にも、バナーを出す");
   }
   const off = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(off(".stay-banner").length === 0, "提携IDが未設定なら、バナーを出さない");
+  ok(off(".d-side .side-box a.search-link").length >= 1 && off(".d-side .side-box h2").first().text().includes("もっと"), "開催ページの右の列に、本(と神楽の町のふるさと納税)の案内を出す");
 
   section("開催ページ: 見やすさ(開催までの日数・右の列の要点・共有の位置)");
   ok(/^開催まで あと\d+日$|^(本日|明日)開催$/.test(off(".hero .until").text()), "見出しの下に、開催までの日数を出す", off(".hero .until").text());

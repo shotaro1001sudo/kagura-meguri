@@ -48,17 +48,30 @@ export function moreOffersFor(settings, category, context, today) {
 const pick = (o, placement) => `<p class="pick"><span class="pr">PR</span><a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-${o.category}/${o.id}" data-affiliate-category="${o.category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(o.title)}</a><small>${esc(PROVIDERS[o.provider].name)}${o.category === "furusato" ? ` ・ ${esc(cityOf(o.city))}` : ""} ・ ${esc(o.note)}</small></p>`;
 const adNote = '<p class="meta annotation"><span class="pr">PR</span> 紹介している商品・返礼品のリンクは広告(アフィリエイトリンク)です。購入・寄付で当サイトに報酬が入ることがあります。</p>';
 
-/** 種類・歴史のページ: 「もっと楽しむ」本・映像・グッズ */
-export function learnSection(settings, context, today, placement) {
+// 発行リンクがまだないときの代わり: 楽天の検索ページへの、ふつうのリンク(広告ではない・報酬なし)
+const searchLink = (href, label, gc) => `<a class="search-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer" data-goatcounter-click="${esc(gc)}">${label}</a>`;
+const booksSearch = (kw) => searchLink(`https://books.rakuten.co.jp/search?sitem=${encodeURIComponent(kw)}`, `楽天ブックスで「${esc(kw)}」の本を探す`, `more-learn-search/${kw}`);
+const furusatoSearch = (town) => searchLink(`https://search.rakuten.co.jp/search/mall/${encodeURIComponent(`ふるさと納税 ${town}`)}/`, `${esc(town)}のふるさと納税を見る`, `more-furusato-search/${town}`);
+const plainNote = '<p class="meta annotation">本・ふるさと納税の検索ページへのリンクは、広告ではありません。在庫・返礼品の内容は、リンク先で確認してください。</p>';
+
+/** 本・映像・グッズ: 発行リンクがあれば紹介(PR)、なければ楽天ブックスの検索へ。side: 右の列の小さな枠 */
+export function learnBlock(settings, context, today, placement, { side = false } = {}) {
   const list = moreOffersFor(settings, "learn", context, today);
-  if (!list.length) return "";
-  const title = context.kagura && context.kagura !== "*" ? `${esc(context.kagura)}をもっと楽しむ` : "神楽をもっと知る";
-  return `<section class="more-picks" aria-labelledby="learn-h"><h2 id="learn-h">${title}</h2><p>観る前後に、本や映像で物語や背景を知っておくと、舞の見え方が変わります。</p><div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}</section>`;
+  const kw = context.kagura && context.kagura !== "*" ? context.kagura : "神楽";
+  const title = kw === "神楽" ? "神楽をもっと知る" : `${esc(kw)}をもっと楽しむ`;
+  const inner = list.length ? `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}` : `<p class="search-links">${booksSearch(kw)}</p>${plainNote}`;
+  return side
+    ? `<aside class="side-box" aria-labelledby="${placement}-h"><h2 id="${placement}-h">${title}</h2><p>本や映像で、物語や背景を。</p>${inner}</aside>`
+    : `<section class="more-picks" aria-labelledby="${placement}-h"><h2 id="${placement}-h">${title}</h2><p>観る前後に、本や映像で物語や背景を知っておくと、舞の見え方が変わります。</p>${inner}</section>`;
 }
 
-/** 県のページ: 神楽の町のふるさと納税 */
-export function furusatoSection(settings, context, today, placement) {
+/** ふるさと納税: 発行リンクがあれば紹介(PR)、なければ町ごとの検索へ。towns: 神楽が開かれる市町村(最大3) */
+export function furusatoBlock(settings, context, today, placement, { side = false } = {}) {
   const list = moreOffersFor(settings, "furusato", context, today);
-  if (!list.length) return "";
-  return `<section class="more-picks" aria-labelledby="furusato-h"><h2 id="furusato-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ${esc(context.prefecture)}の町を応援できます。</p><div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}</section>`;
+  const towns = [...new Set((context.towns ?? []).map(cityOf).filter(Boolean))].slice(0, 3);
+  if (!list.length && !towns.length) return "";
+  const inner = list.length ? `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}` : `<p class="search-links">${towns.map(furusatoSearch).join("")}</p>${plainNote}`;
+  return side
+    ? `<aside class="side-box" aria-labelledby="${placement}-h"><h2 id="${placement}-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ町へ。</p>${inner}</aside>`
+    : `<section class="more-picks" aria-labelledby="${placement}-h"><h2 id="${placement}-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ${esc(context.prefecture)}の町を応援できます。</p>${inner}</section>`;
 }

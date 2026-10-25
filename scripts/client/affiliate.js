@@ -12,7 +12,7 @@ document.addEventListener("click", (event) => {
   const category=link.getAttribute('data-affiliate-category');
   if(category) {
     const partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');
-    if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??'')||typeof window.gtag!=='function')return;
+    if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato','kagura_furusato','event_learn','event_furusato','regular_learn','regular_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??'')||typeof window.gtag!=='function')return;
     window.gtag('event','affiliate_click',{affiliate_partner:partner,affiliate_category:category,affiliate_placement:placement,affiliate_content_id:id,affiliate_page_path:window.location.pathname});
     return;
   }
@@ -45,7 +45,7 @@ document.addEventListener("click", (event) => {
         sent.add(link);observer.unobserve(link);continue;
       }
       const category=link.getAttribute('data-affiliate-category'),partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');
-      if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??''))continue;
+      if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato','kagura_furusato','event_learn','event_furusato','regular_learn','regular_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??''))continue;
       window.gtag('event','affiliate_view',{affiliate_partner:partner,affiliate_category:category,affiliate_placement:placement,affiliate_content_id:id,affiliate_page_path:window.location.pathname});
       sent.add(link);observer.unobserve(link);
     }

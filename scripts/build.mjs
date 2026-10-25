@@ -13,7 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { learnSection, furusatoSection } from "./lib/more-offers.mjs";
+import { learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
@@ -670,7 +670,7 @@ for (const k of kaguras) {
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
 ${kaguraDetail(k, info)}
-${learnSection(moreOffers, { kagura: k }, today, "kagura_learn")}`,
+${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
 }
 
@@ -698,7 +698,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${furusatoSection(moreOffers, { prefecture: p }, today, "pref_furusato")}`,
+${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
   }));
 }
 
@@ -777,7 +777,7 @@ for (const e of events) {
 <tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table></div>
 <p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${showPreparation ? preparationLinks(e.lat != null) : ""}</div>
-${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${learnBlock(moreOffers, { kagura: e.kagura || "*" }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 <p class="desc-lead">${esc(e.description)}</p>
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
@@ -801,7 +801,7 @@ for (const r of regular) {
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table></div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r)}</div><div class="d-rest">
+<div class="d-side">${affiliateBlock(r)}${learnBlock(moreOffers, { kagura: r.kagura || "*" }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
 ${mapBlock(r)}
@@ -848,16 +848,17 @@ const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[
   write("dist/weekend.html", layout({
     title: `今週末の神楽(${wkLabel}) | ${cfg.siteName}`,
     desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に観られる神楽の開催と定期公演を日付順にまとめています。${names.length ? `${listNames(names)}${names.length > 3 ? "など" : ""}が観られます。` : "開催情報がない週は、その先の開催をご案内します。"}毎日自動で更新しています。`)),
-    path: "/weekend.html", active: "/weekend.html",
+    path: "/weekend.html", active: "/weekend.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]]), itemListLd(`今週末の神楽(${wkLabel})`, [...wkEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...wkRegs, ...wkDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]])}${hero("今週末の神楽", `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
 <p class="lead">${esc(wkLabel)}に観られる神楽を日付順にまとめています(${jpDate(today)}時点)。</p>
+<div class="dpage"><div class="d-top">
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2>
 ${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
 ${dailyBlock(wkDaily)}
-${items.length ? tripBand("weekend", "週末の宿を探す") : ""}
+</div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}</div>` : ""}<div class="d-rest">
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
-${otherWays("/weekend.html")}`,
+${otherWays("/weekend.html")}</div></div>`,
   }));
 }
 {
@@ -866,18 +867,19 @@ ${otherWays("/weekend.html")}`,
   write("dist/this-month.html", layout({
     title: `今月の神楽 ${tmLabel}の開催日程 | ${cfg.siteName}`,
     desc: padDesc(clip(`${tmLabel}、今日から月末までに観られる神楽をまとめています。${[tmEvents.length ? `開催${tmEvents.length}件` : "", tmRegs.length + tmDaily.length ? `定期公演${tmRegs.length + tmDaily.length}件の公演日` : ""].filter(Boolean).join("と、").replace(/.+/, (t) => `${t}を載せています`) || "開催情報がないときは、来月の予定をご案内します"}。${names.length ? `${listNames(names)}など。` : ""}毎日自動で更新しています。`)),
-    path: "/this-month.html", active: "/this-month.html",
+    path: "/this-month.html", active: "/this-month.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]]), itemListLd(`今月の神楽(${tmLabel})`, [...tmEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...tmRegs, ...tmDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
 <p class="lead">${tmLabel}の、今日(${esc(mdLabel(today))})から月末までに観られる神楽をまとめています。</p>
+<div class="dpage"><div class="d-top">
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2>
 ${tmEvents.map((e) => card(e)).join("") || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
 ${months.includes(mk) ? `<p class="meta"><a href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
-${tmEvents.length ? tripBand("this-month", "今月の旅の宿を探す") : ""}
+</div>${tmEvents.length && tripBand("this-month", "今月の旅の宿を探す") ? `<div class="d-side">${tripBand("this-month", "今月の旅の宿を探す")}</div>` : ""}<div class="d-rest">
 ${late && nmEvents.length ? `<h2>来月(${monthLabel(nextMk)})の神楽</h2>${nmEvents.slice(0, 5).map((e) => card(e)).join("")}${nmEvents.length > 5 || months.includes(nextMk) ? `<p class="meta"><a href="/month/${nextMk}.html">${monthLabel(nextMk)}の開催一覧(${nmEvents.length}件)を見る ›</a></p>` : ""}` : ""}
-${otherWays("/this-month.html")}`,
+${otherWays("/this-month.html")}</div></div>`,
   }));
 }
 
@@ -923,7 +925,7 @@ write('dist/experiences.html',layout({
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
-      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>${key === "index" ? learnSection(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
+      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
     }));
   }
 }
