@@ -710,3 +710,35 @@ main>p:not([class]){max-width:42em}
 .planning-card{padding:18px 20px}
 /* 観覧前のチップ・開催までの日数 */
 .d-top .viewing-preparation .tag{border-radius:999px;box-shadow:0 1px 2px rgb(0 0 0/.05)}
+
+/* ---------- 全ページ: 一覧のカード・入口・チップを、開催ページと同じ見た目に ---------- */
+.card{padding:18px 22px;margin:0 0 12px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.card:last-of-type{border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent)}
+.card.reg{padding-left:22px;padding-right:22px;border-left:1px solid color-mix(in srgb,var(--line) 75%,transparent);background:color-mix(in srgb,var(--ac2) 6%,var(--card))}
+@media(hover:hover){.card:hover{background:var(--card);border-color:color-mix(in srgb,var(--ac) 55%,var(--line))}.card.reg:hover{background:color-mix(in srgb,var(--ac2) 6%,var(--card))}}
+.card .event-facts{font-size:var(--fs-s)}
+@media(max-width:560px){.card,.card.reg{padding:14px 16px}}
+/* トップの入口: 3つのタイル */
+.quick{gap:10px;border:0}
+.quick a,.quick a:first-child,.home-discovery .quick a:last-child{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.quick a:hover{border-color:var(--ac)}
+/* 月・準備・種類などの並び: 押しやすいチップ */
+:is(.pref-month-nav,.viewing-preparation,.taglist) .tag{margin:0 8px 8px 0;padding:6px 14px;min-height:36px;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:var(--fs-xs)}
+:is(.pref-month-nav,.viewing-preparation,.taglist) .tag:hover{border-color:var(--ac);color:var(--ac)}
+.pref-month-nav+.viewing-preparation{border-left:0;padding-left:0}
+/* 見出しの下のタグ(種類・県): 小さなチップ */
+.hero .tag{margin:6px 6px 0 0;padding:3px 12px;border:1px solid var(--line);border-radius:999px;font-size:var(--fs-xs)}
+.hero .tag.gold{border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
+/* 日付の一覧(あわせて観たい神楽・今週末など): 線を薄く */
+.monthlist li,.monthlist li:last-child{border-color:color-mix(in srgb,var(--line) 60%,transparent)}
+/* 県・種類のページの宿の帯: バナーを横に並べる(スマホは縦) */
+.aff .stay-banners{flex-wrap:nowrap}.aff .stay-banner{flex:1 1 0;min-width:0}.aff .stay-banner img{width:100%}
+.d-side .aff .stay-banners{flex-direction:column}
+@media(max-width:560px){.aff .stay-banners{flex-direction:column}}
+.aff h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l)}
+/* 種類・県の解説、ガイドの囲み */
+.about{padding:4px 0}
+input,select,textarea,button{border-radius:var(--radius-s)}
+.pref-month-nav+.viewing-preparation .tag{margin:0 8px 8px 0;padding:6px 14px;font-size:var(--fs-xs)}
+/* 一覧のカード: 長い料金・会場は2行までにして、詳しくは開催ページで(カードの高さをそろえる) */
+@media(max-width:560px){.card .event-facts>div:is(:nth-child(1),:nth-child(2)){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}}
