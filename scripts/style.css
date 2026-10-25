@@ -6,6 +6,9 @@
 /* 文字の大きさの基準(全ページ共通): 2xs=小さな印 / xs=狭い場所のラベル / s=補足・ボタン / m=本文と同じ / l=小見出し・カードの題 / xl=ロゴ・縦書き / 2xl=日付の数字 */
 :root{--fs-2xs:.78rem;--fs-xs:.85rem;--fs-s:.92rem;--fs-m:1rem;--fs-l:1.12rem;--fs-xl:1.3rem;--fs-2xl:2rem;--fs-h1:clamp(1.6rem,4.6vw,2.3rem)}
 @media(prefers-color-scheme:dark){:root{--bg:#171513;--fg:#e4ddd0;--mut:#aaa093;--line:#3a352e;--ac:#cf7a68;--ac2:#b3a272;--card:#1e1b18;--onac:#171513}}
+/* 入力欄・選択欄の枠: 地色と 3:1 以上の差をつけ、どこに入力するかが分かるようにする(WCAG 1.4.11)。区切りの罫(--line)より濃い */
+:root{--field:#857a69}
+@media(prefers-color-scheme:dark){:root{--field:#7d7262}}
 /* 背景の和紙の質感(楮の繊維・ムラ・砂目)。地色(--bg)の上に、半透明で重ねる。scripts/make-washi.mjs で作る */
 :root{--paper:url(/washi.svg)}
 @media(prefers-color-scheme:dark){:root{--paper:url(/washi-dark.svg)}}
@@ -98,8 +101,23 @@ html{scroll-padding-top:84px}
 .cta-end{margin-top:40px}
 .card :is(h3,h4){margin:0 0 2px;font-size:var(--fs-l);line-height:1.6}.card :is(h3,h4) a{color:var(--fg);text-decoration:none}.card :is(h3,h4) a:after{content:"";position:absolute;inset:0}
 .meta{color:var(--mut);font-size:var(--fs-s)}
-/* 注釈だけを本文より小さく。日時・料金・検索操作の .meta は維持する。 */
-.meta.annotation,small.meta{font-size:var(--fs-xs);line-height:1.8}
+/* 伝えたい文と、注釈・注意・免責を、ひと目で分ける(全ページ共通)
+   ・伝えたい文(見出しの下の一文)は、本文の色で少し大きく
+   ・注釈は、小さく・薄く・字間を少し詰め、左の細い罫でひとまとまりにする(本文の流れから一段下げる)。続く注釈は間を詰める
+   ・日時・料金・検索操作の .meta は、そのまま */
+.hero p{color:var(--fg);font-size:var(--fs-l);line-height:1.85}
+.meta.annotation,small.meta{display:block;max-width:42em;margin:14px 0;padding:1px 0 1px 12px;border-left:2px solid var(--line);font-size:var(--fs-xs);line-height:1.8;letter-spacing:.02em;color:var(--mut)}
+.meta.annotation+.meta.annotation{margin-top:-8px}
+/* 入力欄の説明・出典リンクは注釈の罫を付けない(説明する相手のすぐ下に置く) */
+.finder .annotation,.quiz-program .annotation,.quiz-event .annotation{border-left:0;padding-left:0}
+.quiz-event .annotation{margin:2px 0 0}
+/* 強調: 読み込むフォントは 400/500 だけ。太字(700)は合成されて潰れるので 500 にし、文中の強調には薄い朱のマーカーを引く
+   (「(1) …」のような、改行が続く小見出し代わりの強調には引かない) */
+:root{--mark:color-mix(in srgb,var(--ac) 15%,transparent)}
+@media(prefers-color-scheme:dark){:root{--mark:color-mix(in srgb,var(--ac) 24%,transparent)}}
+strong{font-weight:500}
+main p strong:not(:has(+br)){background:linear-gradient(transparent 60%,var(--mark) 60%);padding:0 1px}
+main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .home-discovery{padding:20px 0 8px}
 .discovery-title{margin:0 0 8px;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg)}
 .home-discovery .quick{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -126,6 +144,23 @@ html{scroll-padding-top:84px}
 /* カード全体の詳細リンクより、出典リンクを手前に置く。 */
 .event-facts a{position:relative;z-index:1}
 .comparison-facts,.comparison-facts>span{display:block}
+/* 一覧の会場・料金・予約: 見出しは薄く、値は本文の色で。出典と確認日は1行にまとめて小さく */
+.event-facts{margin:4px 0 6px;line-height:1.8}
+.event-facts .k{color:var(--mut)}
+.event-facts>div:not(.src){color:var(--fg)}
+.event-facts .tbd{color:var(--mut)}
+.event-facts>.src{display:inline;font-size:var(--fs-xs)}
+.event-facts>.src:nth-child(4):before{content:"";display:block;margin-top:2px}
+/* 折り返すときは「・」を行末に残し、次の行を「確認日」から始める(行頭に「・」を置かない) */
+.event-facts>.src+.src{white-space:nowrap}.event-facts>.src:has(+.src):after{content:"\a0・ "}
+/* 1件の高さを詰める: 料金と予約要否は同じ行に並べる。広い画面では会場も同じ行に続ける(長い会場名は、そのまま折り返す) */
+.event-facts>div:nth-child(2),.event-facts>div:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.event-facts>div:first-child{display:inline;margin-right:1.4em}}
+/* カード全体が詳細へのリンク: 乗せたとき・キーボードで選んだときに、題を朱にして、選んでいる場所を示す */
+@media(hover:hover){.card:hover :is(h3,h4) a{color:var(--ac)}}
+.card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
+.card:has(:is(h3,h4) a:focus-visible){outline:2px solid var(--ac);outline-offset:2px}
+.card :is(h3,h4) a:focus-visible{outline:0}
 .planning-section{margin:36px 0;scroll-margin-top:94px}
 .planning-eyebrow{margin:0 0 6px;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.12em}
 .planning-section>h2{margin-top:0}
@@ -158,6 +193,35 @@ html{scroll-padding-top:84px}
 .quiz-choice input{width:20px;height:20px;flex:none;accent-color:var(--ac)}
 .quiz-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
 #quiz button:disabled{opacity:.55;cursor:default}
+/* 進み具合: 「3/10」の文字の下に、細い朱の線 */
+#quiz-progress{margin:0 0 14px;font-size:var(--fs-s);color:var(--mut);--p:0%}
+#quiz-progress:after{content:"";display:block;height:3px;margin-top:6px;border-radius:2px;background:linear-gradient(90deg,var(--ac) var(--p),var(--line) var(--p));transition:background var(--t-s) var(--ease)}
+.quiz-choice{transition:border-color var(--t-s) var(--ease)}
+@media(hover:hover){.quiz-choice:hover{border-color:var(--ac)}}
+/* 結果: 惹かれる楽しみ方を大きく。内訳は横棒で */
+.quiz-type{padding:18px 20px;margin:0 0 8px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+#quiz [tabindex="-1"]:focus{outline:0}
+.quiz-type h2{margin:0;font-size:var(--fs-m);color:var(--mut)}.quiz-type h2:after{display:none}
+.quiz-type-label{margin:8px 0 2px;font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);letter-spacing:.12em}
+.quiz-type-label+p{margin:0 0 6px}
+#quiz-result h3{margin:32px 0 10px;font-size:var(--fs-l)}
+.quiz-bars{list-style:none;margin:0;padding:0}
+.quiz-bars li{display:grid;grid-template-columns:minmax(0,13em) 1fr 3em;align-items:center;gap:12px;padding:4px 0;font-size:var(--fs-s);color:var(--mut)}
+.quiz-bars li.win{color:var(--fg)}
+.quiz-bars .bar{height:8px;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
+.quiz-bars .bar:after{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--n) * 10%);background:var(--ac2);border-radius:4px}
+.quiz-bars .win .bar:after{background:var(--ac)}
+.quiz-bars .num{text-align:right}
+@media(max-width:560px){.quiz-bars li{grid-template-columns:1fr 3em;gap:2px 10px}.quiz-bars .bar{grid-column:1/-1;grid-row:2}}
+.quiz-program{padding:4px 0 2px;border-top:1px solid var(--line)}
+.quiz-program h4{margin:10px 0 2px;font-size:var(--fs-l)}.quiz-program p{margin:4px 0}
+.quiz-program h4 a{color:var(--fg);text-decoration-color:var(--line)}.quiz-program h4 a:hover{color:var(--ac);text-decoration-color:var(--ac)}
+.quiz-program .meta{margin:0 0 4px}
+.quiz-sample{font-size:var(--fs-s);color:var(--mut);padding-left:12px;border-left:2px solid var(--ac2)}
+.quiz-event{padding:10px 0;border-top:1px solid var(--line)}.quiz-event:last-of-type{border-bottom:1px solid var(--line)}
+.quiz-event>a{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;color:var(--fg);text-decoration:none}
+.quiz-event>a b{font-family:var(--serif);font-weight:500;color:var(--ac)}.quiz-event>a:hover span{color:var(--ac);text-decoration:underline}
+.quiz-event p{margin:2px 0 0}
 @media(max-width:560px){.quiz-offer{right:16px;bottom:16px}}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -178,6 +242,10 @@ html{scroll-padding-top:84px}
 
 /* フォーム・ボタン */
 select,input,button{font:inherit;font-size:var(--fs-s);padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
+/* 入力欄の例文: ブラウザ既定の灰色(#757575)は地色の上で 4.5:1 に届かないため、注釈と同じ薄い文字にする */
+::placeholder{color:var(--mut);opacity:1}
+/* スマホ・タブレットでは、入力欄の文字を 16px 以上にする(iPhone・iPad は 16px 未満の欄を押すと画面を拡大してしまう) */
+@media(pointer:coarse),(max-width:560px){:is(select,textarea,input:not([type=checkbox],[type=radio],[type=submit],[type=button])){font-size:var(--fs-m)!important}}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:var(--fs-s);letter-spacing:.12em;transition:opacity var(--t-s) var(--ease);margin:0 6px 8px 0}
 .btn:hover{opacity:.85}.btn.ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
 
@@ -207,6 +275,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .leaflet-popup-content ul{list-style:none;margin:6px 0 0;padding:0}.leaflet-popup-content li{margin:4px 0}.leaflet-popup-content .pd{color:var(--ac);font-family:var(--serif);margin-right:6px}
 #map.dmap{height:200px}.mapbox.big #map.dmap{height:min(60vh,480px)}
 @media(max-width:560px){#map.dmap{height:160px}}
+.leaflet-container .leaflet-control-attribution a{text-decoration:underline}/* 地図の出典のリンクを、まわりの文と色だけでなく下線でも見分けられるように */
 .leaflet-popup-content-wrapper{border-radius:2px;background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
 
 /* 日付・場所で探す */
@@ -217,7 +286,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .finder .range{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:10px;padding:10px 12px;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--ac);border-radius:4px}
 .finder .range label{display:inline-flex;align-items:center;gap:8px}
 .finder .where{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:30em}
-.finder input,.finder select{font:inherit;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-height:44px}
+.finder input,.finder select{font:inherit;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--field);border-radius:4px;padding:8px 10px;min-height:44px}
 .finder select{width:100%;min-width:0}
 .finder .keyword{min-width:0;max-width:36em}
 .finder .keyword label{display:block;font-size:var(--fs-s);margin-bottom:6px}
@@ -293,7 +362,7 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .form legend{font-family:var(--serif);letter-spacing:.1em;padding:0 10px 0 0;color:var(--fg)}
 .f{margin:18px 0}
 .f label{display:flex;align-items:center;gap:8px;font-size:var(--fs-s);margin-bottom:6px}
-.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:var(--fs-m);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:2px;min-height:44px}
+.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:var(--fs-m);background:var(--card);color:var(--fg);border:1px solid var(--field);border-radius:2px;min-height:44px}
 .f textarea{resize:vertical;line-height:1.7}
 .f input:focus,.f select:focus,.f textarea:focus{border-color:var(--ac)}
 .f [aria-invalid="true"]{border-color:var(--ac);border-width:2px}
@@ -371,6 +440,17 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 .prose h2[id]{scroll-margin-top:16px}
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
+/* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
+   見出し・名前・短い説明は、Chrome・Edge では文節の境目で折り返す(auto-phrase)。長い本文は、いつもどおり字単位で詰める */
+body{line-break:strict;text-wrap:pretty}
+:is(h1,h2,h3,h4,a,button,label,summary,figcaption,td,th,dt,dd,li,small,.meta,.tagline,.d,.hero p){word-break:auto-phrase}
+:is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
+/* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
+.event-facts>.src:not(.src+.src){word-break:keep-all}
+/* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。
+   行の頭のかぎ括弧は半角ぶん詰めて、左の線をそろえる。どちらも対応していないブラウザでは、今までどおりの表示になる */
+@supports (text-autospace:normal){body{text-autospace:normal}:is(.date,.monthlist .md){text-autospace:no-autospace}}
+@supports (text-spacing-trim:trim-start){body{text-spacing-trim:trim-start}}
 
 /* 青海波(せいがいは)の文様: 広い画面の左右の余白に、うっすら敷く。
    重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */
@@ -451,3 +531,101 @@ html[lang=en] .home-hero .copy{writing-mode:horizontal-tb;max-width:min(26em,62%
 html[lang=en] .home-hero h1{font-size:var(--fs-h1);line-height:1.35;letter-spacing:.02em;white-space:normal;margin:0 0 10px}
 html[lang=en] .home-hero p{color:var(--fg)}
 @media(max-width:640px){html[lang=en] .home-hero .copy{max-width:100%}}
+
+/* 余白: 塊と塊の間に、ひと呼吸おく(文字の大きさ・色は変えない) */
+h2{margin:64px 0 20px}
+.hero{padding-bottom:32px}
+.lead{margin:12px 0 24px}
+.card{gap:24px;padding:22px 0}
+.card :is(h3,h4){margin-bottom:6px}
+.event-facts{margin:6px 0 8px}
+.card.reg{padding-left:16px;padding-right:16px}
+.mhead{margin:40px 0 6px}
+.home-discovery{padding:28px 0 16px}
+.discovery-title{margin-bottom:14px}
+.discovery-prefs{margin-top:14px}
+.home-search-link{margin:12px 0 24px}
+.regions{margin:16px 0 10px}
+.taglist{gap:8px 0}
+.more{margin:24px 0 0}
+.keyinfo{padding:8px 22px;margin:24px 0 28px}
+.actions{margin:0 0 14px}
+.share{margin:0 0 32px}
+main>p:not([class]){margin:20px 0}
+.dates{margin:24px 0}
+.mapbox{margin-top:32px}
+.routebtn{margin:16px 0 24px}
+.detail p,.about p{margin:12px 0}
+.detail h2,.about h2,.history h2{margin-top:48px}
+.stay{margin:40px 0;padding:24px 26px}
+.stay p{margin:10px 0}.staylinks{margin:18px 0 10px!important}
+.aff{margin:64px 0 8px;padding-top:28px}
+.monthlist li{padding:16px 0}
+.venuelist li{padding:14px 0}
+.count{margin-top:28px}
+.finder{gap:22px}
+.quick a{padding:14px 18px}
+.prose p{margin:14px 0}.prose h2{margin:52px 0 14px}.prose li{margin:8px 0}
+.gcards{gap:16px;margin:20px 0 24px}.gcard{padding:20px 22px}
+.quiz-program{padding:8px 0 10px}.quiz-event{padding:14px 0}
+footer{margin-top:96px;padding-top:36px}
+@media(max-width:560px){
+  h2{margin:52px 0 16px}
+  .card{gap:16px;padding:18px 0}
+  .keyinfo{padding:6px 16px}
+  .stay{padding:20px 18px}
+  .quick a{padding:12px 4px}
+  /* トップの県のリンクは1行にして、横に送る(最初の画面に絵と見出しを入れる)。右端を薄くして、続きがあることを示す */
+  .discovery-prefs{flex-wrap:nowrap;overflow-x:auto;gap:0 18px;margin:6px -18px 0;padding:2px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .discovery-prefs::-webkit-scrollbar{display:none}
+  .discovery-prefs a{flex:none}
+  /* 公演カード: 出典の名前は1行に収め、はみ出す分は「…」で省く(全文は開催ページと、リンク先で読める)。確認日は次の行 */
+  .event-facts{line-height:1.7}
+  .event-facts>.src:nth-child(4){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .event-facts>.src:nth-child(4) a:focus-visible{outline-offset:-2px}
+  .event-facts>.src:nth-child(4):before{display:none}.event-facts>.src:has(+.src):after{content:none}
+  .card .tag{padding-top:4px}
+  .card>div:last-child{min-width:0}
+  /* 確認日の行は、出典と別の行になるので折り返してよい(「取得日: …(内容の確認日は未登録)」が画面からはみ出していた) */
+  .event-facts>.src+.src{white-space:normal}
+}
+
+/* 開催ページ・定期公演ページ: 題のすぐ下に要点の帯を寄せる。日時は一番大きく。本文は1行を短くして読みやすく。
+   地図には「会場の場所」の見出しを付け、説明文と区切る。スマホでは「公式情報を見る」を画面の幅いっぱいにする */
+.hero:has(+.keyinfo){padding-bottom:4px}
+.keyinfo{margin-top:16px}
+@media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
+main>p:not([class]){max-width:42em}
+.maph+.mapbox{margin-top:0}
+@media(max-width:560px){
+  .actions .btn:not(.ghost){display:flex;width:100%;min-height:48px;margin-right:0}
+  .share{margin-bottom:24px}
+}
+
+/* 日付・場所で探す: 条件の入力を1つの面にまとめ、結果の件数を見出しのように扱う。
+   結果の会場・料金・予約要否は、公演カードと同じく詰めて並べる(料金と予約要否は同じ行。広い画面では会場も同じ行) */
+.finder{padding:20px 22px 22px;background:var(--card);border:1px solid var(--line);border-radius:4px;max-width:44em}
+.finder input,.finder select{background:var(--bg)}
+.count{font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em;margin-top:36px}
+.comparison-facts>span:nth-child(2),.comparison-facts>span:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.comparison-facts>span:first-child{display:inline;margin-right:1.4em}}
+/* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
+   結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
+@media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
+  #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
+
+/* 都道府県ページ: 先頭のリンクを整理する。「開催月から探す」は罫で挟んだ1本の帯にし、宿探しは月と線で分ける。
+   「観覧前に確認」は、その下に注釈の形で置く。スマホでは月の札を1行にして、横に送る */
+.pref-month-nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin:20px 0 6px;padding:6px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pref-month-nav .meta{display:inline;margin-right:4px;font-size:var(--fs-xs)}
+.pref-month-nav .tag{margin-right:0;font-size:var(--fs-xs);border-bottom-color:transparent;min-height:40px;display:inline-flex;align-items:center}
+.pref-month-nav .tag[href$="-stay"]{padding-left:18px;border-left:1px solid var(--line);border-bottom:0}
+.pref-month-nav+.viewing-preparation{display:block;margin:10px 0 0;padding-left:12px;border-left:2px solid var(--line);font-size:var(--fs-xs);color:var(--mut)}
+.pref-month-nav+.viewing-preparation .tag{font-size:var(--fs-xs);margin-right:12px;padding:6px 0 2px}
+@media(max-width:560px){
+  .pref-month-nav{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:4px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .pref-month-nav::-webkit-scrollbar{display:none}
+  .pref-month-nav>*{flex:none}
+}

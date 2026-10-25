@@ -48,7 +48,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     const $ = cheerio.load(read(join(OUT, f)));
     ok($("footer a[href='/disclaimer.html']").length === 1 && $("footer a[href='/privacy.html']").length === 1, `${f}: フッターに、免責事項とプライバシーポリシーのリンク`);
   }
-  ok(cheerio.load(read(join(OUT, "events/t-full.html")))("a[href='/disclaimer.html']").length >= 2, "開催の詳細に、免責事項へのリンクがある(出典の注記と、旅の案内)");
+  ok(cheerio.load(read(join(OUT, "events/t-full.html")))("footer a[href='/disclaimer.html']").length === 1, "開催の詳細から、免責事項へたどれる(フッター)");
   ok(read(join(OUT, "sitemap.xml")).includes("/disclaimer.html"), "サイトマップに免責事項が入る");
   ok(cheerio.load(read(join(OUT, "privacy.html")))("table.tbl").closest(".tblwrap").length === 1, "表は、横にスクロールできる枠に入る(スマホではみ出さない)");
 
@@ -73,7 +73,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");
   // (3) 画面に出す「広告・アフィリエイト」の表示は、実態に合っている
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
-  ok(ev(".staylinks a[href]").length === 2 && ev(".staylinks a[rel~=sponsored], .stay .pr").length === 0 && ev(".stay .meta").text().includes("外部の予約サイトへのリンク"), "アフィリエイト未設定の間は、宿のリンクに sponsored も「PR」も付けない");
+  ok(ev(".staylinks a[href]").length === 2 && ev(".staylinks a[rel~=sponsored], .stay .pr").length === 0 && ev(".stay small.meta").length === 0, "アフィリエイト未設定の間は、宿のリンクに sponsored も「PR」も、注記も付けない");
   // 会場近くの宿: 開催日の1泊・大人2名、会場の市区町村(郡は除く)で探す。じゃらんは Shift_JIS、楽天は charset=utf-8
   const [jl0, rk0] = ev(".staylinks a").map((_, x) => ev(x).attr("href")).get();
   ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);

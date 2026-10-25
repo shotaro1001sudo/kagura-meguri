@@ -16,9 +16,9 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(home(".home-discovery").next().hasClass("home-hero") &&
     home(".home-discovery .quick").length === 1,
     "初訪問で探し始められるよう、日付・地域の検索入口をヒーローより前に出す");
-  ok(home(".home-search-link .meta").text() === "全国の神楽を日付・地域・開催月から探せます。" &&
+  ok(home(".home-search-link .meta").length === 0 &&
     home(".home-search-link a[href='/calendar.html']").length === 1,
-    "SNSからの初訪問でも、何を探せるサイトかと検索入口を簡潔に示す");
+    "開催予定の上に、くり返しの説明文なしで、詳しい検索への入口を置く");
   ok(home(".quick a").length === 3 &&
     home(".quick a[href='/weekend.html']").length === 1 &&
     home(".quick a[href='/this-month.html']").length === 1,
