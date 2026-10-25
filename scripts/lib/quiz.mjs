@@ -13,19 +13,26 @@ export const questions = [
   ['最後にもう一度観たい一場面は？', ['躍動する舞','印象的な面や衣装','人物が決断する場面','神秘的な佇まい']]
 ].map(([text,labels],i)=>({text,choices:labels.map((label,j)=>({label,axis:['P','V','S','R'][j]})).slice(i%4).concat(labels.map((label,j)=>({label,axis:['P','V','S','R'][j]})).slice(0,i%4))}));
 
+// 各軸に、各地の主要な神楽を3つずつ。理由は、サイトの神楽の解説(data/kagura-info.json。出典つき)に書いた特徴だけに基づく。
+// program は、その解説の「主な演目」にある名前(なければ省く)。
 export const axes = {
-  P:{label:'迫力・躍動',reason:'勢いのある動きや立ち回りを選んだ回答が多くありました。',programs:['orochi']},
-  V:{label:'面や衣装の視覚的な魅力',reason:'姿や造形、見た目の変化を眺めたいという回答が多くありました。',programs:['orochi']},
-  S:{label:'物語・人物',reason:'人物の関係や物語の展開を楽しみたいという回答が多くありました。',programs:['iwado']},
-  R:{label:'静けさ・神秘的な雰囲気',reason:'丁寧な動きや余韻、場の雰囲気を味わう回答が多くありました。',programs:['shioharai']}
+  P:{label:'迫力・躍動',reason:'勢いのある動きや立ち回りを選んだ回答が多くありました。',kinds:[
+    {kind:'石見神楽',why:'速く激しい「八調子」の囃子にのって舞います。',program:'大蛇'},
+    {kind:'御嶽神楽',why:'大太鼓・締太鼓・鉦・横笛の囃子にのって、勇ましく舞います。'},
+    {kind:'伊勢大神楽',why:'獅子舞に加えて、曲芸の「放下芸」で観客をわかせます。'}]},
+  V:{label:'面や衣装の視覚的な魅力',reason:'姿や造形、見た目の変化を眺めたいという回答が多くありました。',kinds:[
+    {kind:'広島神楽',why:'新舞には、衣装が一瞬で変わる「早変わり」の見せ場があります。',program:'滝夜叉姫'},
+    {kind:'遠山の霜月祭',why:'地区によって15〜41もの面が登場し、煮え湯をはねます。',program:'面の登場(面行)'},
+    {kind:'花祭',why:'神や鬼の面の舞と、五色の紙の飾りに彩られた舞庭が見どころです。',program:'榊鬼'}]},
+  S:{label:'物語・人物',reason:'人物の関係や物語の展開を楽しみたいという回答が多くありました。',kinds:[
+    {kind:'備中神楽',why:'神事であり、芝居としての面白さもあわせ持つ神話劇です。',program:'松尾大明神(茶利)'},
+    {kind:'秩父神楽',why:'高天原や出雲など、古典の神話を題材にしています。'},
+    {kind:'相模里神楽',why:'せりふを使わず、面をつけた身ぶりと囃子で物語を進めます。'}]},
+  R:{label:'静けさ・神秘的な雰囲気',reason:'丁寧な動きや余韻、場の雰囲気を味わう回答が多くありました。',kinds:[
+    {kind:'高千穂神楽',why:'集落の「神楽宿」で、一晩かけて三十三番を舞う夜神楽です。',program:'鈿女'},
+    {kind:'銀鏡神楽',why:'銀鏡神社の大祭で、さまざまな面をつけて夜を徹して舞います。'},
+    {kind:'保呂羽山の霜月神楽',why:'夜を徹する湯立神楽。巫女が託宣を告げる場面があります。'}]}
 };
-export const programs = {
-  orochi:{name:'大蛇（石見神楽）',text:'大きな蛇胴の動きと対決が見どころ。動きや姿に注目して観る演目の一例です。',source:'https://iwamikagura.jp/enmoku/orochi/'},
-  iwado:{name:'岩戸（石見神楽）',text:'岩戸に隠れた天照大御神を迎え出す、神々の工夫を描く物語です。',source:'https://iwamikagura.jp/enmoku/iwado/'},
-  shioharai:{name:'塩祓（石見神楽）',text:'神々を迎えるために場を清める儀式の舞。所作と場の意味に目を向ける入口として選びました。',source:'https://iwamikagura.jp/enmoku/shioharai/'}
-};
-// タイトルの語句一致で推測せず、当該公演の公式演目を確認した対応のみ。
-export const programEvents = [{program:'iwado',id:'npo-hiroshima-aa5a8fc7cf',day:'2026-11-08',source:'https://mitocho-kankou.jp/page2140/'}];
 
 export function scoreAnswers(answers) {
   if (!Array.isArray(answers)||answers.length!==10||Array.from(answers).some(a=>!['P','V','S','R'].includes(a))) return null;

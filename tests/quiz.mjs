@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
-import { questions,scoreAnswers,programs,programEvents } from '../scripts/lib/quiz.mjs';
+import { questions,scoreAnswers,axes } from '../scripts/lib/quiz.mjs';
 
 export function quizTests({ok,section,OUT}) {
   section('10問診断: 配点・画面・同点・やり直し・個別回答を送らない');
@@ -10,7 +10,10 @@ export function quizTests({ok,section,OUT}) {
   for(const axis of ['P','V','S','R'])ok(scoreAnswers(Array(10).fill(axis)).winners.join()===axis,`全問${axis}の判定`);
   ok(scoreAnswers(['P','V','P','V','P','V','P','V','P','V']).winners.join()==='P,V','同点を併記する');
   ok([null,[],Array(10),Array(10).fill('X'),Array(9).fill('P')].every(a=>scoreAnswers(a)===null),'未回答・不正回答を結果にしない');
-  ok(Object.values(programs).every(p=>p.source.startsWith('https://iwamikagura.jp/enmoku/'))&&programEvents.every(e=>e.source&&e.day),'演目出典と公演ごとの確認根拠を保持');
+  const info=JSON.parse(readFileSync('data/kagura-info.json','utf8').replace(/^﻿/,''));
+  const allKinds=Object.values(axes).flatMap(a=>a.kinds);
+  ok(Object.values(axes).every(a=>a.kinds.length===3)&&new Set(allKinds.map(x=>x.kind)).size===12,'各軸に主要な神楽を3つずつ、重複なく12種類');
+  ok(allKinds.every(x=>info[x.kind]?.source&&x.why&&(!x.program||info[x.kind].programs?.some(p=>p.name===x.program))),'おすすめの神楽は、出典つきの解説がある種類と、その解説にある演目だけ');
   const html=readFileSync(join(OUT,'quiz.html'),'utf8');
   const dom=new JSDOM(html,{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});
   const w=dom.window,d=w.document,calls=[];w.kaguraGa4Allowed=true;w.gtag=(...args)=>calls.push(args);
@@ -25,7 +28,9 @@ export function quizTests({ok,section,OUT}) {
   const bars=[...d.querySelectorAll('.quiz-bars li')].map(li=>li.textContent);
   ok(bars.length===4&&bars[0]==='面や衣装の視覚的な魅力10問'&&bars.slice(1).every(t=>t.endsWith('0問')),'回答の内訳を4軸すべて、多い順に表示する');
   ok(d.querySelector('#quiz-progress').style.getPropertyValue('--p')==='100%','進み具合の線を問いの番号に合わせる');
-  ok(d.querySelector('#quiz-result').textContent.includes('現在掲載中の該当公演はありません'),'確認済み公演0件の表示');
+  const vKinds=axes.V.kinds.map(x=>x.kind);
+  ok([...d.querySelectorAll('.quiz-program h4 a')].map(a=>a.textContent).join()===vKinds.join()&&[...d.querySelectorAll('.quiz-program h4 a')].every(a=>a.getAttribute('href').startsWith('/kagura/')),'おすすめの神楽3種類を、解説ページへのリンクつきで示す');
+  ok(d.querySelector('.quiz-sample')?.textContent.startsWith('代表的な演目「滝夜叉姫」'),'代表的な演目を、解説ページの説明で添える');
   const firstCount=calls.filter(c=>c[1]==='quiz_complete').length;
   d.querySelector('#quiz-form').dispatchEvent(new w.Event('submit',{cancelable:true}));
   ok(calls.filter(c=>c[1]==='quiz_complete').length===firstCount,'結果の多重送信を防ぐ');
@@ -36,12 +41,16 @@ export function quizTests({ok,section,OUT}) {
 
   const dataMatch=html.match(/(<script id="quiz-data" type="application\/json">)([\s\S]*?)(<\/script>)/);
   const config=JSON.parse(dataMatch[2]);
-  ok(config.events.length===0,'未確認のテスト公演を、語句一致などで演目に紐付けない');
-  config.events=[{program:'iwado',id:'verified-future',name:'確認済み未来公演',start:'2050-01-01T10:00',place:'島根県 益田市',source:programEvents[0].source},{program:'iwado',id:'expired',name:'終了済み公演',start:'2000-01-01T10:00',source:programEvents[0].source},{program:'shioharai',id:'different',name:'異なる演目',start:'2050-01-01T10:00',source:programEvents[0].source}];
+  ok(config.events.every(e=>config.kinds[e.kind])&&config.regular.every(r=>config.kinds[r.kind]),'診断に渡す公演は、おすすめの神楽の種類のものだけ');
+  config.events=[{kind:'備中神楽',id:'verified-future',name:'確認済み未来公演',start:'2050-01-01T10:00',place:'島根県 益田市'},{kind:'備中神楽',id:'expired',name:'終了済み公演',start:'2000-01-01T10:00'},{kind:'石見神楽',id:'different',name:'異なる神楽',start:'2050-01-01T10:00'},
+    ...Array.from({length:7},(_,i)=>({kind:'秩父神楽',id:`later-${i}`,name:`後の公演${i}`,start:`2051-01-0${i+1}T10:00`}))];
+  config.regular=[{kind:'相模里神楽',id:'reg-s',name:'定期テスト',schedule:'毎週土曜'},{kind:'石見神楽',id:'reg-x',name:'別の定期',schedule:'毎週'}];
   const futureDom=new JSDOM(html.replace(dataMatch[0],dataMatch[1]+JSON.stringify(config)+dataMatch[3]),{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});
   const fd=futureDom.window.document;fd.querySelector('#quiz-start').click();
   while(!fd.querySelector('#quiz-form').hidden){fd.querySelector('input[value=S]').click();fd.querySelector('#quiz-next').click();}
-  ok(fd.querySelector('#quiz-result a[href="/events/verified-future.html"]')&&!fd.querySelector('#quiz-result a[href="/events/expired.html"]')&&!fd.querySelector('#quiz-result a[href="/events/different.html"]'),'結果は該当演目の未来公演だけを表示し、ビルド後に終了した公演も除外');
+  ok(fd.querySelector('#quiz-result a[href="/events/verified-future.html"]')&&!fd.querySelector('#quiz-result a[href="/events/expired.html"]')&&!fd.querySelector('#quiz-result a[href="/events/different.html"]'),'結果はおすすめの神楽の未来公演だけを表示し、ビルド後に終了した公演も除外');
+  ok(fd.querySelectorAll('#quiz-result a[href^="/events/"]').length===6&&!fd.querySelector('#quiz-result a[href="/events/later-6.html"]')&&fd.querySelector('#quiz-result').textContent.includes('ほかに2件の公演があります'),'公演は近い順に6件まで、残りの件数を示す');
+  ok(fd.querySelector('#quiz-result a[href="/regular/reg-s.html"]')&&!fd.querySelector('#quiz-result a[href="/regular/reg-x.html"]'),'おすすめの神楽の定期公演も示す');
   const ev=fd.querySelector('#quiz-result .quiz-event');
   ok(ev.querySelector('a').textContent==='1月1日(土)確認済み未来公演'&&ev.textContent.includes('島根県 益田市'),'公演は日本語の日付(曜日つき)と開催地で示す');
   ok(fd.querySelector('.quiz-type-label').textContent==='物語・人物','結果の楽しみ方を見出しとして大きく示す');
