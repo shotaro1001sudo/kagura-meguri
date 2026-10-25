@@ -22,6 +22,7 @@ const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
 const visitorPlanning = readJson(process.env.VISITOR_PLANNING_FILE ?? 'data/visitor-planning.json');
+if(process.env.TEST_PLANNING_OFF === '1') visitorPlanning.categories = {}; // テストの無広告基準は本番の広告設定から独立させる。
 if (process.env.TEST_ADS_OFF) cfg.adsense = { client: "", slotList: "", slotDetail: "" }; // テスト用(広告未設定の状態から確かめる)
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
 if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", providerName: "" }, cfg.operator = { ...cfg.operator, contact: process.env.TEST_CONTACT ?? "" }; // テスト: 送信先が未設定の状態
@@ -828,7 +829,7 @@ ${otherWays("/this-month.html")}`,
     desc: "はじめての神楽観覧に向けて、見どころ・マナーと夜神楽の服装・持ち物、公共交通やレンタカーでの行き帰りを紹介。不要な場面も含めて準備を選べます。公式案内を確認し、公演前後の周辺体験もあわせて計画しましょう。",
     path: "/guide.html", active: "/guide.html", alts: [["en", "/en/guide.html"]],
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
-      "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
+      "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: '2026-10-20', dateModified: GUIDE_CHECKED,
       author: ORG_LD, publisher: ORG_LD,
       mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: ogUrl(false),
     }],
