@@ -163,10 +163,11 @@ const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: j
 const tripBand = (id, heading) => { const b = stayBanners(id); return b ? `<aside class="aff trip-band" aria-labelledby="${id}-stay-h"><h2 id="${id}-stay-h">${heading}</h2><p class="stay-cond"><span>開催地の近くで探す</span></p>${b}${prNote(true)}</aside>` : ""; };
 const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotation">PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p>` : "");
 
-// 宿の案内: 提携IDがあるサービスは、画像バナー(発行コードのリンク)に置き換える。IDがないときだけ、文字のボタン(報酬なし)を出す
+// 開催ページの宿: 会場の市区町村・開催日の1泊・大人2名の検索結果へ直接つなぐ(バナーは宿のトップへ飛ぶだけなので使わない)。
+// 提携IDがあれば、楽天は楽天アフィリエイト(hgc)、じゃらんはバリューコマース(じゃらんnet・MyLink)を経由する。リダイレクト先が同じ検索になることを確認済み(2026-10-25)
 const stayLinks = (e, day, place) => {
-  const btn = (k, url, name) => `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(false, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
-  const btns = [jalanOn ? "" : btn("jalan", jalanStay(e, day), "じゃらん"), rakutenOn ? "" : btn("rakuten", rakutenStay(e, day), "楽天トラベル")].filter(Boolean).join(" ");
+  const btn = (k, url, name, on) => `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
+  const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
   return btns ? `<p class="staylinks">${btns}</p>` : "";
 };
 /** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
@@ -175,10 +176,10 @@ function stayBlock(e) {
   const on = rakutenOn || jalanOn;
   const evening = !e.timeUnknown && (+e.start.slice(11,13)>=17 || (e.end && (+e.end.slice(11,13)>=17 || e.end.slice(0,10)>day)));
   // 文字のボタン(日付・人数つきの検索)があるときだけ、検索の条件を示す。バナーは、条件を引き継がないため、条件を書かない
-  const links = stayLinks(e, day, place), banners = stayBanners(e.id), [, mo, d] = day.split("-").map(Number);
+  const links = stayLinks(e, day, place), [, mo, d] = day.split("-").map(Number);
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${evening ? "夜の観覧後の宿" : "会場周辺の宿"}</h2>
 <p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span>${evening ? "<span>夜の公演</span>" : ""}</p>
-${links}${banners}
+${links}
 <details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${evening ? "夜の公演です。終演後の帰り道が気になる方は、宿泊も選択肢です。" : ""}${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }

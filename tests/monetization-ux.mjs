@@ -178,12 +178,13 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const bn = STAY_BANNERS;
   if (built.status === 0) {
     const ev = cheerio.load(read("dist-test-revenue-ux/events/t-full.html"));
-    const links = ev(".d-side a.stay-banner");
-    ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 1 && ev(".d-side .staylinks").length === 0, "開催ページ: サイドの宿カードに、文字ボタンの代わりに2つのバナーを置く");
-    ok(links.map((_, x) => ev(x).attr("href")).get().join() === [bn.rakuten.url, bn.jalan.url].join() && links.find("img").map((_, x) => ev(x).attr("src")).get().join() === [bn.rakuten.imageUrl, bn.jalan.imageUrl].join(), "発行されたリンクと画像を、1文字も変えずに出す");
-    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && ev(x).find("img").attr("alt")), "広告リンクの属性(sponsored・noopener)と、画像の代替テキストがある");
-    ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/t-full,banner-jalan/t-full", "GoatCounterのクリック名は banner-◯◯/開催ID");
-    const csp = ev('meta[http-equiv="Content-Security-Policy"]').attr("content");
+    const links = ev(".d-side .staylinks a");
+    ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 0, "開催ページ: サイドの宿カードは、バナーではなく、日付・地域つきの2つの検索リンクにする");
+    const [jl, rk] = links.map((_, x) => ev(x).attr("href")).get();
+    ok(jl.startsWith("https://ck.jp.ap.valuecommerce.com/servlet/referral?") && (new URL(jl).searchParams.get("vc_url") ?? "").includes("stayYear=2026&stayMonth=11&stayDay=20") && rk.startsWith("https://hb.afl.rakuten.co.jp/hgc/") && new URL(rk).searchParams.get("pc").includes("f_nen1=2026&f_tuki1=11&f_hi1=20"), "じゃらんはバリューコマース、楽天トラベルは楽天アフィリエイトを経由し、開催日の検索をそのまま開く");
+    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && ev(x).text().includes("宿を探す")), "広告リンクの属性(sponsored・noopener)と、分かる文言がある");
+    ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "stay-jalan/t-full,stay-rakuten/t-full", "GoatCounterのクリック名は stay-◯◯/開催ID");
+    const csp = cheerio.load(read("dist-test-revenue-ux/weekend.html"))('meta[http-equiv="Content-Security-Policy"]').attr("content");
     ok(/img-src[^;]*i.imgvc.com/.test(csp) && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
     ok(!ev("script[src*='valuecommerce'],img[src*='gifbanner'],noscript").toArray().some((x) => /valuecommerce/.test(ev.html(x))), "JavaScript の埋め込みと、見えない計測画像は、使わない");
     const wk = cheerio.load(read("dist-test-revenue-ux/weekend.html")), tm = cheerio.load(read("dist-test-revenue-ux/this-month.html"));
