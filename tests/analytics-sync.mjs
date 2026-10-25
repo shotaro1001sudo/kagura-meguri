@@ -5,12 +5,19 @@ const code=readFileSync("scripts/apps-script/analytics-sheet-sync.gs","utf8");
 function harness() {
   const props={},tabs=new Map(),calls=[],triggers=[];
   let released=0;
-  const state={gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
-  const ss={getId:()=>"13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",getSheetByName:name=>tabs.get(name),insertSheet(name){
+  const diagnostics=[];
+  const state={coerceDates:false,sheetZone:"Asia/Tokyo",brokenRunRead:false,gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
+  const ss={getSpreadsheetTimeZone:()=>state.sheetZone,getId:()=>"13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",getSheetByName:name=>tabs.get(name),insertSheet(name){
     const s={values:[],maxRows:1000,getLastRow(){return this.values.length;},getMaxRows(){return this.maxRows;},
       insertRowsAfter(_at,count){this.maxRows+=count;},setFrozenRows(){},getRange(r,c,n,width){return {
         getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:width},(_,j)=>{
-          const value=s.values[r-1+i]?.[c-1+j]??"";
+          let value=s.values[r-1+i]?.[c-1+j]??"";
+          const field=s.values[0]?.[c-1+j];
+          if(state.coerceDates && r-1+i>0 && ["date","from","to","fetched_at_JST"].includes(field) && typeof value==='string' && /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/.test(value)) {
+            const offset=state.sheetZone==='Asia/Tokyo'?'+09:00':'-07:00';
+            value=new FixedDate(value.replace(' ','T')+(value.length===10?'T00:00:00':'')+offset);
+          }
+          if(state.brokenRunRead && name==='14_計測実行' && r-1+i>0 && c-1+j===3)return 'corrupt';
           if(state.brokenFunnelRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page_event"&&j===7)return "corrupt";
           if(state.brokenPageRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page"&&s.values[r-1+i]?.[1]==="GSC"&&j===7)return "corrupt";
           return state.brokenRead&&name==="12_計測日次"&&r===1&&i===1&&j===4?"corrupt":value;
@@ -20,13 +27,15 @@ function harness() {
       };}
     };tabs.set(name,s);return s;
   }};
-  const context={Map,Date,Number,Array,JSON,Object,String,encodeURIComponent,
+  class FixedDate extends Date { constructor(...args){super(...(args.length?args:['2026-10-23T22:30:00Z']));} }
+  const context={Map,Date:FixedDate,Number,Array,JSON,Object,String,encodeURIComponent,console:{error:msg=>diagnostics.push(msg)},
     PropertiesService:{getScriptProperties:()=>({getProperty:k=>props[k],setProperty:(k,v)=>{props[k]=v;}})},
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss,flush(){}},
     LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock(){released++;}})},
-    Utilities:{formatDate(_date,zone,pattern){
-      if(pattern.includes("HH"))return "2026-10-24 07:30:00";
-      return zone==="America/Los_Angeles"?"2026-10-23":"2026-10-24";
+    Utilities:{formatDate(date,zone,pattern){
+      const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date).map(x=>[x.type,x.value]));
+      const day=parts.year+'-'+parts.month+'-'+parts.day,time=parts.hour+':'+parts.minute+':'+parts.second;
+      return pattern==='HH:mm:ss'?time:pattern.includes('HH')?day+' '+time:day;
     }},
     AnalyticsData:{Properties:{runReport(request){
       calls.push({source:"GA4",request});
@@ -55,11 +64,35 @@ function harness() {
   const run=()=>{try{return context.dailyKaguraAnalyticsSync();}catch(error){return {error:error.message};}};
   const records=name=>tabs.get(name)?.values.slice(1)||[];
   const log=id=>records("14_計測実行").find(row=>row[0]===id);
-  return {props,tabs,calls,triggers,state,context,ss,ready,run,records,log,get released(){return released;}};
+  return {props,tabs,calls,triggers,state,context,ss,ready,run,records,log,diagnostics,get released(){return released;}};
 }
 
 export function analyticsSyncTests({ok,section}) {
   section("分析保存: 独立取得・保存照合・エラー診断・日次制御");
+  for(const zone of ['Asia/Tokyo','America/Los_Angeles']) {
+    const dates=harness();dates.ready();dates.state.coerceDates=true;dates.state.sheetZone=zone;
+    ok(dates.run().status==='success',`日付/日時のDate読戻をシート時間帯で照合 ${zone}`);
+    const count=dates.calls.length;
+    ok(dates.run().status==='success'&&dates.calls.length===count,`Date履歴再読込でも同日重複抑止 ${zone}`);
+    ok(dates.records('13_計測内訳').some(r=>r[2]==='page_event')&&dates.records('13_計測内訳').some(r=>r[1]==='GSC'&&r[2]==='device'),'追加内訳まで保存する');
+  }
+  const cmp=harness(),compare=(rows,header)=>cmp.context.kaguraComparable_(rows,header,'Asia/Tokyo');
+  const D=cmp.context.Date;
+  ok(compare([['date'],[new D('2026-10-19T15:00:00Z')]],['date'])===compare([['date'],['2026-10-20']],['date']),'UTC前日でも日付はシート暦日を保持');
+  ok(compare([['fetched_at_JST'],[new D('2026-10-23T22:30:00Z')]],['fetched_at_JST'])!==compare([['fetched_at_JST'],['2026-10-24 07:30:01']],['fetched_at_JST']),'日時1秒差は不一致');
+  ok(compare([['sessions'],[1]],['sessions'])!==compare([['sessions'],['1']],['sessions']),'数値と文字列を同一視しない');
+  ok(compare([['dimension'],["'=SUM(1)"]],['dimension'])===compare([['dimension'],['=SUM(1)']],['dimension']),'数式escapeの既存比較を保持');
+  let nonMidnight=false;try{compare([['date'],[new D('2026-10-20T01:00:00Z')]],['date']);}catch(_){nonMidnight=true;}
+  ok(nonMidnight,'日付欄の余計な時刻を切り捨てない');
+  let invalidDate=false;try{compare([['date'],[new D('invalid')]],['date']);}catch(_){invalidDate=true;}
+  ok(invalidDate,'不正Dateを空欄やnullとして受理しない');
+  ok(compare([['dimension'],[new D('2026-10-19T15:00:00Z')]],['dimension'])!==compare([['dimension'],['2026-10-20']],['dimension']),'日付正規化をdimension列へ拡張しない');
+  const corruptedDates=harness();corruptedDates.ready();corruptedDates.state.coerceDates=true;corruptedDates.state.brokenPageRead=true;
+  ok(corruptedDates.run().error==='SYNC_PARTIAL'&&!corruptedDates.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&corruptedDates.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4,'Date正規化後も実データ破損は成功にしない');
+  const logging=harness();logging.ready();logging.state.gaFailure=true;logging.state.brokenRunRead=true;
+  ok(logging.run().error==='SHEET_READBACK_MISMATCH'&&logging.calls.some(c=>c.source==='GSC'),'エラー記録の不一致でもGSC取得へ進み、全体を成功としない');
+  ok(!logging.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&!logging.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&!logging.props.KAGURA_ANALYTICS_LAST_SUCCESS,'実行記録が壊れた場合は成功ガードを更新しない');
+  ok(logging.diagnostics.length===2&&!logging.diagnostics.join().includes('secret')&&logging.released===1,'安全な原因コードだけ診断しロック解放');
   const h=harness();
   ok(!h.context.checkKaguraAnalyticsSetup().readyForOwnerTest&&h.calls.length===0,"設定診断はAPIを呼ばない");
   ok(h.run().error==="FREE_SETUP_NOT_CONFIRMED"&&h.calls.length===0&&h.log("2026-10-24")[1]==="setup_required","無料条件未確認を実行台帳に記録しAPIを止める");

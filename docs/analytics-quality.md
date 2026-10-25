@@ -177,3 +177,15 @@ CSVがないことや取得失敗を「0アクセス/0収益」としない。
 - https://developers.google.com/webmaster-tools/v1/searchanalytics/query
 - https://developers.google.com/webmaster-tools/pricing
 - https://developers.google.com/apps-script/guides/services/quotas
+
+## 日付型のreadback互換性（実GASへの反映は別工程）
+
+SheetsのgetValuesはDate型を返す場合がある。日付文字列をsetValuesした後の読戻しをJSON.stringifyだけで比較すると、UTCのISO文字列と入力の暦日/日時文字列が不一致になる。日次保存に続いてエラー実行記録も同じ理由で失敗すると、独立したGSC処理まで中断する。
+
+比較処理はヘッダーがdate/from/to/fetched_at_JSTの列だけDateを正規化する。スプレッドシート自身のtimezoneを使って保存時の文字列表現を復元し、GA4/GSCの集計timezoneやUTCへ読み替えない。日付欄の非0時、ミリ秒、不正Dateは拒否し、日時の秒差、指標の型/値不一致は引き続き失敗とする。書式・権限・トリガーを変更せず、数式エスケープも保持する。
+
+媒体エラーの記録にさらに失敗した場合は、安全な媒体名/原因コードだけconsole.errorに残して次媒体へ進む。成功記録と全体記録のreadbackは必須のままで、失敗した媒体や全体の成功ガードは更新しない。既に書かれた未検証行がある可能性は残るので、成功とみなさない。
+
+ローカルではSheetsのDate変換を模したテストで再現・修正を確認。実行環境のDate型/時間帯を直接計測した結果ではなく、報告されたスタックと日付セルの状態に一致する有力原因。実GAS反映と次回承認された実行で、媒体別/全体readback、内訳更新、成功ガードを確認するまでは復旧済みと扱わない。手動再実行はこの作業では行わない。
+
+仕様: https://developers.google.com/apps-script/reference/spreadsheet/range#getValues() 、 https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet#getSpreadsheetTimeZone()

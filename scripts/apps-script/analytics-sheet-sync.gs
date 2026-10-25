@@ -31,8 +31,20 @@ function kaguraErrorCode_(error) {
 function kaguraSafeCell_(value) {
   return typeof value === "string" && /^[=+@-]/.test(value) ? "'" + value : value;
 }
-function kaguraComparable_(rows) {
-  return JSON.stringify(rows.map(row=>row.map(v=>typeof v === "string" ? v.replace(/^'(?=[=+@-])/, "") : v)));
+function kaguraComparable_(rows, header, sheetZone) {
+  return JSON.stringify(rows.map((row, r)=>row.map((v, c)=>{
+    // Sheets may coerce date-looking strings to Date objects. Recover the sheet's
+    // wall-clock text, not UTC or the GA4/GSC reporting timezone. Never coerce metrics.
+    const dateOnly = ["date","from","to"].includes(header[c]);
+    const timestamp = header[c] === "fetched_at_JST";
+    if(r > 0 && v instanceof Date && (dateOnly || timestamp)) {
+      if(!Number.isFinite(v.getTime()) || v.getUTCMilliseconds() !== 0 ||
+        (dateOnly && Utilities.formatDate(v, sheetZone, "HH:mm:ss") !== "00:00:00"))
+        throw kaguraFailure_("SHEET_READBACK_MISMATCH");
+      return Utilities.formatDate(v, sheetZone, dateOnly ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm:ss");
+    }
+    return typeof v === "string" ? v.replace(/^'(?=[=+@-])/, "") : v;
+  })));
 }
 function kaguraTable_(ss,name,header) {
   let sheet=ss.getSheetByName(name);
@@ -54,7 +66,8 @@ function kaguraUpsert_(ss,name,header,rows,replaceSource) {
   table.sheet.getRange(1,1,values.length,header.length).setWrap(true);
   SpreadsheetApp.flush();
   const saved=table.sheet.getRange(1,1,values.length,header.length).getValues();
-  if(kaguraComparable_(saved)!==kaguraComparable_(values)) throw kaguraFailure_("SHEET_READBACK_MISMATCH");
+  const sheetZone=ss.getSpreadsheetTimeZone();
+  if(kaguraComparable_(saved,header,sheetZone)!==kaguraComparable_(values,header,sheetZone)) throw kaguraFailure_("SHEET_READBACK_MISMATCH");
 }
 function kaguraReportRows_(report,dimensions,metrics,optionalMetrics) {
   if(!report || !Array.isArray(report.dimensionHeaders) || !Array.isArray(report.metricHeaders) ||
@@ -234,7 +247,13 @@ function dailyKaguraAnalyticsSync() {
         props.setProperty(key,day); // Only after data and execution record readbacks.
         results.push(data.status);
       } catch(error) {
-        log(day+"-"+source,"error",kaguraErrorCode_(error)+"; source not confirmed; previous/partial rows must not be used as current");
+        try {
+          log(day+"-"+source,"error",kaguraErrorCode_(error)+"; source not confirmed; previous/partial rows must not be used as current");
+        } catch(logError) {
+          // Preserve independent-source progress even when the error ledger is broken.
+          // Normal success/overall ledger readbacks remain mandatory; no success guard here.
+          console.error("ANALYTICS_ERROR_LOG_FAILED; source="+source+"; cause="+kaguraErrorCode_(error)+"; ledger="+kaguraErrorCode_(logError));
+        }
         results.push("error");
       }
     }
