@@ -867,7 +867,7 @@ ${otherWays("/this-month.html")}`,
     }],
     body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
       esc,
-      suppliesHtml:offerCards(visitorPlanning,'supplies',{guide:true},today,'guide_supplies'),
+      supplies: offersFor(visitorPlanning, 'supplies', { guide: true }, today),
       rentalHtml:rentalSearch(visitorPlanning,{guide:true},today,'guide_rental'),
       kaguraLink: (k) => (kaguras.includes(k) ? `<a href="${kaguraHref(k)}">${esc(k)}</a>` : esc(k)),
     })}</div>`,

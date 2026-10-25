@@ -745,3 +745,11 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .pref-month-nav+.viewing-preparation .tag{margin:0 8px 8px 0;padding:6px 14px;font-size:var(--fs-xs)}
 /* 一覧のカード: 長い料金・会場は2行までにして、詳しくは開催ページで(カードの高さをそろえる) */
 @media(max-width:560px){.card .event-facts>div:is(:nth-child(1),:nth-child(2)){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}}
+/* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */
+.planning-card:has(.pick){display:flex;flex-direction:column}
+.pick{margin:auto 0 0!important;padding:10px 12px;background:var(--bg);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.6}
+.pick .pr{margin-right:8px}.pick a{font-weight:500}
+.pick small{display:block;margin-top:2px;color:var(--mut);font-size:var(--fs-2xs);line-height:1.6}
+.picks{display:grid;gap:8px;margin:12px 0}
+.guide .planning-card>.meta{margin:0}.guide .planning-card :is(h3,h4){margin:2px 0 6px}.guide .planning-card>p:not(.meta,.pick){margin:0 0 12px}
+.planning-card.compact .planning-banner img{max-width:min(100%,300px)}
