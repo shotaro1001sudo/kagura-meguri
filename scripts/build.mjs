@@ -453,7 +453,7 @@ ${clientJs("home")}`,
 // PLAN-004: 回答はブラウザ内のみ。公式演目が確認できた未来公演だけを対応させる。
 const quizEvents = programEvents.flatMap(match => {
   const e = upcoming.find(e => e.id === match.id && e.start.startsWith(match.day) && e.url === match.source);
-  return e ? [{ id:e.id, name:e.name, start:e.start, program:match.program, source:match.source }] : [];
+  return e ? [{ id:e.id, name:e.name, start:e.start, place:[e.prefecture, e.city].filter(Boolean).join(' '), program:match.program, source:match.source }] : [];
 });
 const quizData = JSON.stringify({ questions, axes, programs, events:quizEvents }).replace(/</g,'\\u003c');
 const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* scoreAnswers */',scoreAnswers.toString());

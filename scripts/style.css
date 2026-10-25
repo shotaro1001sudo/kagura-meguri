@@ -153,6 +153,32 @@ html{scroll-padding-top:84px}
 .quiz-choice input{width:20px;height:20px;flex:none;accent-color:var(--ac)}
 .quiz-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
 #quiz button:disabled{opacity:.55;cursor:default}
+/* 進み具合: 「3/10」の文字の下に、細い朱の線 */
+#quiz-progress{margin:0 0 14px;font-size:var(--fs-s);color:var(--mut);--p:0%}
+#quiz-progress:after{content:"";display:block;height:3px;margin-top:6px;border-radius:2px;background:linear-gradient(90deg,var(--ac) var(--p),var(--line) var(--p));transition:background var(--t-s) var(--ease)}
+.quiz-choice{transition:border-color var(--t-s) var(--ease)}
+@media(hover:hover){.quiz-choice:hover{border-color:var(--ac)}}
+/* 結果: 惹かれる楽しみ方を大きく。内訳は横棒で */
+.quiz-type{padding:18px 20px;margin:0 0 8px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+#quiz [tabindex="-1"]:focus{outline:0}
+.quiz-type h2{margin:0;font-size:var(--fs-m);color:var(--mut)}.quiz-type h2:after{display:none}
+.quiz-type-label{margin:8px 0 2px;font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);letter-spacing:.12em}
+.quiz-type-label+p{margin:0 0 6px}
+#quiz-result h3{margin:32px 0 10px;font-size:var(--fs-l)}
+.quiz-bars{list-style:none;margin:0;padding:0}
+.quiz-bars li{display:grid;grid-template-columns:minmax(0,13em) 1fr 3em;align-items:center;gap:12px;padding:4px 0;font-size:var(--fs-s);color:var(--mut)}
+.quiz-bars li.win{color:var(--fg)}
+.quiz-bars .bar{height:8px;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
+.quiz-bars .bar:after{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--n) * 10%);background:var(--ac2);border-radius:4px}
+.quiz-bars .win .bar:after{background:var(--ac)}
+.quiz-bars .num{text-align:right}
+@media(max-width:560px){.quiz-bars li{grid-template-columns:1fr 3em;gap:2px 10px}.quiz-bars .bar{grid-column:1/-1;grid-row:2}}
+.quiz-program{padding:4px 0 2px;border-top:1px solid var(--line)}
+.quiz-program h4{margin:10px 0 2px;font-size:var(--fs-m)}.quiz-program p{margin:4px 0}
+.quiz-event{padding:10px 0;border-top:1px solid var(--line)}.quiz-event:last-of-type{border-bottom:1px solid var(--line)}
+.quiz-event>a{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;color:var(--fg);text-decoration:none}
+.quiz-event>a b{font-family:var(--serif);font-weight:500;color:var(--ac)}.quiz-event>a:hover span{color:var(--ac);text-decoration:underline}
+.quiz-event p{margin:2px 0 0}
 @media(max-width:560px){.quiz-offer{right:16px;bottom:16px}}
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}

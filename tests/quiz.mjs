@@ -21,7 +21,10 @@ export function quizTests({ok,section,OUT}) {
   ok(d.querySelector('input[value=P]').checked,'前に戻ると選択を保持');
   d.querySelector('input[value=V]').click();
   while(!d.querySelector('#quiz-form').hidden){d.querySelector('input[value=V]').click();d.querySelector('#quiz-next').click();}
-  ok(d.querySelector('#quiz-result').textContent.includes('面や衣装の視覚的な魅力')&&!d.querySelector('#quiz-result').textContent.includes('迫力・躍動'),'回答変更を再集計し、重複加点しない');
+  ok(d.querySelector('.quiz-type').textContent.includes('面や衣装の視覚的な魅力')&&!d.querySelector('.quiz-type').textContent.includes('迫力・躍動'),'回答変更を再集計し、重複加点しない');
+  const bars=[...d.querySelectorAll('.quiz-bars li')].map(li=>li.textContent);
+  ok(bars.length===4&&bars[0]==='面や衣装の視覚的な魅力10問'&&bars.slice(1).every(t=>t.endsWith('0問')),'回答の内訳を4軸すべて、多い順に表示する');
+  ok(d.querySelector('#quiz-progress').style.getPropertyValue('--p')==='100%','進み具合の線を問いの番号に合わせる');
   ok(d.querySelector('#quiz-result').textContent.includes('現在掲載中の該当公演はありません'),'確認済み公演0件の表示');
   const firstCount=calls.filter(c=>c[1]==='quiz_complete').length;
   d.querySelector('#quiz-form').dispatchEvent(new w.Event('submit',{cancelable:true}));
@@ -34,11 +37,14 @@ export function quizTests({ok,section,OUT}) {
   const dataMatch=html.match(/(<script id="quiz-data" type="application\/json">)([\s\S]*?)(<\/script>)/);
   const config=JSON.parse(dataMatch[2]);
   ok(config.events.length===0,'未確認のテスト公演を、語句一致などで演目に紐付けない');
-  config.events=[{program:'iwado',id:'verified-future',name:'確認済み未来公演',start:'2050-01-01T10:00',source:programEvents[0].source},{program:'iwado',id:'expired',name:'終了済み公演',start:'2000-01-01T10:00',source:programEvents[0].source},{program:'shioharai',id:'different',name:'異なる演目',start:'2050-01-01T10:00',source:programEvents[0].source}];
+  config.events=[{program:'iwado',id:'verified-future',name:'確認済み未来公演',start:'2050-01-01T10:00',place:'島根県 益田市',source:programEvents[0].source},{program:'iwado',id:'expired',name:'終了済み公演',start:'2000-01-01T10:00',source:programEvents[0].source},{program:'shioharai',id:'different',name:'異なる演目',start:'2050-01-01T10:00',source:programEvents[0].source}];
   const futureDom=new JSDOM(html.replace(dataMatch[0],dataMatch[1]+JSON.stringify(config)+dataMatch[3]),{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});
   const fd=futureDom.window.document;fd.querySelector('#quiz-start').click();
   while(!fd.querySelector('#quiz-form').hidden){fd.querySelector('input[value=S]').click();fd.querySelector('#quiz-next').click();}
   ok(fd.querySelector('#quiz-result a[href="/events/verified-future.html"]')&&!fd.querySelector('#quiz-result a[href="/events/expired.html"]')&&!fd.querySelector('#quiz-result a[href="/events/different.html"]'),'結果は該当演目の未来公演だけを表示し、ビルド後に終了した公演も除外');
+  const ev=fd.querySelector('#quiz-result .quiz-event');
+  ok(ev.querySelector('a').textContent==='1月1日(土)確認済み未来公演'&&ev.textContent.includes('島根県 益田市'),'公演は日本語の日付(曜日つき)と開催地で示す');
+  ok(fd.querySelector('.quiz-type-label').textContent==='物語・人物','結果の楽しみ方を見出しとして大きく示す');
   futureDom.window.close();
 
   section('離脱意向案内: 待機・端末・1回制限・競合回避');
