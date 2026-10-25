@@ -98,8 +98,23 @@ html{scroll-padding-top:84px}
 .cta-end{margin-top:40px}
 .card :is(h3,h4){margin:0 0 2px;font-size:var(--fs-l);line-height:1.6}.card :is(h3,h4) a{color:var(--fg);text-decoration:none}.card :is(h3,h4) a:after{content:"";position:absolute;inset:0}
 .meta{color:var(--mut);font-size:var(--fs-s)}
-/* 注釈だけを本文より小さく。日時・料金・検索操作の .meta は維持する。 */
-.meta.annotation,small.meta{font-size:var(--fs-xs);line-height:1.8}
+/* 伝えたい文と、注釈・注意・免責を、ひと目で分ける(全ページ共通)
+   ・伝えたい文(見出しの下の一文)は、本文の色で少し大きく
+   ・注釈は、小さく・薄く・字間を少し詰め、左の細い罫でひとまとまりにする(本文の流れから一段下げる)。続く注釈は間を詰める
+   ・日時・料金・検索操作の .meta は、そのまま */
+.hero p{color:var(--fg);font-size:var(--fs-l);line-height:1.85}
+.meta.annotation,small.meta{display:block;max-width:42em;margin:14px 0;padding:1px 0 1px 12px;border-left:2px solid var(--line);font-size:var(--fs-xs);line-height:1.8;letter-spacing:.02em;color:var(--mut)}
+.meta.annotation+.meta.annotation{margin-top:-8px}
+/* 入力欄の説明・出典リンクは注釈の罫を付けない(説明する相手のすぐ下に置く) */
+.finder .annotation,.quiz-program .annotation,.quiz-event .annotation{border-left:0;padding-left:0}
+.quiz-event .annotation{margin:2px 0 0}
+/* 強調: 読み込むフォントは 400/500 だけ。太字(700)は合成されて潰れるので 500 にし、文中の強調には薄い朱のマーカーを引く
+   (「(1) …」のような、改行が続く小見出し代わりの強調には引かない) */
+:root{--mark:color-mix(in srgb,var(--ac) 15%,transparent)}
+@media(prefers-color-scheme:dark){:root{--mark:color-mix(in srgb,var(--ac) 24%,transparent)}}
+strong{font-weight:500}
+main p strong:not(:has(+br)){background:linear-gradient(transparent 60%,var(--mark) 60%);padding:0 1px}
+main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .home-discovery{padding:20px 0 8px}
 .discovery-title{margin:0 0 8px;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg)}
 .home-discovery .quick{grid-template-columns:repeat(3,minmax(0,1fr))}

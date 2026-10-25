@@ -467,11 +467,11 @@ write('dist/quiz.html',layout({
   desc:padDesc('10問に答えて、舞の動き・面や衣装・物語・雰囲気から自分の好みを探してみませんか。回答に合わせて各地の主要な神楽と、近く開催される公演をご案内します。登録不要で、回答はブラウザ内だけで計算します。'),
   path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
   body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたが惹かれる神楽はどれ？','10問で、好きな舞の雰囲気を探してみませんか。')}
-<p class="meta annotation">性格や適性を判定するものではありません。回答に合わせて編集部が選ぶ、神楽との出会いのヒントです。登録不要。回答は保存・外部送信しません。</p>
 <section id="quiz" aria-label="10問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>10問の診断をはじめる</button>
 <noscript><p>診断にはJavaScriptが必要です。<a href="/calendar.html">公演を探す</a>・<a href="/guide.html">はじめての神楽ガイド</a>もご利用ください。</p></noscript>
 <form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
 <section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
+<p class="meta annotation">性格や適性を判定するものではありません。回答に合わせて編集部が選ぶ、神楽との出会いのヒントです。登録不要。回答は保存・外部送信しません。</p>
 <p class="meta annotation">写真や音の再生はありません。各地の主要な神楽12種類から、サイトの解説をもとに編集部が選んだ一例です。同じ神楽でも、地域・団体・公演によって演目や表現は異なります。</p>
 <script id="quiz-data" type="application/json">${quizData}</script><script>${quizJs}</script>`
 }));
@@ -780,7 +780,7 @@ const occCard = (r, d) => {
 ${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
 };
 const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${list.map(({ r, closed }) => regCard(r) + (closed.length ? `<p class="meta">※ ${closed.map(mdLabel).join("・")}は、休演です。</p>` : "")).join("")}` : "");
-const REG_NOTE = `<p class="meta">※ 定期公演は、臨時に休演したり日程が変わったりすることがあります。公式の日程表で公演日をご確認ください。</p>`;
+const REG_NOTE = `<p class="meta annotation">※ 定期公演は、臨時に休演したり日程が変わったりすることがあります。公式の日程表で公演日をご確認ください。</p>`;
 const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[["/weekend.html", "今週末の神楽"], ["/this-month.html", "今月の神楽"], ["/calendar.html", "日付・場所で探す"], ["/map.html", "地図で探す"]].filter(([h]) => h !== self).map(([h, t]) => `<a class="tag" href="${h}">${t}</a>`).join("")}${months.slice(0, 3).map((m) => `<a class="tag" href="/month/${m}.html">${monthLabel(m)}</a>`).join("")}</div>`;
 
 {
