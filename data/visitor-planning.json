@@ -1,0 +1,8 @@
+{
+  "categories": {
+    "supplies": { "enabled": false },
+    "experiences": { "enabled": false },
+    "rental": { "enabled": false }
+  },
+  "offers": []
+}

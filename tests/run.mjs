@@ -34,10 +34,11 @@ import { valuecommerceSummaryTests } from "./valuecommerce-summary.mjs";
 import { valuecommerceGASTests } from "./valuecommerce-gas.mjs";
 import { eventHandoffTests } from "./event-handoff.mjs";
 import { quizTests } from './quiz.mjs';
+import { visitorPlanningTests } from './visitor-planning.mjs';
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -323,6 +324,7 @@ await valuecommerceSummaryTests({ ok, section });
 valuecommerceGASTests({ ok, section });
 eventHandoffTests({ ok, section });
 quizTests({ok,section,OUT});
+visitorPlanningTests({ok,section,OUT,build});
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }

@@ -14,7 +14,7 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(r.status === 0, "本番のデータで、ビルドが通る", r.stderr);
   const $ = cheerio.load(read(join(D, "guide.html")));
   const desc = $('meta[name="description"]').attr("content") ?? "";
-  ok($("title").text() === "はじめての神楽ガイド 見どころ・マナー・服装 | 神楽めぐり" && $("h1").text() === "はじめての神楽ガイド" && desc.length >= 70 && desc.length <= 120, "タイトル・見出し・説明文(70〜120字)", String(desc.length));
+  ok($("title").text() === "はじめての神楽ガイド 持ち物・服装・交通の準備 | 神楽めぐり" && $("h1").text() === "はじめての神楽ガイド" && desc.length >= 70 && desc.length <= 120, "持ち物・服装・交通が分かるタイトルと説明文(70〜120字)", String(desc.length));
   const ld = $('script[type="application/ld+json"]').map((_, s) => JSON.parse($(s).text())).get().flat();
   const art = ld.find((x) => x["@type"] === "Article");
   ok(art?.dateModified === CHECKED && art.author?.name && art.publisher?.name && ld.some((x) => x["@type"] === "BreadcrumbList"), "構造化データ(記事・更新日・著者・パンくず)");
