@@ -531,7 +531,7 @@ main>p:not([class]){margin:20px 0}
 .venuelist li{padding:14px 0}
 .count{margin-top:28px}
 .finder{gap:22px}
-.quick a{padding:18px 20px}
+.quick a{padding:14px 18px}
 .prose p{margin:14px 0}.prose h2{margin:52px 0 14px}.prose li{margin:8px 0}
 .gcards{gap:16px;margin:20px 0 24px}.gcard{padding:20px 22px}
 .quiz-program{padding:8px 0 10px}.quiz-event{padding:14px 0}
@@ -542,4 +542,9 @@ footer{margin-top:96px;padding-top:36px}
   .keyinfo{padding:6px 16px}
   .stay{padding:20px 18px}
   .quick a{padding:12px 4px}
+  /* トップの県のリンクは1行にして、横に送る(最初の画面に絵と見出しを入れる)。右端を薄くして、続きがあることを示す */
+  .discovery-prefs{flex-wrap:nowrap;overflow-x:auto;gap:0 18px;margin:6px -18px 0;padding:2px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .discovery-prefs::-webkit-scrollbar{display:none}
+  .discovery-prefs a{flex:none}
 }
