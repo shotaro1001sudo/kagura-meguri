@@ -17,7 +17,7 @@ export async function uxTests({ ok, section, OUT }) {
   const css = home("style").first().html();
 
   section("UI: 全ページ共通(ヘッダー・文字)");
-  ok(/\.top\{position:sticky;top:0;/.test(css) && /\.scrolled \.top\{box-shadow/.test(css) && /scroll-padding-top:\d+px/.test(css), "ヘッダーは画面の上に固定。スクロールすると影。ページ内リンクの位置はヘッダーの分ずらす");
+  ok(/\.top\{position:sticky;top:0;/.test(css) && /\.top\{[^}]*background:transparent/.test(css) && /\.scrolled \.top\{[^}]*background:[^}]*box-shadow/.test(css) && /scroll-padding-top:\d+px/.test(css), "ヘッダーは画面の上に固定。一番上では背景を透明にし、スクロールすると背景と影。ページ内リンクの位置はヘッダーの分ずらす");
   const nav = new JSDOM(read(join(OUT, "about.html")), { runScripts: "dangerously", pretendToBeVisual: true });
   Object.defineProperty(nav.window, "pageYOffset", { value: 200, configurable: true });
   nav.window.dispatchEvent(new nav.window.Event("scroll"));

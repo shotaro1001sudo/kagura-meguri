@@ -25,8 +25,9 @@ h2{font-size:var(--fs-l);margin:56px 0 16px;display:flex;align-items:center;gap:
 .skip:focus{top:12px}
 
 /* ヘッダ: 画面の上に固定する(長いページでも、すぐにメニューを使える)。スクロールすると、下に薄い影 */
-.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:box-shadow var(--t-s) var(--ease)}
-.scrolled .top{box-shadow:0 1px 0 var(--line),0 10px 22px -20px rgb(0 0 0/.6)}
+/* ページの一番上では、後ろの背景(和紙・模様)をそのまま見せる。下へ動かしたら、本文と重ならないように背景を付ける */
+.top{position:sticky;top:0;z-index:30;background:transparent;transition:box-shadow var(--t-s) var(--ease),background var(--t-s) var(--ease)}
+.scrolled .top{background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 1px 0 var(--line),0 10px 22px -20px rgb(0 0 0/.6)}
 html{scroll-padding-top:84px}
 .top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 24px;padding-top:10px;padding-bottom:6px;max-width:1040px}
 .logo{font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.3em;color:var(--fg);text-decoration:none;padding:8px 0}
