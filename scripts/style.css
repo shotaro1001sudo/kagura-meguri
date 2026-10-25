@@ -267,6 +267,9 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .d-rest .planning-card{padding:16px 18px}.d-rest .planning-card :is(h3,h4){font-size:var(--fs-m);margin-bottom:8px}
 .d-rest .planning-card p{margin:6px 0 10px;font-size:var(--fs-s)}.d-rest .planning-card dl{font-size:var(--fs-xs);line-height:1.75;color:var(--mut)}.d-rest .planning-card dd{margin-bottom:8px}
 .d-rest .planning-card img{max-width:100%;height:auto}
+/* 車のカード: 見出しとバナーだけを見せる。バナーの下の文字は、画像が出ないときの代わりとして小さく */
+.planning-card.compact h3{margin-bottom:10px}.planning-card.compact .planning-banner span{font-size:var(--fs-2xs);color:var(--mut)}
+.planning-card.compact{display:flex;flex-direction:column}.planning-card.compact .pc-more{order:2;margin-top:10px}
 @media(min-width:960px){
   .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
   .d-top{grid-area:top}.d-rest{grid-area:rest}
