@@ -56,6 +56,8 @@ export async function homeTests({ ok, section, OUT, build }) {
     [...D.querySelectorAll("[data-w]")].find((b) => b.dataset.w === "all").click(); rg.value = ""; rg.dispatchEvent(new fd.window.Event("change"));
     ok(items().length === all.length && D.getElementById("range").hidden && fd.window.location.search === "", "「すべて」「全国」に戻すと、開催予定がすべて出る");
     const kw = D.getElementById("keyword");
+    D.getElementById("tab-kw").click();
+    ok(D.getElementById("panel-kw").hidden === false && D.getElementById("panel-dp").hidden === true && D.getElementById("tab-kw").getAttribute("aria-selected") === "true", "キーワードは、日付・場所とは別のタブで探す");
     const search = (text) => { kw.value = text; kw.dispatchEvent(new fd.window.Event("input")); };
     search("高千穂 神楽殿");
     ok(items().length === 1 && D.querySelector('#results a').getAttribute('href') === '/events/t-full.html', "名称と会場をまたぐ複数語のAND検索");
@@ -65,9 +67,11 @@ export async function homeTests({ ok, section, OUT, build }) {
     ok(items().length === 1, "公開説明に記載された語も検索対象");
     search("高千穂　神楽殿");
     ok(items().length === 1, "全角スペースも複数語の区切りとして扱う");
-    search("高千穂");
     const prefecture = D.getElementById('pref'); prefecture.value = '広島県'; prefecture.dispatchEvent(new fd.window.Event('change'));
-    ok(items().length === 0 && D.getElementById('count').textContent.includes('キーワード'), "キーワードと地域はAND条件、0件時は条件変更を案内");
+    search("高千穂");
+    ok(items().length > 0 && items().every((t) => !t.includes("広島県")), "キーワードのタブでは、日付・場所のタブの条件を混ぜない");
+    search("該当しない語");
+    ok(items().length === 0 && D.getElementById('count').textContent.includes('キーワード'), "0件時は条件変更を案内");
     D.getElementById('reset').click();
     ok(kw.value === '' && items().length === all.length && fd.window.location.search === '', "リセットでキーワード・日付・地域をすべて解除");
     search('<img src=x onerror=alert(1)>');
@@ -75,7 +79,7 @@ export async function homeTests({ ok, section, OUT, build }) {
     const savedUrl = 'https://kagurameguri.jp/calendar.html?q='+encodeURIComponent('高千穂　神楽殿')+'&when=range&from=2026-11-01&to=2026-11-30&pref='+encodeURIComponent('宮崎県');
     const restored = new JSDOM(read(join(OUT, 'calendar.html')), { runScripts:'dangerously', url:savedUrl, beforeParse(w){w.fetch=()=>Promise.resolve({ok:true,json:()=>Promise.resolve(JSON.parse(evJson))});} });
     await new Promise((r)=>setTimeout(r,30));
-    ok(restored.window.document.getElementById('keyword').value === '高千穂　神楽殿' && restored.window.document.querySelectorAll('#results li').length === 1 && new URL(restored.window.location.href).searchParams.get('q') === '高千穂　神楽殿', "共有・戻る時にURLのキーワードと期間・地域を復元");
+    ok(restored.window.document.getElementById('keyword').value === '高千穂　神楽殿' && restored.window.document.querySelectorAll('#results li').length === 1 && new URL(restored.window.location.href).searchParams.get('q') === '高千穂　神楽殿', "共有・戻る時にURLのキーワードを復元し、キーワードのタブを開く");
     restored.window.close();
     const troupeData = [{ ...all[0], name: 'ＡＢＣ公演', description: '出演：御嶽神楽団', up:true }];
     const normalized = new JSDOM(read(join(OUT,'calendar.html')), {runScripts:'dangerously',url:'https://kagurameguri.jp/calendar.html?q=abc',beforeParse(w){w.fetch=()=>Promise.resolve({ok:true,json:()=>Promise.resolve(troupeData)});}});

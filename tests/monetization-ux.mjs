@@ -12,14 +12,13 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const home = cheerio.load(read(join(OUT, "index.html")));
   const css = read("scripts/style.css");
   ok(home(".home-find").length === 0 &&
-    home(".home-search-link a.tag[href='/calendar.html']").length === 1,
-    "新しい広告風カードを追加せず、元のリンク書式で日付・地域検索へ案内する");
+    home(".home-search-link").length === 0 && home(".discovery-prefs").length === 0,
+    "検索入口の重複(「日付・場所で詳しく探す」・上部の都道府県リンク)を置かない");
   ok(home(".home-discovery").next().hasClass("home-hero") &&
     home(".home-discovery .quick").length === 1,
     "初訪問で探し始められるよう、日付・地域の検索入口をヒーローより前に出す");
-  ok(home(".home-search-link .meta").length === 0 &&
-    home(".home-search-link a[href='/calendar.html']").length === 1,
-    "開催予定の上に、くり返しの説明文なしで、詳しい検索への入口を置く");
+  ok(home(".quick a[href='/calendar.html']").length === 1 && home("main h2").filter((_, h) => home(h).text() === "都道府県で探す").length === 1,
+    "日付・場所の検索は上部の入口に、都道府県は下部の一覧に、1か所ずつ置く");
   ok(home(".quick a").length === 3 &&
     home(".quick a[href='/weekend.html']").length === 1 &&
     home(".quick a[href='/this-month.html']").length === 1,

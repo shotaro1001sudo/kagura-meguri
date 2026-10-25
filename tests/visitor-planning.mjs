@@ -82,7 +82,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},today).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},today).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
   ok(fullPage('.stay h2').text().includes('夜の観覧後')&&!dayPage('.stay h2').text().includes('夜')&&!unknownPage('.stay h2').text().includes('夜'),'夜公演だけ宿泊を強調し、昼・時刻不明は夜と断定しない');
-  ok(fullPage('.stay').text().includes('最終チェックイン')&&fullPage('.stay').text().includes('人数・宿泊日はリンク先で変更'),'宿泊条件の変更と距離・最終チェックインの確認を案内');
+  ok(fullPage('.page-notes').text().includes('最終チェックイン')&&fullPage('.page-notes').text().includes('人数・宿泊日はリンク先で変更'),'宿泊条件の変更と距離・最終チェックインの確認を案内');
   const direct=fullPage('[data-rental-search]');
   ok(direct.attr('href')==='https://travel.rakuten.co.jp/cars/'&&!direct.attr('rel').includes('sponsored')&&!direct.attr('data-affiliate-category')&&guide('[data-rental-search]').length===1,'未発行のレンタカーは通常の公式リンク、ガイドからも利用可能');
   ok(pastPage('.stay,[data-rental-search]').length===0&&fullPage('main').html().indexOf('data-official-link')<fullPage('main').html().indexOf('data-rental-search'),'終了済みは宿・車を出さず、公式情報を先に案内');

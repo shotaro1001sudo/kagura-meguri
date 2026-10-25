@@ -45,7 +45,7 @@ export function weekendTests({ ok, section, build }) {
   ok(tm("title").text() === "今月の神楽 2026年10月の開催日程 | 神楽めぐり" && hrefs(tm).includes("/events/t-timeunknown.html") && hrefs(tm).includes("/events/t-ongoing.html") && !hrefs(tm).includes("/events/t-full.html"), "今月: 今日から月末までの開催が載る(開催中を含み、来月は含まない)");
   ok(tm("main").text().includes("今月の公演日: 14日・21日・28日") && !tm("main").text().includes("来月("), "今月: 毎週の公演の、今月の公演日が出る。月末が遠いときは、来月を出さない");
   const home = $("index.html");
-  ok(home('.quick a[href="/weekend.html"]').text().includes("10月10日(土)〜12日(月・祝)(3連休)") && home('.quick a[href="/this-month.html"]').text().includes("開催 2件"), "トップに、今週末・今月への入口がある(期間と件数つき)");
+  ok(home('.quick a[href="/weekend.html"]').text() === "今週末の神楽" && home('.quick a[href="/this-month.html"]').text() === "今月の神楽" && home('.quick small').length === 0, "トップに、今週末・今月への入口がある(説明文なし)");
   const sm = read(join(A, "sitemap.xml"));
   ok(/weekend\.html<\/loc><lastmod>2026-10-0\d</.test(sm) && /this-month\.html<\/loc><lastmod>2026-10-0\d</.test(sm) && !/name="robots" content="noindex/.test(read(join(A, "weekend.html"))) && wk('link[rel="canonical"]').attr("href").endsWith("/weekend.html"), "検索に載せる(サイトマップ・canonical・noindex なし)");
 
