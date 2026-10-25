@@ -74,17 +74,12 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");
   // (3) 画面に出す「広告・アフィリエイト」の表示は、実態に合っている
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
-  ok(ev(".staylinks a[href]").length === 2 && ev(".staylinks a[rel~=sponsored], .stay .pr").length === 0 && ev(".stay small.meta").length === 0, "アフィリエイト未設定の間は、宿のリンクに sponsored も「PR」も、注記も付けない");
-  // 会場近くの宿: 開催日の1泊・大人2名、会場の市区町村(郡は除く)で探す。じゃらんは Shift_JIS、楽天は charset=utf-8
-  const [jl0, rk0] = ev(".staylinks a").map((_, x) => ev(x).attr("href")).get();
-  ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);
-  ok(rk0 === "https://kw.travel.rakuten.co.jp/keyword/Search.do?charset=utf-8&f_query=%E9%AB%98%E5%8D%83%E7%A9%82%E7%94%BA&f_nen1=2026&f_tuki1=11&f_hi1=20&f_nen2=2026&f_tuki2=11&f_hi2=21&f_otona_su=2&f_heya_su=1", "楽天トラベル: 「高千穂町」・開催日から翌日まで・大人2名で検索する", rk0);
-  ok(ev("main").text().includes("2026年11月20日泊") && ev(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test(ev(x).attr("data-goatcounter-click"))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
+  ok(ev(".stay,.staylinks,.stay-banner").length===0,"未設定の宿おすすめ枠を省略");
   ok(cheerio.load(read(join(OUT, "events/t-past.html")))(".stay").length === 0, "終わった開催には、宿のリンクを出さない");
   const { encodeSjisURI } = await import("../scripts/lib/sjis.mjs");
   ok(encodeSjisURI("安芸高田市") === "%88%C0%8C%7C%8D%82%93%63%8E%73" && encodeSjisURI("ｶｸﾞﾗ a") === "%B6%B8%DE%D7%20a", "Shift_JIS のエンコード(漢字・半角カナ・英数字)");
   const pf = cheerio.load(read(join(OUT, "pref", "広島県.html")));
-  ok(pf(".afflist a[href]").length === 2 && pf(".afflist a[rel~=sponsored]").length === 0 && !pf(".aff").text().includes("Amazon"), "未設定の間は、旅支度は宿の2つだけ(通販のリンクは、提携してから出す)");
+  ok(pf(".aff").length===0,"未設定の県別おすすめ枠を省略");
   ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !["広告の配信について", "Google AdSense(", "Googleアナリティクス", "アフィリエイトプログラムに参加"].some((w) => pv.split("改定の履歴")[0].includes(w)), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
   ok(!pv.includes("専門家") && !ds.includes("専門家"), "プライバシーポリシー・免責事項に、運営者向けの注意書き(専門家の確認のすすめ)を載せない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
@@ -129,11 +124,17 @@ export async function policyTests({ ok, section, OUT, build }) {
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     const bn = $(".d-side .staylinks a");
+  // 会場近くの宿: 開催日の1泊・大人2名、会場の市区町村(郡は除く)で探す。じゃらんは Shift_JIS、楽天は charset=utf-8
+  const [jlRaw, rkRaw] = $(".staylinks a").map((_, x) => $(x).attr("href")).get();
+  const jl0=new URL(jlRaw).searchParams.get("vc_url"),rk0=new URL(rkRaw).searchParams.get("pc");
+  ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);
+  ok(rk0 === "https://kw.travel.rakuten.co.jp/keyword/Search.do?charset=utf-8&f_query=%E9%AB%98%E5%8D%83%E7%A9%82%E7%94%BA&f_nen1=2026&f_tuki1=11&f_hi1=20&f_nen2=2026&f_tuki2=11&f_hi2=21&f_otona_su=2&f_heya_su=1", "楽天トラベル: 「高千穂町」・開催日から翌日まで・大人2名で検索する", rk0);
+  ok($("main").text().includes("2026年11月20日泊") && $(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test($(x).attr("data-goatcounter-click"))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
     ok(bn.length === 2 && bn.toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").text() === "PR" && $(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、宿のリンクに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
     { // IDが未設定のとき: 文字のボタン(報酬なしの、ふつうの検索リンク)で案内する
       const q = cheerio.load(read(join(sub("plainstay", {}), "events/t-full.html")));
       const [jl, rk] = q(".staylinks a").map((_, x) => q(x).attr("href")).get();
-      ok(/^https:\/\/www\.jalan\.net\/uw\/uwp2011\//.test(jl) && /^https:\/\/kw\.travel\.rakuten\.co\.jp\/keyword\/Search\.do\?/.test(rk) && q(".staylinks a[rel~=sponsored]").length === 0 && q(".stay-banner").length === 0, "宿の ID が未設定なら、じゃらん・楽天トラベルの文字ボタン(sponsored なし)だけを出す", jl + " " + rk);
+      ok(q(".stay,.staylinks,.stay-banner").length===0,"未設定の宿は通常リンクで代替しない");
     }
     ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && !p.includes("楽天") && !p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる(提携先の名前は出さない)");
   }

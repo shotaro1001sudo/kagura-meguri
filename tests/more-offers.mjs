@@ -1,7 +1,11 @@
 // 本・グッズ(learn)とふるさと納税(furusato)の紹介: 承認・期限・リンク形式の検査と、表示(外部へは送らない)
 import * as cheerio from "cheerio";
-import { readFileSync } from "node:fs";
-import { validMoreOffer, moreOffersFor, learnBlock, furusatoBlock } from "../scripts/lib/more-offers.mjs";
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { reconcile } from "../scripts/lib/collect-core.mjs";
+import { createMoreOfferIndex, validMoreOffer, moreOffersFor, learnBlock, furusatoBlock } from "../scripts/lib/more-offers.mjs";
 
 export function moreOffersTests({ ok, section }) {
   section("本・グッズ・ふるさと納税の紹介(本人発行のリンクだけ)");
@@ -21,11 +25,11 @@ export function moreOffersTests({ ok, section }) {
   ok(moreOffersFor(settings, "furusato", { prefecture: "広島県", city: "北広島町" }, today).length === 1, "郡名の有無を正規化して開催市町村を照合する");
   ok(moreOffersFor(settings, "furusato", { prefecture: "広島県", city: "" }, today).length === 0, "個別公演の市町村不明時は県だけで返礼品を選ばない");
   const mismatch = cheerio.load(furusatoBlock(settings, { prefecture: "広島県", city: "安芸高田市", towns: ["安芸高田市"] }, today, "event_furusato"));
-  ok(mismatch('a[rel~=sponsored]').length === 0 && decodeURIComponent(mismatch('a.search-link').attr('href')).includes('安芸高田市'), "返礼品が不一致なら開催市町村の通常検索へ案内する");
+  ok(mismatch("a").length === 0 && mismatch("section,aside").length === 0, "不一致の返礼品は枠ごと省略し、通常検索へ代替しない");
   const off = cheerio.load(learnBlock({ ...settings, categories: { learn: { enabled: false } } }, { kagura: "石見神楽" }, today, "kagura_learn"));
-  ok(off("a[rel~=sponsored]").length === 0 && off("a.search-link").attr("href") === "https://books.rakuten.co.jp/search?sitem=" + encodeURIComponent("石見神楽") && off(".annotation").text().includes("広告ではありません") && off(".pr").length === 0, "発行リンクがないときは、楽天ブックスの検索(広告ではない・PRなし)で案内する");
+  ok(off("a,aside,section").length === 0, "未発行の本の枠を省略する");
   const ff = cheerio.load(furusatoBlock({ categories: {}, offers: [] }, { prefecture: "広島県", towns: ["山県郡北広島町", "安芸高田市", "山県郡北広島町"] }, today, "pref_furusato"));
-  ok(ff("a.search-link").length === 2 && ff("a.search-link").first().text() === "北広島町のふるさと納税を見る" && ff("a[rel~=sponsored]").length === 0, "ふるさと納税も、発行リンクがないときは町ごとの検索(重複なし・郡名なし)");
+  ok(ff("a,aside,section").length === 0, "未発行のふるさと納税は通常検索を出さない");
   ok(furusatoBlock({ categories: {}, offers: [] }, { prefecture: "広島県", towns: [] }, today, "pref_furusato") === "", "町が分からないときは、ふるさと納税の枠を出さない");
   const side = cheerio.load(learnBlock(settings, { kagura: "石見神楽" }, today, "event_learn", { side: true }));
   ok(side("aside.side-box h2").text() === "石見神楽をもっと楽しむ" && side("a[data-affiliate-placement=event_learn]").length === 2, "右の列用の小さな枠でも、同じ広告を出す");
@@ -49,6 +53,44 @@ export function moreOffersTests({ ok, section }) {
     ok(moreOffersFor(data, "learn", { kagura }, today).some(o => o.id === "sanin-kagura-photobook"), `山陰写真集を掲載対象の種類に出す: ${kagura}`);
   }
   ok(!validMoreOffer({ ...book, kaguras: [] }, today) && !validMoreOffer({ ...book, kaguras: ["*"] }, today), "種類リストの空欄や全般への拡大を認めない");
+  const idx=createMoreOfferIndex(settings,today);
+  ok(idx.select("furusato",{prefecture:" 広島県　",city:"山県郡 北広島町"})[0]?.url===furusato.url,"表記差を正規化し発行URLを保持");
+  ok(!idx.select("furusato",{prefecture:"北海道",city:"北広島町"}).length && !idx.select("furusato",{prefecture:"不明",city:"北広島町"}).length,"同名市町村の県違い・未知地域は非表示");
+  ok(!idx.select("learn",{kagura:"未確認神楽"}).length && !idx.select("learn",{kagura:"石見神楽",prefecture:"不明"}).length,"未知種類・地域に全般商品を当てない");
+  const ambiguous=createMoreOfferIndex({...settings,offers:[furusato,{...furusato,id:"other-town",city:"別郡北広島町",url:furusato.url+"&x=2"}]},today);
+  ok(!ambiguous.select("furusato",{prefecture:"広島県",city:"北広島町"}).length,"同一県で郡が曖昧な省略名は停止");
+  for(const override of [{revoked:true},{approvalStatus:"revoked"},{approvalReference:""},{url:""},{expiresAt:"2026-02-30"}]) ok(!validMoreOffer({...book,...override},today),"失効・証跡なし・URLなし・不正日付は停止");
+  const dup=createMoreOfferIndex({...settings,offers:[book,book,{...book,id:"duplicate-url"},general]},today);
+  ok(dup.select("learn",{kagura:"石見神楽"}).length===2,"ID/URL重複を除く");
+  const start=performance.now();let deterministic=true;
+  for(let i=0;i<10000;i++) {
+    const e={prefecture:i%2?"広島県":"島根県",city:"北広島町",kagura:"石見神楽"};
+    deterministic &&= idx.select("furusato",e).length===(i%2?1:0) && idx.select("learn",e).map(o=>o.id).join()==="iwami-book,kagura-dvd";
+  }
+  ok(deterministic,"1万公演の照合結果が決定的（各カテゴリ最大3件）");
+  console.log(`  indexed 10000 events: ${(performance.now()-start).toFixed(1)}ms`);
+  const source={id:"synthetic",name:"合成の承認済み収集元",url:"https://example.org/",kagura:"石見神楽",prefecture:"島根県"};
+  const candidate={name:"合成神楽公演",prefecture:"島根県",city:"浜田市",venue:"合成会場",kagura:"石見神楽",start:"2026-11-01T18:00",url:"https://example.org/event"};
+  const auto=reconcile({events:[],candidates:[candidate,candidate],source,now:new Date("2026-10-25T00:00:00Z")});
+  ok(auto.summary.published.length===1,"合成の取得候補は承認検査・重複抑止後に1公演掲載");
+  const held=reconcile({events:[],candidates:[candidate],source,now:new Date("2026-10-25T00:00:00Z"),cfg:{autoPublish:false}});
+  ok(held.summary.published.length===0,"承認保留の公演を広告追加目的で公開しない");
+  const temp=mkdtempSync(join(tmpdir(),"kagura-more-"));
+  try {
+    writeFileSync(join(temp,"events.json"),JSON.stringify(auto.events));
+    writeFileSync(join(temp,"regular.json"),"[]");
+    const build=spawnSync("node",["scripts/build.mjs"],{encoding:"utf8",env:{...process.env,EVENTS_FILE:join(temp,"events.json"),REGULAR_FILE:join(temp,"regular.json"),OUT_DIR:join(temp,"out"),BUILD_NOW:"2026-10-25T12:00",TEST_AFF_OFF:"1",TEST_ADS_OFF:"1"}});
+    ok(build.status===0,"合成自動公演で実build成功",build.stderr);
+    if(build.status===0) {
+      const page=cheerio.load(readFileSync(join(temp,"out/events",auto.events[0].id+".html"),"utf8"));
+      const indexed=createMoreOfferIndex(data,today);
+      for(const category of ["learn","furusato"]) {
+        const expected=indexed.select(category,auto.events[0]).map(o=>o.url);
+        ok(expected.length>0 && page(`a[data-affiliate-category="${category}"]`).toArray().map(a=>page(a).attr("href")).join()===expected.join(),"自動取得→掲載→buildは同じ"+category+"照合と発行URLを使用");
+      }
+      ok(page("[data-official-link]").length>0 && page("a.search-link").length===0,"公式公演導線は残し通常検索fallbackは出さない");
+    }
+  } finally { rmSync(temp,{recursive:true,force:true}); }
   const js = readFileSync("scripts/client/affiliate.js", "utf8");
   ok(["'learn'", "'furusato'", "'rakuten-books'", "'rakuten-furusato'", "'kagura_learn'", "'history_learn'", "'pref_furusato'", "'event_learn'", "'event_furusato'", "'regular_learn'", "'regular_furusato'", "'kagura_furusato'"].every((x) => js.split(x).length === 3), "GA4: クリックと表示の両方で、新しい広告を数える");
 }

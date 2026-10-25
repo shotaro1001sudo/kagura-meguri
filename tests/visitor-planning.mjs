@@ -35,23 +35,23 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(experiencesFor(context,today).length===2&&experiencesFor({prefecture:'大分県',city:'高千穂町'},today).length===0,'公式確認済みの2体験を当該地域だけへ接続');
   ok(experiencesFor(context,'2027-02-01').length===0,'90日を超えた未再確認の体験を出し続けない');
   ok(experienceSection(context,today).includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止と移動の未確認を明示し、間に合うと断言しない');
-  const national=cheerio.load(experienceDirectory());
+  const national=cheerio.load(experienceDirectory({sid:'1111111',pid:'4444444'}));
   ok(experienceRegions.length===47&&new Set(experienceRegions.map(x=>x.url)).size===47&&PREFECTURES.every(p=>experienceRegions.some(x=>x.prefecture===p)),'全国47都道府県の実際の検索先が揃い、県とURLの重複がない');
   ok(national('.experience-areas a').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
   for(const prefecture of PREFECTURES){
-    const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today));
+    const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today,{sid:'1111111',pid:'4444444'}));
     const expected=experienceRegions.find(x=>x.prefecture===prefecture);
-    ok(page('#nearby-experiences a').first().attr('href')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
+    ok(new URL(page('#nearby-experiences a').first().attr('href')).searchParams.get('vc_url')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
     ok(planningLinks({prefecture},today).includes('href="#nearby-experiences"'),`${prefecture}: 公演から当該県の案内へ進める`);
   }
   const aff={sid:'1111111',pid:'4444444'},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
   ok(affLink.attr('href')==='https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=1111111&pid=4444444&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affLink.text().includes('（広告）')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
   const affNational=cheerio.load(experienceDirectory(aff));
   ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=4444444')),'全国一覧の47都道府県すべてに体験用pidが付く');
-  ok(experienceSection({prefecture:'高知県'},today,{sid:'1111111',pid:''}).includes('広告リンクではありません'),'pid未設定なら広告ではない通常リンクのまま');
+  ok(!experienceSection({prefecture:"高知県"},today,{sid:"1111111",pid:""}).includes("www.jalan.net"),"pid未設定なら通常の体験検索を出さない");
   ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
   ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
-  ok(national('.experience-areas a').toArray().every(a=>!national(a).attr('rel').includes('sponsored')&&!national(a).attr('data-affiliate-category')),'一般検索先は広告・成果リンクとして扱わない');
+  ok(experienceDirectory() === "", "未設定の体験ディレクトリは通常検索で代替しない");
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   ok(guide('#packing .planning-card').length===4&&guide('#transport .planning-steps li').length===3,'持ち物4種類と公共交通→貸出返却→会場経路の順で案内');
@@ -71,7 +71,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const banner=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
   ok(banner('a[rel~=sponsored]').attr('href')===RENTAL_BANNER.url&&banner('img').attr('src')===RENTAL_BANNER.imageUrl&&banner('a').attr('aria-label').includes('レンタカー'),'本人発行のリンクと画像を保持し、画像に依存しないリンク名を持つ');
   const expired=cheerio.load(rentalSearch(supplied,{},'2026-11-25','guide_rental'));
-  ok(expired('img,[rel~=sponsored]').length===0&&expired('[data-rental-search]').length===1,'バナー期限切れで広告を消し、通常の公式リンクを保持');
+  ok(expired("img,[rel~=sponsored],[data-rental-search]").length===0,"バナー期限切れで通常検索を含む収益枠を省略");
 
   const carshare=supplied.offers.find(o=>o.provider==='rakuten-carshare');
   const cars=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
@@ -81,11 +81,11 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(!validOffer({...carshare,provider:'rakuten-rental'},today)&&!validOffer({...ownerRental,provider:'rakuten-carshare'},today)&&!validOffer({...carshare,imageUrl:RENTAL_BANNER.imageUrl},today),'カーシェアとレンタカーのコード・画像の取り違えを拒否');
   ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},today).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},today).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
-  ok(fullPage('.stay h2').text().includes('夜の観覧後')&&!dayPage('.stay h2').text().includes('夜')&&!unknownPage('.stay h2').text().includes('夜'),'夜公演だけ宿泊を強調し、昼・時刻不明は夜と断定しない');
-  ok(fullPage('.page-notes').text().includes('最終チェックイン')&&fullPage('.page-notes').text().includes('人数・宿泊日はリンク先で変更'),'宿泊条件の変更と距離・最終チェックインの確認を案内');
+  ok([fullPage,dayPage,unknownPage].every(p=>p(".stay").length===0),"宿未設定では時刻に関わらず枠を省略");
+  ok(!fullPage(".page-notes").text().includes("人数・宿泊日はリンク先で変更"),"未設定の宿泊条件注記も省略");
   const direct=fullPage('[data-rental-search]');
-  ok(direct.attr('href')==='https://travel.rakuten.co.jp/cars/'&&!direct.attr('rel').includes('sponsored')&&!direct.attr('data-affiliate-category')&&guide('[data-rental-search]').length===1,'未発行のレンタカーは通常の公式リンク、ガイドからも利用可能');
-  ok(pastPage('.stay,[data-rental-search]').length===0&&fullPage('main').html().indexOf('data-official-link')<fullPage('main').html().indexOf('data-rental-search'),'終了済みは宿・車を出さず、公式情報を先に案内');
+  ok(direct.length===0 && guide("[data-rental-search]").length===0,"未発行レンタカーの通常検索を省略");
+  ok(pastPage(".stay,[data-rental-search]").length===0 && fullPage("[data-official-link]").length>0,"終了済みの宿・車は省略し公式公演情報は保持");
 
   const temp=mkdtempSync(join(tmpdir(),'km-planning-'));
   try {
