@@ -86,7 +86,7 @@ for (const s of sources) {
 writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
 const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.city ?? ""} ${e.venue ?? ""})[公式](${e.url})${e.note ? ` — ${e.note}` : ""}`;
 // 新しく掲載した開催に、宿・体験・移動のアフィリエイトが紐づくか(リンクは公開時のビルドが自動で作る)
-const cov = affiliateCoverage({ events: published, affiliate: cfg.affiliate ?? {}, planning: readJson(PLANNING_FILE, {}), today: today(now) });
+const cov = affiliateCoverage({ events: published, affiliate: cfg.affiliate ?? {}, planning: readJson(PLANNING_FILE, {}), more: readJson(process.env.MORE_OFFERS_FILE ?? "data/more-offers.json", {}), today: today(now) });
 const covReport = coverageReport(cov);
 const attention = held.length > 0 || errors > 0 || notes > 0 || covReport.attention;
 const text = `# 週次の自動収集レポート ${today(now)}
@@ -114,7 +114,7 @@ writeFileSync(REPORT_FILE, text);
 const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
 writeFileSync(SUMMARY_FILE, JSON.stringify({
   date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
-  affiliate: { missingIds: cov.missingIds, expiring: cov.expiring, unlinked: cov.rows.filter((r) => r.missing.length).map((r) => ({ id: r.id, missing: r.missing })) },
+  affiliate: { missingIds: cov.missingIds, expiring: cov.expiring.slice(0,50), counts: cov.counts, unlinkedTotal: cov.rows.filter(r=>r.missing.length).length, unlinked: cov.rows.filter((r) => r.missing.length).slice(0,50).map((r) => ({ id: r.id, missing: r.missing })) },
   items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
 }, null, 2));
 console.log(text);

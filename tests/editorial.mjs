@@ -36,14 +36,14 @@ export function editorialTests({ ok, section, OUT, build }) {
   section("編集: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金", "開催ページの欄名は「日時・会場・所在地・料金」(「場所」と「会場」の紛れをなくす)");
-  ok(!full("main").text().includes("移動先") && full("main").text().includes("泊・大人2名で検索します。"), "宿の案内: 「移動先」と書かず、検索の条件だけを短く示す");
-  ok(full("main").text().includes("夜の公演です。"), "夜(17時以降)の公演では、夜の公演であることを書く");
+  ok(full(".stay").length===0,"未設定では宿条件の案内も省略");
+  ok(!full("main").text().includes("夜の公演です。"),"未設定の宿泊誘導文を省略");
   const src = full("main").text();
   ok(!src.includes("情報の出典:"), "出典の文を短くする(「出典: 〇〇(日付確認)」)");
   const reg = page("regular/r-weekly.html");
-  ok(reg(".aff h2").text() === "会場近くの宿" && !reg("main").text().includes("旅支度") && !/🏨|📚/.test(read(join(OUT, "regular/r-weekly.html"))), "定期公演ページの宿の案内も「会場近くの宿」。絵文字は使わない");
+  ok(reg(".aff").length===0 && !/🏨|📚/.test(read(join(OUT,"regular/r-weekly.html"))),"未設定の定期公演宿枠を省略・絵文字なし");
   const pf = page("pref/広島県.html");
-  ok(/^広島県の宿$/.test(pf(".aff h2").text()), "県のページの宿の案内は「◯◯県の宿」", pf(".aff h2").text());
+  ok(pf(".aff").length===0,"未設定の県別宿枠を省略");
   const rdesc = reg('meta[name="description"]').attr("content");
   ok(/の定期公演です。公演日時: /.test(rdesc) && !/上演に観られる|に観られる/.test(rdesc), "定期公演の説明文: 文として成り立つ形(「…の定期公演です。公演日時: …」)", rdesc);
 

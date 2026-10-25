@@ -19,6 +19,13 @@ export function affiliateCoverageTests({ ok, section }) {
   ok(after.rows[0].rental.length === 0 && after.expiring.some((o) => o.days < 0) && coverageReport(after).text.includes("期限が切れて"), "期限切れの広告は紐づけず、止まっていることを知らせる");
   const unknownPref = affiliateCoverage({ events: [{ ...auto, prefecture: "未確認県" }], affiliate, planning, today });
   ok(!unknownPref.rows[0].experience && unknownPref.rows[0].missing.includes("体験"), "47都道府県にない県名は、体験を推測で紐づけない");
+  const more=JSON.parse(readFileSync("data/more-offers.json","utf8"));
+  const bookCov=affiliateCoverage({events:[{...auto,prefecture:"島根県",city:"浜田市",kagura:"石見神楽"},{...auto,id:"unknown",prefecture:"不明",kagura:"未確認"}],affiliate,planning,more,today});
+  ok(bookCov.rows[0].learn.length>0&&bookCov.rows[0].furusato.length>0&&bookCov.counts.furusato_unmatched===1,"公開済み商品と自動公演の地域/typeを同じ索引で監査");
+  const expiredBooks=affiliateCoverage({events:[],affiliate,planning,more,today:"2026-12-01"});
+  ok(expiredBooks.expiring.some(o=>o.source==="data/more-offers.json")&&expiredBooks.counts.expired>0,"本・返礼品の期限を共通監査へ含める");
+  const many=affiliateCoverage({events:Array.from({length:10000},(_,i)=>({...auto,id:String(i)})),affiliate,planning,more,today});
+  ok(many.counts.learn_unmatched===10000&&coverageReport(many).text.split("\n").length<60,"1万公演の診断は全件集計し表示を50件までに制限");
   const collect = readFileSync("scripts/collect.mjs", "utf8");
   ok(/affiliateCoverage\(\{ events: published,/.test(collect) && /## アフィリエイトの紐づけ/.test(collect) && /covReport\.attention/.test(collect), "週次の収集レポートに、新規掲載分の紐づけの節があり、注意が要れば Issue で知らせる");
 }

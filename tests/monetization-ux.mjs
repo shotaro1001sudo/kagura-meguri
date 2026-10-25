@@ -88,8 +88,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(css.includes(".event-facts a{position:relative;z-index:1}"),
     "出典リンクがカード全体の詳細リンクに遮られない");
   ok(h(".pref-month-nav a[href='#hiroshima-stay']").length === 0 &&
-    h("#hiroshima-stay .aff").length === 1,
-    "広告設定がない場合は宿探しの目次だけを表示しない");
+    h("#hiroshima-stay .aff").length === 0,
+    "広告設定がない場合は宿探しの目次と枠を表示しない");
 
   const other = cheerio.load(read(join(OUT, "pref/宮崎県.html")));
   ok(other(".pref-month-nav,.pref-month").length === 0 && other(".event-facts").length === other(".card").length &&
@@ -195,7 +195,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   }
   const off = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(off(".stay-banner").length === 0, "提携IDが未設定なら、バナーを出さない");
-  ok(off(".d-side .side-box a.search-link").length >= 1 && off(".d-side .side-box h2").first().text().includes("もっと"), "開催ページの右の列に、本(と神楽の町のふるさと納税)の案内を出す");
+  ok(off(".d-side .side-box a.search-link").length===0 && off(".d-side .side-box").length===0,"未発行の本/返礼品は通常検索枠を省略");
 
   section("開催ページ: 見やすさ(開催までの日数・右の列の要点・共有の位置)");
   ok(/^開催まで あと\d+日$|^(本日|明日)開催$/.test(off(".hero .until").text()), "見出しの下に、開催までの日数を出す", off(".hero .until").text());

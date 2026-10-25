@@ -13,7 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
+import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
@@ -24,7 +24,7 @@ const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
 const visitorPlanning = readJson(process.env.VISITOR_PLANNING_FILE ?? 'data/visitor-planning.json');
-const moreOffers = readJson(process.env.MORE_OFFERS_FILE ?? 'data/more-offers.json'); // 本・グッズ・ふるさと納税(本人発行のリンクだけ)
+const moreOffersData = readJson(process.env.MORE_OFFERS_FILE ?? 'data/more-offers.json'); // 本・グッズ・ふるさと納税(本人発行のリンクだけ)
 if(process.env.TEST_PLANNING_OFF === '1') visitorPlanning.categories = {}; // テストの無広告基準は本番の広告設定から独立させる。
 if (process.env.TEST_ADS_OFF) cfg.adsense = { client: "", slotList: "", slotDetail: "" }; // テスト用(広告未設定の状態から確かめる)
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
@@ -166,12 +166,13 @@ const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotatio
 // 開催ページの宿: 会場の市区町村・開催日の1泊・大人2名の検索結果へ直接つなぐ(バナーは宿のトップへ飛ぶだけなので使わない)。
 // 提携IDがあれば、楽天は楽天アフィリエイト(hgc)、じゃらんはバリューコマース(じゃらんnet・MyLink)を経由する。リダイレクト先が同じ検索になることを確認済み(2026-10-25)
 const stayLinks = (e, day, place) => {
-  const btn = (k, url, name, on) => `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
+  const btn = (k, url, name, on) => !on ? "" : `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
   const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
   return btns ? `<p class="staylinks">${btns}</p>` : "";
 };
 /** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
 function stayBlock(e) {
+  if (!rakutenOn && !jalanOn) return "";
   const day = e.start.slice(0, 10), place = stayPlace(e);
   const on = rakutenOn || jalanOn;
   const evening = !e.timeUnknown && (+e.start.slice(11,13)>=17 || (e.end && (+e.end.slice(11,13)>=17 || e.end.slice(0,10)>day)));
@@ -186,10 +187,11 @@ ${prNote(on)}</aside>`;
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
 function affiliateBlock(e, { banners = true } = {}) {
+  if (!rakutenOn && !jalanOn && !amazonOn) return "";
   const bn = banners ? stayBanners(e.prefecture) : "";
   const links = [
-    ...(banners && jalanOn ? [] : [[`${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"]]),
-    ...(banners && rakutenOn ? [] : [[`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"]]),
+    ...(!jalanOn || banners ? [] : [[`${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"]]),
+    ...(!rakutenOn || banners ? [] : [[`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"]]),
     ...(amazonOn ? [["神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
   ];
   return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${links.length ? `<div class="afflist">${links
@@ -392,6 +394,7 @@ const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area
 const mapBlock = (x) => (x.lat != null ? `<h2 class="maph">会場の場所</h2><div class="mapbox"><div id="map" class="dmap" role="region" aria-label="会場周辺の地図" data-lat="${x.lat}" data-lng="${x.lng}" data-zoom="${zoomOf(x)}"></div><button type="button" class="maplock" id="mapbig" aria-expanded="false">地図を大きく見る</button></div>${clientJs("detailmap")}${geoNote(x)}<p class="routebtn"><a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
+const moreOffers = createMoreOfferIndex(moreOffersData, today);
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
 const timeOf = (r) => (r.schedule.match(/\d{1,2}:\d{2}/)?.[0] ?? "99:99").padStart(5, "0");
 const daysBetween = (a, b) => { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; };
@@ -778,7 +781,7 @@ for (const e of events) {
 <tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr></table></div>
 <p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
 ${showPreparation ? preparationLinks(e.lat != null) : ""}</div>
-${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${learnBlock(moreOffers, { kagura: e.kagura || "*" }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 <p class="desc-lead">${esc(e.description)}</p>
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
@@ -802,7 +805,7 @@ for (const r of regular) {
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約", r.booking)}</table></div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r, { banners: false })}${learnBlock(moreOffers, { kagura: r.kagura || "*" }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
+<div class="d-side">${affiliateBlock(r, { banners: false })}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
 ${mapBlock(r)}
