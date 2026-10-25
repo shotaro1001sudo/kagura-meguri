@@ -132,18 +132,30 @@ export async function motionTests({ ok, section, OUT }) {
   section("動き: ページの移動(View Transitions)");
   const vtHtml = readFileSync(join(OUT, "index.html"), "utf8");
   const head = vtHtml.slice(0, vtHtml.indexOf("</head>"));
-  ok(head.includes("pagereveal") && head.includes("pageswap") && /<link rel="expect" href="#main" blocking="render">/.test(head), "切り替えのスクリプトは <head> にあり、本文が読み込まれるまで最初の描画を待つ(移動の瞬間に、題名と見出しをつなぐため)");
+  ok(head.includes("pagereveal") && /<link rel="expect" href="#main" blocking="render">/.test(head), "切り替えは本文の描画前に pagein の二重再生を止める");
   const mcss = readFileSync("scripts/motion.css", "utf8");
-  ok(/@media \(prefers-reduced-motion:no-preference\)\{\s*@view-transition\{navigation:auto\}/.test(mcss), "切り替えは、動きを減らす設定の人には行わない");
-  ok(/\.top\{view-transition-name:site-header\}/.test(mcss) && /\.vt main\{animation:none\}/.test(mcss), "ヘッダーは移動中も動かさず、切り替えたページでは本文の出現の動きを重ねない");
-  ok(!/view-transition-name:ev-title/.test(vtHtml), "題名と見出しの名前は、前もってページに書かない(同じ開催が2回並ぶと、名前が重なって切り替えが失敗するため)");
-  // 一覧のカードの題名は、ページによって h3 / h4 と違う。切り替えのスクリプトが、どの見出しの高さでも拾えること
+  ok(/@media \(prefers-reduced-motion:no-preference\)\{\s*@view-transition\{navigation:auto\}/.test(mcss), "動きを減らす設定では View Transition を行わない");
+  ok(/\.top\{view-transition-name:site-header\}/.test(mcss) && /\.vt main\{animation:none\}/.test(mcss), "ヘッダーを維持し、本文の二重再生を防ぐ");
+  ok(!/ev-title/.test(vtHtml), "公演題名を別のスナップショットにしない(折返し・リンク種別による違いをなくす)");
+  ok(/::view-transition-new\(root\)\{animation:vtin var\(--t-m\) var\(--ease\) both\}/.test(mcss) && /@keyframes vtin\{from\{opacity:0;translate:0 8px\}\}/.test(mcss), "ページ移動も直接訪問も同じ速さ・加速・透明度・移動量・遅延なし");
   const vtJs = readFileSync("scripts/vt.js", "utf8");
-  const levels = new Set();
-  for (const f of ["index.html", "weekend.html", "this-month.html", "kagura/index.html"]) {
-    const $c = cheerio.load(readFileSync(join(OUT, f), "utf8"));
-    $c("main .card").each((_, c) => { const h = $c(c).find("h2,h3,h4,h5,h6").first(); if (h.length) levels.add(h[0].tagName); });
+  for (const path of ["/events/test.html", "/regular/test.html", "/events/test", "/regular/test"]) {
+    const dom = new JSDOM('<html class="js"><main><h1>長い公演名（神楽定期公演）</h1></main></html>', { url: `https://example.com${path}`, runScripts: "outside-only" });
+    const w = dom.window, h = w.document.documentElement;
+    w.eval(vtJs);
+    const reveal = (transition) => {
+      const e = new w.Event("pagereveal");
+      Object.defineProperty(e, "viewTransition", { value: transition });
+      w.dispatchEvent(e);
+    };
+    reveal(null);
+    ok(!h.classList.contains("vt"), `${path}: 直接訪問・非対応では通常の pagein`);
+    reveal({});
+    ok(h.classList.contains("vt") && !w.document.querySelector("h1").style.viewTransitionName, `${path}: 公演名は本文と一緒に出現`);
+    w.dispatchEvent(new w.Event("pageshow"));
+    reveal(null); // bfcache 復元で切り替えがない場合も、出現を再開しない
+    reveal({});
+    ok(h.classList.contains("vt") && w.document.querySelectorAll("[style]").length === 0, `${path}: 戻る・再訪でも題名の名前や隠すスタイルを残さない`);
+    dom.window.close();
   }
-  ok(levels.size > 0 && [...levels].every((t) => /querySelector\('h2,h3,h4'\)/.test(vtJs) && ["h2", "h3", "h4"].includes(t)), "カードの題名の見出し(h2〜h4)を、切り替えのスクリプトがすべて拾える", [...levels].join(","));
-  ok(/addEventListener\('click'/.test(vtJs) && /document\.referrer/.test(vtJs), "押したカードを優先し、移動元を知る仕組みがないブラウザでは、リファラーで移動元を知る");
 }
