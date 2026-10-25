@@ -95,15 +95,12 @@
 
 /* ---------- 6. ページの移動(View Transitions): 前の画面が薄く消え、新しい画面が、少し下から現れる ----------
    対応していないブラウザでは、普通に切り替わる。動きを減らす設定では、切り替えの演出をしない。
-   ヘッダーは名前を付けて、移動中も動かさない。一覧のカードの題名と開催ページの見出しは、scripts/vt.js が、移動の瞬間だけ同じ名前でつなぐ */
+   ヘッダーは名前を付けて、移動中も動かさない。公演の題名は切り離さず、本文と同じ速さ・距離で現れる */
 @media (prefers-reduced-motion:no-preference){
   @view-transition{navigation:auto}
   .top{view-transition-name:site-header}
   ::view-transition-old(root){animation:vtout var(--t-s) var(--ease) both}
   ::view-transition-new(root){animation:vtin var(--t-m) var(--ease) both}
-  ::view-transition-group(ev-title){animation-duration:var(--t-m);animation-timing-function:var(--ease)}
-  /* 題名の文字が、縦横に伸び縮みしないよう、高さに合わせて幅を決める */
-  ::view-transition-old(ev-title),::view-transition-new(ev-title){height:100%;width:auto;animation-duration:var(--t-m)}
 }
 @keyframes vtout{to{opacity:0}}
 @keyframes vtin{from{opacity:0;translate:0 8px}}
