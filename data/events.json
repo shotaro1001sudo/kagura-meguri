@@ -1355,18 +1355,19 @@
   {
     "id": "ev-20261031",
     "name": "霜月祭",
-    "kagura": "三川内神楽（大井地区）",
+    "kagura": "三川内神楽",
     "prefecture": "宮崎県",
-    "city": "延岡市北浦町",
+    "city": "延岡市北浦町三川内",
     "venue": "大井農業集落センター",
     "start": "2026-10-31T19:00",
-    "fee": "",
-    "source": "三川内神楽保存会",
+    "fee": "無料",
+    "url": "https://www.instagram.com/mikawauchi_kagura/?utm_source=ig_web_button_share_sheet",
+    "source": "三川内五神会",
     "checked": "2026-10-21",
     "status": "published",
     "lat": 32.77766,
     "lng": 131.80208,
-    "geoPrecision": "area"
+    "geoPrecision": "city"
   },
   {
     "id": "kagura-kaikan-oita-67890d3ae8",
