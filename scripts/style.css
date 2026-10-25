@@ -557,3 +557,15 @@ footer{margin-top:96px;padding-top:36px}
   .card .tag{padding-top:4px}
   .card>div:last-child{min-width:0}
 }
+
+/* 開催ページ・定期公演ページ: 題のすぐ下に要点の帯を寄せる。日時は一番大きく。本文は1行を短くして読みやすく。
+   地図には「会場の場所」の見出しを付け、説明文と区切る。スマホでは「公式情報を見る」を画面の幅いっぱいにする */
+.hero:has(+.keyinfo){padding-bottom:4px}
+.keyinfo{margin-top:16px}
+@media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
+main>p:not([class]){max-width:42em}
+.maph+.mapbox{margin-top:0}
+@media(max-width:560px){
+  .actions .btn:not(.ghost){display:flex;width:100%;min-height:48px;margin-right:0}
+  .share{margin-bottom:24px}
+}
