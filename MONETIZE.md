@@ -6,6 +6,7 @@ ID が空の間は、報酬のない、ふつうのリンクとして動きま�
 | 仕組み | 場所 | 有効にする設定(`config.json`) |
 |---|---|---|
 | 会場近くの宿(じゃらん) | これからの開催のページ(開催日の1泊・大人2名で検索) / 種類・都道府県・定期公演のページの「旅支度」 | `affiliate.valueCommerceSid` と `affiliate.jalanPid` |
+| 公演前後の体験(じゃらん遊び・体験) | 開催・定期公演・都道府県のページの「公演の前後も楽しむ」 / 周辺体験のページの47都道府県 | `affiliate.valueCommerceSid` と `affiliate.jalanActivityPid`(宿のpidとは別) |
 | 会場近くの宿(楽天トラベル) | 同上 | `affiliate.rakutenAffiliateId` |
 | 神楽の本・グッズ(Amazon) | 「旅支度」(設定したときだけ表示) | `affiliate.amazonTag` |
 | ディスプレイ広告(AdSense) | 一覧・開催ページなどの決めた場所(手動)+ 画面下の固定広告(自動広告のアンカー) | `adsense.client`、`adsense.slotList`、`adsense.slotDetail` |
@@ -27,6 +28,8 @@ ID を設定すると、プライバシーポリシー・免責事項・運営�
 4. `affiliate.valueCommerceSid` に sid、`affiliate.jalanPid` に pid を入れます。
 
 設定済み(2026-10-13): sid `3784232` / pid `892725735`。リンクは `ck.jp.ap.valuecommerce.com/servlet/referral?sid=…&pid=…&vc_url=(じゃらんの検索URL)` の形で、行き先がじゃらんの市町村の宿の検索になることを確認済み。
+
+体験(2026-10-25): じゃらん 遊び・体験予約(プログラムID 2139176、即時提携、予約完了3.3%・利用確認後に成果)と提携。MyLinkで発行した pid `892732911` を `affiliate.jalanActivityPid` に設定。発行コードの1px計測画像は使わない。クリックは GoatCounter の `experience-jalan/<地域コード>`。
 
 ## 3. Google AdSense
 

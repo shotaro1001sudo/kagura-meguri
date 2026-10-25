@@ -44,6 +44,11 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     ok(page('#nearby-experiences a').first().attr('href')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
     ok(planningLinks({prefecture},today).includes('href="#nearby-experiences"'),`${prefecture}: 公演から当該県の案内へ進める`);
   }
+  const aff={sid:'1111111',pid:'4444444'},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
+  ok(affLink.attr('href')==='https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=1111111&pid=4444444&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affLink.text().includes('（広告）')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
+  const affNational=cheerio.load(experienceDirectory(aff));
+  ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=4444444')),'全国一覧の47都道府県すべてに体験用pidが付く');
+  ok(experienceSection({prefecture:'高知県'},today,{sid:'1111111',pid:''}).includes('広告リンクではありません'),'pid未設定なら広告ではない通常リンクのまま');
   ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
   ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
   ok(national('.experience-areas a').toArray().every(a=>!national(a).attr('rel').includes('sponsored')&&!national(a).attr('data-affiliate-category')),'一般検索先は広告・成果リンクとして扱わない');
