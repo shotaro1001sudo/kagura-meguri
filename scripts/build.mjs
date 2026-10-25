@@ -13,7 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
-import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, transportSection } from './lib/visitor-planning.mjs';
+import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -160,9 +160,11 @@ const prNote = (on) => (on ? `<small class="meta"><span class="pr">PR</span> 広
 function stayBlock(e) {
   const day = e.start.slice(0, 10), place = stayPlace(e);
   const on = rakutenOn || jalanOn;
-  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場近くの宿</h2>
-<p>${!e.timeUnknown && +e.start.slice(11, 13) >= 17 ? "夜の公演です。" : ""}遠方から観に行くなら、${esc(place)}の宿もあわせて探せます。<br><span class="meta">${jpDate(day)}泊・大人2名で検索します。</span></p>
+  const evening = !e.timeUnknown && (+e.start.slice(11,13)>=17 || (e.end && (+e.end.slice(11,13)>=17 || e.end.slice(0,10)>day)));
+  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${evening?"夜の観覧後に泊まる宿を探す":"会場エリアの宿を探す"}</h2>
+<p>${evening ? "夜の公演です。終演後の帰り道が気になる方は、宿泊も選択肢です。" : "遠方から観に行くなら、"}${esc(place)}の宿もあわせて探せます。<br><span class="meta annotation">${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。</span></p>
 <p class="staylinks"><a class="btn ghost sm" href="${esc(jalanStay(e, day))}" ${affAttrs(jalanOn, `stay-jalan/${e.id}`)}>じゃらんで宿を探す</a> <a class="btn ghost sm" href="${esc(rakutenStay(e, day))}" ${affAttrs(rakutenOn, `stay-rakuten/${e.id}`)}>楽天トラベルで宿を探す</a></p>
+<p class="meta annotation">${esc(place)}のキーワード検索です。会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。深夜・翌朝までの公演は宿泊日も確認しましょう。</p>
 ${prNote(on)}</aside>`;
 }
 
@@ -734,8 +736,7 @@ ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${showPreparation && e.lat != null ? `<section id="venue-access" aria-label="会場の地図・経路">${mapBlock(e)}</section>` : mapBlock(e)}
 ${sourceNote(e)}${showPreparation ? "" : GUIDE_LINK}
-${isUpcoming(e)?`${planningLinks(e,today)}${experienceSection(e,today)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${transportSection(visitorPlanning,e,today,'event_rental')}`:''}
-${isUpcoming(e) ? stayBlock(e) : ""}
+${isUpcoming(e)?`${transportSection(visitorPlanning,e,today,'event_rental')}${stayBlock(e)}${planningLinks(e,today)}${experienceSection(e,today)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}`,
   }));
@@ -845,7 +846,7 @@ ${otherWays("/this-month.html")}`,
     body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
       esc,
       suppliesHtml:offerCards(visitorPlanning,'supplies',{guide:true},today,'guide_supplies'),
-      rentalHtml:offerCards(visitorPlanning,'rental',{guide:true},today,'guide_rental'),
+      rentalHtml:rentalSearch(visitorPlanning,{guide:true},today,'guide_rental'),
       kaguraLink: (k) => (kaguras.includes(k) ? `<a href="${kaguraHref(k)}">${esc(k)}</a>` : esc(k)),
     })}</div>`,
   }));

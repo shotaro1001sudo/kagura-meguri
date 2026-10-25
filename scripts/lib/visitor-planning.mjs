@@ -14,6 +14,7 @@ const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 const date = s => typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0,10)===s;
 const cityOf = s => String(s??'').replace(/^.*郡/,'');
 const providers = {
+  'rakuten-rental':{category:'rental',name:'楽天トラベル',host:'hb.afl.rakuten.co.jp'},
   'rakuten-ichiba':{category:'supplies',name:'楽天市場',host:'hb.afl.rakuten.co.jp'},
   'vc-asoview':{category:'experiences',name:'アソビュー！',host:'ck.jp.ap.valuecommerce.com'},
   'vc-jalan-rental':{category:'rental',name:'じゃらんレンタカー',host:'ck.jp.ap.valuecommerce.com'}
@@ -24,17 +25,23 @@ export function validOffer(o,today) {
   const p=providers[o.provider];
   if(!p||p.category!==o.category||typeof o.id!=='string'||!/^[-a-z0-9]{1,48}$/.test(o.id))return false;
   if(!['title','reason','criteria','unnecessary','approvalReference'].every(k=>typeof o[k]==='string'&&o[k].trim()))return false;
-  if(o.category!=='supplies'&&!['prefecture','city'].every(k=>typeof o[k]==='string'&&o[k].trim()))return false;
+  const national=o.provider==='rakuten-rental'&&o.category==='rental'&&o.scope==='national';
+  if(o.scope!==undefined&&!national)return false;
+  if(o.category!=='supplies'&&!national&&!['prefecture','city'].every(k=>typeof o[k]==='string'&&o[k].trim()))return false;
   if(o.eventIds!==undefined&&(!Array.isArray(o.eventIds)||!o.eventIds.every(id=>typeof id==='string'&&/^[-a-z0-9]+$/.test(id))))return false;
   try {
     if(typeof o.url!=='string'||/[\s\\\u0000-\u001f\u007f]/.test(o.url))return false;
     const u=new URL(o.url);
     if(u.protocol!=='https:'||u.hostname!==p.host||u.username||u.password||u.port||u.hash)return false;
-    if(o.provider==='rakuten-ichiba') {
+    if(o.provider==='rakuten-ichiba'||o.provider==='rakuten-rental') {
       if(!/^\/(hgc|ichiba)\/[A-Za-z0-9._/-]+\/$/.test(u.pathname))return false;
+      if(o.provider==='rakuten-rental'&&!u.searchParams.has('pc'))return false;
       for(const key of ['pc','m'])if(u.searchParams.has(key)) {
         const target=new URL(u.searchParams.get(key));
-        if(target.protocol!=='https:'||!['search.rakuten.co.jp','item.rakuten.co.jp','books.rakuten.co.jp'].includes(target.hostname)||target.username||target.password||target.port)return false;
+        if(target.protocol!=='https:'||target.username||target.password||target.port)return false;
+        if(o.provider==='rakuten-rental') {
+          if(!((target.hostname==='travel.rakuten.co.jp'&&target.pathname.startsWith('/cars/'))||target.hostname==='cars.travel.rakuten.co.jp'))return false;
+        } else if(!['search.rakuten.co.jp','item.rakuten.co.jp','books.rakuten.co.jp'].includes(target.hostname))return false;
       }
     } else {
       if(u.pathname!=='/servlet/referral'||!['sid','pid'].every(k=>/^\d+$/.test(u.searchParams.get(k)??'')))return false;
@@ -53,7 +60,7 @@ export function offersFor(settings,category,context={},today) {
   const seen=new Set();
   return settings.offers.filter(o=>{
     if(!validOffer(o,today)||o.category!==category||seen.has(o.id)||seen.has(o.url))return false;
-    if(category!=='supplies'&&!context.guide&&(context.prefecture!==o.prefecture||cityOf(context.city)!==cityOf(o.city)))return false;
+    if(category!=='supplies'&&o.scope!=='national'&&!context.guide&&(context.prefecture!==o.prefecture||cityOf(context.city)!==cityOf(o.city)))return false;
     if(Array.isArray(o.eventIds)&&o.eventIds.length&&!o.eventIds.includes(context.id))return false;
     seen.add(o.id);seen.add(o.url);return true;
   }).slice(0,category==='supplies'?5:3);
@@ -62,7 +69,7 @@ export function offerCards(settings,category,context,today,placement) {
   const offers=offersFor(settings,category,context,today);
   if(!offers.length)return '';
   const labels={supplies:'観覧用品を探す',experiences:'体験プランを探す',rental:'レンタカーを探す'};
-  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 公演の公式予約とは別の外部サービスです。購入・予約により当サイトが報酬を受け取ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card">${category!=='supplies'?`<p class="meta">${esc(o.prefecture)} ${esc(o.city)}</p>`:''}<h3>${esc(o.title)}</h3><p>${esc(o.reason)}</p><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl><a class="btn ghost sm" href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(providers[o.provider].name)}で${labels[category]}（広告）</a><p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p></article>`).join('')}</div></section>`;
+  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 公演の公式予約とは別の外部サービスです。購入・予約により当サイトが報酬を受け取ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card">${category!=='supplies'?`<p class="meta">${o.scope==='national'?'全国の店舗を検索':`${esc(o.prefecture)} ${esc(o.city)}`}</p>`:''}<h3>${esc(o.title)}</h3><p>${esc(o.reason)}</p><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl><a class="btn ghost sm" href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(providers[o.provider].name)}で${labels[category]}（広告）</a><p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p></article>`).join('')}</div></section>`;
 }
 export const experiences = [
   {id:'takachiho-boat',prefecture:'宮崎県',city:'高千穂町',name:'高千穂峡の貸しボート',place:'高千穂峡',reason:'峡谷の景色を水上から眺めたい方へ。神楽とは違う角度から土地の自然に触れる候補です。',detail:'予約方法・営業カレンダー・天候による休止を公式案内で確認してください。',source:'https://takachiho-kanko.info/boat/d/',by:'高千穂町観光協会',notice:'10月25日確認時点で、10月25・26日の営業休止が案内されています。再開状況も公式案内をご確認ください。'},
@@ -81,7 +88,10 @@ export function planningLinks(context={},today=CHECKED) {
   const nearby=!!experienceArea(context.prefecture);
   return `<nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b><span>季節・席・観覧時間に合わせて</span></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b><span>公共交通・駐車場・返却を確認</span></a><a href="${nearby?'#nearby-experiences':'/experiences.html'}"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b><span>公式案内から立ち寄り先を考える</span></a></nav>`;
 }
-export function transportSection(settings,context,today,placement) {
+export function rentalSearch(settings,context,today,placement) {
   const ads=offerCards(settings,'rental',context,today,placement);
-  return ads?`<section class="planning-section"><h2>車で行く神楽旅</h2><p>会場への公共交通・公式経路を確認したうえで、車も選択肢にする方へ。貸出店舗・営業時間・返却時刻・駐車場はそれぞれの公式案内で確認してください。</p>${ads}</section>`:'';
+  return ads||`<p><a class="btn ghost sm" data-rental-search href="https://travel.rakuten.co.jp/cars/" target="_blank" rel="noopener noreferrer">楽天トラベルでレンタカーを探す</a></p><p class="meta annotation">全国の検索ページです。${context.prefecture?`${esc(context.prefecture)}${esc(context.city??'')}への移動に合わせて、`:''}出発場所・利用日時・返却店舗をリンク先で選んでください。このリンクは広告ではありません。</p>`;
+}
+export function transportSection(settings,context,today,placement) {
+  return `<section class="planning-section" aria-labelledby="rental-h"><h2 id="rental-h">会場への移動を考える</h2><p>会場の公式アクセスと公共交通を確認し、車を利用する場合はレンタカーも比較できます。</p><p>貸出・返却店舗の営業時間、終演後の移動、駐車場の有無を先に確認しましょう。</p>${rentalSearch(settings,context,today,placement)}</section>`;
 }

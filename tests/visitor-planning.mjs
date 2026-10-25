@@ -16,6 +16,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const settings={categories:{supplies:{enabled:true},experiences:{enabled:true},rental:{enabled:true}},offers:[supplies,experience,rental]};
   ok(settings.offers.every(o=>validOffer(o,today)),'3カテゴリの個別正式リンクを扱える');
   for(const patch of [{approved:false},{enabled:false},{verifiedAt:'2026-11-01'},{verifiedAt:'2026-01-01'},{verifiedAt:'2026-02-30'},{expiresAt:'2026-10-24'},{approvalReference:''},{eventIds:'all'},{url:'javascript:alert(1)'},{url:'http://hb.afl.rakuten.co.jp/hgc/test/'},{url:'https://hb.afl.rakuten.co.jp.evil.test/hgc/test/'},{url:'https://user:pass@hb.afl.rakuten.co.jp/hgc/test/'},{url:'https://hb.afl.rakuten.co.jp:444/hgc/test/'},{url:supplies.url+'#fragment'},{url:supplies.url+'&m=https%3A%2F%2Fevil.test%2F'}])ok(!validOffer({...supplies,...patch},today),'未確認・対象外・危険リンクを非表示: '+Object.keys(patch).join());
+  const rakutenRental={...base,id:'test-rakuten-rental',category:'rental',provider:'rakuten-rental',scope:'national',url:'https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2Fcars%2F'};
+  const rentalSettings={categories:{rental:{enabled:true}},offers:[rakutenRental]};
+  ok(validOffer(rakutenRental,today)&&offersFor(rentalSettings,'rental',{prefecture:'島根県',city:'浜田市'},today).length===1,'専用の全国検索リンクは特定の神楽に限定せず利用できる');
+  for(const url of ['https://hb.afl.rakuten.co.jp/hgc/test.rental/','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2F','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Fcars.travel.rakuten.co.jp.evil.test%2F'])ok(!validOffer({...rakutenRental,url},today),'レンタカーに宿泊・市場・不明遷移を流用しない');
+  ok(!validOffer({...rental,scope:'national'},today)&&!validOffer({...experience,scope:'national'},today),'地域限定の既存案件を全国へ拡大しない');
+  const nationalRental=cheerio.load(offerCards(rentalSettings,'rental',{},today,'guide_rental'));
+  ok(nationalRental('a[rel~=sponsored]').attr('href')===rakutenRental.url&&nationalRental.root().text().includes('全国の店舗を検索'),'全国レンタカーは全国検索と広告を明示し発行URLを保持');
   ok(!validOffer({...rental,url:rental.url.replace('rentacar','hotel')},today),'宿泊向けの遷移先をレンタカーへ流用しない');
   ok(!validOffer({...rental,provider:'vc-asoview'},today),'広告主とカテゴリが一致しないリンクを非表示');
   ok(offersFor(settings,'experiences',context,today).length===1&&offersFor(settings,'experiences',{prefecture:'宮崎県',city:'延岡市'},today).length===0,'県だけで別の市町村へ体験広告を広げない');
@@ -52,6 +59,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(published('a[data-affiliate-category=supplies]').toArray().every((a,i)=>published(a).attr('href')===selected[i].url&&new URL(selected[i].url).searchParams.get('pc')===selected[i].destinationUrl),'発行URLの全パラメーターを保持し、選定商品と遷移先が一致');
   ok(!supplied.categories.experiences.enabled&&!supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験・レンタカーは無効、期限付きの価格・ポイントを固定表示しない');
   ok(offersFor(supplied,'supplies',{},'2026-11-24').length===3&&offersFor(supplied,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
+
+  const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
+  ok(fullPage('.stay h2').text().includes('夜の観覧後')&&!dayPage('.stay h2').text().includes('夜')&&!unknownPage('.stay h2').text().includes('夜'),'夜公演だけ宿泊を強調し、昼・時刻不明は夜と断定しない');
+  ok(fullPage('.stay').text().includes('最終チェックイン')&&fullPage('.stay').text().includes('人数・宿泊日はリンク先で変更'),'宿泊条件の変更と距離・最終チェックインの確認を案内');
+  const direct=fullPage('[data-rental-search]');
+  ok(direct.attr('href')==='https://travel.rakuten.co.jp/cars/'&&!direct.attr('rel').includes('sponsored')&&!direct.attr('data-affiliate-category')&&guide('[data-rental-search]').length===1,'未発行のレンタカーは通常の公式リンク、ガイドからも利用可能');
+  ok(pastPage('.stay,[data-rental-search]').length===0&&fullPage('main').html().indexOf('data-official-link')<fullPage('main').html().indexOf('data-rental-search'),'終了済みは宿・車を出さず、公式情報を先に案内');
 
   const temp=mkdtempSync(join(tmpdir(),'km-planning-'));
   try {
