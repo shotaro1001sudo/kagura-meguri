@@ -5,9 +5,10 @@
 
 import { figure, flow, table, icon, stageDiagram } from "./figures.mjs";
 
-export const CHECKED = "2026-10-20";
+export const CHECKED = "2026-10-25";
 
 export const SOURCES = [
+  { id: "battery", name: "真夏の製品事故アラート（モバイルバッテリーの取扱い）", by: "製品評価技術基盤機構 NITE", url: "https://www.nite.go.jp/jiko/chuikanki/press/2024fy/prs24071201.html" },
   { id: "takachiho", name: "高千穂の夜神楽", by: "高千穂町観光協会", url: "https://takachiho-kanko.info/kagura/yokagura/" },
   { id: "jta", name: "高千穂の夜神楽(概要)", by: "観光庁 地域観光資源の多言語解説文データベース", url: "https://www.mlit.go.jp/tagengo-db/common/001537994.docx" },
   { id: "iwamiqa", name: "石見神楽 Q&A", by: "浜田市観光協会(石見神楽公式サイト)", url: "https://iwamikagura.jp/about/qa/" },
@@ -33,7 +34,7 @@ export const CHAPTERS = [
  * @param {(s:string)=>string} x.esc
  * @param {(k:string)=>string} x.kaguraLink 神楽の種類ページへのリンク(ページがなければ、名前だけ)
  */
-export function guideHtml({ esc, kaguraLink }) {
+export function guideHtml({ esc, kaguraLink, suppliesHtml = '', rentalHtml = '' }) {
   // 出典の番号: 初めて出てきた順に振る。最初の出現にだけ id を付け、出典の一覧から戻れるようにする
   const order = [];
   const cite = (...ids) => ids.map((id) => {
@@ -52,6 +53,7 @@ export function guideHtml({ esc, kaguraLink }) {
 <p>神楽(かぐら)は、神社の祭りなどで神様に奉納される歌と舞です。囃子(はやし)の速さも衣装も演目も、地域によって大きく違います。</p>
 <p>このページでは、はじめて神楽を観る方に向けて、観られる場所や見どころ、マナー、服装を、各地の公式情報をもとにまとめました。</p>
 <p>神楽がいつ、どのように生まれて広まったのかは、<a href="/history/">神楽の歴史</a>で紹介しています。神話の時代から現代までを、年表でたどれます。</p>
+<nav class="planning-links" aria-label="観覧準備をすぐ読む"><a href="#packing"><span class="meta">持ち物</span><b>初めての夜神楽、持ち物これだけ</b><span>必要なものだけを選ぶ</span></a><a href="#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b><span>公共交通・駐車場・返却</span></a><a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b><span>公演の前後に立ち寄る</span></a></nav>
 <nav class="toc" id="toc" aria-label="このページの目次"><ol>${CHAPTERS.map(([id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol></nav>
 
 ${chapter(0)}
@@ -105,6 +107,13 @@ ${cards(
 <p>神事として行われる神楽には、地域ごとに観る側の心得があります。${cite("jta")} 迷ったときは、主催者や地元の方に尋ねてみましょう。</p>`))}
 
 ${chapter(3)}
+<section id="packing" class="planning-section" aria-labelledby="packing-h"><h3 id="packing-h">初めての夜神楽、持ち物これだけ</h3><p>すべてを買いそろえる必要はありません。手持ちのものから、季節・座席・観覧時間に合うものを選びましょう。</p>
+<div class="planning-grid">
+<article class="planning-card"><p class="meta">冷える夜・屋外に</p><h4>羽織りもの・ひざ掛け</h4><p>持ち運びやすく、脱ぎ着で調整できるものを。暖房のある屋内や暑い日は不要なこともあります。</p></article>
+<article class="planning-card"><p class="meta">座って長く観るなら</p><h4>小さな携帯クッション</h4><p>席の大きさに収まり、周囲の視界を遮らないものを。十分なクッションのある椅子なら不要です。持ち込みは会場の案内を確認しましょう。</p></article>
+<article class="planning-card"><p class="meta">地図や連絡を使う日に</p><h4>モバイルバッテリー</h4><p>端子が合い、持ち歩ける重さのものを。短時間で充電に余裕があれば不要です。高温の車内や直射日光の当たる場所に放置しないでください。${cite('battery')}</p></article>
+<article class="planning-card"><p class="meta">物語を楽しむ準備に</p><h4>神楽の入門書・演目の解説</h4><p>観る地域や演目が扱われているか、目次から選びましょう。まずは公式の解説や図書館、このガイドだけでも楽しむ準備はできます。</p></article>
+</div><p class="meta annotation">会場の持ち込みルールを優先してください。火気用品は勧めません。室内・屋外や季節で必要なものは変わります。</p>${suppliesHtml}</section>
 ${cards(
   card(`${icon("snow")}夜と寒さに備える`, `<ul>
 <li>神社の神楽は、夜に行われることがよくあります。</li>
@@ -121,8 +130,10 @@ ${table(["場面", "あると便利なもの"], [
   ["冬の夜", "毛布・カイロ"],
   ["夏の夜", "虫よけ・タオル"],
   ["夜通しの神楽", "防寒具・飲み物・軽食"],
-  ["どの季節でも", "飲み物・食べ物・折りたたみのいす・ひざ掛け"],
+  ["長時間の観覧", "会場ルールに合う飲み物・携帯クッションなど、必要なものだけ"],
 ], "持ち物チェック表", "chk")}
+<section id="transport" class="planning-section" aria-labelledby="transport-h"><h3 id="transport-h">車で行く神楽旅</h3><p>まず会場の公式アクセスと公共交通を確認。車を選ぶ場合は、到着より先に「帰れる時間」も決めておくと予定を立てやすくなります。</p><ol class="planning-steps"><li><b>公共交通と帰りの便</b><br>終演時刻から最終便に間に合うか、交通事業者の時刻表で確認。</li><li><b>貸出・返却できる店舗</b><br>レンタカーは店舗の営業時間、返却時刻、乗り捨て条件を確認。</li><li><b>会場への経路と駐車場</b><br>主催者の案内を優先し、駐車場の有無・利用時間・料金を確認。</li></ol><p class="meta annotation">所要時間・営業・駐車場は公演ごとに異なります。未確認の場合は会場・交通事業者・貸出店舗へ確認してください。</p>${rentalHtml}</section>
+<p><a class="btn ghost" href="/experiences.html">神楽の前後に楽しむ周辺体験を見る</a></p>
 
 ${chapter(4)}
 ${figure(flow([

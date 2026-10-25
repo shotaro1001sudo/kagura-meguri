@@ -1,0 +1,76 @@
+// IDEA-003/004/005: 編集記事と広告設定を分離。宿泊のIDから別案件のURLを作らない。
+export const CHECKED = '2026-10-25';
+const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const date = s => typeof s==='string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && Number.isFinite(Date.parse(s)) && new Date(s).toISOString().slice(0,10)===s;
+const cityOf = s => String(s??'').replace(/^.*郡/,'');
+const providers = {
+  'rakuten-ichiba':{category:'supplies',name:'楽天市場',host:'hb.afl.rakuten.co.jp'},
+  'vc-asoview':{category:'experiences',name:'アソビュー！',host:'ck.jp.ap.valuecommerce.com'},
+  'vc-jalan-rental':{category:'rental',name:'じゃらんレンタカー',host:'ck.jp.ap.valuecommerce.com'}
+};
+export function validOffer(o,today) {
+  if(!o||o.enabled!==true||o.approved!==true||!date(today)||!date(o.verifiedAt)||!date(o.expiresAt)||o.verifiedAt>today||o.expiresAt<today||o.expiresAt<o.verifiedAt)return false;
+  if(Date.parse(today)-Date.parse(o.verifiedAt)>90*864e5)return false;
+  const p=providers[o.provider];
+  if(!p||p.category!==o.category||typeof o.id!=='string'||!/^[-a-z0-9]{1,48}$/.test(o.id))return false;
+  if(!['title','reason','criteria','unnecessary','approvalReference'].every(k=>typeof o[k]==='string'&&o[k].trim()))return false;
+  if(o.category!=='supplies'&&!['prefecture','city'].every(k=>typeof o[k]==='string'&&o[k].trim()))return false;
+  if(o.eventIds!==undefined&&(!Array.isArray(o.eventIds)||!o.eventIds.every(id=>typeof id==='string'&&/^[-a-z0-9]+$/.test(id))))return false;
+  try {
+    if(typeof o.url!=='string'||/[\s\\\u0000-\u001f\u007f]/.test(o.url))return false;
+    const u=new URL(o.url);
+    if(u.protocol!=='https:'||u.hostname!==p.host||u.username||u.password||u.port||u.hash)return false;
+    if(o.provider==='rakuten-ichiba') {
+      if(!/^\/(hgc|ichiba)\/[A-Za-z0-9._/-]+\/$/.test(u.pathname))return false;
+      for(const key of ['pc','m'])if(u.searchParams.has(key)) {
+        const target=new URL(u.searchParams.get(key));
+        if(target.protocol!=='https:'||!['search.rakuten.co.jp','item.rakuten.co.jp','books.rakuten.co.jp'].includes(target.hostname)||target.username||target.password||target.port)return false;
+      }
+    } else {
+      if(u.pathname!=='/servlet/referral'||!['sid','pid'].every(k=>/^\d+$/.test(u.searchParams.get(k)??'')))return false;
+      if(u.searchParams.has('vc_url')) {
+        const target=new URL(u.searchParams.get('vc_url'));
+        if(target.protocol!=='https:'||target.username||target.password||target.port)return false;
+        if(o.provider==='vc-asoview'&&!['asoview.com','www.asoview.com'].includes(target.hostname))return false;
+        if(o.provider==='vc-jalan-rental'&&(!['jalan.net','www.jalan.net'].includes(target.hostname)||!target.pathname.startsWith('/rentacar/')))return false;
+      }
+    }
+    return true;
+  } catch {return false;}
+}
+export function offersFor(settings,category,context={},today) {
+  if(settings?.categories?.[category]?.enabled!==true||!Array.isArray(settings.offers))return [];
+  const seen=new Set();
+  return settings.offers.filter(o=>{
+    if(!validOffer(o,today)||o.category!==category||seen.has(o.id)||seen.has(o.url))return false;
+    if(category!=='supplies'&&!context.guide&&(context.prefecture!==o.prefecture||cityOf(context.city)!==cityOf(o.city)))return false;
+    if(Array.isArray(o.eventIds)&&o.eventIds.length&&!o.eventIds.includes(context.id))return false;
+    seen.add(o.id);seen.add(o.url);return true;
+  }).slice(0,category==='supplies'?5:3);
+}
+export function offerCards(settings,category,context,today,placement) {
+  const offers=offersFor(settings,category,context,today);
+  if(!offers.length)return '';
+  const labels={supplies:'観覧用品を探す',experiences:'体験プランを探す',rental:'レンタカーを探す'};
+  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 公演の公式予約とは別の外部サービスです。購入・予約により当サイトが報酬を受け取ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card">${category!=='supplies'?`<p class="meta">${esc(o.prefecture)} ${esc(o.city)}</p>`:''}<h3>${esc(o.title)}</h3><p>${esc(o.reason)}</p><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl><a class="btn ghost sm" href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${esc(providers[o.provider].name)}で${labels[category]}（広告）</a><p class="meta annotation">リンク確認: ${o.verifiedAt}</p></article>`).join('')}</div></section>`;
+}
+export const experiences = [
+  {id:'takachiho-boat',prefecture:'宮崎県',city:'高千穂町',name:'高千穂峡の貸しボート',place:'高千穂峡',reason:'峡谷の景色を水上から眺めたい方へ。神楽とは違う角度から土地の自然に触れる候補です。',detail:'予約方法・営業カレンダー・天候による休止を公式案内で確認してください。',source:'https://takachiho-kanko.info/boat/d/',by:'高千穂町観光協会',notice:'10月25日確認時点で、10月25・26日の営業休止が案内されています。再開状況も公式案内をご確認ください。'},
+  {id:'amaterasu-cart',prefecture:'宮崎県',city:'高千穂町',name:'あまてらす鉄道のカート乗車',place:'旧高千穂駅',reason:'旧鉄道の線路や鉄橋の景色を楽しみたい方へ。地域を眺める乗車体験の候補です。',detail:'グランドスーパーカートの乗車は往復約30分。事前予約は受け付けず当日窓口で購入する案内です。待ち時間・休園日・天候による運休も公式で確認してください。',source:'https://amaterasu-railway.jp/attraction',by:'高千穂あまてらす鉄道',notice:''}
+];
+export function experiencesFor(context,today) {
+  if(!date(today)||today<CHECKED||Date.parse(today)-Date.parse(CHECKED)>90*864e5)return [];
+  return experiences.filter(x=>context.guide||(context.prefecture===x.prefecture&&(!context.city||cityOf(context.city)===x.city)));
+}
+export function experienceSection(context,today) {
+  const items=experiencesFor(context,today);if(!items.length)return '';
+  return `<section id="nearby-experiences" class="planning-section" aria-labelledby="nearby-experiences-h"><p class="planning-eyebrow">公演の前後も楽しむ</p><h2 id="nearby-experiences-h">神楽までの半日、何する？</h2><p>高千穂町で立ち寄り先を考えるときの2つの候補です。公演会場からの移動時間は未確認です。公演の受付・移動・食事の時間を先に確保して選びましょう。</p><div class="planning-grid">${items.map(x=>`<article class="planning-card"><p class="meta">${esc(x.prefecture)} ${esc(x.city)}・${esc(x.place)}</p><h3>${esc(x.name)}</h3><p>${esc(x.reason)}</p><p>${esc(x.detail)}</p>${x.notice?`<p class="planning-notice">${esc(x.notice)}</p>`:''}<a class="btn ghost sm" href="${x.source}" target="_blank" rel="noopener noreferrer">公式で営業・利用方法を確認</a><p class="meta annotation">公式案内: ${esc(x.by)} ／ 確認日: ${CHECKED}</p></article>`).join('')}</div><p class="meta annotation">営業状況・空き・価格はリアルタイム表示ではありません。公演前に利用できることを保証するものではありません。</p></section>`;
+}
+export function planningLinks(context={},today=CHECKED) {
+  const nearby=experiencesFor(context,today).length>0;
+  return `<nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b><span>季節・席・観覧時間に合わせて</span></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b><span>公共交通・駐車場・返却を確認</span></a><a href="${nearby?'#nearby-experiences':'/experiences.html'}"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b><span>公式案内から立ち寄り先を考える</span></a></nav>`;
+}
+export function transportSection(settings,context,today,placement) {
+  const ads=offerCards(settings,'rental',context,today,placement);
+  return ads?`<section class="planning-section"><h2>車で行く神楽旅</h2><p>会場への公共交通・公式経路を確認したうえで、車も選択肢にする方へ。貸出店舗・営業時間・返却時刻・駐車場はそれぞれの公式案内で確認してください。</p>${ads}</section>`:'';
+}

@@ -13,6 +13,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { questions, axes, programs, programEvents, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
+import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceSection, planningLinks, transportSection } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -20,6 +21,7 @@ const EVENTS_FILE = process.env.EVENTS_FILE ?? "data/events.json";
 const REGULAR_FILE = process.env.REGULAR_FILE ?? "data/regular.json";
 const readJson = (p) => JSON.parse(readFileSync(p, "utf8").replace(/^\uFEFF/, ""));
 const cfg = readJson("config.json");
+const visitorPlanning = readJson(process.env.VISITOR_PLANNING_FILE ?? 'data/visitor-planning.json');
 if (process.env.TEST_ADS_OFF) cfg.adsense = { client: "", slotList: "", slotDetail: "" }; // テスト用(広告未設定の状態から確かめる)
 if (process.env.TEST_ADSENSE) cfg.adsense.client = process.env.TEST_ADSENSE;
 if (process.env.TEST_FORM_OFF) cfg.form = { endpoint: "", accessKey: "", providerName: "" }, cfg.operator = { ...cfg.operator, contact: process.env.TEST_CONTACT ?? "" }; // テスト: 送信先が未設定の状態
@@ -132,7 +134,7 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 const a = cfg.affiliate;
 // 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
 const rakutenOn = !!a.rakutenAffiliateId, jalanOn = !!(a.valueCommerceSid && a.jalanPid), amazonOn = !!a.amazonTag;
-const hasAffiliate = rakutenOn || jalanOn || amazonOn;
+const hasAffiliate = rakutenOn || jalanOn || amazonOn || ['supplies','experiences','rental'].some(category=>offersFor(visitorPlanning,category,{guide:true},nowJst.slice(0,10)).length);
 const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
 const vcJalan = (url) => (jalanOn ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&pid=${a.jalanPid}&vc_url=${encodeURIComponent(url)}` : url);
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
@@ -442,6 +444,7 @@ ${adSlot(cfg.adsense.slotList)}
 ${showAll}
 <p class="empty" id="none" hidden>この地域の${laterMonths.length ? "、近いうちの開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
 ${laterLinks}
+<section class="planning-section" aria-labelledby="home-planning-h"><p class="planning-eyebrow">気になる公演が見つかったら</p><h2 id="home-planning-h">神楽へ出かける準備をしよう</h2>${planningLinks({},today)}</section>
 ${regular.length ? `<h2>毎週・毎晩の定期公演</h2><div class="reglist">${regular.map(regCard).join("")}</div>${regular.length > 3 ? `<p class="more" hidden><button type="button" class="btn ghost sm" id="regmore">定期公演をすべて表示(${regular.length}件)</button></p>` : ""}` : ""}
 ${prefs.length ? `<h2>都道府県で探す</h2><div class="taglist">${prefs.map((p) => `<a class="tag" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</div>` : ""}
 ${kaguras.length ? `<h2>種類で探す</h2><div class="taglist">${kaguras.map((k) => kaguraTag(k)).join("")}</div>` : ""}
@@ -646,7 +649,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}日時や会場は変わることがあるので、出かける前に各ページの公式情報をご確認ください。</p>
-${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${monthNavigation}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${stayHtml}`,
+${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${monthNavigation}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today):''}${stayHtml}`,
   }));
 }
 
@@ -720,6 +723,7 @@ ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${showPreparation && e.lat != null ? `<section id="venue-access" aria-label="会場の地図・経路">${mapBlock(e)}</section>` : mapBlock(e)}
 ${sourceNote(e)}${showPreparation ? "" : GUIDE_LINK}
+${isUpcoming(e)?`${planningLinks(e,today)}${experienceSection(e,today)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${transportSection(visitorPlanning,e,today,'event_rental')}`:''}
 ${isUpcoming(e) ? stayBlock(e) : ""}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}`,
@@ -741,6 +745,7 @@ ${shareBlock(`/regular/${r.id}.html`, r.name)}
 <p>${esc(r.description)}</p>
 ${mapBlock(r)}
 ${sourceNote(r)}${GUIDE_LINK}
+${planningLinks(r,today)}${experienceSection(r,today)}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${transportSection(visitorPlanning,r,today,'regular_rental')}
 ${affiliateBlock(r)}
 ${related(r)}
 ${adSlot(cfg.adsense.slotDetail)}`,
@@ -817,10 +822,10 @@ ${otherWays("/this-month.html")}`,
 
 // ---------- はじめての神楽ガイド(「神楽 初めて」「夜神楽 服装」などの検索に当てる、読み物) ----------
 {
-  const title = "はじめての神楽ガイド 見どころ・マナー・服装";
+  const title = "はじめての神楽ガイド 持ち物・服装・交通の準備";
   write("dist/guide.html", layout({
     title: `${title} | ${cfg.siteName}`,
-    desc: "はじめて神楽を観る方へ。能や歌舞伎との違い、神楽ならではの楽しみ方、撮影やご祝儀のマナー、夜の寒さに備えた服装と持ち物を、各地の公式情報をもとにまとめました。",
+    desc: "はじめての神楽観覧に向けて、見どころ・マナーと夜神楽の服装・持ち物、公共交通やレンタカーでの行き帰りを紹介。不要な場面も含めて準備を選べます。公式案内を確認し、公演前後の周辺体験もあわせて計画しましょう。",
     path: "/guide.html", active: "/guide.html", alts: [["en", "/en/guide.html"]],
     ld: [crumbsLd([["ホーム", "/"], ["はじめての神楽ガイド"]]), {
       "@context": "https://schema.org", "@type": "Article", headline: title, inLanguage: "ja", datePublished: GUIDE_CHECKED, dateModified: GUIDE_CHECKED,
@@ -829,10 +834,20 @@ ${otherWays("/this-month.html")}`,
     }],
     body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
       esc,
+      suppliesHtml:offerCards(visitorPlanning,'supplies',{guide:true},today,'guide_supplies'),
+      rentalHtml:offerCards(visitorPlanning,'rental',{guide:true},today,'guide_rental'),
       kaguraLink: (k) => (kaguras.includes(k) ? `<a href="${kaguraHref(k)}">${esc(k)}</a>` : esc(k)),
     })}</div>`,
   }));
 }
+
+// 周辺体験は、一般的な観覧ガイドと分けて地域・確認日を明示する。
+write('dist/experiences.html',layout({
+  title:`神楽の前後に楽しむ周辺体験・高千穂の立ち寄り案内 | ${cfg.siteName}`,
+  desc:padDesc('神楽の公演とあわせて楽しむ周辺体験を、公式案内をもとに紹介します。初版は高千穂の貸しボートとあまてらす鉄道。公演の時間を先に確認し、営業日・予約方法・移動の余裕を確かめて旅を計画しましょう。'),
+  path:'/experiences.html',ld:[crumbsLd([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']]),{'@context':'https://schema.org','@type':'Article',headline:'神楽の前後に楽しむ周辺体験',inLanguage:'ja',datePublished:PLANNING_CHECKED,dateModified:PLANNING_CHECKED,author:ORG_LD,publisher:ORG_LD,mainEntityOfPage:`${cfg.baseUrl}/experiences.html`,image:ogUrl(false)}],
+  body:`${crumbNav([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']])}${hero('神楽の前後も、土地を楽しむ','公演の時間を決めてから、もうひとつの寄り道を。')}<p>公演と同じ日に出かけるなら、まず受付と開演、帰りの交通を確認しましょう。体験の所要時間に、移動・待ち時間・食事の余裕を加えて考えるのがおすすめです。</p>${experienceSection({guide:true},today)||'<p>現在、確認済みの周辺体験案内はありません。最新の情報は各地域の観光協会などで確認してください。</p>'}${offerCards(visitorPlanning,'experiences',{guide:true},today,'experience_guide')}<h2>神楽の予定から旅を組み立てる</h2><p><a class="btn" href="/calendar.html">公演の日付・地域を探す</a> <a class="btn ghost" href="/guide.html#transport">行き帰りの交通を確認</a> <a class="btn ghost" href="/guide.html#packing">持ち物を選ぶ</a></p>`
+}));
 
 // ---------- 神楽の歴史(総論と年表、古代・中世・近世・近代の4ページ) ----------
 {
@@ -931,6 +946,7 @@ const staticDay = (() => { const m = String(op.updated ?? "").match(/(\d{4})年(
 const allDay = lastmodOf([...upcoming, ...regular]);
 const sm = [
   ['/quiz.html', QUIZ_CHECKED],
+  ['/experiences.html', PLANNING_CHECKED],
   ["/", allDay], ["/map.html", allDay], ["/calendar.html", allDay], ["/kagura/", allDay],
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
