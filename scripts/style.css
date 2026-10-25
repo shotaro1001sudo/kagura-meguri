@@ -129,11 +129,12 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .tag.gold{color:var(--ac)}
 
 /* 旅の案内(アフィリエイト) */
-.aff{margin:56px 0 8px;padding:22px 0 6px;border-top:1px solid var(--ac)}
-.aff h2{margin:0 0 14px;font-size:var(--fs-m)}.aff h2:after{display:none}
-.afflist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;margin-bottom:8px}
-.afflist a{display:grid;grid-template-columns:1fr;column-gap:12px;align-items:center;padding:12px 14px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
-.afflist a:first-child{border-left:0;padding-left:0}.afflist a:hover{background:var(--card)}
+/* 宿の案内: 一覧・種類・県のページでは、一覧の手前に置く帯。開催・定期公演のページでは、右の固定カード(スマホでは、要点の直下) */
+.aff{margin:22px 0 26px;padding:16px 20px 12px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac2);border-radius:4px}
+.aff h2{margin:0 0 10px;font-size:var(--fs-m)}.aff h2:after{display:none}
+.afflist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:8px}
+.afflist a{display:grid;grid-template-columns:1fr;row-gap:2px;align-items:center;padding:10px 16px;min-height:56px;text-decoration:none;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:3px;transition:border-color var(--t-s) var(--ease),background var(--t-s) var(--ease)}
+.afflist a:hover{border-color:var(--ac2)}.afflist a:after{content:"›";grid-area:1/2/3/3;color:var(--ac2);font-size:var(--fs-xl)}.afflist a{grid-template-columns:1fr auto}
 .afflist b{font-weight:500;font-size:var(--fs-s)}.afflist small{color:var(--mut);font-size:var(--fs-2xs)}
 /* 既存の色・書体・絵は維持し、余白と位置だけを整える */
 .home-search-link{margin:0 0 18px;text-align:right}
@@ -239,8 +240,22 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 /* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */
 .adwrap:before{content:"広告";display:block;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;margin-bottom:4px}
 /* 開催ページの「会場近くの宿」 */
-.stay{margin:28px 0;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
-.stay h2{margin:0 0 8px;font-size:var(--fs-m)}.stay p{margin:6px 0}.staylinks{margin:12px 0 6px!important}
+.stay{margin:20px 0;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac2);border-radius:4px}
+.stay h2{margin:0 0 8px;font-size:var(--fs-m)}.stay h2:after{display:none}.stay p{margin:6px 0}.staylinks{display:grid;gap:10px;margin:14px 0 6px!important}
+/* 宿のボタン: 「公式情報を見る」(朱・主役)とは別の色(金茶)で、主役の次に目立たせる */
+.btn.stay-btn{display:grid;grid-template-columns:1fr auto;justify-content:stretch;row-gap:0;margin:0;padding:10px 16px;text-align:left;background:var(--ac2);border-color:var(--ac2);color:var(--onac);letter-spacing:.06em}
+.btn.stay-btn:after{content:"›";grid-area:1/2/3/3;align-self:center;font-size:var(--fs-xl)}
+.btn.stay-btn span{font-size:var(--fs-s)}.btn.stay-btn small{font-size:var(--fs-2xs);letter-spacing:.02em;opacity:.9}
+/* 開催・定期公演のページ: 要点・公式情報(左)と、宿のカード(右・スクロールに付いてくる) */
+.wrap.wide{max-width:1040px}
+.dpage{display:grid;grid-template-columns:minmax(0,1fr)}
+.d-side .stay,.d-side .aff{margin:4px 0 16px}
+@media(min-width:960px){
+  .dpage{grid-template-columns:minmax(0,1fr) 320px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
+  .d-top{grid-area:top}.d-rest{grid-area:rest}
+  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px}
+  .d-side .afflist{grid-template-columns:1fr}
+}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 
 /* フォーム・ボタン */

@@ -83,7 +83,7 @@ export async function uxTests({ ok, section, OUT }) {
   section("UI: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   ok(full(".keyinfo table.info").length === 1 && full(".keyinfo").next(".actions").length === 1, "要点(日時・会場・料金)の帯のすぐ下に、ボタン");
-  ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".actions a[href*='calendar.google.com']").hasClass("sm") && full(".stay .btn").toArray().every((b) => full(b).hasClass("ghost")), "主役のボタンは「公式情報を見る」だけ(カレンダー・宿は控えめに)");
+  ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".actions a[href*='calendar.google.com']").hasClass("sm") && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 1 && full(".d-top .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。宿は専用の色のボタンで、要点の隣(右のカード・スマホでは直下)に置く");
   const sh = full(".share");
   ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
   ok(full(".mapbox #map.dmap[data-lat][data-lng]").length === 1 && full("#mapbig").attr("aria-expanded") === "false", "地図は小さく出し、「地図を大きく見る」で広げる");

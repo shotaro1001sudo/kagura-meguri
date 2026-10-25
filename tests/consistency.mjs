@@ -34,9 +34,9 @@ export function consistencyTests({ ok, section, OUT }) {
   };
   const ev = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.lat != null && e.start >= "2026-10-10");
   const o = orderOf(`events/${ev.id}.html`);
-  ok(o.map != null && o.map < o.route && o.route < o.source && (o.stay == null || o.source < o.stay) && (o.related == null || (o.stay ?? o.source) < o.related), "開催ページ: 地図 → 経路 → 出典・ガイドの案内 → 宿の案内 → あわせて観たい神楽 の順", JSON.stringify(o));
+  ok(o.map != null && o.map < o.route && o.route < o.source && (o.stay == null || o.stay < o.map) && (o.related == null || o.source < o.related), "開催ページ: 宿の案内(要点の直下・右のカード) → 地図 → 経路 → 出典・ガイドの案内 → あわせて観たい神楽 の順", JSON.stringify(o));
   const r = orderOf("regular/r-weekly.html");
-  ok(r.map != null && r.map < r.route && r.route < r.source && (r.stay == null || r.source < r.stay) && r.related != null && (r.stay ?? r.source) < r.related, "定期公演ページも同じ順で、「あわせて観たい神楽」がある", JSON.stringify(r));
+  ok(r.map != null && r.map < r.route && r.route < r.source && (r.stay == null || r.stay < r.map) && r.related != null && r.source < r.related, "定期公演ページも、宿の案内が先頭に近く、「あわせて観たい神楽」が最後にある", JSON.stringify(r));
 
   section("そろい方: 見出しの階層・押しやすさ・古い CSS");
   ok(home(".mgroup .card h4").length > 0 && home(".mgroup .card h3").length === 0 && page("month/2026-11.html")(".card h3").length > 0, "トップの月の見出し(h3)の下の開催名は h4。ほかのページの一覧は h3 のまま");
