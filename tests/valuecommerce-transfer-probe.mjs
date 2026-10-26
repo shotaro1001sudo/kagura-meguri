@@ -1,7 +1,7 @@
 // Dependency-free isolated CDP probe. Default is guard preflight ONLY.
 import {createServer} from 'node:http';
 import {spawn} from 'node:child_process';
-import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {vcTag} from '../scripts/lib/valuecommerce.mjs';
@@ -18,7 +18,7 @@ let live=false;
 const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/worker.js'?'text/javascript':'text/html; charset=utf-8');res.end(req.url==='/worker.js'?"fetch('https://guard.invalid/worker').catch(()=>{});":req.url==='/cmp'&&live?html:'<!doctype html><title>Guard preflight</title>');});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 const profile=mkdtempSync(join(tmpdir(),'vc-guard-'));
-const chrome=spawn(chromePath,['--headless','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--disable-sync','--disable-extensions',...(process.platform==='linux'?['--no-sandbox']:[]),'--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
+const chrome=spawn(chromePath,['--headless','--window-size=1280,1400','--force-device-scale-factor=1','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--disable-sync','--disable-extensions',...(process.platform==='linux'?['--no-sandbox']:[]),'--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
 let ws;let fatal=null;const evidence={targets:[],blocked:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
 const safeUrl=value=>{try{const u=new URL(value);return u.origin+u.pathname.replace(/[a-f0-9]{8}-[a-f0-9-]{27,}/gi,'[id]');}catch{return '[non-url]'}};
 const safeText=value=>String(value).replace(/https?:\/\/[^\s"'<>]+/g,safeUrl).slice(0,800);
@@ -81,10 +81,11 @@ try {
  evidence.preflight={expected,allBlocked:expected.every(p=>evidence.blocked.some(x=>x.host==='guard.invalid'&&x.path===p)),noExternalContinued:evidence.continued.every(x=>x.host==='127.0.0.1'),fatal};
  if(fatal||!evidence.preflight.allBlocked||!evidence.preflight.noExternalContinued)throw Error('Preflight failed; real CMP/advertising fixture NOT enabled.');
  if(process.env.VC_REAL_CMP==='1'){
-  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false},session);
+  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1400,deviceScaleFactor:1,mobile:false},session);
   live=true;await send('Page.navigate',{url:origin+'/cmp'},session);await new Promise(r=>setTimeout(r,7000));
-  const snapshot=async label=>{const state=await evaluate(`(()=>{const c=window.Cookiebot,d=document.querySelector('#CybotCookiebotDialog');const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');return {observerInstalled:window.__vcProbeObserver===true,viewport:{width:innerWidth,height:innerHeight},hasResponse:c?.hasResponse,consented:c?.consented,declined:c?.declined,marketing:c?.consent?.marketing,method:c?.consent?.method,gate:window.kaguraVcConsent?.state,images:document.querySelectorAll('[data-vc-ad]>a img').length,dialogVisible:visible(d),dialogText:d?.textContent.slice(0,800),controls:[...document.querySelectorAll('#CybotCookiebotDialog button,#CybotCookiebotDialog a,#CybotCookiebotDialog input,#CybotCookiebotDialog [role=button],#CookiebotWidget button')].filter(visible).map(e=>({id:e.id,tag:e.tagName,role:e.getAttribute('role'),ariaLabel:e.getAttribute('aria-label'),text:(e.textContent||e.value||'').trim().slice(0,100)}))}})()`);evidence.states.push({label,...state,blockedRequests:evidence.blocked.length,vcRequests:evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length});return state;};
-  const initial=await snapshot('initial');
+  const snapshot=async label=>{const state=await evaluate(`(()=>{const c=window.Cookiebot,d=document.querySelector('#CybotCookiebotDialog');const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');return {observerInstalled:window.__vcProbeObserver===true,viewport:{width:innerWidth,height:innerHeight,outerWidth,outerHeight,dpr:devicePixelRatio,screenWidth:screen.width,screenHeight:screen.height,clientWidth:document.documentElement.clientWidth,clientHeight:document.documentElement.clientHeight,scrollX,scrollY,visual:visualViewport?{width:visualViewport.width,height:visualViewport.height,offsetTop:visualViewport.offsetTop,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale}:null},hasResponse:c?.hasResponse,consented:c?.consented,declined:c?.declined,marketing:c?.consent?.marketing,method:c?.consent?.method,gate:window.kaguraVcConsent?.state,images:document.querySelectorAll('[data-vc-ad]>a img').length,dialogVisible:visible(d),dialogText:d?.textContent.slice(0,800),controls:[...document.querySelectorAll('#CybotCookiebotDialog button,#CybotCookiebotDialog a,#CybotCookiebotDialog input,#CybotCookiebotDialog [role=button],#CookiebotWidget button')].filter(visible).map(e=>({rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height},id:e.id,tag:e.tagName,type:e.getAttribute('type'),checked:typeof e.checked==='boolean'?e.checked:undefined,disabled:!!e.disabled,labels:e.labels?[...e.labels].map(l=>l.textContent.trim().slice(0,100)):[],role:e.getAttribute('role'),ariaLabel:e.getAttribute('aria-label'),text:(e.textContent||e.value||'').trim().slice(0,100)}))}})()`);evidence.states.push({label,...state,blockedRequests:evidence.blocked.length,vcRequests:evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length});return state;};
+  const capture=async label=>{evidence.states.push({label:label+'-layout',layout:await send('Page.getLayoutMetrics',{},session),window:await send('Browser.getWindowForTarget',{targetId})});if(process.env.VC_CAPTURE_DIR){mkdirSync(process.env.VC_CAPTURE_DIR,{recursive:true});const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},session);writeFileSync(join(process.env.VC_CAPTURE_DIR,label+'.png'),Buffer.from(shot.data,'base64'));}};
+  const initial=await snapshot('initial');await capture('initial');
   evidence.frames=await send('Page.getFrameTree',{},session).then(r=>({mainFrameId:r.frameTree.frame.id,childFrameCount:r.frameTree.childFrames?.length||0}));
   if(!initial.observerInstalled||!evidence.cmpEvents.some(e=>e.event==='observer-installed'&&e.path==='/cmp'))throw Error('Document-start observer handshake missing; diagnostics unreliable.');
   if(process.env.VC_UI_SEQUENCE==='1'){
@@ -94,6 +95,8 @@ try {
     await new Promise(r=>setTimeout(r,200));
     const pos=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return null;const r=e.getBoundingClientRect(),x=(Math.max(0,r.left)+Math.min(innerWidth,r.right))/2,y=(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2,h=document.elementFromPoint(x,y);return {x,y,id:e.id,hit:!!h&&(h===e||e.contains(h)),visible:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight,frame:location.pathname};})()`);
     evidence.states.push({label:'ui-target',selector,...pos});
+    await capture('before-'+(pos?.id||'missing'));
+    evidence.states.push({label:'target-ancestors',selector,ancestors:await evaluate(`(()=>{const a=[];let e=document.querySelector(${JSON.stringify(selector)});for(let i=0;e&&i<7;i++,e=e.parentElement){const c=getComputedStyle(e),r=e.getBoundingClientRect();a.push({id:e.id,tag:e.tagName,position:c.position,display:c.display,overflowY:c.overflowY,height:c.height,maxHeight:c.maxHeight,transform:c.transform,rect:{x:r.x,y:r.y,width:r.width,height:r.height},scrollTop:e.scrollTop,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight});}return a;})()`)});
     if(!pos?.hit||!pos.visible)throw Error('CMP control does not own its visible viewport hit point.');
     await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:pos.x,y:pos.y},session);
     await send('Input.dispatchMouseEvent',{type:'mousePressed',x:pos.x,y:pos.y,button:'left',clickCount:1},session);
@@ -101,10 +104,10 @@ try {
     await new Promise(r=>setTimeout(r,1200));
    };
    const deny=['#CybotCookiebotDialogBodyButtonDecline'];
-   const allow=['#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll','#CybotCookiebotDialogBodyButtonAccept'];
+   const allow=['#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']; // Generic Accept/OK may submit selected categories, not all.
    const reopen=async()=>{await click(['#CookiebotWidget-button']);await click(['#CookiebotWidget-btn-change']);};
    if(!initial.dialogVisible||initial.hasResponse!==false||initial.gate!=='unselected')throw Error('Real unselected dialog not ready; UI sequence NOT started.');
-   if(!initial.controls.some(c=>c.id==='CybotCookiebotDialogBodyButtonDecline')){await click(['#CybotCookiebotDialogBodyButtonDetails']);await snapshot('details-expanded');}
+   if(!initial.controls.some(c=>c.id==='CybotCookiebotDialogBodyButtonDecline')){await click(['#CybotCookiebotDialogBodyContentTextToggle','#CybotCookiebotDialogBodyButtonDetails']);await snapshot('details-expanded');await capture('details-expanded');}
    await click(deny);let state=await snapshot('reject');if(state.hasResponse!==true||state.marketing!==false||state.images!==0)throw Error('Real rejection not established.');
    const beforeReload=evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length;
    await send('Page.reload',{ignoreCache:true},session);await new Promise(r=>setTimeout(r,5000));state=await snapshot('reload-rejection');if(state.hasResponse!==true||state.marketing!==false||state.images!==0||evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length!==beforeReload)throw Error('Saved rejection not established; consent logging remains blocked.');

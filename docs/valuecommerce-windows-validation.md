@@ -80,3 +80,23 @@ Remove-Item Env:VC_FIXTURE
 最初に遮断6ケース・observer起動を検証。1280x900の固定viewportで、操作対象をスクロールして表示範囲とelementFromPointの一致を確認し、実マウス入力する。main frameに実ダイアログがなければ停止する（別frameのコントロールへ座標を流用しない）。初回に拒否ボタンがなければ既知のDetailsボタンを1回だけ押して状態を記録する。OKを名前だけで許可とは扱わない。拒否/許可/設定の既知controlがなければそこで止め、記録されたid/tag/role/aria-label/textを親へ返す。イベントログ、UI対象、API/state、VC要求数を同じJSONで比較する。Cookiebot値を直接書き換えることはない。
 
 Aliasはユーザーが公式フォームで追加し、親がconfiguration.js200と実バナーを確認済み。新しい設定変更は不要。この事実は未選択時のauto分類や保存済み拒否の検証完了を意味しない。
+
+## 画面外コントロールの診断
+
+WindowsでTextToggleがy974にあり、900px viewport外のため安全停止した。これは拒否/選択機能が存在しない証拠ではない。ハーネスのChrome起動ウィンドウとEmulationを共に1280x1400へ揃え、DPR1を指定。CSSやhidden/display属性を変更しない。実際のinner/outer/screen/visualViewport/client寸法、CDP layout/window bounds、対象と祖先7段の位置・高さ・overflow・scroll量を採取する。クリックは依然elementFromPoint一致が必要。
+
+次回は同じ1回の統合コマンドにスクリーンショット先を追加できる。画像は隔離検証ページのみでローカル保存、Libraryアップロードなし。
+
+```powershell
+$env:VC_CAPTURE_DIR = Join-Path $PWD 'vc-layout-captures'
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_UI_SEQUENCE = '1'
+node tests/valuecommerce-transfer-probe.mjs > vc-layout-ui.json
+Remove-Item Env:VC_CAPTURE_DIR
+Remove-Item Env:VC_UI_SEQUENCE
+Remove-Item Env:VC_REAL_CMP
+Remove-Item Env:VC_FIXTURE
+```
+
+initial、操作直前、説明展開後のスクリーンショットとJSONを照合する。より大きいviewportでも画面外/遮蔽なら停止し、UI成功としない。非表示の選択controlは操作しない。SDK代案はこの実UI検証とは分離し、まだハーネスへ追加していない。

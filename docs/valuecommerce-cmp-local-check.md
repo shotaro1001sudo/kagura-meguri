@@ -48,3 +48,15 @@ PR128はdraft・未マージ。設定追加、課金、origin偽装、TLS回避�
 Windowsへの読み取り依頼: 現headのログcmpEvents（順序を保持）とinitial state、実ダイアログ/ボタンのid/role/text/aria-label、API hasResponse/consented/declined/consent.marketing/consent.method（値と型）を返す。可能ならdocument開始時から各イベントのperformance.now、document.readyState、window.kaguraVcConsentの存在とstateを記録し、DialogDisplayがアダプター初期化の前/後かを判断する。Cookie値・識別子・全設定のdumpは不要。OK/もっと見る/拒否/許可の操作は今回の診断ではしない。
 
 診断版更新: Page.enableとdocument-start observerを明示し、window/document capture双方、observer起動、adapter出現時系列を記録。ガード6件とobserver起動ログをローカルChromiumで確認。adapter候補と観測コードの回帰を追加。新しい生成fixture/hashへ更新してWindowsの1回の統合確認に引き渡す。過去の空イベントログだけでイベント不発とは判断しない。
+
+## Windowsで初回未選択の実証（head87475b8）
+
+親報告: observer起動14ms、実CookiebotOnDialogDisplay2017ms、gate unknown→unselected2840ms。hasResponse=false/marketing=false/method=null。正式VC画像2要素と2種類の要求を送信前遮断。公開CMP GET5件200、非許可外部要求のcontinueなし。これは初回未選択判定を実証するが、拒否/許可/再読込/撤回はまだ未検証。
+
+実controlはCybotCookiebotDialogBodyContentTextToggle（もっと見る）、CybotCookiebotDialogBodyLevelButtonAccept（OK）。ローカルのハーネス候補に前者を説明展開として追加し、checkboxのchecked/disabled/labelsとinput typeも診断へ追加。汎用AcceptをAllowAllの代替とするselectorは削除。親が説明展開後のDOMを取得中なので、この段階では追加probeを要求せず結果を待つ。OKを自動クリックしない。
+
+公式資料 https://support.cookiebot.com/hc/en-us/articles/26407083994524-Configuration-of-the-Swift-banner-in-the-Cookiebot-Manager はElementalをclassic templateと区別し、Multilevelの1ボタンOKは選択されたカテゴリを送信すると説明する。今回のElemental構成へ機械的に適用はせず、実checkbox/labelとAPI状態で判定する。説明展開がカテゴリ選択画面を意味するとは限らない。
+
+選択/拒否UIが本当にない場合の代案（まだ未実施）: 公式SDK https://www.cookiebot.com/en/developer/ のsubmitCustomConsent(false,false,false)で必要カテゴリのみ、submitCustomConsent(false,false,true)でmarketingのみを、隔離検証用の明示ボタンから呼ぶ方式が候補。renew()は設定ダイアログ再表示、withdraw()は撤回の公式メソッド。Cookiebotプロパティ直接代入と異なるが、これはSDK経路の検証であり公開バナーに拒否UIが存在する証明ではない。実イベント/hasResponse/marketing/method・保存再読込・要求数で結果を確認する必要がある。現行公開UIに拒否導線がなければ別の設定/UX課題として親へ報告し、勝手にバナー設定変更しない。
+
+追記: Windowsのもっと見る中心y974は900px viewport外でhit=false。非表示の選択・拒否controlはDOMに存在するが未操作。設定機能欠如と結論しない。Chrome実ウィンドウ/エミュレーションを1280x1400へ一致させ、layout/window/visualViewportとスクリーンショット、祖先overflowを同時記録する診断を準備。CSSや非表示controlを変更せず、hit検査を維持。
