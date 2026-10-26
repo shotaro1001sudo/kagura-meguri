@@ -58,3 +58,25 @@ UI sequenceは実ダイアログ表示＋未選択gateを確認できた時だ�
 公式のテスト用Domain Alias: https://support.cookiebot.com/hc/en-us/articles/26381611471388-What-are-Domain-Aliases-in-the-Cookiebot-Manager 。localhost/127.0.0.1は登録可能だがPremiumが前提、alias自体は請求対象外との説明。現在の契約/登録状況は未確認。自動ブロックの検証には公開サイトとの同一性が必要とされ、この1ページfixtureは全サイトの同一性を保証しない。イベント根拠: https://support.cookiebot.com/hc/en-us/articles/360020661139-How-to-find-out-when-the-Cookiebot-script-has-loaded 。
 
 もしドメイン未承認の明示エラーが出たら、本番失敗と扱わず停止。最小の次案は既存の承認済みテストaliasがあるかの読み取り確認。なければ契約/費用/設定変更の必要性を親に報告して承認待ち。現段階ではalias追加、契約変更、本番origin偽装、TLS回避、CSP変更をしない。
+
+## 準備完了の診断修正と1回の統合確認
+
+Page.enable後、document-startに読み取りobserverを登録する。window/documentのcapture両方を記録し、`observer-installed`という起動証拠、実行context、時刻、document.readyState、adapterの存在/stateを残す。CMPイベントが0件でもobserver自体が起動したかを区別できる。補助サンプルは25ms間隔・10秒上限で状態変化時だけ記録し、Cookie値/全設定は読まない。`loaded`など未文書化のフラグを許可判定には使わない。
+
+adapter候補は公式のCookiebotOnDialogDisplayも待受する。consent.method=nullは「同意なし」であり、未選択表示にはhasResponse=falseかつmarketing=falseとの一致が必要。method欠落はnullの代用にしない。拒否後のバナー再表示、DialogInitのみ、暗黙許可は引き続き広告停止。実CMPとの整合は今回のWindows実証で確認する。
+
+既存Chromeパスを設定済みの同じPowerShellで、確定headと全manifestを確認してから1回:
+
+```powershell
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_UI_SEQUENCE = '1'
+node tests/valuecommerce-transfer-probe.mjs > vc-readiness-ui.json
+Remove-Item Env:VC_UI_SEQUENCE
+Remove-Item Env:VC_REAL_CMP
+Remove-Item Env:VC_FIXTURE
+```
+
+最初に遮断6ケース・observer起動を検証。1280x900の固定viewportで、操作対象をスクロールして表示範囲とelementFromPointの一致を確認し、実マウス入力する。main frameに実ダイアログがなければ停止する（別frameのコントロールへ座標を流用しない）。初回に拒否ボタンがなければ既知のDetailsボタンを1回だけ押して状態を記録する。OKを名前だけで許可とは扱わない。拒否/許可/設定の既知controlがなければそこで止め、記録されたid/tag/role/aria-label/textを親へ返す。イベントログ、UI対象、API/state、VC要求数を同じJSONで比較する。Cookiebot値を直接書き換えることはない。
+
+Aliasはユーザーが公式フォームで追加し、親がconfiguration.js200と実バナーを確認済み。新しい設定変更は不要。この事実は未選択時のauto分類や保存済み拒否の検証完了を意味しない。

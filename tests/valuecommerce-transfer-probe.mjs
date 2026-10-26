@@ -43,12 +43,13 @@ try {
      await send('Target.setAutoAttach',auto,sid);
      await send('Log.enable',{},sid);
      await send('Runtime.addBinding',{name:'vcProbeEvent'},sid);
-     await send('Page.addScriptToEvaluateOnNewDocument',{source:`for(const name of ['CookiebotOnConsentReady','CookiebotOnLoad','CookiebotOnAccept','CookiebotOnDecline','CookiebotOnDialogInit','CookiebotOnDialogDisplay','CookiebotOnTagsExecuted'])window.addEventListener(name,()=>{const c=window.Cookiebot;window.vcProbeEvent(JSON.stringify({event:name,hasResponse:c?.hasResponse,marketing:c?.consent?.marketing,method:c?.consent?.method}));});`},sid);
+     await send('Page.enable',{},sid);
+     await send('Page.addScriptToEvaluateOnNewDocument',{source:readFileSync('tests/fixtures/vc-observe.js','utf8'),runImmediately:true},sid);
     }
     guards.set(t.targetId,sid);evidence.targets.push({id:t.targetId,type:t.type,guardInstalled:true});
     await send('Runtime.runIfWaitingForDebugger',{},sid);waiters.get(t.targetId)?.(sid);
    }
-   if(m.method==='Runtime.bindingCalled'&&m.params.name==='vcProbeEvent'){try{evidence.cmpEvents.push({targetSession:m.sessionId,...JSON.parse(m.params.payload)});}catch{}}
+   if(m.method==='Runtime.bindingCalled'&&m.params.name==='vcProbeEvent'){try{evidence.cmpEvents.push({targetSession:m.sessionId,executionContextId:m.params.executionContextId,...JSON.parse(m.params.payload)});}catch{}}
    if(m.method==='Runtime.consoleAPICalled'&&['error','warning'].includes(m.params.type))evidence.consoleErrors.push({type:m.params.type,text:safeText(m.params.args.map(x=>x.value??x.description??'').join(' '))});
    if(m.method==='Runtime.exceptionThrown')evidence.consoleErrors.push({type:'exception',text:safeText(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text)});
    if(m.method==='Log.entryAdded'&&['error','warning'].includes(m.params.entry.level))evidence.consoleErrors.push({type:m.params.entry.level,text:safeText(m.params.entry.text)});
@@ -80,15 +81,30 @@ try {
  evidence.preflight={expected,allBlocked:expected.every(p=>evidence.blocked.some(x=>x.host==='guard.invalid'&&x.path===p)),noExternalContinued:evidence.continued.every(x=>x.host==='127.0.0.1'),fatal};
  if(fatal||!evidence.preflight.allBlocked||!evidence.preflight.noExternalContinued)throw Error('Preflight failed; real CMP/advertising fixture NOT enabled.');
  if(process.env.VC_REAL_CMP==='1'){
+  await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false},session);
   live=true;await send('Page.navigate',{url:origin+'/cmp'},session);await new Promise(r=>setTimeout(r,7000));
-  const snapshot=async label=>{const state=await evaluate(`(()=>{const c=window.Cookiebot,d=document.querySelector('#CybotCookiebotDialog');const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');return {hasResponse:c?.hasResponse,marketing:c?.consent?.marketing,method:c?.consent?.method,gate:window.kaguraVcConsent?.state,images:document.querySelectorAll('[data-vc-ad]>a img').length,dialogVisible:visible(d),dialogText:d?.textContent.slice(0,800),controls:[...document.querySelectorAll('#CybotCookiebotDialog button,#CookiebotWidget button')].filter(visible).map(e=>({id:e.id,text:e.textContent.trim().slice(0,100)}))}})()`);evidence.states.push({label,...state,blockedRequests:evidence.blocked.length,vcRequests:evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length});return state;};
+  const snapshot=async label=>{const state=await evaluate(`(()=>{const c=window.Cookiebot,d=document.querySelector('#CybotCookiebotDialog');const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');return {observerInstalled:window.__vcProbeObserver===true,viewport:{width:innerWidth,height:innerHeight},hasResponse:c?.hasResponse,consented:c?.consented,declined:c?.declined,marketing:c?.consent?.marketing,method:c?.consent?.method,gate:window.kaguraVcConsent?.state,images:document.querySelectorAll('[data-vc-ad]>a img').length,dialogVisible:visible(d),dialogText:d?.textContent.slice(0,800),controls:[...document.querySelectorAll('#CybotCookiebotDialog button,#CybotCookiebotDialog a,#CybotCookiebotDialog input,#CybotCookiebotDialog [role=button],#CookiebotWidget button')].filter(visible).map(e=>({id:e.id,tag:e.tagName,role:e.getAttribute('role'),ariaLabel:e.getAttribute('aria-label'),text:(e.textContent||e.value||'').trim().slice(0,100)}))}})()`);evidence.states.push({label,...state,blockedRequests:evidence.blocked.length,vcRequests:evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length});return state;};
   const initial=await snapshot('initial');
+  evidence.frames=await send('Page.getFrameTree',{},session).then(r=>({mainFrameId:r.frameTree.frame.id,childFrameCount:r.frameTree.childFrames?.length||0}));
+  if(!initial.observerInstalled||!evidence.cmpEvents.some(e=>e.event==='observer-installed'&&e.path==='/cmp'))throw Error('Document-start observer handshake missing; diagnostics unreliable.');
   if(process.env.VC_UI_SEQUENCE==='1'){
-   const click=async selectors=>{const pos=await evaluate(`(()=>{for(const selector of ${JSON.stringify(selectors)}){const e=document.querySelector(selector);if(e&&!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'){const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,id:e.id};}}return null})()`);if(!pos)throw Error('Required real CMP UI control absent: '+selectors.join(','));await send('Input.dispatchMouseEvent',{type:'mousePressed',x:pos.x,y:pos.y,button:'left',clickCount:1},session);await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:pos.x,y:pos.y,button:'left',clickCount:1},session);await new Promise(r=>setTimeout(r,1200));};
+   const click=async selectors=>{
+    const selector=await evaluate(`(()=>{for(const s of ${JSON.stringify(selectors)}){const e=document.querySelector(s);if(e&&!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'){e.scrollIntoView({block:'center',inline:'center'});return s;}}return null})()`);
+    if(!selector)throw Error('Required real CMP UI control absent: '+selectors.join(','));
+    await new Promise(r=>setTimeout(r,200));
+    const pos=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return null;const r=e.getBoundingClientRect(),x=(Math.max(0,r.left)+Math.min(innerWidth,r.right))/2,y=(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2,h=document.elementFromPoint(x,y);return {x,y,id:e.id,hit:!!h&&(h===e||e.contains(h)),visible:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight,frame:location.pathname};})()`);
+    evidence.states.push({label:'ui-target',selector,...pos});
+    if(!pos?.hit||!pos.visible)throw Error('CMP control does not own its visible viewport hit point.');
+    await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:pos.x,y:pos.y},session);
+    await send('Input.dispatchMouseEvent',{type:'mousePressed',x:pos.x,y:pos.y,button:'left',clickCount:1},session);
+    await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:pos.x,y:pos.y,button:'left',clickCount:1},session);
+    await new Promise(r=>setTimeout(r,1200));
+   };
    const deny=['#CybotCookiebotDialogBodyButtonDecline'];
    const allow=['#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll','#CybotCookiebotDialogBodyButtonAccept'];
    const reopen=async()=>{await click(['#CookiebotWidget-button']);await click(['#CookiebotWidget-btn-change']);};
    if(!initial.dialogVisible||initial.hasResponse!==false||initial.gate!=='unselected')throw Error('Real unselected dialog not ready; UI sequence NOT started.');
+   if(!initial.controls.some(c=>c.id==='CybotCookiebotDialogBodyButtonDecline')){await click(['#CybotCookiebotDialogBodyButtonDetails']);await snapshot('details-expanded');}
    await click(deny);let state=await snapshot('reject');if(state.hasResponse!==true||state.marketing!==false||state.images!==0)throw Error('Real rejection not established.');
    const beforeReload=evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length;
    await send('Page.reload',{ignoreCache:true},session);await new Promise(r=>setTimeout(r,5000));state=await snapshot('reload-rejection');if(state.hasResponse!==true||state.marketing!==false||state.images!==0||evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length!==beforeReload)throw Error('Saved rejection not established; consent logging remains blocked.');

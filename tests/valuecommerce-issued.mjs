@@ -29,6 +29,35 @@ export function valuecommerceIssuedTests({ok,section}) {
   ok(areas('[data-vc-ad]').length===47 && experienceRegions.every(x=>areas(`a[href*="${encodeURIComponent(x.url)}"]`).length===1),'47県は正式MyLinkと既存の地域対応を維持');
   ok(experienceDirectory({sid:VC.sid,pid:VC.activity,allowed:false})==='','CSP/同意管理構成が未対応なら非表示');
   const script=readFileSync('scripts/client/valuecommerce-consent.js','utf8');
+  // Real first-visit configuration: banner shown but no submitted/loaded consent event.
+  for(const [state,expected] of [
+    [{hasResponse:false,consented:false,declined:false,consent:{marketing:false,method:null}},'unselected'],
+    [{hasResponse:true,declined:true,consent:{marketing:false,method:'explicit'}},'denied'],
+    [{hasResponse:false,consent:{marketing:false}},'unknown'],
+    [{hasResponse:false,consent:{marketing:true,method:null}},'unknown'],
+    [{hasResponse:true,consent:{marketing:true,method:'implied'}},'unknown']
+  ]) {
+    const d=new JSDOM(ads.join(''),{runScripts:'outside-only'}),v=d.window;
+    v.Cookiebot=state;v.eval(script);v.dispatchEvent(new v.Event('CookiebotOnDialogInit'));
+    ok(v.kaguraVcConsent.state==='unknown'&&v.document.querySelectorAll('[data-vc-ad]>a img').length===0,'DialogInit/default values alone do not authorize display');
+    v.dispatchEvent(new v.Event('CookiebotOnDialogDisplay'));
+    ok(v.kaguraVcConsent.state===expected&&v.document.querySelectorAll('[data-vc-ad]>a img').length===(expected==='unselected'?5:0),'Documented DialogDisplay preserves strict state distinction: '+expected);
+    v.Cookiebot.hasResponse=true;v.Cookiebot.consent={marketing:false,method:'explicit'};v.dispatchEvent(new v.Event('CookiebotOnDecline'));
+    v.dispatchEvent(new v.Event('CookiebotOnDialogDisplay'));
+    ok(v.kaguraVcConsent.state==='denied'&&v.document.querySelectorAll('[data-vc-ad]>a img').length===0,'Reopening rejected banner never reclassifies it as unselected');
+    d.window.close();
+  }
+  {
+    const d=new JSDOM('<!doctype html>',{url:'http://127.0.0.1/cmp',runScripts:'outside-only'}),logs=[];
+    d.window.vcProbeEvent=value=>logs.push(JSON.parse(value));
+    d.window.eval(readFileSync('tests/fixtures/vc-observe.js','utf8'));
+    d.window.dispatchEvent(new d.window.Event('CookiebotOnDialogDisplay'));
+    d.window.document.dispatchEvent(new d.window.Event('CookiebotOnDialogInit'));
+    ok(logs[0]?.event==='observer-installed'&&logs[0]?.adapterPresent===false,'Diagnostic observer proves installation before adapter');
+    ok(logs.some(x=>x.event==='CookiebotOnDialogDisplay'&&x.listener==='window-capture')&&logs.some(x=>x.event==='CookiebotOnDialogInit'&&x.listener==='document-capture'),'Diagnostic captures window and non-bubbling document events');
+    ok(d.window.Cookiebot===undefined&&!JSON.stringify(logs).includes('CookieConsent='),'Diagnostic never manufactures CMP state or reads cookie tokens');
+    d.window.close();
+  }
   const dom=new JSDOM(ads.join(''),{url:'https://kagurameguri.jp/example.html',runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;const imageNodes=new Set();let insertions=0;const append=w.Node.prototype.appendChild;
   w.Node.prototype.appendChild=function(node){if(this.matches?.('[data-vc-ad]'))for(const img of node.querySelectorAll('img'))if(!imageNodes.has(img)){imageNodes.add(img);insertions++;}return append.call(this,node)};

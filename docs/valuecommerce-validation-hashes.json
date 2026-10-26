@@ -24,8 +24,8 @@
     "bytes": 15625
   },
   "scripts/client/valuecommerce-consent.js": {
-    "sha256": "82f8027bf66aa84366e2e1a959975c8b8b14d6e5fe11cf9512276f0b483fce2c",
-    "bytes": 2499
+    "sha256": "e5311dace7a754ab82c4f93b5a63dfb384db200494eb78387add6941fe41c5ce",
+    "bytes": 2789
   },
   "scripts/client/affiliate.js": {
     "sha256": "6b3688b2189e0be041556a7cc13cae0c82a14731e7641bc6d39e197bea3301a0",
@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "c5b84907109e3c3fd3b3a2fe46d456e4cdd5cfbc954ae71e0ddc862768e8c59e",
-    "bytes": 13252
+    "sha256": "1df890658f64fda5de2bcb2297eda275e20757d7706c0e50a9e9e159ec33a258",
+    "bytes": 14743
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -48,7 +48,11 @@
     "bytes": 57207
   },
   "tests/fixtures/vc-generated-event.html": {
-    "sha256": "c73ab417634bf14794da945165fbb211a58eda5c3f1efe61cb04907cc3ed6fe6",
-    "bytes": 142847
+    "sha256": "a2013fb69face7c0ea2e7c2c95790f05210207f378cff580ab177850b20d204b",
+    "bytes": 143137
+  },
+  "tests/fixtures/vc-observe.js": {
+    "sha256": "849ae7a43fb9ab4948e9a0dd63742e28132c0f9b440ac41ece6ddf64f32214c3",
+    "bytes": 1514
   }
 }

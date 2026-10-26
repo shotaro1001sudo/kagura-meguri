@@ -40,7 +40,10 @@
     try { readyObject=window.Cookiebot||null; } catch (_) { readyObject=null; }
     sync();
   }
-  for(const name of ['CookiebotOnConsentReady','CookiebotOnLoad','CookiebotOnAccept','CookiebotOnDecline'])window.addEventListener(name,ready);
+  // DialogDisplay is the documented signal that an unanswered banner is displayed.
+  // ConsentReady/Load describe loaded or submitted consent, not first script readiness.
+  // Keep the full hasResponse/marketing/method checks; DialogInit alone is insufficient.
+  for(const name of ['CookiebotOnDialogDisplay','CookiebotOnConsentReady','CookiebotOnLoad','CookiebotOnAccept','CookiebotOnDecline'])window.addEventListener(name,ready);
   // Register immediately after the existing synchronous Cookiebot script; render after DOM parsing.
   document.addEventListener('DOMContentLoaded',sync);
   window.addEventListener('pagehide',()=>{readyObject=null;sync();});
