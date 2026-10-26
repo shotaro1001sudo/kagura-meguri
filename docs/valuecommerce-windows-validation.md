@@ -148,3 +148,22 @@ sdkPhasesには前後のVC要求差分/ユニーク要求数/重複数、Mutatio
 これは実SDK/保存/ネットワーク制御の検証であり、公開バナーから拒否できる証明ではない。B案は確認済み未選択での広告要求を許容し、この試験ではそれを送信前に遮断する。『同意前通信が常に0』とは言わない。DOM除去は既に開始された要求を取消さず、拒否後に新たな要求がないことを検証する。account設定・課金・privacyカテゴリ・本番変更なし。
 
 最小の公開UI案（未実装）: Cookiebot.renew()への設定リンクは既存バナーを再表示するだけなので、今回のバナーに拒否controlがなければ単独で解決しない。公式SDKで必要Cookieのみを選択する明示的な『任意Cookieを拒否』ボタンをサイト側に設ける案がある。これはユーザーの操作でsubmitCustomConsent(false,false,false)を呼ぶ変更で、同意/アクセス解析の条件コード自体は変えないが、公開UI変更として親が範囲を判断する。ベンダー設定の無断変更はしない。
+
+## 保存拒否reloadの限定診断
+
+head43ff36fの実SDK結果: rejectはexplicit denied・画像0・追加要求0・mount0で成功。Page.reload後はunselectedへ戻り画像/要求2件で停止。logconsent.ashx GETが遮断されたが因果関係は未確定。公開本番の不具合と断定しない。
+
+次の診断はreject/reloadだけに限定し、allow/withdrawへ進まない:
+
+```powershell
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_SDK_SEQUENCE = '1'
+$env:VC_SDK_PERSISTENCE_ONLY = '1'
+$env:VC_EVIDENCE_FILE = Join-Path $PWD 'vc-persistence-checkpoint.json'
+node tests/valuecommerce-transfer-probe.mjs > vc-persistence-progress.jsonl
+```
+
+VC_UI_SEQUENCE/VC_MOCK_UIは解除済みとする。初期・reject前後・reload前後に、実targetId/browserContextId/origin/portとCookieの名前/domain/path/expires/session/secure/httpOnly/sameSiteだけを保存する。CDPのCookie応答には値も含まれるが、受信後直ちに許可したmetadataだけを取り出し、値・cookieLine・headers・tokenはログ/チェックポイントに保存しない。ブラウザAuditsのCookie除外/警告理由とNetwork ExtraInfoのblockedReasonsも保存する。
+
+設定変更、Cookie注入、allowlist緩和はない。コード上は同一Chrome profile/target/origin/portでPage.reloadするが、実測metadataで確認する。Cookie absentの場合とpresent-but-excludedの場合を区別し、同じCookie属性が保持されてもCMPが未回答になる場合は別の原因として扱う。Aliasで同意データを収集しないという一般説明だけでは、client側Cookieの保存可否やlogconsentの因果を証明できない。

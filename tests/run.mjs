@@ -1,3 +1,4 @@
+import './cookie-metadata-test.mjs';
 import './vc-sdk-harness-test.mjs';
 import './bounded-cdp-test.mjs';
 import { upcomingSummaryTests } from './upcoming-summary.mjs';

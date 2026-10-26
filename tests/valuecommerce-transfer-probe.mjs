@@ -1,3 +1,4 @@
+import {cookieMetadata} from './helpers/cookie-metadata.mjs';
 import {summarizeSdkPhase,assertSdkPhase} from './helpers/vc-sdk-assertions.mjs';
 import {boundedCdp} from './helpers/bounded-cdp.mjs';
 // Dependency-free isolated CDP probe. Default is guard preflight ONLY.
@@ -51,6 +52,7 @@ try {
      await send('Fetch.enable',{patterns:[{urlPattern:'*',requestStage:'Request'}]},sid);
      await send('Target.setAutoAttach',auto,sid);
      await send('Log.enable',{},sid);
+     await send('Audits.enable',{},sid);
      await send('Runtime.addBinding',{name:'vcProbeEvent'},sid);
      await send('Page.enable',{},sid);
      await send('Page.addScriptToEvaluateOnNewDocument',{source:readFileSync('tests/fixtures/vc-observe.js','utf8'),runImmediately:true},sid);
@@ -62,6 +64,9 @@ try {
    if(m.method==='Runtime.consoleAPICalled'&&['error','warning'].includes(m.params.type))evidence.consoleErrors.push({type:m.params.type,text:safeText(m.params.args.map(x=>x.value??x.description??'').join(' '))});
    if(m.method==='Runtime.exceptionThrown')evidence.consoleErrors.push({type:'exception',text:safeText(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text)});
    if(m.method==='Log.entryAdded'&&['error','warning'].includes(m.params.entry.level))evidence.consoleErrors.push({type:m.params.entry.level,text:safeText(m.params.entry.text)});
+   if(m.method==='Network.responseReceivedExtraInfo'&&m.params.blockedCookies?.length){evidence.cookieIssues??=[];evidence.cookieIssues.push({source:'response-extra',requestId:m.params.requestId,blocked:m.params.blockedCookies.map(x=>({reasons:x.blockedReasons,cookie:cookieMetadata(x.cookie)}))});}
+   if(m.method==='Network.requestWillBeSentExtraInfo'&&m.params.associatedCookies?.length){evidence.cookieIssues??=[];evidence.cookieIssues.push({source:'request-extra',requestId:m.params.requestId,cookies:m.params.associatedCookies.map(x=>({blockedReasons:x.blockedReasons,cookie:cookieMetadata(x.cookie)}))});}
+   if(m.method==='Audits.issueAdded'&&m.params.issue.details.cookieIssueDetails){const d=m.params.issue.details.cookieIssueDetails;evidence.cookieIssues??=[];evidence.cookieIssues.push({source:'browser-audit',code:m.params.issue.code,operation:d.operation,exclusionReasons:d.cookieExclusionReasons,warningReasons:d.cookieWarningReasons,cookie:cookieMetadata(d.cookie)});}
    if(m.method==='Network.responseReceived')evidence.responses.push({url:safeUrl(m.params.response.url),status:m.params.response.status,mime:m.params.response.mimeType,fromDiskCache:m.params.response.fromDiskCache===true});
    if(m.method==='Network.loadingFailed')evidence.failures.push({url:safeUrl(workerRequests.get(m.sessionId+':'+m.params.requestId)),error:m.params.errorText,blockedReason:m.params.blockedReason});
    if(m.method==='Network.requestWillBeSent')workerRequests.set(m.sessionId+':'+m.params.requestId,m.params.request.url);
@@ -104,8 +109,12 @@ try {
    evidence.sdkScope='Actual vendor SDK in isolated profile; NOT public banner UI verification. Initial unselected advertising attempts are permitted by B policy and intercepted. Removal cannot undo earlier requests.';
    const expectedImages=initial.images;
    evidence.sdkPhases=[];
-   for(const name of ['reject','reload','allow','withdraw']){
+   const persistenceOnly=process.env.VC_SDK_PERSISTENCE_ONLY==='1';
+   const cookieCheckpoint=async label=>{const cookies=await send('Network.getCookies',{urls:[origin+'/cmp']},session);const info=await send('Target.getTargetInfo',{targetId});const doc=await evaluate('({origin:location.origin,pathname:location.pathname,port:location.port,secureContext:isSecureContext})','cookie-context');evidence.cookieSnapshots??=[];evidence.cookieSnapshots.push({label,targetId,browserContextId:info.targetInfo.browserContextId||'default-isolated-profile',...doc,cookies:cookies.cookies.map(cookieMetadata)});checkpoint({phase:'cookie-metadata',label});};
+   await cookieCheckpoint('initial');
+   for(const name of (persistenceOnly?['reject','reload']:['reject','reload','allow','withdraw'])){
     const before=evidence.blocked.length,mountStart=evidence.cmpEvents.length;
+    await cookieCheckpoint('before-'+name);
     checkpoint({phase:'sdk-before',name});
     if(name==='reload')await send('Page.reload',{ignoreCache:true},session);
     else if(name==='withdraw')await evaluate("(()=>{if(typeof Cookiebot?.withdraw!=='function')throw Error('Documented withdraw unavailable');Cookiebot.withdraw();return true;})()",'sdk-withdraw');
@@ -121,11 +130,12 @@ try {
     const state=await snapshot('sdk-'+name);
     const mounts=evidence.cmpEvents.slice(mountStart).filter(x=>x.event==='vc-mount').reduce((n,x)=>n+x.count,0);
     const result=summarizeSdkPhase(name,before,evidence.blocked,state,mounts);result.observedExpectedApiState=matched;evidence.sdkPhases.push(result);
+    await cookieCheckpoint('after-'+name);
     checkpoint({phase:'sdk-after',name});await capture('sdk-'+name);
     if(!matched)throw Error('SDK state transition did not complete: '+name);
     assertSdkPhase(result,expectedImages);
    }
-   evidence.sdkPassed=true;
+   evidence.sdkPassed=!persistenceOnly;evidence.persistenceOnly=persistenceOnly;
   }
   if(process.env.VC_UI_SEQUENCE==='1'||mockUi){
    const click=async selectors=>{

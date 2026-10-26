@@ -74,3 +74,5 @@ Windowsへの読み取り依頼: 現headのログcmpEvents（順序を保持）�
 DialogDisplayがcontroller前/後、保存済み拒否、イベント重複、撤回、controller前に拒否へ変化、loadedだけではunknownを検証。任意時間のdelay/pollを許可判断に使わない。生成fixtureもこの順序へ更新する。
 
 head59d093dのWindows実証: 全18ハッシュ・ガード6成功、CMP GET5のみ続行、unselectedで正式画像2件要求を遮断。実text-toggleの展開成功後も拒否/カテゴリUIなし、OK未操作。通常UIテストはここで停止。親承認により実SDKの必要Cookieのみ→保存拒否reload→marketingのみexplicit許可→withdrawの独立検証を準備。実SDK成功は公開UIのアクセス可能性を証明しない。passive recorderの先行は公式first-script文言への限定技術的逸脱として保持し、別途ベンダー承認が必須だとは扱わない。公開の工学的条件は実状態・要求・拒否/撤回の保護確認である。
+
+実SDK head43ff36f: reject成功、reloadで未回答へ戻り失敗。親保管vc-sdk-checkpoint.json SHA256=329a28fd36ea019d403ae6e409e23b9c469cb99a4b624fc991bc62b3dfea996b。allow/withdraw未実施。logconsent GET遮断の因果不明。metadataのみのreject/reload限定診断を追加。保存Cookie属性とブラウザ除外理由、同一context/origin/portを比較する。生Cookie値/headersの記録・Cookie注入・許可先変更はしない。

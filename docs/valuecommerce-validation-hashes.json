@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "f67711d46369a48ecfd63b0f2ee11c41349284fec6d2e92023eca3b99e768011",
-    "bytes": 20934
+    "sha256": "09519a7f3c1451855db5cb90cbf2a590e378835f5505980cc6e6767af6fecf89",
+    "bytes": 22883
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -78,5 +78,13 @@
   "tests/vc-sdk-harness-test.mjs": {
     "sha256": "ca8a0a437269bdbae977a6c580c02bcfebb6e5496985735f70839c56754b7f87",
     "bytes": 2095
+  },
+  "tests/helpers/cookie-metadata.mjs": {
+    "sha256": "576e86ccc653665207b423a792914e07c07e8d4627215bd2e75e5e2090c2480a",
+    "bytes": 279
+  },
+  "tests/cookie-metadata-test.mjs": {
+    "sha256": "b9384ed8530d81c4038ce9be41e8bdd78dde3127caf2493e825a42c816e419a4",
+    "bytes": 615
   }
 }
