@@ -4,8 +4,8 @@
     "bytes": 1496
   },
   "scripts/build.mjs": {
-    "sha256": "087eaa0b9ac477ecde4ca33a4a3dccdce315c69c950a1bbcb392ceccbb326658",
-    "bytes": 124800
+    "sha256": "fd7c08c7e63da903558383b4cce1327595160fd189030cb2f7264c14e711ca0b",
+    "bytes": 124613
   },
   "scripts/lib/valuecommerce.mjs": {
     "sha256": "98e90dc667952cde0ddb9c0f7c391dd6d20d72cd0a5c9aae7563737173518623",
@@ -48,8 +48,8 @@
     "bytes": 57207
   },
   "tests/fixtures/vc-generated-event.html": {
-    "sha256": "70d7b1fe8e5c25c60f1e113846df209322e0c443be5a462829763615c48622e2",
-    "bytes": 147905
+    "sha256": "40440dca509fae90c0879d4d97ab741290bce0cc7f1dc535401879cdbf0a3886",
+    "bytes": 146827
   },
   "tests/fixtures/vc-observe.js": {
     "sha256": "573b5a419403b418dfdae4ec0d0b1cd0b1c132c13c755ddad6a07cd6c3974d4d",
@@ -96,28 +96,28 @@
     "bytes": 1702
   },
   "scripts/client/cookie-controls.js": {
-    "sha256": "61c92c7e0dead7a36fd3b56a020b2060d1dc3ee4b9535c9a613b81472def3f3a",
-    "bytes": 2673
+    "sha256": "bafaa52cc9f338566e3472b070be252d5416adb1a4bdd5d459caa3068f41a9f2",
+    "bytes": 1991
   },
   "scripts/lib/cookie-controls.mjs": {
-    "sha256": "fe1768d62fddae765b71a96ca45c917e7e51c02c4f7fdca5923956e0e867efbe",
-    "bytes": 1347
+    "sha256": "a4e14633fbc5fe4092a7cf58f840a4c0728311fff787f0f4b7812c98c58e405c",
+    "bytes": 573
   },
   "scripts/style.css": {
-    "sha256": "424435b12b22fa98fd2ee90037ea760c711298a636e1b83540646a82a86a7b88",
-    "bytes": 76257
+    "sha256": "ff3f3ded9aa7f960603dfd8edef0437b3f06548a169c523d9c441047f52c6e96",
+    "bytes": 76448
   },
   "scripts/lib/policy.mjs": {
-    "sha256": "eb67c7ae2bff085ab900e5f27269c0de0db3cef1e3af1c5bcf45a047d876c93f",
-    "bytes": 38279
+    "sha256": "138985a7042447a8495b6e6036a770371eb8fc2e60deb36cf28bde72e2484377",
+    "bytes": 38318
   },
   "tests/cookie-controls-test.mjs": {
-    "sha256": "c4547d0ac6995ceeb384c0e9f3f8622e04ac4437e03ba5342143009154bf0e52",
-    "bytes": 3405
+    "sha256": "fd5b1511c423cf0671d465356d48feb4773b8123501859941ada86e20c859976",
+    "bytes": 3179
   },
   "tests/cookie-controls-browser.mjs": {
-    "sha256": "0a88900bc99c31733caae44a916faa3f0046c1a1588cf61a2b66d17c735ac91a",
-    "bytes": 9152
+    "sha256": "9fd4a5f5ada540de04b6484aab4b05d8fd3ce6a791cd7286b38b0a892626aa97",
+    "bytes": 7632
   },
   "tests/helpers/button-geometry.mjs": {
     "sha256": "e0bfded1dffca80f316ce151905262279dc5602dab7e4600c445a37239fabb70",
