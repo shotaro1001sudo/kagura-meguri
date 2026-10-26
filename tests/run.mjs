@@ -79,7 +79,7 @@ ok(privacyText.includes("12か月") && privacyText.includes("運営者が受け�
 ok(privacyText.includes("複数の国・地域") && privacyText.includes("CleanTalk") && privacyText.includes("Akismet"), "国外処理と迷惑送信対策の再委託先を明示する");
 ok(privacyPage.includes('href="https://web3forms.com/privacy"') && privacyPage.includes('rel="noopener"'), "Web3Forms公式プライバシーポリシーへの安全なリンクを表示する");
 ok(!privacyText.includes("事業者のサーバーには保存されません"), "Web3Formsが送信データを保存しないという旧記述が存在しない");
-ok(privacyText.includes("2026年10月22日 Web3Formsの保存期間") && privacyText.includes("最終更新: 2026年10月25日"), "従来の改定履歴を残し、診断追記後の最終更新日を記載する");
+ok(privacyText.includes("2026年10月22日 Web3Formsの保存期間") && privacyText.includes("最終更新: 2026年10月26日"), "従来の改定履歴を残し、広告画像説明の追記後の最終更新日を記載する");
 // ---------- 2. 各ページの基本品質 ----------
 section("各ページの基本(title / description / canonical / h1 / lang)");
 const titles = new Map();

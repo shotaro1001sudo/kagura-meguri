@@ -5,11 +5,12 @@ const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<
 
 // 機能の改定履歴は、フォームの接続設定と分けて管理する。
 const QUIZ_REVISION = '2026年10月25日';
+const AD_DISCLOSURE_REVISION = '2026年10月26日';
 export function privacyUpdated(cfg) {
   const configured = cfg.privacy?.updated ?? cfg.operator?.updated ?? '';
   const m = configured.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
   const day = m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : '';
-  return day > '2026-10-25' ? configured : QUIZ_REVISION;
+  return day > '2026-10-26' ? configured : AD_DISCLOSURE_REVISION;
 }
 
 // 外部サービスごとの、送られる情報(ブラウザが直接つながる先)
@@ -20,6 +21,11 @@ export function externalServices(ctx) {
     { name: "unpkg(地図ライブラリの配信)", purpose: "地図の表示に使うプログラム(Leaflet)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名", when: "地図を表示するページ(地図・開催の詳細)" },
     { name: "OpenStreetMap(OpenStreetMap Foundation)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
   ];
+  // サービス提供会社と画像ホストを示す。CDNの運営主体や個々の要求のCookie処理は推測しない。
+  const aff = ctx.cfg.affiliate ?? {};
+  const imageInfo = "通信時の接続元IPアドレス、要求する画像のURL、ブラウザが送るヘッダー情報（ブラウザの種類、設定に応じた参照元情報など）";
+  if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天アフィリエイト（サービス提供: 楽天グループ株式会社／画像配信先: hbb.afl.rakuten.co.jp、ba.afl.rakuten.co.jp）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
+  if (ctx.hasAffil && aff.valueCommerceSid && aff.jalanPid) rows.push({ name: "バリューコマース アフィリエイト（サービス提供: バリューコマース株式会社／現行の画像配信先: i.imgvc.com）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
   if (ctx.hasAds) rows.push({ name: "Google AdSense(Google LLC)", purpose: "広告の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、閲覧履歴に基づく情報", when: "広告を表示するページ" });
   if (ctx.hasGC) rows.push({ name: "GoatCounter(アクセス解析)", purpose: "アクセス状況の把握(集計した件数だけ)", sent: "閲覧したページのURL、参照元、ブラウザとOSの種類、画面の幅、言語、IPアドレス(国の推定と、再訪問の判定に一時的に使い、保存されない)", when: "すべてのページ" });
   if (ctx.hasGA) rows.push({ name: "Googleアナリティクス(Google LLC)", purpose: "アクセス状況の分析", sent: "IPアドレス(匿名化の設定による)、Cookie等の識別子、閲覧したページ、ブラウザの種類、おおよその地域", when: "すべてのページ" });
@@ -33,7 +39,7 @@ export function privacyHtml(ctx) {
   const site = esc(cfg.siteName);
   const rows = externalServices(ctx);
   const retention = esc(cfg.privacy?.retention ?? "対応が完了してから、12か月を目安に");
-  const history = [...new Set([...(cfg.privacy?.history ?? []), `${QUIZ_REVISION} 神楽の好み診断の回答処理・利用回数の計測と、案内の表示済み情報の一時保存を追記`])];
+  const history = [...new Set([...(cfg.privacy?.history ?? []), `${QUIZ_REVISION} 神楽の好み診断の回答処理・利用回数の計測と、案内の表示済み情報の一時保存を追記`, `${AD_DISCLOSURE_REVISION} 外部広告画像の読み込みと広告リンク利用時の通信の違いを追記`])];
   const num = (() => { let n = 0; return () => ++n; })();
   const h = (t) => `<h2>${num()}. ${t}</h2>`;
   return `
@@ -55,7 +61,7 @@ ${h("利用目的")}
 <p>これらの利用目的を超えて、情報を利用することはありません。</p>
 
 ${h("外部サービスの利用と、情報の送信(外部送信)")}
-<p>当サイトは、次の外部サービスを利用しています。利用者のブラウザから、これらの事業者へ次の情報が直接送られます。</p>
+<p>当サイトは、次の外部サービスを利用しています。ブラウザが外部の配信先へ接続する際には、表に記載する情報が通信に伴って送られます。アフィリエイトの行では、サービス提供会社と画像配信先のホスト名を区別して記載しています。</p>
 <div class="tblwrap"><table class="tbl"><thead><tr><th>サービス</th><th>目的</th><th>送られる情報</th><th>送られるとき</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.purpose)}</td><td>${esc(r.sent)}</td><td>${esc(r.when)}</td></tr>`).join("")}</tbody></table></div>
 <p>これらの事業者による情報の取り扱いは、各事業者のプライバシーポリシーに従います。</p>
 <p>利用者がページ内のリンクを押して、ほかのサイト(公式情報のページ、地図サービス、旅行・通販のサイトなど)へ移動したときは、移動先の事業者に情報が送られます。移動先での取り扱いは、各サイトの方針に従います。</p>
@@ -77,7 +83,10 @@ ${h("アクセス解析について")}
 <p>当サイトは、Cookieを使わないアクセス解析サービスを利用しています(サービス名は上の外部送信の表をご覧ください)。このサービスは、Cookieもブラウザに保存する識別子も使いません。閲覧したページ、参照元、ブラウザとOSの種類、画面の幅、言語、国を、集計した件数として記録します。IPアドレスやブラウザの詳しい識別情報は保存されず、再訪問かどうかを判定するために、最長8時間だけランダムな文字列に置き換えてメモリ上で使われます。予約サイトなどへのリンクが押された回数も、同じ方法で数えています。詳しくは、提供事業者のプライバシーポリシーをご確認ください。</p>` : ""}
 ${hasAffil ? `
 ${h("アフィリエイトプログラムについて")}
-<p>当サイトは、アフィリエイトプログラム(成果報酬型の広告)に参加しています。リンク先で商品やサービスをご利用いただくと、運営者に報酬が支払われることがあります。該当するリンクの近くには、その旨を表示しています。リンクを押すと、移動先の事業者がCookieなどを使って紹介元を記録します。</p>
+<p>当サイトは、アフィリエイトプログラム(成果報酬型の広告)に参加しています。リンク先で商品やサービスをご利用いただくと、運営者に報酬が支払われることがあります。該当するリンクの近くには、その旨を表示しています。広告リンクを押すと、広告サービスの経由先や移動先へ通信します。紹介元の記録や成果計測には、各事業者がCookie等を利用する場合があります。</p>
+<p>広告画像は当サイト以外の配信先から読み込むものがあり、リンクを押さなくても、画像を取得する際に上の表に示す通信が発生します。外部広告画像の取得による通信と、広告リンクを押したときの通信は、異なるタイミングで発生します。実際の通信やCookieの送受信は、ブラウザの設定、保存済みCookie、画像のキャッシュや外部サービスの動作等により異なります。すべての画像要求でCookieや閲覧ページの完全なURLが送られるという意味ではありません。</p>
+<p>サービス提供会社が公表する利用目的について、<a href="https://privacy.rakuten.co.jp/" target="_blank" rel="noopener">楽天グループの個人情報保護方針</a>はサービスの提供、広告・マーケティング、情報の分析等を、<a href="https://www.valuecommerce.co.jp/privacy_policy/privacy_action/" target="_blank" rel="noopener">バリューコマースの行動履歴情報保護方針</a>は広告の成果計測、ユーザーの属性や行動等の分析、コンテンツの表示等を説明しています。</p>
+<p>これらは各サービス全体の方針です。方針が扱う情報のすべてを当サイトの広告画像の読み込みだけで送信するという意味ではなく、個々の画像要求でどの情報が何に利用されるかを確認したものでもありません。</p>
 ${cfg.affiliate?.amazonTag ? `<p>Amazonのアソシエイトとして、${site}は適格販売により収入を得ています。</p>` : ""}` : ""}
 
 ${h("情報の第三者への提供・委託")}
