@@ -60,3 +60,5 @@ Windowsへの読み取り依頼: 現headのログcmpEvents（順序を保持）�
 選択/拒否UIが本当にない場合の代案（まだ未実施）: 公式SDK https://www.cookiebot.com/en/developer/ のsubmitCustomConsent(false,false,false)で必要カテゴリのみ、submitCustomConsent(false,false,true)でmarketingのみを、隔離検証用の明示ボタンから呼ぶ方式が候補。renew()は設定ダイアログ再表示、withdraw()は撤回の公式メソッド。Cookiebotプロパティ直接代入と異なるが、これはSDK経路の検証であり公開バナーに拒否UIが存在する証明ではない。実イベント/hasResponse/marketing/method・保存再読込・要求数で結果を確認する必要がある。現行公開UIに拒否導線がなければ別の設定/UX課題として親へ報告し、勝手にバナー設定変更しない。
 
 追記: Windowsのもっと見る中心y974は900px viewport外でhit=false。非表示の選択・拒否controlはDOMに存在するが未操作。設定機能欠如と結論しない。Chrome実ウィンドウ/エミュレーションを1280x1400へ一致させ、layout/window/visualViewportとスクリーンショット、祖先overflowを同時記録する診断を準備。CSSや非表示controlを変更せず、hit検査を維持。
+
+ハング診断: bounded CDP導入後、クラウドの実Chrome可視mockでPage.captureScreenshotが8秒無応答になることを再現し、timeoutと直前の初期DOM/layoutを保存できた。遮断用追加タブを閉じ、対象ページを前面に戻して再検証した結果、初回/直前撮影、座標hit、祖先走査、実クリック1回が完了。無限祖先ループは再現せず（最大7段、実例4段）。Windowsの過去ハング操作は未記録なので同一原因との断定は避ける。実CMP再実行時は8秒CDP上限、3秒同期evaluate上限、逐次JSONL+JSON証拠を使う。

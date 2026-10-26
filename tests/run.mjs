@@ -1,3 +1,4 @@
+import './bounded-cdp-test.mjs';
 import { upcomingSummaryTests } from './upcoming-summary.mjs';
 import { reservationTests } from './reservation.mjs';
 // 自動テスト: node tests/run.mjs   (npm test)

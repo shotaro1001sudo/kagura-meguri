@@ -1,3 +1,4 @@
+import {boundedCdp} from './helpers/bounded-cdp.mjs';
 // Dependency-free isolated CDP probe. Default is guard preflight ONLY.
 import {createServer} from 'node:http';
 import {spawn} from 'node:child_process';
@@ -6,6 +7,8 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {vcTag} from '../scripts/lib/valuecommerce.mjs';
 import {cspFor} from '../scripts/lib/csp.mjs';
+const mockUi=process.env.VC_MOCK_UI==='1';
+if(mockUi&&process.env.VC_REAL_CMP==='1')throw Error('Choose mock UI or real CMP, not both.');
 const chromePath=process.env.CHROMIUM_BIN;
 if(!chromePath)throw Error('Set CHROMIUM_BIN to an existing Chrome/Chromium executable; do not install.');
 const cfg=JSON.parse(readFileSync('config.json','utf8'));
@@ -14,21 +17,24 @@ const ads=vcTag({kind:'stay',destination:'https://www.jalan.net/uw/uwp2011/uww20
 let html=`<!doctype html><html><head><meta charset="utf-8"><script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${cfg.cookiebotId}" data-blockingmode="auto"></script><script>${controller}</script></head><body><p>広告・通信遮断検証（ローカルのみ）</p>${ads}</body></html>`;
 if(process.env.VC_FIXTURE==='generated')html=readFileSync('tests/fixtures/vc-generated-event.html','utf8');
 else html=html.replace('<head>','<head><meta http-equiv="Content-Security-Policy" content="'+cspFor(html,cfg)+'">');
+if(mockUi)html='<!doctype html><style>body{margin:0;height:2000px}#CybotCookiebotDialog{position:fixed;top:950px;left:20px;width:500px;background:white}</style><div id="CybotCookiebotDialog"><button id="CybotCookiebotDialogBodyContentTextToggle" onclick="this.dataset.clicked=String(Number(this.dataset.clicked||0)+1)">もっと見る</button></div>';
 let live=false;
 const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/worker.js'?'text/javascript':'text/html; charset=utf-8');res.end(req.url==='/worker.js'?"fetch('https://guard.invalid/worker').catch(()=>{});":req.url==='/cmp'&&live?html:'<!doctype html><title>Guard preflight</title>');});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 const profile=mkdtempSync(join(tmpdir(),'vc-guard-'));
 const chrome=spawn(chromePath,['--headless','--window-size=1280,1400','--force-device-scale-factor=1','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--disable-sync','--disable-extensions',...(process.platform==='linux'?['--no-sandbox']:[]),'--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
 let ws;let fatal=null;const evidence={targets:[],blocked:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
+const checkpoint=operation=>{evidence.operations??=[];evidence.operations.push(operation);writeFileSync(process.env.VC_EVIDENCE_FILE||'vc-probe-checkpoint.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify({checkpoint:operation}));};
 const safeUrl=value=>{try{const u=new URL(value);return u.origin+u.pathname.replace(/[a-f0-9]{8}-[a-f0-9-]{27,}/gi,'[id]');}catch{return '[non-url]'}};
 const safeText=value=>String(value).replace(/https?:\/\/[^\s"'<>]+/g,safeUrl).slice(0,800);
 try {
  const endpoint=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Chrome startup timeout')),10000);let s='';chrome.stderr.on('data',b=>{s+=b;const m=s.match(/DevTools listening on (ws:\/\/\S+)/);if(m){clearTimeout(t);resolve(m[1]);}});chrome.on('error',reject);});
- ws=new WebSocket(endpoint);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});
- let id=0;const pending=new Map(),guards=new Map(),waiters=new Map(),workerRequests=new Map();
- const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{pending.set(++id,{resolve,reject});ws.send(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})}));});
+ ws=new WebSocket(endpoint);await new Promise((r,j)=>{const timer=setTimeout(()=>j(Error('WebSocket open timeout')),8000);ws.onopen=()=>{clearTimeout(timer);r();};ws.onerror=e=>{clearTimeout(timer);j(e);};});
+ const guards=new Map(),waiters=new Map(),workerRequests=new Map();
+ const transport=boundedCdp(value=>ws.send(value),{checkpoint}),send=transport.send;
+ ws.onclose=()=>transport.close();
  const auto={autoAttach:true,waitForDebuggerOnStart:true,flatten:true};
- ws.onmessage=async e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p?.reject(Error(JSON.stringify(m.error))):p?.resolve(m.result);return;}
+ ws.onmessage=async e=>{const m=JSON.parse(e.data);if(m.id){transport.receive(m);return;}
   try {
    if(m.method==='Target.attachedToTarget'){
     const sid=m.params.sessionId,t=m.params.targetInfo;
@@ -70,7 +76,7 @@ try {
  await send('Target.setDiscoverTargets',{discover:true});await send('Target.setAutoAttach',auto);
  const {targetId}=await send('Target.createTarget',{url:'about:blank'});
  const session=await Promise.race([guards.has(targetId)?Promise.resolve(guards.get(targetId)):new Promise(r=>waiters.set(targetId,r)),new Promise((_,j)=>setTimeout(()=>j(Error('Guard attach timeout')),10000))]);
- const evaluate=async expression=>{if(fatal)throw Error(fatal);const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},session);if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
+ const evaluate=async (expression,label='read-dom')=>{if(fatal)throw Error(fatal);checkpoint({phase:'evaluate',label});const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:false,timeout:3000},session);if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
  await send('Page.navigate',{url:origin+'/'},session);await new Promise(r=>setTimeout(r,500));
  await evaluate(`(()=>{for(const [tag,attr,path] of [['img','src','image'],['script','src','script'],['iframe','src','frame']]){const e=document.createElement(tag);e[attr]='https://guard.invalid/'+path;document.body.appendChild(e)}fetch('https://guard.invalid/fetch').catch(()=>{});new Worker('/worker.js');})()`);
  const popup=await send('Target.createTarget',{url:'about:blank'});
@@ -80,29 +86,32 @@ try {
  const expected=['/image','/script','/frame','/fetch','/worker','/popup'];
  evidence.preflight={expected,allBlocked:expected.every(p=>evidence.blocked.some(x=>x.host==='guard.invalid'&&x.path===p)),noExternalContinued:evidence.continued.every(x=>x.host==='127.0.0.1'),fatal};
  if(fatal||!evidence.preflight.allBlocked||!evidence.preflight.noExternalContinued)throw Error('Preflight failed; real CMP/advertising fixture NOT enabled.');
- if(process.env.VC_REAL_CMP==='1'){
+ await send('Target.closeTarget',{targetId:popup.targetId});
+ await send('Page.bringToFront',{},session);
+ if(process.env.VC_REAL_CMP==='1'||mockUi){
   await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1400,deviceScaleFactor:1,mobile:false},session);
   live=true;await send('Page.navigate',{url:origin+'/cmp'},session);await new Promise(r=>setTimeout(r,7000));
   const snapshot=async label=>{const state=await evaluate(`(()=>{const c=window.Cookiebot,d=document.querySelector('#CybotCookiebotDialog');const visible=e=>!!(e&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden');return {observerInstalled:window.__vcProbeObserver===true,viewport:{width:innerWidth,height:innerHeight,outerWidth,outerHeight,dpr:devicePixelRatio,screenWidth:screen.width,screenHeight:screen.height,clientWidth:document.documentElement.clientWidth,clientHeight:document.documentElement.clientHeight,scrollX,scrollY,visual:visualViewport?{width:visualViewport.width,height:visualViewport.height,offsetTop:visualViewport.offsetTop,offsetLeft:visualViewport.offsetLeft,scale:visualViewport.scale}:null},hasResponse:c?.hasResponse,consented:c?.consented,declined:c?.declined,marketing:c?.consent?.marketing,method:c?.consent?.method,gate:window.kaguraVcConsent?.state,images:document.querySelectorAll('[data-vc-ad]>a img').length,dialogVisible:visible(d),dialogText:d?.textContent.slice(0,800),controls:[...document.querySelectorAll('#CybotCookiebotDialog button,#CybotCookiebotDialog a,#CybotCookiebotDialog input,#CybotCookiebotDialog [role=button],#CookiebotWidget button')].filter(visible).map(e=>({rect:{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height},id:e.id,tag:e.tagName,type:e.getAttribute('type'),checked:typeof e.checked==='boolean'?e.checked:undefined,disabled:!!e.disabled,labels:e.labels?[...e.labels].map(l=>l.textContent.trim().slice(0,100)):[],role:e.getAttribute('role'),ariaLabel:e.getAttribute('aria-label'),text:(e.textContent||e.value||'').trim().slice(0,100)}))}})()`);evidence.states.push({label,...state,blockedRequests:evidence.blocked.length,vcRequests:evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length});return state;};
-  const capture=async label=>{evidence.states.push({label:label+'-layout',layout:await send('Page.getLayoutMetrics',{},session),window:await send('Browser.getWindowForTarget',{targetId})});if(process.env.VC_CAPTURE_DIR){mkdirSync(process.env.VC_CAPTURE_DIR,{recursive:true});const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},session);writeFileSync(join(process.env.VC_CAPTURE_DIR,label+'.png'),Buffer.from(shot.data,'base64'));}};
+  const capture=async label=>{await send('Page.bringToFront',{},session);evidence.states.push({label:label+'-layout',layout:await send('Page.getLayoutMetrics',{},session),window:await send('Browser.getWindowForTarget',{targetId})});if(process.env.VC_CAPTURE_DIR){mkdirSync(process.env.VC_CAPTURE_DIR,{recursive:true});const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},session);writeFileSync(join(process.env.VC_CAPTURE_DIR,label+'.png'),Buffer.from(shot.data,'base64'));}};
   const initial=await snapshot('initial');await capture('initial');
   evidence.frames=await send('Page.getFrameTree',{},session).then(r=>({mainFrameId:r.frameTree.frame.id,childFrameCount:r.frameTree.childFrames?.length||0}));
   if(!initial.observerInstalled||!evidence.cmpEvents.some(e=>e.event==='observer-installed'&&e.path==='/cmp'))throw Error('Document-start observer handshake missing; diagnostics unreliable.');
-  if(process.env.VC_UI_SEQUENCE==='1'){
+  if(process.env.VC_UI_SEQUENCE==='1'||mockUi){
    const click=async selectors=>{
-    const selector=await evaluate(`(()=>{for(const s of ${JSON.stringify(selectors)}){const e=document.querySelector(s);if(e&&!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'){e.scrollIntoView({block:'center',inline:'center'});return s;}}return null})()`);
+    const selector=await evaluate(`(()=>{for(const s of ${JSON.stringify(selectors)}){const e=document.querySelector(s);if(e&&!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'){e.scrollIntoView({block:'center',inline:'center'});return s;}}return null})()`,'control-scroll');
     if(!selector)throw Error('Required real CMP UI control absent: '+selectors.join(','));
     await new Promise(r=>setTimeout(r,200));
-    const pos=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return null;const r=e.getBoundingClientRect(),x=(Math.max(0,r.left)+Math.min(innerWidth,r.right))/2,y=(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2,h=document.elementFromPoint(x,y);return {x,y,id:e.id,hit:!!h&&(h===e||e.contains(h)),visible:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight,frame:location.pathname};})()`);
+    const pos=await evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)return null;const r=e.getBoundingClientRect(),x=(Math.max(0,r.left)+Math.min(innerWidth,r.right))/2,y=(Math.max(0,r.top)+Math.min(innerHeight,r.bottom))/2,h=document.elementFromPoint(x,y);return {x,y,id:e.id,hit:!!h&&(h===e||e.contains(h)),visible:r.width>0&&r.height>0&&x>=0&&y>=0&&x<innerWidth&&y<innerHeight,frame:location.pathname};})()`,'control-hit-test');
     evidence.states.push({label:'ui-target',selector,...pos});
     await capture('before-'+(pos?.id||'missing'));
-    evidence.states.push({label:'target-ancestors',selector,ancestors:await evaluate(`(()=>{const a=[];let e=document.querySelector(${JSON.stringify(selector)});for(let i=0;e&&i<7;i++,e=e.parentElement){const c=getComputedStyle(e),r=e.getBoundingClientRect();a.push({id:e.id,tag:e.tagName,position:c.position,display:c.display,overflowY:c.overflowY,height:c.height,maxHeight:c.maxHeight,transform:c.transform,rect:{x:r.x,y:r.y,width:r.width,height:r.height},scrollTop:e.scrollTop,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight});}return a;})()`)});
+    evidence.states.push({label:'target-ancestors',selector,ancestors:await evaluate(`(()=>{const a=[];let e=document.querySelector(${JSON.stringify(selector)});for(let i=0;e&&i<7;i++,e=e.parentElement){const c=getComputedStyle(e),r=e.getBoundingClientRect();a.push({id:e.id,tag:e.tagName,position:c.position,display:c.display,overflowY:c.overflowY,height:c.height,maxHeight:c.maxHeight,transform:c.transform,rect:{x:r.x,y:r.y,width:r.width,height:r.height},scrollTop:e.scrollTop,scrollHeight:e.scrollHeight,clientHeight:e.clientHeight});}return a;})()`,'control-ancestors')});
     if(!pos?.hit||!pos.visible)throw Error('CMP control does not own its visible viewport hit point.');
     await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:pos.x,y:pos.y},session);
     await send('Input.dispatchMouseEvent',{type:'mousePressed',x:pos.x,y:pos.y,button:'left',clickCount:1},session);
     await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:pos.x,y:pos.y,button:'left',clickCount:1},session);
     await new Promise(r=>setTimeout(r,1200));
    };
+   if(mockUi){await click(['#CybotCookiebotDialogBodyContentTextToggle']);const count=await evaluate("document.querySelector('#CybotCookiebotDialogBodyContentTextToggle').dataset.clicked",'mock-click-assert');if(count!=='1')throw Error('Mock visible control did not receive exactly one click');evidence.mockUi={passed:true,clicks:1,notRealCMP:true};}else{
    const deny=['#CybotCookiebotDialogBodyButtonDecline'];
    const allow=['#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']; // Generic Accept/OK may submit selected categories, not all.
    const reopen=async()=>{await click(['#CookiebotWidget-button']);await click(['#CookiebotWidget-btn-change']);};
@@ -113,9 +122,10 @@ try {
    await send('Page.reload',{ignoreCache:true},session);await new Promise(r=>setTimeout(r,5000));state=await snapshot('reload-rejection');if(state.hasResponse!==true||state.marketing!==false||state.images!==0||evidence.blocked.filter(x=>x.host.endsWith('.valuecommerce.com')).length!==beforeReload)throw Error('Saved rejection not established; consent logging remains blocked.');
    await reopen();await click(allow);state=await snapshot('allow');if(state.hasResponse!==true||state.marketing!==true||state.method!=='explicit'||state.gate!=='allowed'||state.images===0)throw Error('Explicit allowance not established.');
    await reopen();await click(deny);state=await snapshot('revoke');if(state.marketing!==false||state.images!==0)throw Error('Revocation not established.');
+   }
   }
  }
  evidence.scope='Default preflight; VC_REAL_CMP=1 captures actual initial CMP diagnostics; VC_UI_SEQUENCE=1 attempts bounded real UI sequence, stopping on absent controls/state failure. No Cookiebot properties are overridden.';
  if(fatal)throw Error(fatal);
 } catch(e){evidence.error=String(e);process.exitCode=1;}
-finally{console.log(JSON.stringify(evidence,null,2));ws?.close();chrome.kill();server.close();await new Promise(r=>setTimeout(r,300));try{rmSync(profile,{recursive:true,force:true});}catch{console.error('Temporary isolated Chrome profile cleanup pending; do not upload it.');}}
+finally{checkpoint({phase:'final',error:evidence.error||null});console.log(JSON.stringify({final:evidence}));ws?.close();chrome.kill();server.close();await new Promise(r=>setTimeout(r,300));try{rmSync(profile,{recursive:true,force:true});}catch{console.error('Temporary isolated Chrome profile cleanup pending; do not upload it.');}}

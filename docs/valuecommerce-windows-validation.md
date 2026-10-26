@@ -100,3 +100,22 @@ Remove-Item Env:VC_FIXTURE
 ```
 
 initial、操作直前、説明展開後のスクリーンショットとJSONを照合する。より大きいviewportでも画面外/遮蔽なら停止し、UI成功としない。非表示の選択controlは操作しない。SDK代案はこの実UI検証とは分離し、まだハーネスへ追加していない。
+
+## ハング修正・逐次証拠（次回はこの形式）
+
+クラウドの可視mockコントロール（y950）でPage.captureScreenshot無応答を再現。追加タブを閉じ、対象Page.bringToFrontを行うと、initial撮影→scroll/hit判定→直前撮影→祖先7段走査→実マウス1クリックが完了した。Windowsの元実行には途中ログがないため、同一原因と断定はしない。
+
+各CDP応答は8秒上限。Runtime.evaluateは同期の読み取り/有限DOM操作だけとしawaitPromise=false、Chrome側実行上限3秒。コマンド開始/完了/timeoutを即時JSONL出力し、VC_EVIDENCE_FILEのUTF-8 JSONにも全証拠を逐次保存する。応答待ちで停止しても最後のmethod/idとevaluateラベルが残る。stdoutは単一JSONではなくJSONLになった点に注意。遅延応答、接続切断、タイムアウト保存の単体テストは通常CIにも含む。
+
+ローカルmock実証は実CMPではない。外部通信を許可せず、可視controlのスクリーンショット・座標・祖先走査・クリック1回を検証した。Windowsで実再実行する場合の1回コマンド:
+
+```powershell
+$env:VC_CAPTURE_DIR = Join-Path $PWD 'vc-layout-captures'
+$env:VC_EVIDENCE_FILE = Join-Path $PWD 'vc-layout-checkpoint.json'
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_UI_SEQUENCE = '1'
+node tests/valuecommerce-transfer-probe.mjs > vc-layout-progress.jsonl
+```
+
+チェックポイントJSONとprogress JSONLを返す。エラーでも同一実行を繰り返さず最後のmethod/id/labelを確認する。終了後、使用した環境変数を削除。VC_MOCK_UIは実CMPと同時指定不可。SDK代替は追加していない。すべて隔離プロフィール内で、本番設定/サイト挙動変更なし。
