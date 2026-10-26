@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "ed627e64974e85df5471370f4dbff16d7abfff4a56b665a11d583235ac3efd40",
-    "bytes": 23616
+    "sha256": "eef5921e7d20198b0d9b204f2f4badaa2e5c55f081fe67c872883b01ba1e0ca7",
+    "bytes": 24520
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -72,12 +72,12 @@
     "bytes": 6429
   },
   "tests/helpers/vc-sdk-assertions.mjs": {
-    "sha256": "704056956965d7ec396b616dbdf663e509df13b631491da45468131c4adc6e74",
-    "bytes": 1137
+    "sha256": "a89dde1cd82a96dcf5e8500a78c7e9ed32d4bb12a23c1bff448bbabb855e64f2",
+    "bytes": 1372
   },
   "tests/vc-sdk-harness-test.mjs": {
-    "sha256": "ca8a0a437269bdbae977a6c580c02bcfebb6e5496985735f70839c56754b7f87",
-    "bytes": 2095
+    "sha256": "b8a0a26987ebc378d1482c547e128c7abd7907dfc9232be6760c10787ffa75ef",
+    "bytes": 3354
   },
   "tests/helpers/cookie-metadata.mjs": {
     "sha256": "576e86ccc653665207b423a792914e07c07e8d4627215bd2e75e5e2090c2480a",
@@ -92,7 +92,7 @@
     "bytes": 983
   },
   "tests/cmp-request-policy-test.mjs": {
-    "sha256": "9f3bce12344cfad11c6fc0b6c532b03fca69e7f02f49429eb5d201f13fc1eebb",
-    "bytes": 1506
+    "sha256": "590dd070bf7115831c2d0a89482c7da38266abbcb4ba1366eb5f2657984fb999",
+    "bytes": 1702
   }
 }

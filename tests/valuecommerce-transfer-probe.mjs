@@ -13,7 +13,10 @@ import {cspFor} from '../scripts/lib/csp.mjs';
 if(process.env.VC_SDK_SEQUENCE==='1'&&(process.env.VC_UI_SEQUENCE==='1'||process.env.VC_MOCK_UI==='1'||process.env.VC_REAL_CMP!=='1'))throw Error('SDK verification requires real CMP and excludes UI/mock modes');
 const consentLogOptIn=process.env.VC_ALLOW_CONSENT_LOG==='1';
 if(consentLogOptIn&&(process.env.VC_REAL_CMP!=='1'||process.env.VC_SDK_SEQUENCE!=='1'))throw Error('Consent-log opt-in requires isolated real CMP SDK verification');
-const cmpRequestPolicy=createCmpRequestPolicy({enabled:consentLogOptIn});
+const withdrawalOnly=process.env.VC_SDK_WITHDRAWAL_CHECK==='1';
+if(withdrawalOnly&&(process.env.VC_SDK_SEQUENCE!=='1'||process.env.VC_REAL_CMP!=='1'||process.env.VC_SDK_PERSISTENCE_ONLY==='1'))throw Error('Withdrawal check requires real SDK mode without persistence-only mode');
+const logBudget=withdrawalOnly?2:4;
+const cmpRequestPolicy=createCmpRequestPolicy({enabled:consentLogOptIn,maxConsentLogs:logBudget});
 const mockUi=process.env.VC_MOCK_UI==='1';
 if(mockUi&&process.env.VC_REAL_CMP==='1')throw Error('Choose mock UI or real CMP, not both.');
 const chromePath=process.env.CHROMIUM_BIN;
@@ -31,14 +34,14 @@ const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/w
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 const profile=mkdtempSync(join(tmpdir(),'vc-guard-'));
 const chrome=spawn(chromePath,['--headless','--window-size=1280,1400','--force-device-scale-factor=1','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--disable-sync','--disable-extensions',...(process.platform==='linux'?['--no-sandbox']:[]),'--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
-let ws;let fatal=null;const evidence={consentLogScope:{explicitOptIn:consentLogOptIn,maximumRequests:4,endpoint:'https://consent.cookiebot.com/logconsent.ashx',method:'GET',redirectsAllowed:false},targets:[],blocked:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
+let ws;let fatal=null;const evidence={consentLogScope:{explicitOptIn:consentLogOptIn,maximumRequests:logBudget,endpoint:'https://consent.cookiebot.com/logconsent.ashx',method:'GET',redirectsAllowed:false},targets:[],blocked:[],blockedNotifications:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
 const checkpoint=operation=>{evidence.operations??=[];evidence.operations.push(operation);writeFileSync(process.env.VC_EVIDENCE_FILE||'vc-probe-checkpoint.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify({checkpoint:operation}));};
 const safeUrl=value=>{try{const u=new URL(value);return u.origin+u.pathname.replace(/[a-f0-9]{8}-[a-f0-9-]{27,}/gi,'[id]');}catch{return '[non-url]'}};
 const safeText=value=>String(value).replace(/https?:\/\/[^\s"'<>]+/g,safeUrl).slice(0,800);
 try {
  const endpoint=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Chrome startup timeout')),10000);let s='';chrome.stderr.on('data',b=>{s+=b;const m=s.match(/DevTools listening on (ws:\/\/\S+)/);if(m){clearTimeout(t);resolve(m[1]);}});chrome.on('error',reject);});
  ws=new WebSocket(endpoint);await new Promise((r,j)=>{const timer=setTimeout(()=>j(Error('WebSocket open timeout')),8000);ws.onopen=()=>{clearTimeout(timer);r();};ws.onerror=e=>{clearTimeout(timer);j(e);};});
- const guards=new Map(),waiters=new Map(),workerRequests=new Map();
+ const guards=new Map(),waiters=new Map(),workerRequests=new Map(),handledFetch=new Set();
  const transport=boundedCdp(value=>ws.send(value),{checkpoint}),send=transport.send;
  ws.onclose=()=>transport.close();
  const auto={autoAttach:true,waitForDebuggerOnStart:true,flatten:true};
@@ -74,13 +77,16 @@ try {
    if(m.method==='Network.responseReceived')evidence.responses.push({url:safeUrl(m.params.response.url),status:m.params.response.status,mime:m.params.response.mimeType,fromDiskCache:m.params.response.fromDiskCache===true});
    if(m.method==='Network.loadingFailed')evidence.failures.push({url:safeUrl(workerRequests.get(m.sessionId+':'+m.params.requestId)),error:m.params.errorText,blockedReason:m.params.blockedReason});
    if(m.method==='Network.requestWillBeSent')workerRequests.set(m.sessionId+':'+m.params.requestId,m.params.request.url);
-   if(m.method==='Network.loadingFailed'&&m.params.blockedReason){const url=workerRequests.get(m.sessionId+':'+m.params.requestId);if(url){const u=new URL(url);evidence.blocked.push({targetSession:m.sessionId,host:u.hostname,path:u.pathname,guard:'Network.setBlockedURLs',blockedReason:m.params.blockedReason});}}
+   if(m.method==='Network.loadingFailed'&&m.params.blockedReason){const url=workerRequests.get(m.sessionId+':'+m.params.requestId);if(url){const u=new URL(url);evidence.blockedNotifications.push({source:'Network.loadingFailed',targetSession:m.sessionId,requestId:m.params.requestId,host:u.hostname,path:u.pathname,guard:'Network.setBlockedURLs',blockedReason:m.params.blockedReason});}}
    if(m.method==='Fetch.requestPaused'){
     const {requestId,request}=m.params,u=new URL(request.url);
+    const fetchKey=m.sessionId+':'+requestId;
+    if(handledFetch.has(fetchKey))return;
+    handledFetch.add(fetchKey);
     const local=u.origin===origin&&!m.params.redirectedRequestId;
     const policy=cmpRequestPolicy({url:request.url,method:request.method,live,redirected:!!m.params.redirectedRequestId});
     const cmp=policy.allow;
-    const entry={targetSession:m.sessionId,host:u.hostname,path:new URL(safeUrl(request.url)).pathname,method:request.method,...(u.hostname.endsWith('.valuecommerce.com')&&/^\d+$/.test(u.searchParams.get('pid')||'')?{placement:u.searchParams.get('pid')}: {})};
+    const entry={source:'Fetch.requestPaused',requestId,networkId:m.params.networkId,redirectedRequestId:m.params.redirectedRequestId,targetSession:m.sessionId,host:u.hostname,path:new URL(safeUrl(request.url)).pathname,method:request.method,...(u.hostname.endsWith('.valuecommerce.com')&&/^\d+$/.test(u.searchParams.get('pid')||'')?{placement:u.searchParams.get('pid')}: {})};
     if(policy.consentLog){evidence.consentLogRequests??=[];evidence.consentLogRequests.push({...entry,allowed:cmp,ordinal:policy.ordinal,limit:policy.limit});checkpoint({phase:'consent-log-decision',allowed:cmp,ordinal:policy.ordinal});}
     (local||cmp?evidence.continued:evidence.blocked).push(entry);
     await send(local||cmp?'Fetch.continueRequest':'Fetch.failRequest',local||cmp?{requestId}:{requestId,errorReason:'BlockedByClient'},m.sessionId);
@@ -98,7 +104,7 @@ try {
  await send('Page.navigate',{url:'https://guard.invalid/popup'},popupSession);
  await new Promise(r=>setTimeout(r,1500));
  const expected=['/image','/script','/frame','/fetch','/worker','/popup'];
- evidence.preflight={expected,allBlocked:expected.every(p=>evidence.blocked.some(x=>x.host==='guard.invalid'&&x.path===p)),noExternalContinued:evidence.continued.every(x=>x.host==='127.0.0.1'),fatal};
+ evidence.preflight={expected,allBlocked:expected.every(p=>(p==='/worker'?evidence.blockedNotifications:evidence.blocked).some(x=>x.host==='guard.invalid'&&x.path===p)),noExternalContinued:evidence.continued.every(x=>x.host==='127.0.0.1'),fatal};
  if(fatal||!evidence.preflight.allBlocked||!evidence.preflight.noExternalContinued)throw Error('Preflight failed; real CMP/advertising fixture NOT enabled.');
  await send('Target.closeTarget',{targetId:popup.targetId});
  await send('Page.bringToFront',{},session);
@@ -118,18 +124,18 @@ try {
    const persistenceOnly=process.env.VC_SDK_PERSISTENCE_ONLY==='1';
    const cookieCheckpoint=async label=>{const cookies=await send('Network.getCookies',{urls:[origin+'/cmp']},session);const info=await send('Target.getTargetInfo',{targetId});const doc=await evaluate('({origin:location.origin,pathname:location.pathname,port:location.port,secureContext:isSecureContext})','cookie-context');evidence.cookieSnapshots??=[];evidence.cookieSnapshots.push({label,targetId,browserContextId:info.targetInfo.browserContextId||'default-isolated-profile',...doc,cookies:cookies.cookies.map(cookieMetadata)});checkpoint({phase:'cookie-metadata',label});};
    await cookieCheckpoint('initial');
-   for(const name of (persistenceOnly?['reject','reload']:['reject','reload','allow','withdraw'])){
+   for(const name of (withdrawalOnly?['allow','withdraw','withdraw-reload']:persistenceOnly?['reject','reload']:['reject','reload','allow','withdraw'])){
     const before=evidence.blocked.length,mountStart=evidence.cmpEvents.length;
     await cookieCheckpoint('before-'+name);
     checkpoint({phase:'sdk-before',name});
-    if(name==='reload')await send('Page.reload',{ignoreCache:true},session);
+    if(name==='reload'||name==='withdraw-reload')await send('Page.reload',{ignoreCache:true},session);
     else if(name==='withdraw')await evaluate("(()=>{if(typeof Cookiebot?.withdraw!=='function')throw Error('Documented withdraw unavailable');Cookiebot.withdraw();return true;})()",'sdk-withdraw');
     else await evaluate(`(()=>{if(typeof Cookiebot?.submitCustomConsent!=='function')throw Error('Documented submitCustomConsent unavailable');Cookiebot.submitCustomConsent(false,false,${name==='allow'});return true;})()`,'sdk-'+name);
     // Await observable real state, never mutate properties or synthesize consent events.
     let matched=false;
     for(let tick=0;tick<20;tick++){
      await new Promise(r=>setTimeout(r,250));
-     matched=await evaluate(`(()=>{const c=window.Cookiebot;return typeof c?.hasResponse==='boolean'&&c?.consent?.marketing===${name==='allow'}${name==='withdraw'?'':'&&c.hasResponse===true'};})()`,'sdk-state-'+name);
+     matched=await evaluate(`(()=>{const c=window.Cookiebot;return typeof c?.hasResponse==='boolean'&&c?.consent?.marketing===${name==='allow'}${name.startsWith('withdraw')?'':'&&c.hasResponse===true'};})()`,'sdk-state-'+name);
      if(matched)break;
     }
     await new Promise(r=>setTimeout(r,1000));
@@ -141,7 +147,7 @@ try {
     if(!matched)throw Error('SDK state transition did not complete: '+name);
     assertSdkPhase(result,expectedImages);
    }
-   evidence.sdkPassed=!persistenceOnly;evidence.persistenceOnly=persistenceOnly;
+   evidence.sdkPassed=!persistenceOnly&&!withdrawalOnly;evidence.withdrawalCheckPassed=withdrawalOnly;evidence.persistenceOnly=persistenceOnly;
   }
   if(process.env.VC_UI_SEQUENCE==='1'||mockUi){
    const click=async selectors=>{

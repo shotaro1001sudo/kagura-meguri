@@ -194,3 +194,32 @@ try {
 通常の公開CMPリソースに加え、正確に `https://consent.cookiebot.com/logconsent.ashx` の初回GETだけを実行全体で最大4回許可。全リダイレクトは拒否（別CMP/local宛も拒否）。別host/path/port、POST、広告/GAは許可しない。上限到達/redirect/保存失敗時はそこで証拠を返し、自動再実行や上限拡張をしない。
 
 consentLogScope/consentLogRequestsに許可条件・回数・判断を記録。query値、Cookie値、応答本文は保存しない。callbackやHTTP 200だけで保存成功とせず、実Cookie metadata、拒否reload時の実CMP状態とVC要求0を確認。成功すれば許可→撤回へ進み、失敗すれば停止。通常UIからの拒否到達性は別の未解決事項。今回も本番公開しない。
+
+## 残り2回・許可→撤回→reloadの限定続行
+
+6b41a42の実SDK検証で拒否と保存拒否reloadは成功。許可もexplicit/marketing=true、2画像mount・2実GET（各宛先1回）だったが、ハーネスがNetwork.loadingFailed通知を実要求に足して誤停止した。撤回は未実施。同意ログ2回送信済み、残り予算は2回。終了時のprofile削除により前回状態は再開不可。
+
+新headでは実要求をFetch.requestPausedのsessionId+requestIdで識別し、同じ通知の再配信は一度だけ処理。Network.loadingFailedは別配列blockedNotificationsへ記録し要求数には足さない。異なるFetch IDのredirectや同一宛先への再要求は別要求として数え、mount上限も維持。workerの事前遮断は別通知として確認する。
+
+既存head/manifest確認後、前節の変数設定に加え `VC_SDK_WITHDRAWAL_CHECK=1` を指定し、証拠名を別にして1回だけ実行する。これにより新profileでallow→withdraw→withdraw-reloadのみ行う。拒否/reload段階は繰り返さず、同意ログ上限は自動的に2回へ下がる。撤回後reloadは新たな同意選択を送らず、保存状態から追加広告要求/mountがないことを確認する。withdraw時点で失敗すればreloadにも進まない。
+
+```powershell
+Remove-Item Env:VC_UI_SEQUENCE -ErrorAction SilentlyContinue
+Remove-Item Env:VC_MOCK_UI -ErrorAction SilentlyContinue
+Remove-Item Env:VC_SDK_PERSISTENCE_ONLY -ErrorAction SilentlyContinue
+$env:VC_REAL_CMP='1'
+$env:VC_FIXTURE='generated'
+$env:VC_SDK_SEQUENCE='1'
+$env:VC_SDK_WITHDRAWAL_CHECK='1'
+$env:VC_ALLOW_CONSENT_LOG='1'
+$env:VC_CAPTURE_DIR=Join-Path $PWD 'vc-withdraw-captures'
+$env:VC_EVIDENCE_FILE=Join-Path $PWD 'vc-withdraw-checkpoint.json'
+try {
+  node tests/valuecommerce-transfer-probe.mjs > vc-withdraw-progress.jsonl
+} finally {
+  Remove-Item Env:VC_ALLOW_CONSENT_LOG -ErrorAction SilentlyContinue
+  Remove-Item Env:VC_SDK_WITHDRAWAL_CHECK -ErrorAction SilentlyContinue
+}
+```
+
+withdrawalCheckPassedはこの限定続行の結果であり、sdkPassed（全段階を同headで実施）とは別。前回headの拒否保存証拠と混同しない。callback/HTTP 200だけで成功にしない。追加要求が必要な場合も上限を増やさず停止。公開UIの拒否到達性、本番公開は別途保留。

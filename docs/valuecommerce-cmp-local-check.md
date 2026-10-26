@@ -111,3 +111,16 @@ the one-run sequence. Existing generated Oasa fixture was compared byte-for-byte
 against the current 142-page build and is unchanged; the manifest is refreshed
 with the new policy helper and regression test. Real execution remains delegated
 to Windows; no consent-log request was sent from this cloud checkout.
+
+## Correct request accounting and remaining-budget continuation
+
+Parent reports Windows at 6b41a42: explicit rejection and rejection reload passed;
+allow had exactly two mounts and two actual intercepted GETs, but paired
+Network.loadingFailed events inflated the harness count to four. Consent logs:
+two GETs sent, both 200; cookie persisted. Withdrawal was not reached. The fresh
+continuation uses at most the remaining TWO log requests for allow, withdraw and
+then a read-only reload persistence check. Previous temporary profile is gone.
+Only test accounting changes: Fetch identities are deduplicated, failure notices
+are separate; distinct requests/redirects still count and mount limits unchanged.
+Production adapter, issued tags and generated fixture are unchanged. No cloud
+consent-log transmission and no production release.

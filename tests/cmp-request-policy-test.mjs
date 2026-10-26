@@ -9,3 +9,6 @@ assert.equal(policy(req).allow,false);
 assert.equal(policy({...req,url:'https://consent.cookiebot.com/uc.js',redirected:true}).allow,false);
 assert.equal(policy({...req,url:'https://consent.cookiebot.com/uc.js'}).allow,true);
 console.log('CMP request policy: default denial, exact opt-in endpoint, redirect denial, four-request cap and redacted evidence passed (local only)');
+
+const remaining=createCmpRequestPolicy({enabled:true,maxConsentLogs:2});
+assert.equal(remaining(req).allow,true);assert.equal(remaining(req).allow,true);assert.equal(remaining(req).allow,false);
