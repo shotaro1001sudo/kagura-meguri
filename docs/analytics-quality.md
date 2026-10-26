@@ -199,3 +199,30 @@ SheetsのgetValuesはDate型を返す場合がある。日付文字列をsetValu
 ローカルの再試行テストでは、媒体別成功ガードがある一方で全体成功ガードがない状態を再現する。API再取得なしで全体行を更新し、readback成功後だけ全体ガードを更新。日付型IDの既存行・同日重複を一行に集約し、別日の履歴を保持。本当のreadback不一致では引き続き全体ガードを更新しない。
 
 GitHub公開と実GAS反映は別工程。既存プロジェクトの対象ファイルだけを反映し、承認された検証実行で全体readbackと成功ガードを確認する。媒体別の同日成功ガードを編集して再取得させない。
+
+## 2026-10-26: 既存タブ・戻る操作での自己除外
+
+旧コードは初期読込でしか除外フラグを確認せず、別タブで除外を設定した後も起動済みページの許可状態が残り得た。既存のlocalStorageキーのみを使い、storage通知、pageshow（BFCache復元を含む）、focus、popstate、同意通知時に再確認する。除外すると独自イベントの許可を止め、Googleの `ga-disable-MEASUREMENT_ID` をtrueにする。除外後の遅延タグloadや同意通知では再開しない。解除は従来どおり `?analytics=on` への新しいナビゲーションで行う。過去に送信済みの情報は取り消せない。
+
+当サイトは通常のHTMLページ遷移で、SPAルーター/GTMコンテナを追加していない。独自にpushStateでURLを書き換えるだけでは除外設定を新規登録しない。除外設定は必ず上記off URLを普通に開く。除外済み文書では同一文書内の画面操作も除外を維持する。
+
+### Windows / Androidでの設定と確認
+
+1. 普段使うWindowsのChrome/Edge、AndroidのChrome等、それぞれの通常ブラウザで `https://kagurameguri.jp/?analytics=off` を開く。アプリ内ブラウザを使うならそれも別に設定する。
+2. 既に開いているサイトのタブを閉じ、通常URLから開き直す。新コード公開前もこの手順で古い文書を残さない。
+3. Windowsの開発者ツールで、次を読み取り確認する（設定変更を伴わない）。通常URL・再読み込み・戻る操作の後も確認する。
+   - `localStorage.getItem('kagura.analytics.exclude')` が `'1'`
+   - `window.kaguraAnalytics.status` が `'excluded'`
+   - `window.kaguraGa4Allowed` が `false`
+4. AndroidはURLを開いた事実だけで保存成功と断定しない。既存のリモートDevTools接続を使える場合は同じ読み取りを行う。接続できない場合は「設定操作済み・保存状態未確認」と記録する。今回ユーザー端末は検査していない。
+5. Networkでgtag/jsやGA collect要求がないかは、外部送信を遮断した検証環境で確認する。実ユーザーの本番操作をわざとGA4へ送り、除外の確認用データにしない。
+
+ブラウザ/プロファイル/端末ごとの設定。シークレット、別ブラウザ、サイトデータ削除、localStorageの禁止では引き継がれない。保存不能時はoff URLの文書だけが除外対象で、他ページへ永続しない。GoatCounter・広告の停止ではない。GA4 Internal TrafficフィルターのTest/Activeはこのフラグとは別で、今回管理設定は変更しない。自己除外だけで全訪問を実人数として確定できず、同意しない閲覧・広告ブロック・複数端末等も残る。
+
+### 検証と根拠
+
+- オフラインVM: 初期除外、保存不能、別タブ通知、復元/フォーカス/履歴/同意通知、遅延load、解除後に古い文書が勝手に再開しないことを検証。
+- Chromiumローカル: 同一originの別文書からの実storage通知、遷移、reload、実BFCacheで戻る、除外後の同一文書履歴変更とクリックを確認。Cookiebotはモック、Googleタグはネットワークで捕捉し空スクリプトに置換。実Googleライブラリ/CMP/GA4受信の試験ではない。外部送信0。除外後の独自eventコマンド増加0。
+- https://developers.google.com/tag-platform/security/guides/privacy （Google公式のga-disable方式）
+- https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event
+- https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event
