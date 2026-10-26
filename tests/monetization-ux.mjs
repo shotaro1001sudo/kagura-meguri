@@ -232,7 +232,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
       "公演詳細から公園公式へ移動でき、予約・雨天条件も確認できる");
     const eventLd = detail('script[type="application/ld+json"]').toArray()
       .flatMap((node) => JSON.parse(detail(node).text())).find((item) => item["@type"] === "Event");
-    ok(eventLd?.isAccessibleForFree === true && eventLd?.offers?.price === "0",
+    ok(eventLd?.isAccessibleForFree === true && !eventLd?.offers,
       "確認済みの参加無料情報が構造化データにも反映される");
   }
 }

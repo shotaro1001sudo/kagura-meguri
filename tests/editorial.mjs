@@ -49,7 +49,7 @@ export function editorialTests({ ok, section, OUT, build }) {
 
   section("編集: 検索結果に出る文");
   const wdesc = page("weekend.html")('meta[name="description"]').attr("content");
-  ok(/が観られます。毎日/.test(wdesc), "今週末の説明文: 名前だけの文にしない(「〇〇が観られます。」)", wdesc);
+  ok(/の開催情報を掲載しています。/.test(wdesc) && /日時・会場と公式情報を確認できます。/.test(wdesc), "今週末の説明文: 地名の羅列ではなく、掲載内容と確認できる情報を文で示す", wdesc);
   const tdesc = page("this-month.html")('meta[name="description"]').attr("content");
   ok(/を載せています。|開催情報がないときは/.test(tdesc) && !/公演日。/.test(tdesc), "今月の説明文: 「…の公演日を載せています。」", tdesc);
   ok(!page("pref/広島県.html")('meta[name="description"]').attr("content").includes("これからの開催"), "県の説明文に、古い言い方「これからの開催」を使わない");

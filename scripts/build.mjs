@@ -1,3 +1,4 @@
+import { eventFeeSchema } from './lib/event-fee-schema.mjs';
 import { upcomingSummary, upcomingSummaryDescription } from './lib/upcoming-summary.mjs';
 import { reservationLabel } from './lib/reservation.mjs';
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
@@ -771,8 +772,7 @@ for (const e of events) {
   if (e.end) ld.endDate = e.timeUnknown ? e.end.slice(0, 10) : e.end + JST;
   ld.image = [ogUrl(false)];
   if (e.description) ld.description = e.description;
-  if (e.fee) ld.offers = { "@type": "Offer", description: e.fee, url: e.url || `${cfg.baseUrl}/events/${e.id}.html`, availability: "https://schema.org/InStock", ...(/無料/.test(e.fee) && !/円/.test(e.fee) ? { price: "0", priceCurrency: "JPY" } : /[\d,]+円/.test(e.fee) ? { price: e.fee.match(/([\d,]+)円/)[1].replace(/,/g, ""), priceCurrency: "JPY" } : {}) }; // 金額があれば、最初の金額(一般・大人の料金)を価格にする
-  if (/無料/.test(e.fee ?? "") && !/円/.test(e.fee ?? "")) ld.isAccessibleForFree = true;
+  Object.assign(ld, eventFeeSchema(e.fee)); // 残席・券種別価格・販売URLは未確認。料金原文は本文に維持。
   if (e.lat != null) ld.location.geo = { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng };
   const when = whenOf(e);
   const others = sameSeries(e).filter(isUpcoming);
@@ -855,14 +855,16 @@ const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[
   const items = [...wkEvents.map((e) => ({ k: e.start, html: card(e) })), ...wkRegs.flatMap(({ r, dates }) => dates.map((d) => ({ k: `${d}T${timeOf(r)}`, html: occCard(r, d) })))].sort((a, b) => a.k.localeCompare(b.k));
   const after = upcoming.filter((e) => e.start.slice(0, 10) > wk.end).slice(0, 5);
   const names = [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)];
+  const weekendRegions = [...new Set(names.map(x=>x.prefecture).filter(Boolean))];
   const sub = [wkRenkyu, wkHolidays.join("・")].filter(Boolean).join("・");
   write("dist/weekend.html", layout({
     title: `今週末の神楽(${wkLabel}) | ${cfg.siteName}`,
-    desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に観られる神楽の開催と定期公演を日付順にまとめています。${names.length ? `${listNames(names)}${names.length > 3 ? "など" : ""}が観られます。` : "開催情報がない週は、その先の開催をご案内します。"}毎日自動で更新しています。`)),
+    desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に観られる神楽の開催と定期公演を日付順にまとめています。${weekendRegions.length ? `${weekendRegions.slice(0,3).join("、")}${weekendRegions.length>3?"など":""}の開催情報を掲載しています。日時・会場と公式情報を確認できます。` : "開催情報がない週は、その先の開催をご案内します。"}毎日自動で更新しています。`)),
     path: "/weekend.html", active: "/weekend.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]]), itemListLd(`今週末の神楽(${wkLabel})`, [...wkEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...wkRegs, ...wkDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]])}${hero("今週末の神楽", `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
 <p class="lead">${esc(wkLabel)}に観られる神楽を日付順にまとめています(${jpDate(today)}時点)。</p>
+${weekendRegions.length ? `<p class="weekend-regions">この週末の掲載地域：${weekendRegions.map(p=>`<a href="${prefHref(p)}">${esc(p)}</a>`).join('・')}。リンク先では各県の全日程を確認できます。</p>` : ''}
 <div class="dpage"><div class="d-top">
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2>
 ${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}

@@ -1,3 +1,4 @@
+import { eventFeeSchema } from '../scripts/lib/event-fee-schema.mjs';
 // SEOテスト: 検索エンジンが「読める・たどれる・理解できる」条件を、機械的に検査する
 //  - インデックスの指示(index / noindex)とサイトマップの整合
 //  - タイトル・説明文・canonical・OGP・構造化データ
@@ -86,6 +87,7 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
       const ev = lds.find((x) => x["@type"] === "Event");
       ok(ev && ev.name && ev.startDate && ev.location?.name && ev.image?.length && ev.eventStatus, `${p}: Event に name / startDate / location / image / eventStatus`);
       ok(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}\+09:00)?$/.test(ev.startDate), `${p}: startDate の形式`, ev.startDate);
+      ok(!ev.offers, `${p}: 未確認の販売状態・券種価格・販売URLを構造化データへ作らない`);
     }
     if (["/index.html", "/map.html"].includes(p) || /^\/(kagura|pref|month)\/./.test(p)) {
       const il = lds.find((x) => x["@type"] === "ItemList");
@@ -138,6 +140,10 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
 }
 
 export function seoTests({ ok, section, OUT, build }) {
+  section("SEO: 料金自由記述を販売情報と混同しない");
+  for (const fee of ['無料','参加無料','観覧無料','入場無料','無料(事前申込不要)','無料（申込不要）']) ok(eventFeeSchema(fee).isAccessibleForFree===true, `明示的な無料: ${fee}`);
+  for (const fee of ['',null,'要確認','有料(後日発表)','1,000円','学生500円・一般1,200円','前売1,200円・当日1,700円','2,000円〜10,000円','無料(レシート提示が必要)','無料(別途入園料500円)','小学生無料','無料ではありません','無料(奉納金を持参)']) ok(Object.keys(eventFeeSchema(fee)).length===0, `料金条件/不明は推測しない: ${fee}`);
+
   checkSite({ ok, section, dir: OUT, label: "テスト用データのサイト", base: "https://", strictText: false });
   // 本番データ: テスト用の指定を外してビルドし、実際のサイトの状態を検査する
   const env = { ...process.env, OUT_DIR: "dist-test-seo", BUILD_NOW: "2026-10-09T12:00" }; delete env.EVENTS_FILE; delete env.REGULAR_FILE;
@@ -145,6 +151,12 @@ export function seoTests({ ok, section, OUT, build }) {
   ok(r.status === 0, "SEO検査用に、本番データでビルドできる", r.stderr);
   const cfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
   checkSite({ ok, section, dir: "dist-test-seo", label: "本番データのサイト", base: cfg.baseUrl, strictText: true });
+  const weekend = cheerio.load(read('dist-test-seo/weekend.html'));
+  const regions = weekend('.weekend-regions a').map((_,a)=>weekend(a).text()).get();
+  ok(regions.length>0 && new Set(regions).size===regions.length, '週末の掲載地域は重複しない');
+  ok(regions.slice(0,3).every(p=>weekend('meta[name=description]').attr('content').includes(p)), '週末の説明文と冒頭の掲載地域が一致');
+  ok(weekend('.weekend-regions a').toArray().every(a=>existsSync(join('dist-test-seo',decodeURIComponent(weekend(a).attr('href'))))), '県の全日程へのリンク先が存在');
+  ok(weekend('.weekend-regions').text().includes('各県の全日程'), 'リンク先を週末だけの一覧と誤認させない');
   // 月別ページ: 本番データで、開催のある月だけが作られる
   section("SEO: 月別ページ・種類別の紹介文");
   const months = walk("dist-test-seo/month").map((f) => f.replace(/.*month[\\/]/, "").replace(".html", ""));
