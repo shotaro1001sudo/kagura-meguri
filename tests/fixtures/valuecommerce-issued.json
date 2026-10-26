@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-10-25T12:50:00Z",
+  "siteId": "3784232",
+  "source": "Owner authenticated adFlightDetail; supplied public tags, not credentials",
+  "sources": {
+    "stay": "https://aff.valuecommerce.ne.jp/ad/adFlightDetail/892732997",
+    "activity": "https://aff.valuecommerce.ne.jp/ad/adFlightDetail/892732911",
+    "banner": "https://aff.valuecommerce.ne.jp/ad/adFlightDetail/892732859"
+  },
+  "programs": {
+    "stay": {
+      "programId": "2021810",
+      "adId": "2501119",
+      "pid": "892732997",
+      "placementName": "261025_じゃらんnet_MyLink",
+      "rule": "Text required; no merchant images"
+    },
+    "activity": {
+      "programId": "2139176",
+      "adId": "2720182",
+      "pid": "892732911",
+      "rule": "Existing placement reused; destinations within jalan.net/activity"
+    },
+    "banner": {
+      "pid": "892732859",
+      "format": "official non-JS"
+    }
+  },
+  "examples": [
+    {
+      "kind": "stay",
+      "text": "安芸高田市の宿をじゃらんで探す",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732997&vc_url=https%3A%2F%2Fwww.jalan.net%2Fuw%2Fuwp2011%2Fuww2011init.do%3Fkeyword%3D%2588%25C0%258C%257C%258D%2582%2593%2563%258E%2573%26stayYear%3D2026%26stayMonth%3D11%26stayDay%3D3%26stayCount%3D1%26roomCount%3D1%26adultNum%3D2\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892732997\" height=\"1\" width=\"0\" border=\"0\">安芸高田市の宿をじゃらんで探す</a>"
+    },
+    {
+      "kind": "stay",
+      "text": "高千穂町の宿をじゃらんで探す",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732997&vc_url=https%3A%2F%2Fwww.jalan.net%2Fuw%2Fuwp2011%2Fuww2011init.do%3Fkeyword%3D%258D%2582%2590%25E7%2595%25E4%2592%25AC\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892732997\" height=\"1\" width=\"0\" border=\"0\">高千穂町の宿をじゃらんで探す</a>"
+    },
+    {
+      "kind": "activity",
+      "text": "広島県の体験をじゃらんで探す",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url=https%3A%2F%2Fwww.jalan.net%2Factivity%2F340000%2F%3FfromPage%3Dsearch-area\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892732911\" height=\"1\" width=\"0\" border=\"0\">広島県の体験をじゃらんで探す</a>"
+    },
+    {
+      "kind": "activity",
+      "text": "宮崎県の体験をじゃらんで探す",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url=https%3A%2F%2Fwww.jalan.net%2Factivity%2F450000%2F%3FfromPage%3Dsearch-area\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892732911\" height=\"1\" width=\"0\" border=\"0\">宮崎県の体験をじゃらんで探す</a>"
+    },
+    {
+      "kind": "banner",
+      "text": "",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732859\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892732859\" border=\"0\"></a>"
+    }
+  ]
+}

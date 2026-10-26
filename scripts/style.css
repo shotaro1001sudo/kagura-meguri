@@ -812,3 +812,12 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 #quiz-region,.quiz-date-label input{display:block;width:100%;max-width:32rem;min-height:48px;box-sizing:border-box;font:inherit;padding:10px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px}
 .quiz-date-label:not([hidden]),.quiz-select-label{display:block;margin:12px 0}
 .quiz-evidence,.quiz-conditions{overflow-wrap:anywhere}
+
+/* Issued VC anchor/image remain intact; presentation is owned by the wrapper. */
+.vc-ad[hidden]{display:none!important}
+.vc-ad:not([hidden]){display:inline-block}
+.vc-ad>a{display:block}
+.vc-ad.stay-btn,.vc-ad.vc-experience{padding:0;border:0;background:transparent}
+.vc-ad.stay-btn>a,.vc-ad.vc-experience>a,.vc-ad.vc-stay>a{padding:12px 16px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
+.experience-areas>.vc-ad:not([hidden]){display:block}
+.vc-disclosure{font-size:var(--fs-s);border-bottom:1px solid var(--line);padding:12px 0}

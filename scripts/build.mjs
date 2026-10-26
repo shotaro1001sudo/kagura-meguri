@@ -16,6 +16,7 @@ import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
+import { VC, vcEnabled, vcTag } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, features, traditions, quizEngine, QUIZ_CHECKED } from './lib/quiz.mjs';
@@ -43,7 +44,7 @@ if (cfg.goatcounter && !/^[a-z0-9-]+$/.test(cfg.goatcounter)) { console.error("c
 const GOATCOUNTER = cfg.goatcounter ? `<script data-goatcounter="https://${cfg.goatcounter}.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>` : "";
 if (process.env.TEST_AFF_OFF) cfg.affiliate = { rakutenAffiliateId: "", valueCommerceSid: "", jalanPid: "", jalanActivityPid: "", amazonTag: "" }; // テスト用(アフィリエイト未設定の状態から確かめる)
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
-if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: "1234567", jalanPid: "7654321" }; // テスト用(宿のアフィリエイト)
+if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: VC.sid, jalanPid: VC.stay }; // テスト用(宿のアフィリエイト)
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -141,11 +142,11 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 // ---------- 収益化 ----------
 const a = cfg.affiliate;
 // 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
-const rakutenOn = !!a.rakutenAffiliateId, jalanOn = !!(a.valueCommerceSid && a.jalanPid), amazonOn = !!a.amazonTag;
-const experienceAff = { sid: a.valueCommerceSid, pid: a.jalanActivityPid }; // 体験は宿と別案件のpid
+const vcAllowed = !!(cfg.adsense.client && cfg.cookiebotId); // Existing CSP only; no new hosts or consent bypass.
+const rakutenOn = !!a.rakutenAffiliateId, jalanOn = vcEnabled({sid:a.valueCommerceSid,pid:a.jalanPid,allowed:vcAllowed},"stay"), amazonOn = !!a.amazonTag;
+const experienceAff = { sid: a.valueCommerceSid, pid: a.jalanActivityPid, allowed:vcAllowed }; // 体験は宿と別案件のpid
 const hasAffiliate = rakutenOn || jalanOn || amazonOn || !!(experienceAff.sid && experienceAff.pid) || ['supplies','experiences','rental'].some(category=>offersFor(visitorPlanning,category,{guide:true},nowJst.slice(0,10)).length);
 const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
-const vcJalan = (url) => (jalanOn ? `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${a.valueCommerceSid}&pid=${a.jalanPid}&vc_url=${encodeURIComponent(url)}` : url);
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
 // 宿の検索(会場の市区町村で探す)。日付があれば、その日の1泊・大人2名で開く。
 // じゃらんはキーワードを Shift_JIS で、楽天トラベルは charset=utf-8 の指定つきで受け取る(どちらも、実際の検索結果で確認済み)
@@ -153,7 +154,7 @@ const stayPlace = (x) => (x.city ? x.city.replace(/^.*郡/, "") : x.prefecture);
 const jalanStay = (x, day) => {
   const q = [`keyword=${encodeSjisURI(stayPlace(x))}`];
   if (day) q.push(`stayYear=${+day.slice(0, 4)}`, `stayMonth=${+day.slice(5, 7)}`, `stayDay=${+day.slice(8, 10)}`, "stayCount=1", "roomCount=1", "adultNum=2");
-  return vcJalan(`https://www.jalan.net/uw/uwp2011/uww2011init.do?${q.join("&")}`);
+  return `https://www.jalan.net/uw/uwp2011/uww2011init.do?${q.join("&")}`;
 };
 const rakutenStay = (x, day) => {
   const q = ["charset=utf-8", `f_query=${encodeURIComponent(stayPlace(x))}`];
@@ -170,7 +171,7 @@ const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotatio
 // 開催ページの宿: 会場の市区町村・開催日の1泊・大人2名の検索結果へ直接つなぐ(バナーは宿のトップへ飛ぶだけなので使わない)。
 // 提携IDがあれば、楽天は楽天アフィリエイト(hgc)、じゃらんはバリューコマース(じゃらんnet・MyLink)を経由する。リダイレクト先が同じ検索になることを確認済み(2026-10-25)
 const stayLinks = (e, day, place) => {
-  const btn = (k, url, name, on) => !on ? "" : `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
+  const btn = (k, url, name, on) => !on ? "" : k==="jalan" ? vcTag({kind:"stay",destination:url,text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`stay-jalan/${e.id}`}}) : `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
   const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
   return btns ? `<p class="staylinks">${btns}</p>` : "";
 };
@@ -199,7 +200,7 @@ function affiliateBlock(e, { banners = true } = {}) {
     ...(amazonOn ? [["神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
   ];
   return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${links.length ? `<div class="afflist">${links
-    .map(([t, s, u, on, k]) => `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
+    .map(([t, s, u, on, k]) => k==="jalan" ? vcTag({kind:"stay",destination:u,text:`${stayPlace(e)}の宿をじゃらんで探す`,className:"vc-stay",meta:{"data-goatcounter-click":`aff-jalan/${e.prefecture}`}}) : `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
     .join("")}</div>` : ""}${bn}${prNote(!!bn || links.some((l) => l[3]))}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
@@ -303,7 +304,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${cookieBotBootstrap}<meta name="viewport" content="width=device-width,initial-scale=1">
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${cookieBotBootstrap}${body.includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
 <script>${HEAD_MOTION}</script>
 <script>${VT_JS}</script><link rel="expect" href="#main" blocking="render">
@@ -320,7 +321,7 @@ ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
-<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
+<div class="wrap${wide ? " wide" : ""}"><main id="main">${body.includes('data-vc-ad=')?'<p class="vc-disclosure"><strong>広告</strong> このページにはアフィリエイト広告が含まれます。じゃらんの広告表示時には外部への通信が発生します。</p>':''}${en ? body : collectNotes(body)}</main>
 ${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/quiz.html">神楽の好み診断</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}

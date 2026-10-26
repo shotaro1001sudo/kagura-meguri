@@ -2,7 +2,7 @@ import { reservationLabel } from '../scripts/lib/reservation.mjs';
 // Revenue UX regression: keep editorial navigation helpful and sponsored links intact.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import * as cheerio from "cheerio";
+import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { runInNewContext } from "node:vm";
 import { STAY_BANNERS } from "../scripts/lib/stay-banners.mjs";
 
@@ -165,7 +165,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
        a("#hiroshima-stay").length === 1,
        "広告を設定すると月の目次から宿探しへ移動できる");
     ok(links.length === 2 &&
-       links.toArray().every((x) => a(x).attr("rel")?.includes("sponsored")),
+       links.toArray().every((x) => { const link=a(x).is("a")?a(x):a(x).find("a"); return link.length===1 && link.attr("rel")?.includes("sponsored") && link.attr("rel")?.includes("noopener") && (!a(x).is("[data-vc-ad]") || link.attr("rel")?.includes("nofollow")); }),
        "じゃらん・楽天トラベルの広告リンクとPR属性を維持する");
     ok(links.map((_, x) => a(x).attr("data-goatcounter-click")).get().sort().join() ===
        "banner-jalan/広島県,banner-rakuten/広島県",
@@ -182,12 +182,13 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     const links = ev(".d-side .staylinks a");
     ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 0, "開催ページ: サイドの宿カードは、バナーではなく、日付・地域つきの2つの検索リンクにする");
     const [jl, rk] = links.map((_, x) => ev(x).attr("href")).get();
-    ok(jl.startsWith("https://ck.jp.ap.valuecommerce.com/servlet/referral?") && (new URL(jl).searchParams.get("vc_url") ?? "").includes("stayYear=2026&stayMonth=11&stayDay=20") && rk.startsWith("https://hb.afl.rakuten.co.jp/hgc/") && new URL(rk).searchParams.get("pc").includes("f_nen1=2026&f_tuki1=11&f_hi1=20"), "じゃらんはバリューコマース、楽天トラベルは楽天アフィリエイトを経由し、開催日の検索をそのまま開く");
-    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && ev(x).text().includes("宿を探す")), "広告リンクの属性(sponsored・noopener)と、分かる文言がある");
-    ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "stay-jalan/t-full,stay-rakuten/t-full", "GoatCounterのクリック名は stay-◯◯/開催ID");
+    ok(jl.startsWith("//ck.jp.ap.valuecommerce.com/servlet/referral?") && (new URL(jl,"https://kagurameguri.jp").searchParams.get("vc_url") ?? "").includes("stayYear=2026&stayMonth=11&stayDay=20") && rk.startsWith("https://hb.afl.rakuten.co.jp/hgc/") && new URL(rk).searchParams.get("pc").includes("f_nen1=2026&f_tuki1=11&f_hi1=20"), "じゃらんはバリューコマース、楽天トラベルは楽天アフィリエイトを経由し、開催日の検索をそのまま開く");
+    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && /宿を(?:じゃらんで)?探す/.test(ev(x).text())), "広告リンクの属性(sponsored・noopener)と、分かる文言がある");
+    ok(links.map((_, x) => (ev(x).attr("data-goatcounter-click") || ev(x).closest("[data-vc-ad]").attr("data-goatcounter-click"))).get().join() === "stay-jalan/t-full,stay-rakuten/t-full", "GoatCounterのクリック名は stay-◯◯/開催ID");
     const csp = cheerio.load(read("dist-test-revenue-ux/weekend.html"))('meta[http-equiv="Content-Security-Policy"]').attr("content");
-    ok(/img-src[^;]*i.imgvc.com/.test(csp) && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
-    ok(!ev("script[src*='valuecommerce'],img[src*='gifbanner'],noscript").toArray().some((x) => /valuecommerce/.test(ev.html(x))), "JavaScript の埋め込みと、見えない計測画像は、使わない");
+    const imageSources=csp.split(";").find(d=>d.trim().startsWith("img-src ")).trim().split(/\s+/).slice(1);
+    ok(imageSources.includes("https:") && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
+    ok(ev("script[src*='valuecommerce']").length===0 && !ev("noscript").toArray().some(x=>/valuecommerce/.test(ev.html(x))) && ev("img[src*='gifbanner'][height='1'][width='0'][border='0']").length===1, "公式非JSタグの計測画像を保持し、外部JSタグは導入しない");
     const wk = cheerio.load(read("dist-test-revenue-ux/weekend.html")), tm = cheerio.load(read("dist-test-revenue-ux/this-month.html"));
     ok(wk(".d-side .trip-band .stay-banner").length === 2 && wk(".trip-band .pr").length >= 1 && wk(".d-top .card").length > 0 && wk(".d-side").prev().hasClass("d-top"), "今週末: 宿のバナー(PR表示つき)は右の列(スマホでは一覧の後)");
     ok(tm(".trip-band .stay-banner").map((_, x) => tm(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/this-month,banner-jalan/this-month", "今月: 宿のバナーのクリックは、ページ名で数える");

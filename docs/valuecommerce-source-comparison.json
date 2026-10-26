@@ -1,0 +1,15 @@
+{
+  "receivedFrom": "Parent recovered native capture; delegated 2026-10-26",
+  "parentReportedOriginalFileSHA256": "5ffa5af7686f57649aa803ea94cf45007dd80b7bfde571ba0ee00bddffc18581",
+  "wholeFileEqualityClaim": false,
+  "comparison": "Five code strings match exactly after decoding delegation transport HTML entities once. CheckedAt/site/program/material metadata match. Fixture is a reorganized representation, not original file bytes.",
+  "codeStringSHA256": [
+    "45000f3e54f9b71ea1a11f77aa097517a8688be248f380e5ac7f818a89de6817",
+    "1fadd25536120664556433ac9dd652834705e5e7d1959499b8622889d6516eef",
+    "3d8623c3b4a2aad8a1f7806c0dee01048fcd9dc25727aa4b36f9575f43e1d108",
+    "7b1d2acc9daa31cbd96c6c3d4968e7aa4f4b1090c629b4b52f32e5fc0ec4779c",
+    "e6ba7d7f03d77bdd034d6c8a83b63045f9aad77c4a0f9d0a70fadcfcb84ceea0"
+  ],
+  "sourceFixture": "tests/fixtures/valuecommerce-issued.json",
+  "currentAccountStatus": "Not reverified; historical authenticated capture only"
+}

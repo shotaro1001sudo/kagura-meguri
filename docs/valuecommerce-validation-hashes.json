@@ -1,0 +1,50 @@
+{
+  "config.json": {
+    "sha256": "0d35b1c0862b93067e56d7cb8c69ae3d5594b89d790b8c1684b56e498c1819f6",
+    "bytes": 1496
+  },
+  "scripts/build.mjs": {
+    "sha256": "5a8a126283540385a320b681648d962525443b83ed4a7069680e1083b1683311",
+    "bytes": 124328
+  },
+  "scripts/lib/valuecommerce.mjs": {
+    "sha256": "98e90dc667952cde0ddb9c0f7c391dd6d20d72cd0a5c9aae7563737173518623",
+    "bytes": 2141
+  },
+  "scripts/lib/stay-banners.mjs": {
+    "sha256": "98876cd83f02477a73fea9df6244822c7ce0a3603cb9cd9806af2d3282c5862e",
+    "bytes": 1502
+  },
+  "scripts/lib/csp.mjs": {
+    "sha256": "69af9300d94d8389b62fd4b7a6ef36af2023dfc1fa9534238df08ed3a01fb34e",
+    "bytes": 6312
+  },
+  "scripts/lib/visitor-planning.mjs": {
+    "sha256": "6bdde197c63ef70615323c0598ffb6387446ffde2d58a9b3cb9b6ed4d9a5bb20",
+    "bytes": 15625
+  },
+  "scripts/client/valuecommerce-consent.js": {
+    "sha256": "82f8027bf66aa84366e2e1a959975c8b8b14d6e5fe11cf9512276f0b483fce2c",
+    "bytes": 2499
+  },
+  "scripts/client/affiliate.js": {
+    "sha256": "6b3688b2189e0be041556a7cc13cae0c82a14731e7641bc6d39e197bea3301a0",
+    "bytes": 5214
+  },
+  "tests/fixtures/valuecommerce-issued.json": {
+    "sha256": "f4b50e8f0d997722a7e73eebcf9347fe257aaf95fc7ea647811d3f63d99b78b3",
+    "bytes": 3257
+  },
+  "tests/valuecommerce-transfer-probe.mjs": {
+    "sha256": "4a7afbed72600d2e5c3aff72f1dc73e78390c9764dfd00c8afc11f78de4e2ce5",
+    "bytes": 8136
+  },
+  "package.json": {
+    "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
+    "bytes": 706
+  },
+  "package-lock.json": {
+    "sha256": "c1074cbc06605e1aaa468fe862791a17eb9b20737f71b5e787307821c9a6df4b",
+    "bytes": 57207
+  }
+}
