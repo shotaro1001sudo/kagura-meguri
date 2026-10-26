@@ -24,12 +24,12 @@ ID を設定すると、プライバシーポリシー・免責事項・運営�
 
 1. https://www.valuecommerce.ne.jp/ にログインし、サイト `https://kagurameguri.jp/` を登録します。サイトID(**sid**、数字)を控えます。
 2. 「広告 → プログラム検索」で「じゃらん」を探し、「★ホテル・宿予約サイト「じゃらんnet」」(プログラムID 2021810)に**提携を申請**します(即時提携。審査なし)。
-3. じゃらんnet の「自由テキスト」の広告で「広告作成」を押し、できたコードの `pid=`(数字)を控えます。これがリンク用の **pid** です(プログラムIDとは別の番号)。
-4. `affiliate.valueCommerceSid` に sid、`affiliate.jalanPid` に pid を入れます。
+3. 地域・日付を指定する宿泊リンクは、通常テキストではなく正式な **MyLink** 素材から発行します。発行タグ全体と、広告主のリンク先・画像使用条件を照合してください。
+4. 確認した sid / MyLink pid を設定します。通常テキストPIDに独自の `vc_url` を付けないでください。
 
-設定済み(2026-10-13): sid `3784232` / pid `892725735`。リンクは `ck.jp.ap.valuecommerce.com/servlet/referral?sid=…&pid=…&vc_url=(じゃらんの検索URL)` の形で、行き先がじゃらんの市町村の宿の検索になることを確認済み。
+2026-10-25 12:50 UTCの本人管理画面確認: sid `3784232`、宿泊MyLink pid `892732997` / ad `2501119` / 名称 `261025_じゃらんnet_MyLink`。旧pid `892725735` はトップページ向け通常テキストで、地域MyLinkには使用しません。安芸高田市（11/3・1泊・大人2名）と高千穂町（日付なし）の発行原本と照合しています。Shift_JISの `%` を含む行き先文字列を `encodeURIComponent` した正式形式を保持します。宿泊素材はテキスト必須・広告主画像不可です。
 
-体験(2026-10-25): じゃらん 遊び・体験予約(プログラムID 2139176、即時提携、予約完了3.3%・利用確認後に成果)と提携。MyLinkで発行した pid `892732911` を `affiliate.jalanActivityPid` に設定。発行コードの1px計測画像は使わない。クリックは GoatCounter の `experience-jalan/<地域コード>`。
+体験は既存MyLink pid `892732911` / program `2139176` / ad `2720182` を維持。広島県・宮崎県の発行原本と照合し、既存の47県URL対応を使用します。宿泊・体験とも原本の `gifbanner`（height=1、width=0、border=0）を省略しません。原本の公開タグと出典は `tests/fixtures/valuecommerce-issued.json` に保存しています。報酬の発生を保証するものではありません。
 
 ## 3. Google AdSense
 
@@ -51,14 +51,19 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
 
 ## 宿の画像バナー(楽天トラベル・じゃらんnet)
 
-開催ページ(2026-10-25から): バナーをやめ、会場の市区町村・開催日の1泊・大人2名の検索へ直接つなぐ文字リンクにしました。じゃらんはバリューコマースのじゃらんnet(pid `892725735`、MyLinkの `vc_url`)、楽天トラベルは楽天アフィリエイト(`hb.afl.rakuten.co.jp/hgc/<アフィリエイトID>/`)を経由します。どちらも転送後に同じ検索結果が開くことを確認済み。クリックは `stay-jalan/<開催ID>`・`stay-rakuten/<開催ID>`。
+開催ページ(2026-10-25から): バナーをやめ、会場の市区町村・開催日の1泊・大人2名の検索へ直接つなぐ文字リンクにしました。じゃらんはバリューコマースのじゃらんnet(pid `892732997`、正式MyLinkの `vc_url`)、楽天トラベルは楽天アフィリエイト(`hb.afl.rakuten.co.jp/hgc/<アフィリエイトID>/`)を経由します。どちらも転送後に同じ検索結果が開くことを確認済み。クリックは `stay-jalan/<開催ID>`・`stay-rakuten/<開催ID>`。
 
-定期公演のページと、県・種類のページの宿の帯に、画像バナーを出します。発行コードのリンクと画像の組は `scripts/lib/stay-banners.mjs` に、そのまま登録しています(リンクは1文字も変えない)。
+県・種類・今週末・今月の宿の帯に、画像バナーを出します。定期公演ページは地域指定のテキストリンクです。楽天は `scripts/lib/stay-banners.mjs` の既存発行ペアを維持します。
 
-- 出すのは、楽天・バリューコマースの提携IDが設定されているときだけです(ID が空なら、バナーも出ません)。
-- じゃらんの発行コードは JavaScript だったため、その出力(リンクと画像)を静的に書き直しています。見えない計測画像(1px)は、使いません。
-- クリックは、GoatCounter で `banner-rakuten/<ID>`・`banner-jalan/<ID>` として見られます。GA4(同意した人だけ)は、配置 `stay_banner` で、クリックと表示を送ります。
-- バナーを差し替えるときは、新しい発行コードの URL と画像を `STAY_BANNERS` に入れ替えてください。
+- じゃらんバナーは既存pid `892732859` の**公式非JS原本**を使用します。独自の `va`、直接JPEG、JS出力の手動再構築は使用しません。
+- 原本内部はhref・画像URL・寸法・borderを保持し、許容されるrel/target/altのみ補います。広告の配置・GA4/GoatCounter情報は外側要素に置きます。GoatCounter titleは固定の既存クリック名とし、原本HTMLを送らないようにします。
+- B案（ローカル検証中・未公開）: 全VC枠は不活性なtemplate内に保持。CookiebotのConsentReady/OnLoad/Accept/Decline通知後にAPI状態を読み、未選択（hasResponse=false / marketing=false / method=null）または許可（hasResponse=true / marketing=true / method=explicit）だけ原本を挿入します。保存済みmarketing=falseの拒否は旧形式も含め停止。API未準備・読取例外・不整合・判定不能な旧許可はunknownとして非表示。Cookiebotの分類・auto設定は変更しません。
+- 同一文書で各枠の原本を生成するのは1回まで。拒否時はDOMから外し、再許可時は同じ要素を再利用してsrcの再設定を避けます。離脱時は状態を不明に戻して広告を外し、履歴復帰時はCMPから新たな状態通知があるまで停止します。各原本に付随する画像は省略せず、複数枠の同一URLが実通信で統合されるかはブラウザ/キャッシュに依存します。
+- これは採用した実装方針であり、全地域・全利用者に同意ゲートが法的に必須と判定したものではありません。通常外部リンクと異なり、画像srcは表示時の外部通信を伴います。
+- 現行本番の既存CSP `img-src https:` を使用し、許可を広げません。AdSense無効（厳格CSP）またはCookiebot未設定時はVC枠を生成しません。新たにホストを許可する変更は別判断です。
+- 上部広告表示は `collectNotes()` の末尾移動対象外。GA4は引き続き統計同意・自己除外ゲートが独立して必要で、イベント名・公開ID・項目は維持します。
+
+参照: https://help.valuecommerce.ne.jp/aff/ad/adlink/09/ 、https://help.valuecommerce.ne.jp/aff/ad/adlink/13/ 、https://www.valuecommerce.ne.jp/stepup/guide/tool/mylink/
 
 ## 本・グッズ(神楽の種類・歴史のページ)と、ふるさと納税(県のページ)
 
@@ -86,4 +91,10 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
 
 共通の offerEligibility は未承認、revoked、期限切れ、90日超、URLなしを除外。撤回時は approved:false / revoked:true を登録してください。期限監査には visitor-planning と more-offers の両データを含め、未一致は learn_unmatched / furusato_unmatched で集約。週次レポートとsummaryの公演明細は50件までで、件数は全件です。掲載がない場合は広告の登録/再承認を行い、地域を拡大して代替しないでください。
 
-既存VCの発行コードからの静的化/1px省略は別監査の未解決事項です。[公式FAQ](https://help.valuecommerce.ne.jp/aff/ad/adlink/09/)と発行原本の照合が必要で、この変更はVCコードを再構築・拡張しません。全広告の成果保証や承認完了を意味しません。楽天ふるさと納税4件は所有者側の2026-10-25 12:12 UTC監査でhref/image一致と当時3%を確認（率の継続は保証しない）。一般楽天IDの直接照合は新規規約同意待ちで今回行いません。
+旧実装のVC静的化/1px省略は、本節より上の正式原本・同意制御の修正対象です。[公式FAQ](https://help.valuecommerce.ne.jp/aff/ad/adlink/09/)と発行原本の照合が必要で、この変更はVCコードを再構築・拡張しません。全広告の成果保証や承認完了を意味しません。楽天ふるさと納税4件は所有者側の2026-10-25 12:12 UTC監査でhref/image一致と当時3%を確認（率の継続は保証しない）。一般楽天IDの直接照合は新規規約同意待ちで今回行いません。
+
+### B案の検証境界（未公開）
+
+`node tests/valuecommerce-browser.mjs` はローカルChromiumで全ての非localhost要求をCDPで捕捉・失敗させ、DNSもlocalhost以外を無効化します。正式タグの要求先と、状態別のDOM・要求件数を検査します。Cookiebotは状態スタブであり、実Cookiebotのauto分類や実VCサーバーのCookie・転送・取得情報は確認しません。実分類が表示を遮断してもignore属性/necessary化/auto無効化で回避せず、公開前に報告して止めます。
+
+privacyの送信先表・本文は、画像表示時の通信（タグにサイトID/広告IDを含む）と、クリック先での紹介元記録を区別します。VCの一般方針は広告表示/クリック履歴やCookie等の利用を説明しますが、gifbannerで全項目・IP・完全URL・Cookieが必ず送られると実証したものではありません。法的適法性や報酬は保証しません。

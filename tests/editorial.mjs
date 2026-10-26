@@ -4,7 +4,7 @@
 //  - 検索結果に出る文の文法、データの正確さ(季節だけの公演日)
 import { readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import * as cheerio from "cheerio";
+import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { regularOn } from "../scripts/lib/dates.mjs";
 import { REGIONS } from "../scripts/lib/util.mjs";
 
@@ -119,11 +119,11 @@ export function editorialTests({ ok, section, OUT, build }) {
     const $ = page(`events/${e.id}.html`, D), stay = $(".stay");
     ok(stay.length === 1 && stay.find("h2").text() === "会場周辺の宿" && !/夜の公演|夜の観覧後|終演後の帰り道/.test(stay.text() + $(".page-notes").text()), `${e.id}: 宿泊枠に時間帯の断定をしない`);
     ok(stay.find(".stay-cond").text().includes("11/3泊大人2名") && $(".page-notes").text().includes("人数・宿泊日はリンク先で変更できます。"), `${e.id}: 表示する宿泊日・人数の検索条件を維持`);
-    const anchors = stay.find("a.stay-btn");
+    const anchors = stay.find("a.stay-btn,.stay-btn>a");
     ok(anchors.length === 2 && anchors.toArray().every(a => $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank"), `${e.id}: 既存広告リンク属性を維持`);
-    const jalan = new URL(anchors.eq(0).attr("href")), dest = new URL(jalan.searchParams.get("vc_url"));
+    const jalan = new URL(anchors.eq(0).attr("href"), "https://kagurameguri.jp"), dest = new URL(jalan.searchParams.get("vc_url"));
     const rakuten = new URL(anchors.eq(1).attr("href")), hotel = new URL(rakuten.searchParams.get("pc"));
-    ok(jalan.searchParams.get("sid") === "1234567" && jalan.searchParams.get("pid") === "7654321" && dest.searchParams.get("stayDay") === "3" && dest.searchParams.get("adultNum") === "2" && hotel.searchParams.get("f_hi1") === "3" && hotel.searchParams.get("f_hi2") === "4" && hotel.searchParams.get("f_query") === e.city.replace(/^.*郡/, ""), `${e.id}: 既存ID・開催初日の1泊・人数・市町村を維持`);
+    ok(jalan.searchParams.get("sid") === "3784232" && jalan.searchParams.get("pid") === "892732997" && dest.searchParams.get("stayDay") === "3" && dest.searchParams.get("adultNum") === "2" && hotel.searchParams.get("f_hi1") === "3" && hotel.searchParams.get("f_hi2") === "4" && hotel.searchParams.get("f_query") === e.city.replace(/^.*郡/, ""), `${e.id}: 既存ID・開催初日の1泊・人数・市町村を維持`);
   }
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 

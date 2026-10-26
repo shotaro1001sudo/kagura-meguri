@@ -1,7 +1,8 @@
+import * as rawCheerio from "cheerio";
 import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import * as cheerio from 'cheerio';
+import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import {JSDOM} from 'jsdom';
 import {CARSHARE_BANNER,RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
 import {PREFECTURES} from '../scripts/lib/util.mjs';
@@ -35,19 +36,19 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(experiencesFor(context,today).length===2&&experiencesFor({prefecture:'大分県',city:'高千穂町'},today).length===0,'公式確認済みの2体験を当該地域だけへ接続');
   ok(experiencesFor(context,'2027-02-01').length===0,'90日を超えた未再確認の体験を出し続けない');
   ok(experienceSection(context,today).includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止と移動の未確認を明示し、間に合うと断言しない');
-  const national=cheerio.load(experienceDirectory({sid:'1111111',pid:'4444444'}));
+  const national=cheerio.load(experienceDirectory({sid:'3784232',pid:'892732911',allowed:true}));
   ok(experienceRegions.length===47&&new Set(experienceRegions.map(x=>x.url)).size===47&&PREFECTURES.every(p=>experienceRegions.some(x=>x.prefecture===p)),'全国47都道府県の実際の検索先が揃い、県とURLの重複がない');
   ok(national('.experience-areas a').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
   for(const prefecture of PREFECTURES){
-    const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today,{sid:'1111111',pid:'4444444'}));
+    const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today,{sid:'3784232',pid:'892732911',allowed:true}));
     const expected=experienceRegions.find(x=>x.prefecture===prefecture);
-    ok(new URL(page('#nearby-experiences a').first().attr('href')).searchParams.get('vc_url')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
+    ok(new URL(page('#nearby-experiences a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
     ok(planningLinks({prefecture},today).includes('href="#nearby-experiences"'),`${prefecture}: 公演から当該県の案内へ進める`);
   }
-  const aff={sid:'1111111',pid:'4444444'},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
-  ok(affLink.attr('href')==='https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=1111111&pid=4444444&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affLink.text().includes('（広告）')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
+  const aff={sid:'3784232',pid:'892732911',allowed:true},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
+  ok(affLink.attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
   const affNational=cheerio.load(experienceDirectory(aff));
-  ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=4444444')),'全国一覧の47都道府県すべてに体験用pidが付く');
+  ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=892732911')),'全国一覧の47都道府県すべてに体験用pidが付く');
   ok(!experienceSection({prefecture:"高知県"},today,{sid:"1111111",pid:""}).includes("www.jalan.net"),"pid未設定なら通常の体験検索を出さない");
   ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
   ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
@@ -132,10 +133,10 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   section('楽天の車移動・じゃらん体験: 実際の生成リンクのGA4回帰');
   const directoryHtml=experienceDirectory(aff);
   const directoryPage=cheerio.load(directoryHtml);
-  const areaIds=directoryPage('a[data-affiliate-id]').toArray().map(a=>directoryPage(a).attr('data-affiliate-id'));
+  const areaIds=directoryPage('[data-affiliate-id]').toArray().map(a=>directoryPage(a).attr('data-affiliate-id'));
   ok(areaIds.length===47&&new Set(areaIds).size===47&&areaIds.every(id=>/^experience-pref-\d{6}$/.test(id)), '体験IDは既存の公開地域コードから作り、47県で重複しない');
   const nearbyHtml=experienceSection({prefecture:'高知県'},today,aff);
-  ok(cheerio.load(nearbyHtml)('a[data-affiliate-id]').attr('data-affiliate-id')===directoryPage('a[aria-label^="高知県"]').attr('data-affiliate-id'),'同じ地域のIDは全国入口と公演内で安定している');
+  ok(cheerio.load(nearbyHtml)('[data-affiliate-id]').attr('data-affiliate-id')===directoryPage('[data-affiliate-id=experience-pref-390000]').attr('data-affiliate-id'),'同じ地域のIDは全国入口と公演内で安定している');
   const rendered=[
     directoryHtml,nearbyHtml,
     ...['guide_rental','event_rental','regular_rental'].map(placement=>rentalSearch(supplied,{guide:true},today,placement)),
@@ -149,9 +150,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     win.gtag=(...args)=>events.push(args);win.kaguraGa4Allowed=false;
     win.document.addEventListener('click',e=>e.preventDefault()); // 外部遷移・実広告クリックを発生させない
     win.eval(readFileSync('scripts/client/affiliate.js','utf8'));
-    const links=[...win.document.querySelectorAll('a[data-affiliate-category]')];
+    win.Cookiebot={hasResponse:true,consent:{marketing:true,method:'explicit'}};
+    win.eval(readFileSync('scripts/client/valuecommerce-consent.js','utf8'));
+    win.dispatchEvent(new win.Event('CookiebotOnConsentReady'));
+    const links=[...win.document.querySelectorAll('a[data-affiliate-category],[data-vc-ad][data-affiliate-category]')];
+    const click=a=>(a.matches('[data-vc-ad]')?a.querySelector(':scope > a'):a).click();
     const show=(ratio=1)=>emit(links.map(target=>({target,isIntersecting:true,intersectionRatio:ratio})));
-    show();links.forEach(a=>a.click());ok(events.length===0,'同意前・自己除外ゲートfalseでは新しい広告も送らない');
+    show();links.forEach(click);ok(events.length===0,'同意前・自己除外ゲートfalseでは新しい広告も送らない');
     win.kaguraGa4Allowed=true;observed.length=0;win.dispatchEvent(new win.Event('kagura:analytics-ready'));
     ok(links.every(a=>observed.includes(a)),'同意準備完了時に可視状態を再観測する');
     show(.49);ok(events.length===0,'可視50%未満は送信しない');
@@ -159,21 +164,21 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     ok(events.length===0,'非表示タブでは表示数を送らない');
     Object.defineProperty(win.document,'visibilityState',{value:'visible',configurable:true});
     win.document.dispatchEvent(new win.Event('visibilitychange'));show(.5);show();
-    links.forEach(a=>{(a.querySelector('span')||a).click();a.click();});
+    links.forEach(a=>{click(a);click(a);});
     const views=events.filter(e=>e[1]==='affiliate_view'),clicks=events.filter(e=>e[1]==='affiliate_click');
     ok(views.length===(expectAllowed?links.length:0)&&clicks.length===(expectAllowed?links.length*2:0),'許可リンクは要素ごと表示1回・実操作ごとクリック1回、未許可は両方0回');
     if(expectAllowed)ok(views.every(([type,name,p],i)=>type==='event'&&p.affiliate_partner===links[i].dataset.affiliatePartner&&p.affiliate_content_id===links[i].dataset.affiliateId&&p.affiliate_placement===links[i].dataset.affiliatePlacement&&p.affiliate_category===links[i].dataset.affiliateCategory&&p.affiliate_page_path==='/experiences.html'&&Object.keys(p).length===5)&&!JSON.stringify(events).includes('secret'),'既存の5項目だけを送り、URLクエリや新しい識別情報を含めない');
-    const count=events.length;win.kaguraGa4Allowed=false;show();links.forEach(a=>a.click());
+    const count=events.length;win.kaguraGa4Allowed=false;show();links.forEach(click);
     win.kaguraGa4Allowed=true;win.dispatchEvent(new win.Event('kagura:analytics-ready'));show();
     ok(events.length===count,'同意撤回中は送らず、再同意しても表示を二重計測しない');
-    win.gtag=undefined;links.forEach(a=>a.click());show();ok(events.length===count,'GA4未読込時も送信しない');
+    win.gtag=undefined;links.forEach(click);show();ok(events.length===count,'GA4未読込時も送信しない');
     win.close();
   }
   exercise(rendered,true);
-  const sample=cheerio.load(nearbyHtml)('a[data-affiliate-category]').first().toString();
+  const sample=rawCheerio.load(nearbyHtml)('[data-vc-ad]').first().toString();
   const rejected=[
     ['data-affiliate-partner','unknown-provider'],['data-affiliate-placement','unknown-placement'],
     ['data-affiliate-category','unknown-category'],['data-affiliate-id',''],['data-affiliate-id','private@example.test'],['rel','noopener'],
-  ].map(([key,value])=>{const p=cheerio.load(sample);p('a').attr(key,value);return p('a').toString();}).join('');
+  ].map(([key,value])=>{const p=rawCheerio.load(sample);p(key==='rel'?'a':'[data-vc-ad]').attr(key,value);return p('[data-vc-ad]').toString();}).join('');
   exercise(rejected,false);
 }

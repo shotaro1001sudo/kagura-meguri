@@ -1,0 +1,126 @@
+{
+  "config.json": {
+    "sha256": "0d35b1c0862b93067e56d7cb8c69ae3d5594b89d790b8c1684b56e498c1819f6",
+    "bytes": 1496
+  },
+  "scripts/build.mjs": {
+    "sha256": "087eaa0b9ac477ecde4ca33a4a3dccdce315c69c950a1bbcb392ceccbb326658",
+    "bytes": 124800
+  },
+  "scripts/lib/valuecommerce.mjs": {
+    "sha256": "98e90dc667952cde0ddb9c0f7c391dd6d20d72cd0a5c9aae7563737173518623",
+    "bytes": 2141
+  },
+  "scripts/lib/stay-banners.mjs": {
+    "sha256": "98876cd83f02477a73fea9df6244822c7ce0a3603cb9cd9806af2d3282c5862e",
+    "bytes": 1502
+  },
+  "scripts/lib/csp.mjs": {
+    "sha256": "69af9300d94d8389b62fd4b7a6ef36af2023dfc1fa9534238df08ed3a01fb34e",
+    "bytes": 6312
+  },
+  "scripts/lib/visitor-planning.mjs": {
+    "sha256": "6bdde197c63ef70615323c0598ffb6387446ffde2d58a9b3cb9b6ed4d9a5bb20",
+    "bytes": 15625
+  },
+  "scripts/client/valuecommerce-consent.js": {
+    "sha256": "5f0d17587d8fe0e209f87ea1cc9e4b6c627400642b210f421f6f62a62f9d1af9",
+    "bytes": 2888
+  },
+  "scripts/client/affiliate.js": {
+    "sha256": "6b3688b2189e0be041556a7cc13cae0c82a14731e7641bc6d39e197bea3301a0",
+    "bytes": 5214
+  },
+  "tests/fixtures/valuecommerce-issued.json": {
+    "sha256": "f4b50e8f0d997722a7e73eebcf9347fe257aaf95fc7ea647811d3f63d99b78b3",
+    "bytes": 3257
+  },
+  "tests/valuecommerce-transfer-probe.mjs": {
+    "sha256": "6c95402d0f1a7aeaa53d1d9875697c9e9e40260f92a1f4ae6f2782b73d4a6a45",
+    "bytes": 28216
+  },
+  "package.json": {
+    "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
+    "bytes": 706
+  },
+  "package-lock.json": {
+    "sha256": "c1074cbc06605e1aaa468fe862791a17eb9b20737f71b5e787307821c9a6df4b",
+    "bytes": 57207
+  },
+  "tests/fixtures/vc-generated-event.html": {
+    "sha256": "70d7b1fe8e5c25c60f1e113846df209322e0c443be5a462829763615c48622e2",
+    "bytes": 147905
+  },
+  "tests/fixtures/vc-observe.js": {
+    "sha256": "573b5a419403b418dfdae4ec0d0b1cd0b1c132c13c755ddad6a07cd6c3974d4d",
+    "bytes": 1918
+  },
+  "tests/helpers/bounded-cdp.mjs": {
+    "sha256": "3de4f0947e95334e3b6828742eef4d6a34d1f39c4dcb01b8a246bd7a40f802a2",
+    "bytes": 1125
+  },
+  "tests/bounded-cdp-test.mjs": {
+    "sha256": "761b1b984ae58f3bf0ae44c1402e8b32c17988387a694e94850c071e0cffe4e2",
+    "bytes": 776
+  },
+  "scripts/client/valuecommerce-ready.js": {
+    "sha256": "c9e229e5ea99f32ead1ceb404577521322d87943f61dae0345c7b1a2bd1dcc5d",
+    "bytes": 529
+  },
+  "tests/valuecommerce-real-cmp.mjs": {
+    "sha256": "8cc7b397e66011269ded978e877287725d60369b86d6f2aaa21f9cc44dddeb42",
+    "bytes": 6429
+  },
+  "tests/helpers/vc-sdk-assertions.mjs": {
+    "sha256": "a89dde1cd82a96dcf5e8500a78c7e9ed32d4bb12a23c1bff448bbabb855e64f2",
+    "bytes": 1372
+  },
+  "tests/vc-sdk-harness-test.mjs": {
+    "sha256": "b8a0a26987ebc378d1482c547e128c7abd7907dfc9232be6760c10787ffa75ef",
+    "bytes": 3354
+  },
+  "tests/helpers/cookie-metadata.mjs": {
+    "sha256": "576e86ccc653665207b423a792914e07c07e8d4627215bd2e75e5e2090c2480a",
+    "bytes": 279
+  },
+  "tests/cookie-metadata-test.mjs": {
+    "sha256": "b9384ed8530d81c4038ce9be41e8bdd78dde3127caf2493e825a42c816e419a4",
+    "bytes": 615
+  },
+  "tests/helpers/cmp-request-policy.mjs": {
+    "sha256": "df7fa34222a5f9d05183e20f8b978dbba3acb6165cbeca1585c84e59f7737e4b",
+    "bytes": 983
+  },
+  "tests/cmp-request-policy-test.mjs": {
+    "sha256": "590dd070bf7115831c2d0a89482c7da38266abbcb4ba1366eb5f2657984fb999",
+    "bytes": 1702
+  },
+  "scripts/client/cookie-controls.js": {
+    "sha256": "61c92c7e0dead7a36fd3b56a020b2060d1dc3ee4b9535c9a613b81472def3f3a",
+    "bytes": 2673
+  },
+  "scripts/lib/cookie-controls.mjs": {
+    "sha256": "fe1768d62fddae765b71a96ca45c917e7e51c02c4f7fdca5923956e0e867efbe",
+    "bytes": 1347
+  },
+  "scripts/style.css": {
+    "sha256": "424435b12b22fa98fd2ee90037ea760c711298a636e1b83540646a82a86a7b88",
+    "bytes": 76257
+  },
+  "scripts/lib/policy.mjs": {
+    "sha256": "eb67c7ae2bff085ab900e5f27269c0de0db3cef1e3af1c5bcf45a047d876c93f",
+    "bytes": 38279
+  },
+  "tests/cookie-controls-test.mjs": {
+    "sha256": "c4547d0ac6995ceeb384c0e9f3f8622e04ac4437e03ba5342143009154bf0e52",
+    "bytes": 3405
+  },
+  "tests/cookie-controls-browser.mjs": {
+    "sha256": "0a88900bc99c31733caae44a916faa3f0046c1a1588cf61a2b66d17c735ac91a",
+    "bytes": 9152
+  },
+  "tests/helpers/button-geometry.mjs": {
+    "sha256": "e0bfded1dffca80f316ce151905262279dc5602dab7e4600c445a37239fabb70",
+    "bytes": 2186
+  }
+}

@@ -1,3 +1,8 @@
+import './cookie-controls-test.mjs';
+import './cmp-request-policy-test.mjs';
+import './cookie-metadata-test.mjs';
+import './vc-sdk-harness-test.mjs';
+import './bounded-cdp-test.mjs';
 import { upcomingSummaryTests } from './upcoming-summary.mjs';
 import { reservationTests } from './reservation.mjs';
 // 自動テスト: node tests/run.mjs   (npm test)
@@ -7,6 +12,7 @@ import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs
 import { join, relative } from "node:path";
 import * as cheerio from "cheerio";
 import { palettes, ratio, PAIRS } from "./contrast.mjs";
+import { valuecommerceIssuedTests } from "./valuecommerce-issued.mjs";
 import { extraTests } from "./extra.mjs";
 import { seoTests } from "./seo.mjs";
 import { motionTests } from "./motion.mjs";
@@ -42,7 +48,7 @@ import { visitorPlanningTests } from './visitor-planning.mjs';
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -50,6 +56,7 @@ const ok = (cond, name, detail = "") => {
   if (cond) pass++; else { fail++; failures.push(`${name}${detail ? " — " + detail : ""}`); }
 };
 const section = (s) => console.log(`\n■ ${s}`);
+valuecommerceIssuedTests({ok,section});
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const read = (p) => readFileSync(p, "utf8");

@@ -6,7 +6,7 @@
 import { STAY_BANNERS } from "../scripts/lib/stay-banners.mjs";
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import * as cheerio from "cheerio";
+import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { cspFor } from "../scripts/lib/csp.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
@@ -111,13 +111,13 @@ export async function policyTests({ ok, section, OUT, build }) {
   }
   { // 本番の設定: 楽天アフィリエイトとバリューコマース(じゃらんnet)が有効。宿の2つのリンクが、どちらも報酬つき
     const prodCfg = JSON.parse(read("config.json").replace(/^﻿/, ""));
-    const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_ADS_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter }); const p = text(join(d, "privacy.html"));
+    const d = sub("prod-aff", { TEST_AFF_OFF: "", TEST_ADS_OFF: "", TEST_GOATCOUNTER: prodCfg.goatcounter, TEST_CB:prodCfg.cookiebotId }); const p = text(join(d, "privacy.html"));
     const $ = cheerio.load(read(join(d, "events/t-full.html")));
     const stays = $(".d-side .staylinks a").map((_, x) => $(x).attr("href")).get();
-    ok(stays.length === 2 && stays[0].startsWith(`https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${prodCfg.affiliate.valueCommerceSid}&pid=${prodCfg.affiliate.jalanPid}&vc_url=${encodeURIComponent("https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=")}`) && stays[1].startsWith(`https://hb.afl.rakuten.co.jp/hgc/${prodCfg.affiliate.rakutenAffiliateId}/?pc=${encodeURIComponent("https://kw.travel.rakuten.co.jp/keyword/Search.do?")}`) && $(".d-side .staylinks a").toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").length === 1, "本番: 宿は、じゃらん(バリューコマース)・楽天トラベル(楽天アフィリエイト)経由で、会場の市区町村・開催日の検索へ直接つなぐ(sponsored・PR表記つき)");
+    ok(stays.length === 2 && stays[0].startsWith(`//ck.jp.ap.valuecommerce.com/servlet/referral?sid=${prodCfg.affiliate.valueCommerceSid}&pid=${prodCfg.affiliate.jalanPid}&vc_url=${encodeURIComponent("https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=")}`) && stays[1].startsWith(`https://hb.afl.rakuten.co.jp/hgc/${prodCfg.affiliate.rakutenAffiliateId}/?pc=${encodeURIComponent("https://kw.travel.rakuten.co.jp/keyword/Search.do?")}`) && $(".d-side .staylinks a").toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").length === 1, "本番: 宿は、じゃらん(バリューコマース)・楽天トラベル(楽天アフィリエイト)経由で、会場の市区町村・開催日の検索へ直接つなぐ(sponsored・PR表記つき)");
     ok($(".d-side .stay-banner").length === 0, "本番: 開催ページの宿は、宿のトップへ飛ぶだけのバナーを使わない");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
-    ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','i.imgvc.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');
+    ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','ad.jp.ap.valuecommerce.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');
     ok(p.includes('サービス提供会社と画像配信先のホスト名を区別') && !p.includes('これらの事業者へ次の情報が直接送られます'), '外部送信: 提供会社を画像ホストの運営主体と同一視しない');
     ok(p.includes('異なるタイミングで発生します') && !p.includes('成果計測は別の処理です'), '外部送信: 通信のタイミングを説明し内部処理を断定しない');
     ok(p.includes('当サイト側：広告画像の取得・表示') && p.includes('サービス提供会社が公表する利用目的') && p.includes('個々の画像要求でどの情報が何に利用されるかを確認したものでもありません'), '外部送信: 当サイトの目的と提供会社の一般方針・未確認事項を区別');
@@ -134,17 +134,17 @@ export async function policyTests({ ok, section, OUT, build }) {
     const bn = $(".d-side .staylinks a");
   // 会場近くの宿: 開催日の1泊・大人2名、会場の市区町村(郡は除く)で探す。じゃらんは Shift_JIS、楽天は charset=utf-8
   const [jlRaw, rkRaw] = $(".staylinks a").map((_, x) => $(x).attr("href")).get();
-  const jl0=new URL(jlRaw).searchParams.get("vc_url"),rk0=new URL(rkRaw).searchParams.get("pc");
+  const jl0=new URL(jlRaw,"https://kagurameguri.jp").searchParams.get("vc_url"),rk0=new URL(rkRaw).searchParams.get("pc");
   ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);
   ok(rk0 === "https://kw.travel.rakuten.co.jp/keyword/Search.do?charset=utf-8&f_query=%E9%AB%98%E5%8D%83%E7%A9%82%E7%94%BA&f_nen1=2026&f_tuki1=11&f_hi1=20&f_nen2=2026&f_tuki2=11&f_hi2=21&f_otona_su=2&f_heya_su=1", "楽天トラベル: 「高千穂町」・開催日から翌日まで・大人2名で検索する", rk0);
-  ok($("main").text().includes("2026年11月20日泊") && $(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test($(x).attr("data-goatcounter-click"))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
+  ok($("main").text().includes("2026年11月20日泊") && $(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test(($(x).attr("data-goatcounter-click") || $(x).closest("[data-vc-ad]").attr("data-goatcounter-click")))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
     ok(bn.length === 2 && bn.toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").text() === "PR" && $(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、宿のリンクに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
     { // IDが未設定のとき: 文字のボタン(報酬なしの、ふつうの検索リンク)で案内する
       const q = cheerio.load(read(join(sub("plainstay", {}), "events/t-full.html")));
       const [jl, rk] = q(".staylinks a").map((_, x) => q(x).attr("href")).get();
       ok(q(".stay,.staylinks,.stay-banner").length===0,"未設定の宿は通常リンクで代替しない");
     }
-    ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && p.includes("hbb.afl.rakuten.co.jp") && p.includes("i.imgvc.com"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目と画像配信先が現れる");
+    ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && p.includes("hbb.afl.rakuten.co.jp") && p.includes("ad.jp.ap.valuecommerce.com"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目と画像配信先が現れる");
   }
   { // アクセス解析(GoatCounter)
     const d = sub("gc", { TEST_GOATCOUNTER: "kagura-test" }); const p = text(join(d, "privacy.html"));

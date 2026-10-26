@@ -2,8 +2,13 @@
 // Existing data-goatcounter-click attributes are reused without changing GoatCounter.
 document.addEventListener("click", (event) => {
   const target = event.target;
-  const link = target instanceof Element ? target.closest("a[data-goatcounter-click]") : null;
+  let link = target instanceof Element ? target.closest("a[data-goatcounter-click]") : null;
+  if (!link && target instanceof Element) {
+    const candidate = target.closest("a");
+    if (candidate?.closest("[data-vc-ad]")) link = candidate;
+  }
   if (!link || !link.relList.contains("sponsored")) return;
+  link = link.closest?.("[data-vc-ad]") || link;
 
   // The bootstrap enables GA4 only after explicit statistics consent.
   // Do not trust Cookiebot's potentially automatic/implied consent here.
@@ -38,7 +43,8 @@ document.addEventListener("click", (event) => {
     if(window.kaguraGa4Allowed!==true||typeof window.gtag!=='function'||document.visibilityState!=='visible')return;
     for(const entry of entries) {
       const link=entry.target;
-      if(!entry.isIntersecting||entry.intersectionRatio<0.5||sent.has(link)||!link.relList.contains('sponsored'))continue;
+      const source=link.matches?.('[data-vc-ad]')?link.querySelector(':scope > a'):link;
+      if(!source||!entry.isIntersecting||entry.intersectionRatio<0.5||sent.has(link)||!source.relList.contains('sponsored'))continue;
       const bm=/^banner-(jalan|rakuten)\/(.+)$/.exec(link.getAttribute('data-goatcounter-click')||'');
       if(bm&&link.hasAttribute('data-banner-partner')) {
         window.gtag('event','affiliate_view',{affiliate_partner:bm[1],affiliate_placement:'stay_banner',affiliate_content_id:bm[2],affiliate_page_path:window.location.pathname});
@@ -50,8 +56,9 @@ document.addEventListener("click", (event) => {
       sent.add(link);observer.unobserve(link);
     }
   },{threshold:0.5});
-  function observe(){for(const link of document.querySelectorAll('a[data-affiliate-category],a[data-banner-partner]'))if(!sent.has(link)){observer.unobserve(link);observer.observe(link);}}
+  function observe(){for(const link of document.querySelectorAll('a[data-affiliate-category],a[data-banner-partner],[data-vc-ad][data-affiliate-category],[data-vc-ad][data-banner-partner]'))if(!sent.has(link)){observer.unobserve(link);observer.observe(link);}}
   window.addEventListener('kagura:analytics-ready',observe);
+  window.addEventListener('kagura:ads-ready',observe);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')observe();});
   observe();
 })();

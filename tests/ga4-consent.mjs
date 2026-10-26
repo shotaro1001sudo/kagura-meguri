@@ -57,13 +57,19 @@ export function ga4ConsentTests({ ok, section, build }) {
         path + ": 同意ゲートを埋め込む");
       ok($('script[src*="googletagmanager.com/gtag/js"]').length === 0,
         path + ": 初期HTMLはGA4外部タグを読まない");
+      ok($('#cookie-reject-optional[type="button"]').length===1,path+': 明示拒否ボタンが1つ');
+      ok(html.indexOf('id="cookie-controls"')<html.indexOf('<main id="main">')&&$('.cookie-settings-link a[href="#cookie-controls"]').length===1,path+': 拒否操作は下部バナーから離れた通常フロー、末尾からリンク');
+      ok($('#cookie-reject-status[role="status"][aria-live="polite"]').length===1,path+': 拒否操作の状態読み上げ');
+      ok($('script').filter((_,n)=>$(n).text().trim()===readFileSync('scripts/client/cookie-controls.js','utf8').trim()).length===1,path+': 拒否操作コードが1回');
       const bot = $("head > script#Cookiebot");
       ok(bot.length === 1 && bot.attr("data-cbid") === "test-consent-id",
         path + ": 正しいCBIDを持つCookiebotが1回だけ設置される");
       ok(bot.attr("data-blockingmode") === "auto" && bot.attr("async") === undefined,
         path + ": 自動ブロック、非asyncで初期化する");
-      ok($("head script").first().attr("id") === "Cookiebot",
-        path + ": Cookiebotはhead内の最初のスクリプト");
+      const first = $("head script").first();
+      const listener = readFileSync("scripts/client/valuecommerce-ready.js", "utf8").trim();
+      ok((first.attr("id") === "Cookiebot" || (first.text().trim() === listener && first.nextAll("script").first().attr("id") === "Cookiebot")) && $("head script[src]").first().attr("id") === "Cookiebot",
+        path + ": CMP前は通信/描画しない正確なVC監視コードのみ、Cookiebotは最初の外部script");
       ok(html.indexOf('id="Cookiebot"') < html.indexOf('data-ga4-id="G-TEST123456"'),
         path + ": Cookiebotの後にGA4同意制御を初期化する");
       ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('id="Cookiebot"'),

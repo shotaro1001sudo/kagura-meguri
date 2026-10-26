@@ -1,3 +1,5 @@
+import { VC } from "./valuecommerce.mjs";
+const vcActive = cfg => !!(cfg?.adsense?.client && cfg?.cookiebotId && cfg?.affiliate?.valueCommerceSid===VC.sid && (cfg?.affiliate?.jalanPid===VC.stay || cfg?.affiliate?.jalanActivityPid===VC.activity));
 // プライバシーポリシー・免責事項の本文。
 // 文面は、設定(広告・アクセス解析・アフィリエイト・フォーム送信先・自動取得)に合わせて変わる。
 // 動いていないものを「使っています」と書かない / 動き出したものを書き忘れない、ためにこうしている。
@@ -25,7 +27,7 @@ export function externalServices(ctx) {
   const aff = ctx.cfg.affiliate ?? {};
   const imageInfo = "通信時の接続元IPアドレス、要求する画像のURL、ブラウザが送るヘッダー情報（ブラウザの種類、設定に応じた参照元情報など）";
   if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天アフィリエイト（サービス提供: 楽天グループ株式会社／画像配信先: hbb.afl.rakuten.co.jp、ba.afl.rakuten.co.jp）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
-  if (ctx.hasAffil && aff.valueCommerceSid && aff.jalanPid) rows.push({ name: "バリューコマース アフィリエイト（サービス提供: バリューコマース株式会社／現行の画像配信先: i.imgvc.com）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
+  if (vcActive(ctx.cfg)) rows.push({ name: "バリューコマース アフィリエイト（サービス提供: バリューコマース株式会社／画像配信先: ad.jp.ap.valuecommerce.com）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
   if (ctx.hasAds) rows.push({ name: "Google AdSense(Google LLC)", purpose: "広告の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、閲覧履歴に基づく情報", when: "広告を表示するページ" });
   if (ctx.hasGC) rows.push({ name: "GoatCounter(アクセス解析)", purpose: "アクセス状況の把握(集計した件数だけ)", sent: "閲覧したページのURL、参照元、ブラウザとOSの種類、画面の幅、言語、IPアドレス(国の推定と、再訪問の判定に一時的に使い、保存されない)", when: "すべてのページ" });
   if (ctx.hasGA) rows.push({ name: "Googleアナリティクス(Google LLC)", purpose: "アクセス状況の分析", sent: "IPアドレス(匿名化の設定による)、Cookie等の識別子、閲覧したページ、ブラウザの種類、おおよその地域", when: "すべてのページ" });
@@ -55,6 +57,8 @@ ${h("取得する情報")}
 <ul><li>トップページの導入の演出を、すでに表示したかどうか</li><li>フォームの連続送信を防ぐための、直前の送信時刻</li><li>神楽の好み診断の案内を表示済み、または診断を開始済みかどうか</li></ul>
 <p>神楽の好み診断の回答は保存・外部送信しません。回答は開いているページ内だけで計算し、ページを閉じるか再読み込みすると消えます。統計の利用を許可された場合に限り、診断の開始・完了と結果画面のリンクの利用回数をアクセス解析へ送ります。個別の回答・スコア・診断結果は送りません。</p>
 ${hasAds || hasGA ? "<p>なお、広告やアクセス解析を提供する事業者は、Cookieなどを使用します(後の項目をご覧ください)。</p>" : ""}
+
+${ctx.hasCB ? '<p>任意Cookieを拒否するには、ページ上部の<a href="#cookie-controls">Cookie設定</a>をご利用ください。ボタンを押した場合だけ設定を変更します。</p>' : ""}
 
 ${h("利用目的")}
 <ul><li>投稿・お問い合わせへの対応と、内容確認のためのご連絡</li><li>掲載する開催情報の確認・訂正・削除</li><li>迷惑投稿や不正利用の防止</li><li>サイトの安全・安定した運営${hasGA || hasGC ? "、利用状況の把握と改善" : ""}</li></ul>
@@ -87,6 +91,7 @@ ${h("アフィリエイトプログラムについて")}
 <p>広告画像は当サイト以外の配信先から読み込むものがあり、リンクを押さなくても、画像を取得する際に上の表に示す通信が発生します。外部広告画像の取得による通信と、広告リンクを押したときの通信は、異なるタイミングで発生します。実際の通信やCookieの送受信は、ブラウザの設定、保存済みCookie、画像のキャッシュや外部サービスの動作等により異なります。すべての画像要求でCookieや閲覧ページの完全なURLが送られるという意味ではありません。</p>
 <p>サービス提供会社が公表する利用目的について、<a href="https://privacy.rakuten.co.jp/" target="_blank" rel="noopener">楽天グループの個人情報保護方針</a>はサービスの提供、広告・マーケティング、情報の分析等を、<a href="https://www.valuecommerce.co.jp/privacy_policy/privacy_action/" target="_blank" rel="noopener">バリューコマースの行動履歴情報保護方針</a>は広告の成果計測、ユーザーの属性や行動等の分析、コンテンツの表示等を説明しています。</p>
 <p>これらは各サービス全体の方針です。方針が扱う情報のすべてを当サイトの広告画像の読み込みだけで送信するという意味ではなく、個々の画像要求でどの情報が何に利用されるかを確認したものでもありません。</p>
+${vcActive(cfg)?`<p>じゃらんの発行広告タグには当サイトのサイトID・広告IDが含まれ、表示時に広告画像・計測画像を要求します。Cookie設定が未選択であること、または広告の許可を確認できた場合に表示します。広告を拒否した場合や設定状態を確認できない場合は読み込まず、拒否への変更時には広告を取り除き、以後の追加読込を止めます。すでに発生した通信を取り消すことはできません。GA4の統計同意・自己アクセス除外条件は変更しません。</p>`:""}
 ${cfg.affiliate?.amazonTag ? `<p>Amazonのアソシエイトとして、${site}は適格販売により収入を得ています。</p>` : ""}` : ""}
 
 ${h("情報の第三者への提供・委託")}
