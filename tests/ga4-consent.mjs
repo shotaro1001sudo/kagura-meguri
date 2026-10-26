@@ -32,7 +32,7 @@ function simulate({ requireConsent = true, cb = undefined, search = "", stored =
   };
   const run = () => runInNewContext(code, { window, document, encodeURIComponent, Date, URL, URLSearchParams, Event });
   run();
-  const notify = (name) => listeners[name]?.();
+  const notify = (name, event = {}) => listeners[name]?.(event);
   return {
     window, document, added, sent, notify, run,
     get reloads() { return reloads; },
@@ -119,6 +119,25 @@ export function ga4ConsentTests({ ok, section, build }) {
       "自己/Preview/ローカル閲覧を同意済みでも除外: " + JSON.stringify(options));
   }
   ok(simulate({cb:response(true),stored:"1",search:"?analytics=on"}).added.length === 1, "本人が除外を解除できる");
+  for (const lifecycle of ['pageshow', 'focus', 'popstate', 'CookiebotOnAccept']) {
+    const cached = simulate({cb:response(true)});
+    cached.window.localStorage.setItem('kagura.analytics.exclude', '1');
+    cached.notify(lifecycle);
+    ok(!cached.window.kaguraGa4Allowed && cached.window['ga-disable-G-TEST123456'] === true && cached.window.kaguraAnalytics.status === 'excluded', '起動済みページも除外を再確認: '+lifecycle);
+    cached.added[0].onload();
+    cached.window.localStorage.removeItem('kagura.analytics.exclude');
+    cached.notify('CookiebotOnAccept');
+    ok(cached.window.kaguraAnalytics.status === 'excluded' && cached.added.length === 1 && cached.calls().filter(c=>c[0]==='config').length===1, '除外後の遅延load/解除/同意通知で勝手に再開しない: '+lifecycle);
+  }
+  const otherTab=simulate({cb:response(true)});
+  otherTab.notify('storage',{key:'unrelated',newValue:'1'});
+  ok(otherTab.window.kaguraGa4Allowed, '無関係のstorage更新では除外しない');
+  otherTab.notify('storage',{key:'kagura.analytics.exclude',newValue:'1'});
+  ok(!otherTab.window.kaguraGa4Allowed && otherTab.window['ga-disable-G-TEST123456'] === true, '別タブの除外を即時反映');
+  const beforeConsent=simulate();
+  beforeConsent.window.localStorage.setItem('kagura.analytics.exclude','1');
+  beforeConsent.window.Cookiebot=response(true);beforeConsent.notify('CookiebotOnAccept');
+  ok(beforeConsent.added.length===0 && beforeConsent.window.kaguraAnalytics.status==='excluded','同意待ち中に除外されたらタグを起動しない');
   const privateQuery = simulate({cb:response(true), search:"?email=private%40example.com&utm_source=x&utm_medium=social&utm_campaign=autumn&utm_content=post_01#private"});
   const config = privateQuery.calls().find(x => x[0] === "config")?.[2];
   ok(config?.page_location === "https://kagurameguri.jp/events/test.html?utm_source=x&utm_medium=social&utm_campaign=autumn&utm_content=post_01",

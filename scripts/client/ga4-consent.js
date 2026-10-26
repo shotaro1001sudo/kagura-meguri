@@ -7,7 +7,7 @@
 
   // One bootstrap per document, even if another integration inserts it again.
   if (window.kaguraAnalytics) return;
-  const state = window.kaguraAnalytics = { status: "waiting_consent", version: "2026-10-23" };
+  const state = window.kaguraAnalytics = { status: "waiting_consent", version: "2026-10-26" };
   const loc = window.location;
   let excluded = false;
   try {
@@ -24,7 +24,26 @@
   if (productionHost && loc.hostname !== productionHost) excluded = true;
   if (/(?:^|[?&])(?:gtm_debug|gtm_preview|debug_mode)=/.test(loc.search || "")) excluded = true;
   window.kaguraGa4Allowed = false;
-  if (excluded) { state.status = "excluded"; return; }
+  function stopForExclusion() {
+    excluded = true; // Sticky for this document. Re-enable only with a fresh navigation.
+    window.kaguraGa4Allowed = false;
+    window['ga-disable-' + measurementId] = true;
+    state.status = 'excluded';
+  }
+  function refreshExclusion() {
+    let off = new URLSearchParams(loc.search || '').get('analytics') === 'off';
+    try { off = off || window.localStorage.getItem('kagura.analytics.exclude') === '1'; } catch (_) {}
+    if (excluded || off) { stopForExclusion(); return true; }
+    return false;
+  }
+  // A cached document or another already-open tab must not retain stale permission.
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'kagura.analytics.exclude' && event.newValue === '1') stopForExclusion();
+  });
+  window.addEventListener('pageshow', refreshExclusion);
+  window.addEventListener('focus', refreshExclusion);
+  window.addEventListener('popstate', refreshExclusion);
+  if (excluded) { stopForExclusion(); return; }
 
   // When Cookiebot is configured, missing/unavailable consent is DENIED.
   const consentRequired = tag.hasAttribute("data-require-statistics-consent");
@@ -45,6 +64,7 @@
   }
 
   function syncConsent() {
+    if (refreshExclusion()) return;
     if (state.status === "tag_error") return;
     const allowed = !consentRequired || explicitlyAllowed();
     window.kaguraGa4Allowed = allowed;
@@ -80,8 +100,8 @@
     const script = document.createElement("script");
     script.async = true;
     script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(measurementId);
-    script.onload = () => { state.status = "tag_loaded"; };
-    script.onerror = () => { state.status = "tag_error"; window.kaguraGa4Allowed = false; };
+    script.onload = () => { if (!refreshExclusion()) state.status = "tag_loaded"; };
+    script.onerror = () => { if (refreshExclusion()) return; state.status = "tag_error"; window.kaguraGa4Allowed = false; };
     document.head.appendChild(script);
     // Notify the interaction tracker on a late consent choice as well.
     window.dispatchEvent(new Event("kagura:analytics-ready"));
