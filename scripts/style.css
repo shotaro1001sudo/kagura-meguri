@@ -821,3 +821,9 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .vc-ad.stay-btn>a,.vc-ad.vc-experience>a,.vc-ad.vc-stay>a{padding:12px 16px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
 .experience-areas>.vc-ad:not([hidden]){display:block}
 .vc-disclosure{font-size:var(--fs-s);border-bottom:1px solid var(--line);padding:12px 0}
+
+.cookie-controls{margin:24px 0;padding:16px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}
+.cookie-controls h2{font-size:var(--fs-m);margin-top:0}
+.cookie-controls button{min-height:44px;white-space:normal}
+.cookie-controls button[aria-disabled="true"]{opacity:.7;cursor:default}
+.cookie-controls button:focus-visible{outline:3px solid var(--fg);outline-offset:4px}

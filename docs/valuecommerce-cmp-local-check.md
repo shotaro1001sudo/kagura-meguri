@@ -124,3 +124,96 @@ Only test accounting changes: Fetch identities are deduplicated, failure notices
 are separate; distinct requests/redirects still count and mount limits unchanged.
 Production adapter, issued tags and generated fixture are unchanged. No cloud
 consent-log transmission and no production release.
+
+## Reconciled actual SDK evidence — release still held
+
+Evidence supplied by the Windows worker through the parent; the raw Windows
+checkpoint is not present in this cloud checkout and its hash is reported, not
+independently recomputed here.
+
+| Source head | Actually established | Not established in that run |
+| --- | --- | --- |
+| `6b41a42cb9b31fe3530b783ba4c53a85aab1ae5f` | Explicit rejection and saved rejection reload: denied, zero images/new VC attempts/insertions. Allow: two images, two real GET attempts, once per destination; the old harness incorrectly also counted failure notifications. Two log GETs, HTTP 200. | Withdrawal; whole-run success (accounting assertion failed). |
+| `4f19c13517096693158a97761bd36d69d93cc7cc` | 24 hashes and six guards passed, exit 0, withdrawalCheckPassed=true. Initial+allow: two images/mounts and two unique intercepted VC requests. Withdraw and reload: denied, explicit marketing=false, zero images/new requests/insertions. Two log GETs, HTTP 200. | Normal public banner refusal UI; full reject-through-withdraw sequence on this single head. |
+
+Windows `vc-withdraw-checkpoint.json` reported SHA-256:
+`189c71bf99130949df987c2387b57b4d182f0f816701ddb8d8a3379dbb543d2d`.
+All VC/GA and nonallowlisted requests were blocked. The authorized cumulative
+consent-log budget is now EXHAUSTED (4/4); no additional real log calls are allowed.
+HTTP success alone was not used as proof: actual CMP state, persistent rejection,
+DOM insertion counts and intercepted request identities were inspected.
+
+### Source equivalence checked locally
+
+Git object identity between both tested heads proves that the following sources
+are byte-identical (tree identity for scripts/data). Only harness tests/accounting
+and documentation changed between these runs.
+
+| Path | Identical Git object |
+| --- | --- |
+| `scripts` | `8be00a06f65694b00efbc4d5d7f8774692901f7d` |
+| `config.json` | `edfec71c1576c44042aea7e339cf4122eb0c7ef1` |
+| `data` | `bf8953db87140d1029a9644e757172c148fb5da1` |
+| `tests/fixtures/valuecommerce-issued.json` | `812da41208f88c9a8d2f5e7bd6417cf85567a035` |
+| `tests/fixtures/vc-generated-event.html` | `7e06a37e27df525ac943c42401ff262b3dad39fc` |
+| `tests/fixtures/vc-observe.js` | `df342eb11f0079846b6dd38e55e5e0bf7741fd52` |
+
+Final-head CI success:
+https://github.com/shotaro1001sudo/kagura-meguri/actions/runs/40345909689
+Local suite: 10,530 passed / 0 failed; 142-page build previously passed with the
+same production source. No unnecessary build or live consent rerun was performed
+for this evidence-only reconciliation.
+
+Review of the production diff against main 983c2bb: stay MyLink PID replacement,
+complete issued images/banner instead of static substitution, inert templates,
+readiness/state controller, outer affiliate metadata handling, top advertisement
+notice and PR125-aligned transmission explanation. No new CSP hosts, CMP account
+configuration, GA4 consent/self-exclusion change, Rakuten URL change, or event data
+change. Source-comparison tests retain five issued examples and all 47 activity
+regions. SDK evidence demonstrates request attempts, not actual advertisement
+response pixels, destination redirects, attribution or rewards.
+
+Remaining release gate: user approval and implementation/validation of an
+accessible explicit necessary-only refusal action. Current normal banner does
+not expose the tested rejection action; SDK success is not a normal-UI pass.
+No refusal UI implemented yet. PR128 remains draft; no merge/deploy. The passive
+pre-CMP readiness listener remains a narrow deviation from the literal first-script
+recommendation, not vendor-certified compliance. No legal-compliance or revenue
+guarantee is made.
+
+## Approved explicit refusal UI (local candidate; publication held)
+
+User approval was relayed for a visible necessary-only refusal button. Each
+CMP-enabled page now has native button controls at the footer, with Japanese or
+English explanation; privacy links directly to the section. Only an actual click
+calls submitCustomConsent(false,false,false). No account/category/CSP changes.
+One submission maximum per page, including slow/throwing calls; already-explicit
+rejection needs no new call. Unavailable API produces an explanation; success
+feedback requires actual explicit hasResponse and necessary=true with all three
+optional categories false. Timeout/error does not claim success or saved consent.
+The button does not promise all external communications stop or erase earlier ones.
+
+Local JSDOM tests cover unavailable/error/async/synchronous/timeout/repeated clicks
+and exact arguments. Real Chromium with a test CMP stub checked native Tab+Enter
+at 1280x900 and Tab+Space at 390x844, one call after two activations, visible focus,
+44px minimum target and no horizontal overflow. Both screenshots were visually
+inspected; these are local component tests, NOT actual CMP submissions. Initial
+CDP Enter lacked character text and caused no click; corrected CDP key events
+passed. Initial privacy-link build failed on an undefined hasCB local; fixed to
+ctx.hasCB before final checks. No safety checks were relaxed.
+
+A separate Windows invocation-only mode intercepts submitCustomConsent without
+calling the vendor function. It checks actual generated button, visible hit point,
+keyboard invocation with three false arguments, duplicate suppression and honest
+timeout feedback. It must not be described as real consent submission or a normal
+Cookiebot banner UI test. Previous real SDK proof remains on the earlier heads.
+The four-call live budget is exhausted and this mode prohibits log opt-in.
+
+Final local checks for the button candidate: full existing suite 10,530/0;
+additional generated-control assertions passed in the focused 68-check GA4 suite;
+142-page production build succeeded. The published VC controller, readiness
+recorder, issued tag generator, affiliate analytics handler, GA4 consent script
+and config are byte-identical to 4f19c135. The page gains only the approved explicit
+control, its presentation/script, and privacy navigation. The new generated
+fixture includes those changes; it is not claimed identical to the earlier full
+HTML. Thirty transfer files are hashed. No actual SDK submission was made.

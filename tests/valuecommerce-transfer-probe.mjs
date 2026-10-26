@@ -11,6 +11,8 @@ import {join} from 'node:path';
 import {vcTag} from '../scripts/lib/valuecommerce.mjs';
 import {cspFor} from '../scripts/lib/csp.mjs';
 if(process.env.VC_SDK_SEQUENCE==='1'&&(process.env.VC_UI_SEQUENCE==='1'||process.env.VC_MOCK_UI==='1'||process.env.VC_REAL_CMP!=='1'))throw Error('SDK verification requires real CMP and excludes UI/mock modes');
+const buttonInvocationOnly=process.env.VC_BUTTON_INVOCATION_CHECK==='1';
+if(buttonInvocationOnly&&(process.env.VC_REAL_CMP!=='1'||process.env.VC_FIXTURE!=='generated'||['VC_ALLOW_CONSENT_LOG','VC_SDK_SEQUENCE','VC_UI_SEQUENCE','VC_MOCK_UI'].some(k=>process.env[k]==='1')))throw Error('Button invocation check requires generated real CMP fixture and forbids SDK/log/UI/mock modes');
 const consentLogOptIn=process.env.VC_ALLOW_CONSENT_LOG==='1';
 if(consentLogOptIn&&(process.env.VC_REAL_CMP!=='1'||process.env.VC_SDK_SEQUENCE!=='1'))throw Error('Consent-log opt-in requires isolated real CMP SDK verification');
 const withdrawalOnly=process.env.VC_SDK_WITHDRAWAL_CHECK==='1';
@@ -116,6 +118,22 @@ try {
   const initial=await snapshot('initial');await capture('initial');
   evidence.frames=await send('Page.getFrameTree',{},session).then(r=>({mainFrameId:r.frameTree.frame.id,childFrameCount:r.frameTree.childFrames?.length||0}));
   if(!initial.observerInstalled||!evidence.cmpEvents.some(e=>e.event==='observer-installed'&&e.path==='/cmp'))throw Error('Document-start observer handshake missing; diagnostics unreliable.');
+  if(buttonInvocationOnly){
+   if(initial.hasResponse!==false||initial.gate!=='unselected')throw Error('Actual unanswered CMP not ready for invocation-only test');
+   // Test interception only: do not call the real SDK or manufacture consent state.
+   await evaluate(`(()=>{const cb=window.Cookiebot,b=document.getElementById('cookie-reject-optional');if(typeof cb?.submitCustomConsent!=='function'||!b)throw Error('Button/SDK absent');window.__buttonCalls=[];cb.submitCustomConsent=(...args)=>{window.__buttonCalls.push(args);};b.scrollIntoView({block:'center'});b.focus();return true;})()`,'button-intercept-install');
+   const geometry=await evaluate(`(()=>{const b=document.getElementById('cookie-reject-optional'),r=b.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return {focused:document.activeElement===b,visible:r.width>0&&r.height>=44&&y>=0&&y<innerHeight,hit:document.elementFromPoint(x,y)===b,overflow:document.documentElement.scrollWidth>innerWidth};})()`,'button-visible-check');
+   if(!geometry.focused||!geometry.visible||!geometry.hit||geometry.overflow)throw Error('Public refusal button is not visibly operable');
+   await capture('button-before');
+   for(let i=0;i<2;i++){await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r',unmodifiedText:'\r'},session);await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13},session);}
+   const pending=await evaluate(`({calls:window.__buttonCalls,status:document.getElementById('cookie-reject-status').textContent,disabled:document.getElementById('cookie-reject-optional').getAttribute('aria-disabled'),hasResponse:Cookiebot.hasResponse,marketing:Cookiebot.consent.marketing})`,'button-invocation-result');
+   if(JSON.stringify(pending.calls)!=='[[false,false,false]]'||pending.disabled!=='true'||pending.hasResponse!==false||!/確認しています/.test(pending.status))throw Error('Button invocation/repeat/state isolation failed');
+   await new Promise(r=>setTimeout(r,8200));
+   const feedback=await evaluate("document.getElementById('cookie-reject-status').textContent",'button-timeout-feedback');
+   if(!/確認できません/.test(feedback))throw Error('Missing truthful timeout feedback');
+   await capture('button-timeout');
+   evidence.buttonInvocation={passed:true,geometry,...pending,feedback,actualSdkCalled:false,actualConsentSubmitted:false,notNormalVendorUiTest:true};
+  }
   if(process.env.VC_SDK_SEQUENCE==='1'){
    if(initial.gate!=='unselected'||initial.hasResponse!==false||initial.images===0)throw Error('Real initial unselected state not established for SDK sequence');
    evidence.sdkScope='Actual vendor SDK in isolated profile; NOT public banner UI verification. Initial unselected advertising attempts are permitted by B policy and intercepted. Removal cannot undo earlier requests.';

@@ -57,6 +57,9 @@ export function ga4ConsentTests({ ok, section, build }) {
         path + ": 同意ゲートを埋め込む");
       ok($('script[src*="googletagmanager.com/gtag/js"]').length === 0,
         path + ": 初期HTMLはGA4外部タグを読まない");
+      ok($('#cookie-reject-optional[type="button"]').length===1,path+': 明示拒否ボタンが1つ');
+      ok($('#cookie-reject-status[role="status"][aria-live="polite"]').length===1,path+': 拒否操作の状態読み上げ');
+      ok($('script').filter((_,n)=>$(n).text().trim()===readFileSync('scripts/client/cookie-controls.js','utf8').trim()).length===1,path+': 拒否操作コードが1回');
       const bot = $("head > script#Cookiebot");
       ok(bot.length === 1 && bot.attr("data-cbid") === "test-consent-id",
         path + ": 正しいCBIDを持つCookiebotが1回だけ設置される");

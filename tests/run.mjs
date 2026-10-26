@@ -1,3 +1,4 @@
+import './cookie-controls-test.mjs';
 import './cmp-request-policy-test.mjs';
 import './cookie-metadata-test.mjs';
 import './vc-sdk-harness-test.mjs';

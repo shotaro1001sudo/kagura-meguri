@@ -225,3 +225,28 @@ try {
 withdrawalCheckPassedはこの限定続行の結果であり、sdkPassed（全段階を同headで実施）とは別。前回headの拒否保存証拠と混同しない。callback/HTTP 200だけで成功にしない。追加要求が必要な場合も上限を増やさず停止。公開UIの拒否到達性、本番公開は別途保留。
 
 限定続行のallow集計は初期unselectedから許可後までを含む（includesInitialUnselected=true）。B方針で初期表示済みの2枠を許可時に再挿入しないことを検証するため。撤回/reloadは従来どおり各操作直前からの差分を測る。
+
+## 公開ボタンの呼出し確認のみ（実同意送信0）
+
+新head/manifest確認後、通常Chrome profileを使わず既存ガードで1回。実CMP公開GETは従来どおり利用するが、submitCustomConsentをテスト内で呼出し記録だけの関数に置換し、元関数は呼ばない。CMP状態は書き換えない。ログはすべて遮断。これは生成ページの公開ボタン→SDK引数の結合確認で、実保存は以前の実SDK証拠と分ける。
+
+```powershell
+Remove-Item Env:VC_ALLOW_CONSENT_LOG -ErrorAction SilentlyContinue
+Remove-Item Env:VC_SDK_SEQUENCE -ErrorAction SilentlyContinue
+Remove-Item Env:VC_SDK_WITHDRAWAL_CHECK -ErrorAction SilentlyContinue
+Remove-Item Env:VC_SDK_PERSISTENCE_ONLY -ErrorAction SilentlyContinue
+Remove-Item Env:VC_UI_SEQUENCE -ErrorAction SilentlyContinue
+Remove-Item Env:VC_MOCK_UI -ErrorAction SilentlyContinue
+$env:VC_REAL_CMP='1'
+$env:VC_FIXTURE='generated'
+$env:VC_BUTTON_INVOCATION_CHECK='1'
+$env:VC_CAPTURE_DIR=Join-Path $PWD 'vc-button-captures'
+$env:VC_EVIDENCE_FILE=Join-Path $PWD 'vc-button-checkpoint.json'
+try {
+  node tests/valuecommerce-transfer-probe.mjs > vc-button-progress.jsonl
+} finally {
+  Remove-Item Env:VC_BUTTON_INVOCATION_CHECK -ErrorAction SilentlyContinue
+}
+```
+
+期待値: 事前ガード6成功、実未選択CMP、フッターの可視ボタンへfocusとkeyboard Enter2回、呼出しは `[false,false,false]` 1回。CMP状態は未選択のままなので成功とは表示せず、8秒後に確認不能メッセージ。actualSdkCalled=false / actualConsentSubmitted=false。VC/GA/同意ログの実送信0を確認。ボタンがバナーに隠れる等でhit確認に失敗した場合はその証拠を返し、CSS改変やバナー設定変更で強行しない。本番公開は親レビュー待ち。
