@@ -1,3 +1,4 @@
+import {buttonGeometry} from './helpers/button-geometry.mjs';
 // Offline real-Chromium keyboard/layout check. CMP is a stub; no real submissions.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -30,5 +31,13 @@ try{
   const shot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(join(tmpdir(),'cookie-controls-'+width+'.png'),Buffer.from(shot.data,'base64'));
   results.push({viewportWidth:width,viewportHeight:height,key:keyName,calls:1,...dimensions});
  }
+ // A realistic fixed full-screen modal prevents pointer access to footer controls.
+ await send('Page.navigate',{url:origin+'/'});await new Promise(r=>setTimeout(r,300));
+ await evaluate(`(()=>{const overlay=document.createElement('div');overlay.id='CybotCookiebotDialog';overlay.setAttribute('role','dialog');overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#fff';const control=document.createElement('button');control.id='mock-dialog-control';control.textContent='Cookie設定';overlay.append(control);document.body.append(overlay);document.getElementById('cookie-reject-optional').focus();})()`);
+ const covered=await evaluate('('+buttonGeometry.toString()+')()');assert.equal(covered.operable,false);assert.equal(covered.hit,false);assert.equal(covered.hitTarget.id,'CybotCookiebotDialog');assert(covered.rect&&covered.activeElement&&covered.cmp);
+ // Model a modal focus trap independently; don't bypass it or invoke the button.
+ await evaluate("document.getElementById('mock-dialog-control').focus()");
+ const trapped=await evaluate('('+buttonGeometry.toString()+')()');assert.equal(trapped.focused,false);assert.equal(trapped.activeElement.id,'mock-dialog-control');assert.deepEqual(await evaluate('calls'),[]);
+ results.push({mockOverlay:{blocked:true,hitTarget:covered.hitTarget.id,focusTrapDetected:!trapped.focused,noInvocation:true}});
  console.log(JSON.stringify({results,blocked,realCmp:false,realConsentSubmissions:0}));
 }finally{ws?.close();chrome.kill();server.close();await new Promise(r=>setTimeout(r,200));rmSync(profile,{recursive:true,force:true});}

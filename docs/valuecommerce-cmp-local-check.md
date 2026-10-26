@@ -217,3 +217,26 @@ and config are byte-identical to 4f19c135. The page gains only the approved expl
 control, its presentation/script, and privacy navigation. The new generated
 fixture includes those changes; it is not claimed identical to the earlier full
 HTML. Thirty transfer files are hashed. No actual SDK submission was made.
+
+## Button operability diagnostic after Windows stop
+
+Windows at 26c1e7e stopped before keyboard input: button-visible-check failed, no
+SDK call/log sent, six guards passed and only five CMP public GETs continued.
+The old harness discarded the failing geometry before capturing the scrolled
+frame, so overlay versus focus versus viewport/overflow was not established.
+
+Diagnostic-only correction: persist each bounded geometry observation (up to
+12 over about 1.1 seconds to account for native smooth scroll), including full
+rect, viewport, active element, hit target, CMP rect/styles and up to ten ancestor
+styles. Always screenshot after scroll/focus BEFORE asserting operability. No
+CSS change, overlay removal, hidden click, forced focus after trap or relaxed
+visibility test. The complete button must now be inside the viewport. Failure
+retains metadata and screenshot; no keyboard event or vendor invocation follows.
+
+Real local Chromium regression: a fixed full-screen modal overlay makes hit=false
+with its actual element ID; focus moved to its modal control makes focused=false.
+Both are rejected and produce zero button calls. Normal desktop/mobile keyboard
+checks still pass. This is a test overlay, not evidence of the real CMP layout.
+Production UI is unchanged pending exact Windows cause. If the real banner covers
+or traps focus away from the footer, the public refusal route is still blocked and
+must be corrected before release; diagnostic success alone is not release approval.

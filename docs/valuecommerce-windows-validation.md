@@ -250,3 +250,15 @@ try {
 ```
 
 期待値: 事前ガード6成功、実未選択CMP、フッターの可視ボタンへfocusとkeyboard Enter2回、呼出しは `[false,false,false]` 1回。CMP状態は未選択のままなので成功とは表示せず、8秒後に確認不能メッセージ。actualSdkCalled=false / actualConsentSubmitted=false。VC/GA/同意ログの実送信0を確認。ボタンがバナーに隠れる等でhit確認に失敗した場合はその証拠を返し、CSS改変やバナー設定変更で強行しない。本番公開は親レビュー待ち。
+
+### Operability failure evidence (same invocation-only command)
+
+Use the final head and manifest. The harness now records `buttonGeometry` before
+checking it, and always writes `button-after-scroll.png` before failure. Return
+that screenshot and checkpoint even if it exits nonzero. Each observation includes
+rect, activeElement, hitTarget, full viewport/scroll metrics, CMP geometry and
+ancestor display/visibility/position/zIndex. Native scrolling gets a bounded
+settling observation; this does not change the banner, CSS, focus trap or checks.
+No keyboard input occurs unless all actual conditions pass. A real overlay/focus
+trap remains a usability blocker. The production button has not been moved or
+restyled based on the earlier missing evidence. No new real consent log is allowed.

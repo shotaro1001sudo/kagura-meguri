@@ -1,3 +1,4 @@
+import {buttonGeometry} from './helpers/button-geometry.mjs';
 import {createCmpRequestPolicy} from './helpers/cmp-request-policy.mjs';
 import {cookieMetadata} from './helpers/cookie-metadata.mjs';
 import {summarizeSdkPhase,assertSdkPhase} from './helpers/vc-sdk-assertions.mjs';
@@ -122,9 +123,21 @@ try {
    if(initial.hasResponse!==false||initial.gate!=='unselected')throw Error('Actual unanswered CMP not ready for invocation-only test');
    // Test interception only: do not call the real SDK or manufacture consent state.
    await evaluate(`(()=>{const cb=window.Cookiebot,b=document.getElementById('cookie-reject-optional');if(typeof cb?.submitCustomConsent!=='function'||!b)throw Error('Button/SDK absent');window.__buttonCalls=[];cb.submitCustomConsent=(...args)=>{window.__buttonCalls.push(args);};b.scrollIntoView({block:'center'});b.focus();return true;})()`,'button-intercept-install');
-   const geometry=await evaluate(`(()=>{const b=document.getElementById('cookie-reject-optional'),r=b.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;return {focused:document.activeElement===b,visible:r.width>0&&r.height>=44&&y>=0&&y<innerHeight,hit:document.elementFromPoint(x,y)===b,overflow:document.documentElement.scrollWidth>innerWidth};})()`,'button-visible-check');
-   if(!geometry.focused||!geometry.visible||!geometry.hit||geometry.overflow)throw Error('Public refusal button is not visibly operable');
-   await capture('button-before');
+   // Native page scrolling can be animated. Observe a bounded settling period,
+   // persisting all conditions before any early failure or keyboard action.
+   let geometry;
+   evidence.buttonGeometry=[];
+   for(let tick=0;tick<12;tick++){
+    geometry=await evaluate('('+buttonGeometry.toString()+')()','button-visible-check');
+    evidence.buttonGeometry.push({tick,...geometry});checkpoint({phase:'button-geometry',tick,operable:geometry.operable});
+    if(geometry.operable)break;
+    await new Promise(r=>setTimeout(r,100));
+   }
+   // Always capture the actual post-scroll/focus frame, even on failure.
+   try {await capture('button-after-scroll');}catch(error){evidence.buttonCaptureError=safeText(error);checkpoint({phase:'button-capture-failed'});throw error;}
+   evidence.buttonInvocation={passed:false,geometry,actualSdkCalled:false,actualConsentSubmitted:false};
+   checkpoint({phase:'button-operability-result',operable:geometry.operable});
+   if(!geometry.operable)throw Error('Public refusal button is not visibly operable');
    for(let i=0;i<2;i++){await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r',unmodifiedText:'\r'},session);await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13},session);}
    const pending=await evaluate(`({calls:window.__buttonCalls,status:document.getElementById('cookie-reject-status').textContent,disabled:document.getElementById('cookie-reject-optional').getAttribute('aria-disabled'),hasResponse:Cookiebot.hasResponse,marketing:Cookiebot.consent.marketing})`,'button-invocation-result');
    if(JSON.stringify(pending.calls)!=='[[false,false,false]]'||pending.disabled!=='true'||pending.hasResponse!==false||!/確認しています/.test(pending.status))throw Error('Button invocation/repeat/state isolation failed');
