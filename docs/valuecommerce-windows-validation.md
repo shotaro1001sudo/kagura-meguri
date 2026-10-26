@@ -32,3 +32,29 @@ Remove-Item Env:VC_REAL_CMP
 `tests/fixtures/valuecommerce-issued.json` の5例を親が再取得した元記録とコード文字列として照合、一致。`docs/valuecommerce-source-comparison.json` に原本ファイルの親報告ハッシュと比較限界を記録。新しい管理画面承認確認ではない。
 
 全10,498テスト成功、142ページbuild成功。旧保存パッチの52単体テスト、模擬CMP＋Chromium成功。ただし実CMPの分類・3状態は未確定で公開条件に残る。GA4統計同意・自己除外・最近のPR127を保持。
+
+## 診断版（PR128追加）
+
+`responses` はHTTPステータス・MIME・キャッシュ有無、`failures` はネットワーク失敗、`consoleErrors` は警告/エラー、`cmpEvents` は実Cookiebot Ready/Load/Accept/Decline/Dialogイベントを記録する。query/fragmentは保存せずURLパス内のUUIDも伏せる。Cookie値、要求/応答ヘッダー、通信本文は採取しない。コンソールのURLもqueryを除去する。取得不可・未承認・地域設定等を、API初期値だけで決めつけない。
+
+```powershell
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+node tests/valuecommerce-transfer-probe.mjs > vc-generated-diagnostics.json
+```
+
+`tests/fixtures/vc-generated-event.html` はcloudで既存build出力した大朝イベントHTMLのバイト一致コピー。PR128初版head9a09d29のサイト実装、基準main PR127を含む。CMPタグ属性、初期化順序、CSP、GA4同意処理、宿・体験の実広告markupを保持。画像等の付随ローカルアセットはこのプローブでは提供しないため、デザインQAではない。外部広告・GA4は引き続き遮断する。minimal fixtureに戻すにはVC_FIXTUREを削除。
+
+```powershell
+$env:VC_UI_SEQUENCE = '1'
+node tests/valuecommerce-transfer-probe.mjs > vc-real-ui.json
+Remove-Item Env:VC_UI_SEQUENCE
+Remove-Item Env:VC_REAL_CMP
+Remove-Item Env:VC_FIXTURE
+```
+
+UI sequenceは実ダイアログ表示＋未選択gateを確認できた時だけ、実ボタンにCDPマウス入力で拒否→同一隔離プロフィール再読込→Widget設定→許可→Widget設定→拒否を試す。Cookiebotプロパティ/保存Cookieは書き換えない。保存拒否の再読込ではVC要求の増加0も検証する。サイト/地域設定でWidgetや既知ボタンが出ない場合、勝手にAPI設定で代替せず停止する。実行は最大約20秒の待機を含む有限回のみ。実環境で全ステップ成功したとの記録はまだない。
+
+公式のテスト用Domain Alias: https://support.cookiebot.com/hc/en-us/articles/26381611471388-What-are-Domain-Aliases-in-the-Cookiebot-Manager 。localhost/127.0.0.1は登録可能だがPremiumが前提、alias自体は請求対象外との説明。現在の契約/登録状況は未確認。自動ブロックの検証には公開サイトとの同一性が必要とされ、この1ページfixtureは全サイトの同一性を保証しない。イベント根拠: https://support.cookiebot.com/hc/en-us/articles/360020661139-How-to-find-out-when-the-Cookiebot-script-has-loaded 。
+
+もしドメイン未承認の明示エラーが出たら、本番失敗と扱わず停止。最小の次案は既存の承認済みテストaliasがあるかの読み取り確認。なければ契約/費用/設定変更の必要性を親に報告して承認待ち。現段階ではalias追加、契約変更、本番origin偽装、TLS回避、CSP変更をしない。

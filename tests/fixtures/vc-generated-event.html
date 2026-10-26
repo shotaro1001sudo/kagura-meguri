@@ -1,0 +1,1390 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-O1j4zsXN7aLZTV2GMjwmZRZpVL5xBm+xvZ5p77OE4BM=' 'sha256-c/4rvTMMx866ktcp3/V8zuZsE06RSDh/zrTCLY6EuwM=' 'sha256-ScpFpiN6cvWrUKGU/4mbtis+OYNSR3x+2Yfk2K4mVrc=' 'sha256-3kDpMrPERYHb94rQn5gBSMAEnB9ThFYb8t0Q+7l1/6k=' 'sha256-/12NFXWMdXtELd3j/F/YgaO04pkJojIS3f2N/i7R8Wo=' 'sha256-ObiKKJOBRpmU91JwhSBwSWx+GZ5liD64Vn2SoRqd+CI=' 'sha256-Gka4nY69IvXN2DpCdF8NT+rCKisIN4cjJ4x9psyTfhw=' 'sha256-5nQIMYBvp09XasveG0wUHPnWgqUV+LdmjWjmT0hpQqw=' 'sha256-mtAklE+HpsOL+bNZPJEOE/fjeyW+6VMD5z/T170p35Q=' 'sha256-RIHA9yLkCh0vhoUuN1R5mm8Q4TmUDFZXMo5H3mlnzzw=' 'sha256-sbfTMIzAGIBTG58ReVJTjZBm1T/VJzq6XS5/clbYsl4=' 'sha256-YbPElSuK9l9A8RVlyHBrXTaPgyxdCOcvHKf73tCAe04=' 'sha256-w+zAYXF3QHJ3Sm8sIQ3YMPRjRnEw7weG5QYSemWG6t4=' 'sha256-u9hv8Rg8Uj8z2ANo2qtIZR+jmGR69/KFWItAOfeKdUQ=' https://unpkg.com 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https://www.googletagservices.com https://partner.googleadservices.com https://adservice.google.com https: https://gc.zgo.at https://www.googletagmanager.com https://*.google-analytics.com https://consent.cookiebot.com https://consentcdn.cookiebot.com; style-src 'self' 'sha256-N5T8xiA9LbLfQNBJV0ZRH4NKwBaGd6zVWV2PKD1en/k=' https://fonts.googleapis.com https://unpkg.com; style-src-attr 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org https://unpkg.com https://hbb.afl.rakuten.co.jp https://ba.afl.rakuten.co.jp https://thumbnail.image.rakuten.co.jp https: https://kagurameguri.goatcounter.com https://*.google-analytics.com https://*.googletagmanager.com https://imgsct.cookiebot.com https://consent.cookiebot.com; font-src https://fonts.gstatic.com; connect-src 'self' https://api.web3forms.com https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google-analytics.com https: https://kagurameguri.goatcounter.com https://*.analytics.google.com https://*.googletagmanager.com https://consent.cookiebot.com https://consentcdn.cookiebot.com; frame-src https://*.googlesyndication.com https://*.google.com https://*.doubleclick.net https: https://consentcdn.cookiebot.com; form-action 'self'; base-uri 'none'; object-src 'none'; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; upgrade-insecure-requests"><script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="6a4ea6ee-9934-4406-b303-5cc8e491a686" data-blockingmode="auto" type="text/javascript"></script><script>// B policy: confirmed unselected/allowed states may display the complete issued tag.
+// Cookiebot readiness is required; missing/errored/ambiguous state never means unselected.
+(() => {
+  if(window.kaguraVcConsent)return;
+  const status=window.kaguraVcConsent={state:'unknown'};
+  let readyObject=null;
+  const nodes=new Map();
+  function readState() {
+    try {
+      const cb=window.Cookiebot;
+      if(!cb||cb!==readyObject||typeof cb.hasResponse!=='boolean'||typeof cb.consent?.marketing!=='boolean')return 'unknown';
+      if(cb.hasResponse && cb.consent.marketing===false)return 'denied'; // Includes old saved rejections.
+      if(cb.hasResponse && cb.consent.marketing===true && cb.consent.method==='explicit')return 'allowed';
+      if(cb.hasResponse===false && cb.consent.marketing===false && cb.consent.method===null)return 'unselected';
+    } catch (_) { /* An unreadable CMP is not permission to load resources. */ }
+    return 'unknown';
+  }
+  function sync() {
+    status.state=readState();
+    const display=status.state==='unselected'||status.state==='allowed';
+    for(const slot of document.querySelectorAll('[data-vc-ad]')) {
+      if(!display) {
+        // Requests already initiated cannot be undone. Keep the original nodes only in memory.
+        for(const child of [...slot.childNodes])if(child.nodeName!=='TEMPLATE')child.remove();
+        slot.hidden=true;
+        continue;
+      }
+      if(!nodes.has(slot)) {
+        const template=slot.querySelector('template');
+        if(!template)continue;
+        nodes.set(slot,[...template.content.cloneNode(true).childNodes]);
+      }
+      // Reuse the same nodes and src attributes; never recreate an image on duplicate events.
+      for(const node of nodes.get(slot))if(node.parentNode!==slot)slot.appendChild(node);
+      slot.hidden=false;
+    }
+    window.dispatchEvent(new Event('kagura:ads-ready'));
+  }
+  function ready() {
+    try { readyObject=window.Cookiebot||null; } catch (_) { readyObject=null; }
+    sync();
+  }
+  for(const name of ['CookiebotOnConsentReady','CookiebotOnLoad','CookiebotOnAccept','CookiebotOnDecline'])window.addEventListener(name,ready);
+  // Register immediately after the existing synchronous Cookiebot script; render after DOM parsing.
+  document.addEventListener('DOMContentLoaded',sync);
+  window.addEventListener('pagehide',()=>{readyObject=null;sync();});
+  window.addEventListener('pageshow',sync); // Restored pages remain unknown until CMP reports readiness again.
+  sync();
+})();</script><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location}catch(e){}}</script>
+<script>(function(d){var h=d.documentElement,w=window;try{if(!w.IntersectionObserver||(w.matchMedia&&w.matchMedia('(prefers-reduced-motion: reduce)').matches))return;if(["/about","/contact","/privacy","/terms","/disclaimer"].indexOf(location.pathname.replace(/[.]html$/,""))>=0)return;h.classList.add('js');if(location.pathname==='/'||location.pathname==='/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro');sessionStorage.setItem('intro','1')}}else if(location.pathname==='/en/'||location.pathname==='/en/index.html'){if(!sessionStorage.getItem('intro')){h.classList.add('intro','unsplash');sessionStorage.setItem('intro','1')}}}catch(e){}})(document)</script>
+<script>/* ページ移動では、題名も本文と一緒に現れる。カードからでも、通常のリンクからでも同じ動きにする。
+   <head> で受け取り、最初の描画より前に pagein と View Transition の二重再生を防ぐ。
+   .vt は復元時も残す。終了時に外すと pagein が再び始まってしまう。
+   非対応・JSなしでは通常の pagein / 静的表示、動きを減らす設定では CSS が両方を止める。 */
+(function(){
+  addEventListener('pagereveal',function(e){
+    if(!e.viewTransition)return;
+    document.documentElement.classList.add('vt');
+  });
+})();
+</script><link rel="expect" href="#main" blocking="render">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">
+<title>第61回 大朝神楽競演大会(2026年11月7日) | 広島県 | 神楽めぐり</title><meta name="description" content="2026年11月7日 13:00、大朝体育館(大朝中学校隣)(広島県山県郡北広島町)で開催される広島神楽。料金: 無料。北広島町大朝地域の神楽団が舞を競う、毎年恒例の大会です。開場12:00、開会式12:30、開演13:00。"><link rel="canonical" href="https://kagurameguri.jp/events/oasa-kagura-kyoen-2026.html"><meta name="google-site-verification" content="KbL9gJRGHY5flHq-yVJ5GBDOgnOC4fS809E8yAwNRrw">
+<link rel="alternate" type="application/atom+xml" title="神楽めぐり 新着の開催情報" href="/feed.xml">
+<meta property="og:title" content="第61回 大朝神楽競演大会(2026年11月7日) | 広島県 | 神楽めぐり"><meta property="og:description" content="2026年11月7日 13:00、大朝体育館(大朝中学校隣)(広島県山県郡北広島町)で開催される広島神楽。料金: 無料。北広島町大朝地域の神楽団が舞を競う、毎年恒例の大会です。開場12:00、開会式12:30、開演13:00。"><meta property="og:type" content="article"><meta property="og:url" content="https://kagurameguri.jp/events/oasa-kagura-kyoen-2026.html"><meta property="og:site_name" content="神楽めぐり"><meta property="og:locale" content="ja_JP"><meta property="og:image" content="https://kagurameguri.jp/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="第61回 大朝神楽競演大会(2026年11月7日) | 広島県 | 神楽めぐり"><meta name="twitter:description" content="2026年11月7日 13:00、大朝体育館(大朝中学校隣)(広島県山県郡北広島町)で開催される広島神楽。料金: 無料。北広島町大朝地域の神楽団が舞を競う、毎年恒例の大会です。開場12:00、開会式12:30、開演13:00。"><meta name="twitter:image" content="https://kagurameguri.jp/og.jpg">
+<meta name="theme-color" content="#f3eee4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link id="gf" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" media="print"><script>(function(){var l=document.getElementById('gf');if(l)l.addEventListener('load',function(){l.media='all'})})()</script><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap"></noscript>
+<script data-ga4-id="G-4DJ8WEBN7E" data-ga4-host="kagurameguri.jp" data-require-statistics-consent="">// GA4 basic consent mode: never load gtag.js until explicit statistics consent.
+// The generator embeds this bootstrap early in <head>, before async Cookiebot.
+(() => {
+  const tag = document.currentScript;
+  const measurementId = tag?.getAttribute("data-ga4-id") || "";
+  if (!/^G-[A-Z0-9]+$/.test(measurementId)) return;
+
+  // One bootstrap per document, even if another integration inserts it again.
+  if (window.kaguraAnalytics) return;
+  const state = window.kaguraAnalytics = { status: "waiting_consent", version: "2026-10-26" };
+  const loc = window.location;
+  let excluded = false;
+  try {
+    const params = new URLSearchParams(loc.search || "");
+    const choice = params.get("analytics");
+    if (choice === "off") window.localStorage.setItem("kagura.analytics.exclude", "1");
+    if (choice === "on") window.localStorage.removeItem("kagura.analytics.exclude");
+    excluded = choice === "off" || window.localStorage.getItem("kagura.analytics.exclude") === "1";
+  } catch (_) {
+    // An explicit opt-out still works when browser storage is unavailable.
+    excluded = /(?:^|[?&])analytics=off(?:&|$)/.test(loc.search || "");
+  }
+  const productionHost = tag.getAttribute("data-ga4-host");
+  if (productionHost && loc.hostname !== productionHost) excluded = true;
+  if (/(?:^|[?&])(?:gtm_debug|gtm_preview|debug_mode)=/.test(loc.search || "")) excluded = true;
+  window.kaguraGa4Allowed = false;
+  function stopForExclusion() {
+    excluded = true; // Sticky for this document. Re-enable only with a fresh navigation.
+    window.kaguraGa4Allowed = false;
+    window['ga-disable-' + measurementId] = true;
+    state.status = 'excluded';
+  }
+  function refreshExclusion() {
+    let off = new URLSearchParams(loc.search || '').get('analytics') === 'off';
+    try { off = off || window.localStorage.getItem('kagura.analytics.exclude') === '1'; } catch (_) {}
+    if (excluded || off) { stopForExclusion(); return true; }
+    return false;
+  }
+  // A cached document or another already-open tab must not retain stale permission.
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'kagura.analytics.exclude' && event.newValue === '1') stopForExclusion();
+  });
+  window.addEventListener('pageshow', refreshExclusion);
+  window.addEventListener('focus', refreshExclusion);
+  window.addEventListener('popstate', refreshExclusion);
+  if (excluded) { stopForExclusion(); return; }
+
+  // When Cookiebot is configured, missing/unavailable consent is DENIED.
+  const consentRequired = tag.hasAttribute("data-require-statistics-consent");
+  let started = false;
+  window.kaguraGa4Allowed = false;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  // This command only queues locally; no Google script or analytics request is made yet.
+  window.gtag("consent", "default", { analytics_storage: "denied" });
+
+  function explicitlyAllowed() {
+    const cb = window.Cookiebot;
+    // Cookiebot can grant *implied* consent automatically in some regions.
+    // Require a real response and an explicit choice to prevent silent tracking.
+    return cb?.hasResponse === true &&
+      cb.consent?.statistics === true &&
+      cb.consent?.method === "explicit";
+  }
+
+  function syncConsent() {
+    if (refreshExclusion()) return;
+    if (state.status === "tag_error") return;
+    const allowed = !consentRequired || explicitlyAllowed();
+    window.kaguraGa4Allowed = allowed;
+    if (!allowed) {
+      state.status = "waiting_consent";
+      if (started) {
+        // A Google tag cannot be reliably unloaded. Deny storage, then reload
+        // so that the next page does not initialize GA4 after consent is revoked.
+        window.gtag("consent", "update", { analytics_storage: "denied" });
+        window.location.reload();
+      }
+      return;
+    }
+    if (started) return; // Cookiebot may fire both Ready and Accept.
+    started = true;
+    state.status = "loading";
+    window.gtag("consent", "update", { analytics_storage: "granted" });
+    window.gtag("js", new Date());
+    // Keep only controlled campaign tags. Never send form/query/hash contents.
+    const page = new URL(loc.href);
+    const original = new URLSearchParams(page.search);
+    page.search = ""; page.hash = "";
+    for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content"]) {
+      const value = original.get(key);
+      if (value && /^[A-Za-z0-9_-]{1,80}$/.test(value)) page.searchParams.set(key, value);
+    }
+    let referrer = "";
+    try { referrer = new URL(document.referrer).origin + "/"; } catch (_) {}
+    window.gtag("config", measurementId, {
+      page_location: page.href, page_referrer: referrer,
+      allow_google_signals: false, allow_ad_personalization_signals: false
+    });
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(measurementId);
+    script.onload = () => { if (!refreshExclusion()) state.status = "tag_loaded"; };
+    script.onerror = () => { if (refreshExclusion()) return; state.status = "tag_error"; window.kaguraGa4Allowed = false; };
+    document.head.appendChild(script);
+    // Notify the interaction tracker on a late consent choice as well.
+    window.dispatchEvent(new Event("kagura:analytics-ready"));
+  }
+
+  if (consentRequired) {
+    window.addEventListener("CookiebotOnConsentReady", syncConsent);
+    window.addEventListener("CookiebotOnAccept", syncConsent);
+    window.addEventListener("CookiebotOnDecline", syncConsent);
+  }
+  syncConsent();
+})();</script><style>/* 侘び寂び: 和紙の地色・墨の文字・くすんだ朱。装飾は罫線と余白だけで見せる */
+:root{color-scheme:light dark;--bg:#f3eee4;--fg:#2b2622;--mut:#5d554a;--line:#d8cfbf;--ac:#9a3d2f;--ac2:#6b5c38;--card:#f8f4ec;--onac:#ffffff;
+--serif:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;--sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif}
+/* 動きの基準(全ページ共通): 加速の付け方は1種類、速さは3段階(短い=ホバー・状態、普通=出現、長い=演出)。霞が流れるような、静かな動き */
+:root{--ease:cubic-bezier(.22,.61,.36,1);--t-s:.35s;--t-m:.9s;--t-l:2.2s}
+/* 文字の大きさの基準(全ページ共通): 2xs=小さな印 / xs=狭い場所のラベル / s=補足・ボタン / m=本文と同じ / l=小見出し・カードの題 / xl=ロゴ・縦書き / 2xl=日付の数字 */
+:root{--fs-2xs:.78rem;--fs-xs:.85rem;--fs-s:.92rem;--fs-m:1rem;--fs-l:1.12rem;--fs-xl:1.3rem;--fs-2xl:2rem;--fs-h1:clamp(1.6rem,4.6vw,2.3rem)}
+@media(prefers-color-scheme:dark){:root{--bg:#171513;--fg:#e4ddd0;--mut:#aaa093;--line:#3a352e;--ac:#cf7a68;--ac2:#b3a272;--card:#1e1b18;--onac:#171513}}
+/* 入力欄・選択欄の枠: 地色と 3:1 以上の差をつけ、どこに入力するかが分かるようにする(WCAG 1.4.11)。区切りの罫(--line)より濃い */
+:root{--field:#857a69}
+@media(prefers-color-scheme:dark){:root{--field:#7d7262}}
+/* 背景の和紙の質感(楮の繊維・ムラ・砂目)。地色(--bg)の上に、半透明で重ねる。scripts/make-washi.mjs で作る */
+:root{--paper:url(/washi.svg)}
+@media(prefers-color-scheme:dark){:root{--paper:url(/washi-dark.svg)}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.95 var(--sans);letter-spacing:.04em;overflow-wrap:anywhere;
+background-image:var(--paper)}
+a{color:var(--ac);text-underline-offset:4px;text-decoration-thickness:1px}
+.wrap{max-width:860px;margin:0 auto;padding:0 24px}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:500;letter-spacing:.1em}
+h2{font-size:var(--fs-l);margin:56px 0 16px;display:flex;align-items:center;gap:14px}h2:after{content:"";flex:1;height:1px;background:var(--line)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:3px;border-radius:2px}
+.skip{position:absolute;left:12px;top:-60px;background:var(--ac);color:var(--onac);padding:10px 16px;z-index:10;text-decoration:none;border-radius:2px}
+.skip:focus{top:12px}
+
+/* ヘッダ: 画面の上に固定する(長いページでも、すぐにメニューを使える)。スクロールすると、下に薄い影 */
+/* ページの一番上では、後ろの背景(和紙・模様)をそのまま見せる。下へ動かしたら、本文と重ならないように背景を付ける */
+.top{position:sticky;top:0;z-index:30;background:transparent;transition:box-shadow var(--t-s) var(--ease),background var(--t-s) var(--ease)}
+.scrolled .top{background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 1px 0 var(--line),0 10px 22px -20px rgb(0 0 0/.6)}
+html{scroll-padding-top:84px}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 24px;padding-top:10px;padding-bottom:6px;max-width:1040px}
+.logo{font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.3em;color:var(--fg);text-decoration:none;padding:8px 0}
+.logo{display:inline-flex;align-items:center;gap:.6em}.logo img{width:32px;height:32px;border-radius:50%;flex:none}
+.symbol img{display:block;width:120px;height:120px;border-radius:50%;margin:4px 0 8px}
+.top nav{display:flex;gap:4px 14px;flex-wrap:wrap}
+.top nav a{color:var(--mut);text-decoration:none;font-size:var(--fs-s);padding:10px 0;min-height:44px;display:inline-flex;align-items:center;border-bottom:1px solid transparent;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+.top nav a:hover,.top nav a.on{color:var(--fg);border-color:var(--ac)}
+/* メインメニュー: 文字を少し大きく。今いるページは、濃い文字と朱の太い下線(すべてのタブで同じ見た目) */
+.top nav a{font-size:var(--fs-s);border-bottom-width:2px}
+.top nav a.on{font-weight:500}
+/* スマホ: 三本線のボタンで、メニューを開け閉めする(JS が動くときだけ。navjs クラス) */
+.menubtn{display:none}
+@media(max-width:640px){
+  .navjs .top .wrap{position:relative;flex-wrap:nowrap}
+  .navjs .menubtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:6px 12px;font:inherit;font-size:var(--fs-xs);letter-spacing:.1em;color:var(--fg);background:none;border:1px solid var(--line);border-radius:4px;cursor:pointer}
+  .menubtn .bars,.menubtn .bars:before,.menubtn .bars:after{display:block;width:16px;height:1.5px;background:currentColor;position:relative;transition:transform var(--t-s) var(--ease),opacity var(--t-s) var(--ease)}
+  .menubtn .bars:before,.menubtn .bars:after{content:"";position:absolute;left:0}
+  .menubtn .bars:before{top:-5px}.menubtn .bars:after{top:5px}
+  .menubtn[aria-expanded=true] .bars{background:transparent}
+  .menubtn[aria-expanded=true] .bars:before{transform:translateY(5px) rotate(45deg)}
+  .menubtn[aria-expanded=true] .bars:after{transform:translateY(-5px) rotate(-45deg)}
+  .navjs .top nav{display:none;position:absolute;right:0;left:0;top:100%;z-index:20;flex-direction:column;gap:0;padding:6px 16px 12px;background:var(--bg);border:1px solid var(--line);border-top:0;box-shadow:0 12px 24px -16px rgb(0 0 0/.5)}
+  .navjs .top nav.open{display:flex}
+  .navjs .top nav a{border-bottom:1px solid var(--line);padding:12px 4px}
+}
+
+/* ヒーロー */
+.hero{padding:56px 0 24px;position:relative}
+.hero h1{font-size:var(--fs-h1);margin:0 0 10px;line-height:1.5;font-weight:500}
+.hero p{margin:0;color:var(--mut)}
+.home-hero{display:flex;gap:32px;align-items:flex-start;justify-content:space-between;min-height:220px;padding-top:28px;padding-bottom:16px}
+/* トップの絵(生成AIで作成した水彩画)。四辺をページの地色へ溶かして、四角い枠に見えないようにする。
+   横(--mx)と縦(--my)のぼかしを重ね、両方が残る部分だけを見せる(mask-composite)。左は和紙の余白を広く溶かし、文字を邪魔しない。
+   暗い配色では、明るい和紙の余白が灰色の四角に見えるため、左をさらに広く溶かす */
+.home-hero{isolation:isolate;overflow:hidden;min-height:clamp(300px,47vw,406px)}
+.hero-art,.hero-art img{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.hero-art img{object-fit:cover;object-position:right bottom;
+  --mx:linear-gradient(90deg,transparent 0,#000 38%,#000 84%,transparent);--my:linear-gradient(180deg,transparent 0,#000 12%,#000 76%,transparent);
+  -webkit-mask-image:var(--mx),var(--my);mask-image:var(--mx),var(--my);-webkit-mask-composite:source-in;mask-composite:intersect}
+.home-hero .vert{display:none}
+/* 見出しは縦書き(2行)。絵にかかる部分も読めるよう、文字のまわりを地色で、うっすらぼかす */
+.home-hero .copy{flex:none;writing-mode:vertical-rl;display:flex;flex-direction:column;text-shadow:0 0 10px var(--bg),0 0 18px var(--bg)}
+.home-hero h1{margin:0;font-size:var(--fs-2xl);line-height:1.75;letter-spacing:.14em;white-space:nowrap}
+@media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
+@media(max-width:640px){
+  main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
+  .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
+    --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,#000 36%,#000 80%,transparent)}
+}
+@media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 16%,#000 44%,#000 86%,transparent)}}
+.vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
+/* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
+.ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity var(--t-m) var(--ease);--moon:#b39a5c}
+@media(prefers-color-scheme:dark){.ms{opacity:.28;--moon:#efe6cf}}
+.ms-moon{fill:var(--moon)}.ms-ring{fill:none;stroke:var(--moon);stroke-width:.8;opacity:.55}.ms-halo{fill:url(#msHalo)}
+.ms-s0{stop-color:var(--moon);stop-opacity:.55}.ms-s1{stop-color:var(--moon);stop-opacity:.16}.ms-s2{stop-color:var(--moon);stop-opacity:0}
+.ms-k{fill:url(#msMist)}.ms-m0{stop-color:var(--ac2);stop-opacity:0}.ms-m1{stop-color:var(--ac2);stop-opacity:.8}
+.ms-l0{stop-color:var(--fg);stop-opacity:.3}.ms-l1{stop-color:var(--fg);stop-opacity:.55}.ms-l2{stop-color:var(--fg);stop-opacity:0}.ms-torii{fill:var(--fg);opacity:.72}
+.ms-stars{display:none;fill:var(--moon)}@media(prefers-color-scheme:dark){.ms-stars{display:inline}}
+
+/* 一覧: 枠で囲わず、罫線で区切る */
+.card{display:flex;gap:22px;padding:20px 0;border-top:1px solid var(--line);position:relative;transition:background var(--t-s) var(--ease)}
+.card:last-of-type{border-bottom:1px solid var(--line)}
+@media(hover:hover){.card:hover{background:linear-gradient(90deg,color-mix(in srgb,var(--ac) 7%,transparent),transparent 70%)}}
+.date{flex:none;width:60px;white-space:nowrap;text-align:center;font-family:var(--serif);line-height:1.2}
+.date small{display:block;font-size:var(--fs-xs);color:var(--mut);letter-spacing:.05em}
+.date b{display:block;font-size:var(--fs-2xl);font-weight:500;color:var(--ac)}
+.date b+small{margin-top:2px}
+.rep{color:var(--ac2)}
+.tagline{margin:2px 0 4px;font-size:var(--fs-s);color:var(--fg)}
+.cta-end{margin-top:40px}
+.card :is(h3,h4){margin:0 0 2px;font-size:var(--fs-l);line-height:1.6}.card :is(h3,h4) a{color:var(--fg);text-decoration:none}.card :is(h3,h4) a:after{content:"";position:absolute;inset:0}
+.meta{color:var(--mut);font-size:var(--fs-s)}
+/* 伝えたい文と、注釈・注意・免責を、ひと目で分ける(全ページ共通)
+   ・伝えたい文(見出しの下の一文)は、本文の色で少し大きく
+   ・注釈は、小さく・薄く・字間を少し詰め、左の細い罫でひとまとまりにする(本文の流れから一段下げる)。続く注釈は間を詰める
+   ・日時・料金・検索操作の .meta は、そのまま */
+.hero p{color:var(--fg);font-size:var(--fs-l);line-height:1.85}
+.meta.annotation,small.meta{display:block;max-width:42em;margin:14px 0;padding:1px 0 1px 12px;border-left:2px solid var(--line);font-size:var(--fs-xs);line-height:1.8;letter-spacing:.02em;color:var(--mut)}
+.meta.annotation+.meta.annotation{margin-top:-8px}
+/* 入力欄の説明・出典リンクは注釈の罫を付けない(説明する相手のすぐ下に置く) */
+.finder .annotation,.quiz-program .annotation,.quiz-event .annotation{border-left:0;padding-left:0}
+.quiz-event .annotation{margin:2px 0 0}
+/* 強調: 読み込むフォントは 400/500 だけ。太字(700)は合成されて潰れるので 500 にし、文中の強調には薄い朱のマーカーを引く
+   (「(1) …」のような、改行が続く小見出し代わりの強調には引かない) */
+:root{--mark:color-mix(in srgb,var(--ac) 15%,transparent)}
+@media(prefers-color-scheme:dark){:root{--mark:color-mix(in srgb,var(--ac) 24%,transparent)}}
+strong{font-weight:500}
+main p strong:not(:has(+br)){background:linear-gradient(transparent 60%,var(--mark) 60%);padding:0 1px}
+main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
+.home-discovery{padding:20px 0 8px}
+.discovery-title{margin:0 0 8px;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg)}
+.home-discovery .quick{grid-template-columns:repeat(3,minmax(0,1fr))}
+.discovery-prefs{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:8px}
+.discovery-prefs a{display:inline-flex;gap:6px;align-items:center;min-height:44px;color:var(--ac);font-size:var(--fs-s)}
+.discovery-prefs span{font-size:var(--fs-xs);color:var(--mut)}
+.tag{display:inline-block;font-size:var(--fs-s);color:var(--ac2);text-decoration:none;margin:0 14px 0 0;padding:8px 0 4px;border-bottom:1px solid var(--line);position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+.tag:hover{color:var(--ac);border-color:var(--ac)}
+.tag.gold{color:var(--ac)}
+
+/* 旅の案内(アフィリエイト) */
+/* 宿の案内: 一覧・種類・県のページでは、一覧の手前に置く帯。開催・定期公演のページでは、右の固定カード(スマホでは、要点の直下) */
+.aff{margin:22px 0 26px;padding:16px 20px 12px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac2);border-radius:4px}
+.aff h2{margin:0 0 10px;font-size:var(--fs-m)}.aff h2:after{display:none}
+.afflist{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:8px}
+.afflist a{display:grid;grid-template-columns:1fr;row-gap:2px;align-items:center;padding:10px 16px;min-height:56px;text-decoration:none;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:3px;transition:border-color var(--t-s) var(--ease),background var(--t-s) var(--ease)}
+.afflist a:hover{border-color:var(--ac2)}.afflist a:after{content:"›";grid-area:1/2/3/3;color:var(--ac2);font-size:var(--fs-xl)}.afflist a{grid-template-columns:1fr auto}
+.afflist b{font-weight:500;font-size:var(--fs-s)}.afflist small{color:var(--mut);font-size:var(--fs-2xs)}
+/* 既存の色・書体・絵は維持し、余白と位置だけを整える */
+.home-search-link{margin:0 0 18px;text-align:right}
+.home-search-link .tag{margin-right:0}
+.pref-month-nav{margin:14px 0 20px}
+.pref-month-nav .meta{display:block}
+.pref-month h2,.pref-stay{scroll-margin-top:94px}
+/* カード全体の詳細リンクより、出典リンクを手前に置く。 */
+.event-facts a{position:relative;z-index:1}
+.comparison-facts,.comparison-facts>span{display:block}
+/* 一覧の会場・料金・予約: 見出しは薄く、値は本文の色で。出典と確認日は1行にまとめて小さく */
+.event-facts{margin:4px 0 6px;line-height:1.8}
+.event-facts .k{color:var(--mut)}
+.event-facts>div:not(.src){color:var(--fg)}
+.event-facts .tbd{color:var(--mut)}
+.event-facts>.src{display:inline;font-size:var(--fs-xs)}
+.event-facts>.src:nth-child(4):before{content:"";display:block;margin-top:2px}
+/* 折り返すときは「・」を行末に残し、次の行を「確認日」から始める(行頭に「・」を置かない) */
+.event-facts>.src+.src{white-space:nowrap}.event-facts>.src:has(+.src):after{content:"\a0・ "}
+/* 1件の高さを詰める: 料金と予約要否は同じ行に並べる。広い画面では会場も同じ行に続ける(長い会場名は、そのまま折り返す) */
+.event-facts>div:nth-child(2),.event-facts>div:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.event-facts>div:first-child{display:inline;margin-right:1.4em}}
+/* カード全体が詳細へのリンク: 乗せたとき・キーボードで選んだときに、題を朱にして、選んでいる場所を示す */
+@media(hover:hover){.card:hover :is(h3,h4) a{color:var(--ac)}}
+.card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
+.card:has(:is(h3,h4) a:focus-visible){outline:2px solid var(--ac);outline-offset:2px}
+.card :is(h3,h4) a:focus-visible{outline:0}
+.planning-section{margin:36px 0;scroll-margin-top:94px}
+.planning-eyebrow{margin:0 0 6px;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.12em}
+.planning-section>h2{margin-top:0}
+.planning-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.planning-links>a{display:flex;flex-direction:column;gap:5px;padding:18px;min-height:44px;border:1px solid var(--line);border-top:2px solid var(--ac2);border-radius:4px;color:var(--fg);text-decoration:none;background:var(--card)}
+.planning-links b{font-family:var(--serif);font-size:var(--fs-m);font-weight:500}
+.planning-links>a>span:last-child{color:var(--mut);font-size:var(--fs-xs)}
+.planning-links>a:hover{border-color:var(--ac)}
+.planning-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.planning-card{min-width:0;padding:22px;background:var(--card);border:1px solid var(--line);border-radius:4px}
+.planning-card :is(h3,h4){margin:0 0 12px;font-family:var(--serif);font-size:var(--fs-l);font-weight:500}
+.planning-card p{margin:8px 0 14px}
+.planning-card dl{font-size:var(--fs-s)}.planning-card dt{font-weight:bold}.planning-card dd{margin:0 0 12px}
+.planning-card .btn{max-width:100%;letter-spacing:.04em}
+.planning-card .annotation{margin-bottom:0}
+.planning-notice{padding-left:12px;border-left:2px solid var(--ac);font-size:var(--fs-s)}
+.planning-steps{padding-left:1.5em}.planning-steps li{margin-bottom:14px}
+.planning-ads{margin:24px 0}
+.experience-areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.experience-areas>a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card);text-decoration:none;scroll-margin-top:100px}
+.experience-areas>a:target{outline:2px solid var(--ac);outline-offset:2px}
+@media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a{padding:14px 18px}.planning-card{padding:18px}}
+/* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
+.quiz-offer[hidden]{display:none}
+body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
+.quiz-offer{box-sizing:border-box;position:fixed;inset:auto 20px 20px auto;margin:0;z-index:100;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:12px 16px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003}
+.quiz-offer #quiz-offer-title{font-family:var(--serif);font-size:var(--fs-m);margin:4px 0}
+.quiz-offer #quiz-offer-desc{font-size:var(--fs-s);margin:4px 0 8px}
+.quiz-close{display:block;margin-left:auto;min-height:44px}
+#quiz{max-width:40em;margin:28px 0}
+#quiz fieldset{border:0;padding:0;margin:0;min-width:0}
+#quiz legend{font-family:var(--serif);font-size:var(--fs-l);margin-bottom:16px}
+.quiz-choice{display:flex;align-items:center;gap:12px;min-height:52px;padding:12px;margin-bottom:10px;border:1px solid var(--line);border-radius:4px;cursor:pointer;background:var(--card)}
+.quiz-choice:has(input:checked){border-color:var(--ac);outline:1px solid var(--ac)}
+.quiz-choice input{width:20px;height:20px;flex:none;accent-color:var(--ac)}
+.quiz-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+#quiz button:disabled{opacity:.55;cursor:default}
+/* 進み具合: 「3/10」の文字の下に、細い朱の線 */
+#quiz-progress{margin:0 0 14px;font-size:var(--fs-s);color:var(--mut);--p:0%}
+#quiz-progress:after{content:"";display:block;height:3px;margin-top:6px;border-radius:2px;background:linear-gradient(90deg,var(--ac) var(--p),var(--line) var(--p));transition:background var(--t-s) var(--ease)}
+.quiz-choice{transition:border-color var(--t-s) var(--ease)}
+@media(hover:hover){.quiz-choice:hover{border-color:var(--ac)}}
+/* 結果: 惹かれる楽しみ方を大きく。内訳は横棒で */
+.quiz-type{padding:18px 20px;margin:0 0 8px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+#quiz [tabindex="-1"]:focus{outline:0}
+.quiz-type h2{margin:0;font-size:var(--fs-m);color:var(--mut)}.quiz-type h2:after{display:none}
+.quiz-type-label{margin:8px 0 2px;font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);letter-spacing:.12em}
+.quiz-type-label+p{margin:0 0 6px}
+#quiz-result h3{margin:32px 0 10px;font-size:var(--fs-l)}
+.quiz-bars{list-style:none;margin:0;padding:0}
+.quiz-bars li{display:grid;grid-template-columns:minmax(0,13em) 1fr 3em;align-items:center;gap:12px;padding:4px 0;font-size:var(--fs-s);color:var(--mut)}
+.quiz-bars li.win{color:var(--fg)}
+.quiz-bars .bar{height:8px;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
+.quiz-bars .bar:after{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--n) * 10%);background:var(--ac2);border-radius:4px}
+.quiz-bars .win .bar:after{background:var(--ac)}
+.quiz-bars .num{text-align:right}
+@media(max-width:560px){.quiz-bars li{grid-template-columns:1fr 3em;gap:2px 10px}.quiz-bars .bar{grid-column:1/-1;grid-row:2}}
+.quiz-program{padding:4px 0 2px;border-top:1px solid var(--line)}
+.quiz-program h4{margin:10px 0 2px;font-size:var(--fs-l)}.quiz-program p{margin:4px 0}
+.quiz-program h4 a{color:var(--fg);text-decoration-color:var(--line)}.quiz-program h4 a:hover{color:var(--ac);text-decoration-color:var(--ac)}
+.quiz-program .meta{margin:0 0 4px}
+.quiz-sample{font-size:var(--fs-s);color:var(--mut);padding-left:12px;border-left:2px solid var(--ac2)}
+.quiz-event{padding:10px 0;border-top:1px solid var(--line)}.quiz-event:last-of-type{border-bottom:1px solid var(--line)}
+.quiz-event>a{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;color:var(--fg);text-decoration:none}
+.quiz-event>a b{font-family:var(--serif);font-weight:500;color:var(--ac)}.quiz-event>a:hover span{color:var(--ac);text-decoration:underline}
+.quiz-event p{margin:2px 0 0}
+@media(max-width:560px){.quiz-offer{right:16px;bottom:16px}}
+/* 今週末・今月への入口(トップ) */
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.quick a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--fg);border-left:1px solid var(--line);transition:background var(--t-s) var(--ease)}
+.quick a:first-child{border-left:0}.quick a:hover{background:var(--card)}
+.quick b{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.quick b::after{content:" ›";color:var(--ac)}
+.quick small{color:var(--mut);font-size:var(--fs-s)}
+@media(max-width:560px){.quick{grid-template-columns:repeat(2,1fr)}.quick a{padding:10px 4px;min-height:52px;justify-content:center;align-items:center;text-align:center}.quick b{font-size:var(--fs-xs);letter-spacing:0;white-space:nowrap}.quick small{display:none}}
+@media(max-width:560px){.home-discovery .quick{grid-template-columns:repeat(2,minmax(0,1fr))}.home-discovery .quick a:last-child{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+.adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
+.adwrap{margin:28px 0;min-height:0}
+/* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */
+.adwrap:before{content:"広告";display:block;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;margin-bottom:4px}
+/* 開催ページの「会場近くの宿」 */
+.stay{margin:20px 0;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac2);border-radius:4px}
+.stay h2{margin:0 0 8px;font-size:var(--fs-m)}.stay h2:after{display:none}.stay p{margin:6px 0}.staylinks{display:grid;gap:10px;margin:14px 0 6px!important}
+/* 宿のボタン: 「公式情報を見る」(朱・主役)とは別の色(金茶)で、主役の次に目立たせる */
+.btn.stay-btn{display:grid;grid-template-columns:1fr auto;justify-content:stretch;row-gap:0;margin:0;padding:10px 16px;text-align:left;background:var(--ac2);border-color:var(--ac2);color:var(--onac);letter-spacing:.06em}
+.btn.stay-btn:after{content:"›";grid-area:1/2/3/3;align-self:center;font-size:var(--fs-xl)}
+.btn.stay-btn span{font-size:var(--fs-s)}.btn.stay-btn small{font-size:var(--fs-2xs);letter-spacing:.02em;opacity:.9}
+/* 開催・定期公演のページ: 要点・公式情報(左)と、宿のカード(右・スクロールに付いてくる) */
+.wrap.wide{max-width:1040px}
+.dpage{display:grid;grid-template-columns:minmax(0,1fr)}
+.d-side .stay,.d-side .aff{margin:4px 0 16px}
+/* 開催までの日数(見出しの下のタグの並び)。1週間以内は朱で強める */
+.until{display:inline-block;margin:6px 0 0;padding:3px 12px;font-size:var(--fs-s);letter-spacing:.06em;color:var(--ac2);border:1px solid var(--ac2);border-radius:999px;vertical-align:middle}
+.until.soon{color:var(--onac);background:var(--ac);border-color:var(--ac)}
+/* 右の列の要点(PCだけ。スマホでは、すぐ上の要点の表と重なるため出さない) */
+.side-summary{display:none}
+/* 説明文: 本文より少し大きく、要点のすぐ後の「何の公演か」を読みやすく */
+.desc-lead{font-size:var(--fs-l);line-height:1.9;margin:8px 0 24px}
+/* 観覧前の確認: 小さな文字のリンクから、押しやすいチップに */
+.d-top .viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 20px}
+.d-top .viewing-preparation .meta{flex-basis:100%;font-size:var(--fs-xs)}
+.d-top .viewing-preparation .tag{margin:0;padding:8px 14px;min-height:40px;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg)}
+.d-top .viewing-preparation .tag:hover{border-color:var(--ac);color:var(--ac)}
+.d-rest .share{margin-top:40px}
+/* 開催ページの交通・体験のカード: 列が狭いため、文字と余白を詰め、選び方の注意は小さく */
+.d-rest .planning-card{padding:16px 18px}.d-rest .planning-card :is(h3,h4){font-size:var(--fs-m);margin-bottom:8px}
+.d-rest .planning-card p{margin:6px 0 10px;font-size:var(--fs-s)}.d-rest .planning-card dl{font-size:var(--fs-xs);line-height:1.75;color:var(--mut)}.d-rest .planning-card dd{margin-bottom:8px}
+.d-rest .planning-card img{max-width:100%;height:auto}
+/* 車のカード: 見出しとバナーだけを見せる。バナーの下の文字は、画像が出ないときの代わりとして小さく */
+.planning-card.compact h3{margin-bottom:10px}.planning-card.compact .planning-banner span{font-size:var(--fs-2xs);color:var(--mut)}
+.planning-card.compact{display:flex;flex-direction:column}.planning-card.compact .pc-more{order:2;margin-top:10px}
+@media(min-width:960px){
+  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
+  .d-top{grid-area:top}.d-rest{grid-area:rest}
+  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:thin}
+  .side-summary.on{display:block}.side-summary{margin:0 0 14px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
+  .side-summary p{margin:0}.ss-when{font-family:var(--serif);font-size:var(--fs-l);line-height:1.6}.ss-place{margin-top:6px!important;font-size:var(--fs-s)}.ss-fee{font-size:var(--fs-s);color:var(--mut)}
+  .side-summary .btn{display:flex;width:100%;margin-top:12px}
+  .d-side .afflist{grid-template-columns:1fr}
+}
+/* 宿の画像バナー: 文字のボタンの下に並べる。大きさは、画像のまま(幅は枠に収める) */
+.stay-banners{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
+.stay-banner{display:block;max-width:100%;line-height:0;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.stay-banner img{display:block;max-width:100%;height:auto}
+/* 横長(468×60)のバナーは、サイドの幅いっぱいに縦に並べる。注意書きは、折りたたんで、ボタンとバナーを先に見せる */
+.d-side .stay-banners{flex-direction:column;gap:8px;margin:12px 0}.d-side .stay-banner{width:100%}.d-side .stay-banner img{width:100%}
+.stay-note{margin:8px 0 4px}.stay-note summary{cursor:pointer;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px}.stay-note[open] summary{margin-bottom:2px}
+.d-side .stay{padding:16px}
+.pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
+
+/* フォーム・ボタン */
+select,input,button{font:inherit;font-size:var(--fs-s);padding:7px 14px;min-height:44px;border:1px solid var(--line);border-radius:2px;background:var(--card);color:var(--fg);cursor:pointer}
+/* 入力欄の例文: ブラウザ既定の灰色(#757575)は地色の上で 4.5:1 に届かないため、注釈と同じ薄い文字にする */
+::placeholder{color:var(--mut);opacity:1}
+/* スマホ・タブレットでは、入力欄の文字を 16px 以上にする(iPhone・iPad は 16px 未満の欄を押すと画面を拡大してしまう) */
+@media(pointer:coarse),(max-width:560px){:is(select,textarea,input:not([type=checkbox],[type=radio],[type=submit],[type=button])){font-size:var(--fs-m)!important}}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--ac);color:var(--onac);padding:8px 22px;border-radius:2px;text-decoration:none;border:1px solid var(--ac);font-size:var(--fs-s);letter-spacing:.12em;transition:opacity var(--t-s) var(--ease);margin:0 6px 8px 0}
+.btn:hover{opacity:.85}.btn.ghost{background:transparent;color:var(--fg);border-color:var(--fg)}
+
+/* 詳細 */
+table.info{border-collapse:collapse;width:100%;margin:12px 0 20px}
+.keyinfo{background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px;padding:4px 18px;margin:16px 0 18px}
+.keyinfo table.info{margin:0}.keyinfo table.info tr:last-child th,.keyinfo table.info tr:last-child td{border-bottom:0}
+.keyinfo tr:first-child td{font-family:var(--serif);font-size:var(--fs-l);font-weight:500}
+.btn.sm{min-height:44px;padding:6px 14px;font-size:var(--fs-xs);letter-spacing:.06em}
+.actions{margin:0 0 6px}
+.share{display:flex;flex-wrap:wrap;align-items:center;gap:0 4px;margin:0 0 14px}.share .meta{margin-right:6px}
+.dates{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}.dates .meta{margin-right:2px}
+.chip{display:inline-flex;align-items:center;min-height:40px;padding:4px 14px;border:1px solid var(--line);border-radius:999px;color:var(--fg);text-decoration:none;font-size:var(--fs-s)}.chip:hover{border-color:var(--ac);color:var(--ac)}
+table.info th{text-align:left;width:5.5em;color:var(--mut);font-weight:400;font-size:var(--fs-s);vertical-align:top;letter-spacing:.08em}
+table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)}
+
+/* 地図 */
+#map{height:min(68vh,540px);border:1px solid var(--line);border-radius:2px;z-index:0}
+#map .leaflet-tile-pane{filter:sepia(.35) saturate(.7) contrast(.95)}
+@media(prefers-color-scheme:dark){#map .leaflet-tile-pane{filter:invert(.9) hue-rotate(180deg) sepia(.3) saturate(.6)}}
+.mapbox{position:relative}
+.maplock{position:absolute;right:10px;bottom:28px;z-index:500;min-height:40px;padding:6px 14px;font-size:var(--fs-xs);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 8px rgb(0 0 0/.25)}
+.maplock[aria-pressed=true],.maplock[aria-expanded=true]{background:var(--fg);color:var(--bg)}
+.pin{display:grid;place-items:center;border-radius:50%;background:var(--ac);border:2px solid var(--bg);box-shadow:0 1px 4px rgb(0 0 0/.4);color:var(--onac);font:500 12px/1 var(--sans)}
+.pin.reg{background:var(--ac2)}.pin.mix{background:linear-gradient(90deg,var(--ac) 50%,var(--ac2) 50%)}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin:8px 0 0}.legend .pin{display:inline-block;width:12px;height:12px;border-width:1px;margin-right:6px;vertical-align:-1px}
+.leaflet-popup-content ul{list-style:none;margin:6px 0 0;padding:0}.leaflet-popup-content li{margin:4px 0}.leaflet-popup-content .pd{color:var(--ac);font-family:var(--serif);margin-right:6px}
+#map.dmap{height:200px}.mapbox.big #map.dmap{height:min(60vh,480px)}
+@media(max-width:560px){#map.dmap{height:160px}}
+.leaflet-container .leaflet-control-attribution a{text-decoration:underline}/* 地図の出典のリンクを、まわりの文と色だけでなく下線でも見分けられるように */
+.leaflet-popup-content-wrapper{border-radius:2px;background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
+
+/* 日付・場所で探す */
+.finder{margin:8px 0 0;display:grid;gap:14px}
+.finder fieldset{border:0;margin:0;padding:0;min-width:0}
+.finder legend{font-family:var(--serif);color:var(--mut);font-size:var(--fs-s);letter-spacing:.08em;padding:0;margin-bottom:6px}
+.finder .regions{margin:0}
+.finder .range{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:10px;padding:10px 12px;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--ac);border-radius:4px}
+.finder .range label{display:inline-flex;align-items:center;gap:8px}
+.finder .where{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:30em}
+.finder input,.finder select{font:inherit;font-size:var(--fs-s);color:var(--fg);background:var(--card);border:1px solid var(--field);border-radius:4px;padding:8px 10px;min-height:44px}
+.finder select{width:100%;min-width:0}
+.finder .keyword{min-width:0;max-width:36em}
+.finder .keyword label{display:block;font-size:var(--fs-s);margin-bottom:6px}
+.finder input[type=search]{width:100%;min-width:0;font-size:var(--fs-m)}
+.finder .keyword p{margin:6px 0 0}
+.linkbtn{background:none;border:0;padding:8px 0;min-height:44px;color:var(--ac);text-decoration:underline;text-underline-offset:4px;font:inherit;font-size:var(--fs-s);cursor:pointer}
+.freset{margin:6px 0 0}
+@media(max-width:560px){.finder .regions button{padding:6px 9px;font-size:var(--fs-xs)}}
+.count{margin:22px 0 0;color:var(--mut);font-size:var(--fs-s)}.count:empty{display:none}
+.monthlist .md small{font-size:var(--fs-2xs);color:var(--mut);margin-left:1px}
+.monthlist{list-style:none;margin:28px 0 0;padding:0}
+.monthlist li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--line);position:relative}
+.monthlist li>span>a:first-child:after{content:"";position:absolute;inset:0}
+@media(hover:hover){.monthlist li:hover{background:linear-gradient(90deg,color-mix(in srgb,var(--ac) 7%,transparent),transparent 70%)}}.monthlist li:last-child{border-bottom:1px solid var(--line)}
+.monthlist .md{flex:none;width:6.2em;font-family:var(--serif);font-size:var(--fs-m);font-weight:500;color:var(--ac);white-space:nowrap}
+.monthlist a{color:var(--fg);text-decoration:none}.monthlist a:hover{color:var(--ac);text-decoration:underline}
+
+@media(max-width:560px){
+  .wrap{padding:0 18px}
+  .hero{padding-top:36px}
+  .home-hero{min-height:0;gap:20px}
+  .vert{font-size:var(--fs-m);letter-spacing:.3em;padding-right:14px;margin-right:0}
+  .ms{display:none}
+  .card{gap:14px}
+  .afflist a{border-left:0;border-top:1px solid var(--line);padding-left:0}.afflist a:first-child{border-top:0}
+  .top nav{gap:0 16px}
+}
+
+footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 48px;color:var(--mut);font-size:var(--fs-s);text-align:center;letter-spacing:.12em;line-height:2.4}
+footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2px;line-height:2.4}
+
+/* ゆっくり現れる */
+/* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
+
+/* 主催者の方へ: 要点のカード・載る場所・送り方・番号つきの手順・開閉式のよくあるご質問 */
+.olead{line-height:2.05}
+.opoints,.ocards,.steps{list-style:none;padding:0!important;display:grid;gap:10px}
+.opoints{margin:18px 0 12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.opoints li,.ocards li,.steps li{margin:0!important}
+.opoints li{padding:14px 16px;background:var(--card);border:1px solid var(--line);border-top:2px solid var(--ac);border-radius:4px}
+.opoints b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin-bottom:4px}
+.opoints span{display:block;font-size:var(--fs-s);color:var(--mut);line-height:1.8}
+.octa{margin:4px 0 0}
+.ocards{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.ocards li{padding:14px 16px;border:1px solid var(--line);border-radius:4px;font-size:var(--fs-s);line-height:1.85}
+.ocards b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin-bottom:4px}
+.oways{display:grid;gap:12px}
+.oway{padding:2px 18px 14px;background:var(--card);border:1px solid var(--line);border-radius:4px}
+.oway h3{margin-top:14px!important}.oway table.info{margin:8px 0 0}.oway table.info tr:last-child :is(th,td){border-bottom:0}
+.steps{counter-reset:st;gap:14px}
+.steps li{counter-increment:st;display:grid;grid-template-columns:44px 1fr;gap:0 14px;align-items:start}
+.steps li:before{content:counter(st);grid-row:span 2;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--ac);color:var(--onac);font-family:var(--serif);font-size:var(--fs-l)}
+.steps b{font-family:var(--serif);font-weight:500;padding-top:8px}.steps span{font-size:var(--fs-s);line-height:1.85}
+.rules li{margin:8px 0!important}
+.faq details{border-top:1px solid var(--line)}.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;padding:12px 4px;min-height:44px;font-weight:500}
+.faq details p{margin:0 4px 14px;font-size:var(--fs-s);line-height:1.9}
+
+/* 固定ページ */
+.prose{max-width:680px}.prose h2{font-size:var(--fs-l);margin:40px 0 10px}.prose ul{padding-left:1.4em}.prose li{margin:4px 0}
+
+/* 補助 */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.empty{color:var(--mut);padding:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+.taglist{display:flex;flex-wrap:wrap;gap:2px 0}.empty:empty,.monthlist:empty{display:none}
+
+/* 印刷: ナビ・広告・旅の案内を省く */
+@media print{.top,footer,.adwrap,.adph,.aff,.stay,.skip,.ms,.btn{display:none!important}body{background:#fff;color:#000}a{color:#000}}
+
+/* フォーム */
+.form{max-width:640px}
+.form fieldset{border:0;border-top:1px solid var(--line);margin:28px 0 0;padding:14px 0 0;min-width:0}
+.form legend{font-family:var(--serif);letter-spacing:.1em;padding:0 10px 0 0;color:var(--fg)}
+.f{margin:18px 0}
+.f label{display:flex;align-items:center;gap:8px;font-size:var(--fs-s);margin-bottom:6px}
+.f input,.f select,.f textarea{width:100%;max-width:100%;padding:10px 12px;font:inherit;font-size:var(--fs-m);background:var(--card);color:var(--fg);border:1px solid var(--field);border-radius:2px;min-height:44px}
+.f textarea{resize:vertical;line-height:1.7}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--ac)}
+.f [aria-invalid="true"]{border-color:var(--ac);border-width:2px}
+.req,.opt{font-style:normal;font-size:var(--fs-2xs);padding:0 7px;border-radius:2px;line-height:1.7}
+.req{background:var(--ac);color:var(--onac)}.opt{border:1px solid var(--line);color:var(--mut)}
+.hint{display:block;color:var(--mut);font-size:var(--fs-s);margin-top:4px}
+.err{display:block;color:var(--ac);font-size:var(--fs-s);min-height:0}.err:empty{display:none}
+.consent label{display:flex;gap:14px;align-items:flex-start}.consent .links{margin:4px 0 0 34px;font-size:var(--fs-s)}
+.more-fields{margin:18px 0 0;border:1px solid var(--line);border-radius:4px;padding:0 14px}.more-fields>summary{cursor:pointer;padding:12px 0;min-height:44px;color:var(--fg)}.more-fields>summary small{color:var(--mut)}.consent input{flex:none;width:20px;height:20px;min-height:0;margin-top:5px;accent-color:var(--ac)}
+.hp{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.status{margin-top:14px;min-height:1.6em}.status.ok{color:var(--fg);border-left:3px solid var(--ac2);padding-left:10px}.status.bad{color:var(--ac);border-left:3px solid var(--ac);padding-left:10px}
+.form .btn[disabled]{opacity:.5;cursor:wait}
+
+/* 定期公演 */
+.reg .date b{font-size:var(--fs-l);letter-spacing:.05em;padding-top:.3em}
+.card.reg{background:color-mix(in srgb,var(--ac2) 7%,transparent);padding-left:12px;padding-right:12px;border-left:2px solid var(--ac2)}
+.reg .date b{color:var(--ac2)}
+.reglist .card:first-child{border-top:1px solid var(--line)}
+
+/* パンくず・導入文・一覧 */
+.crumbs{margin:18px 0 -26px;font-size:var(--fs-xs)}
+.crumbs ol{display:flex;flex-wrap:wrap;gap:2px 0;list-style:none;margin:0;padding:0;color:var(--mut);align-items:center}
+.crumbs li{display:flex;align-items:center}
+.crumbs li+li:before{content:"›";margin:0 .6em;color:var(--line)}
+.crumbs a{color:var(--mut);padding:10px 0;display:inline-block}.crumbs a:hover{color:var(--ac)}
+.routebtn{margin:12px 0 0}
+.lead{max-width:680px;color:var(--fg);margin:8px 0 4px}
+.about{max-width:680px;margin:8px 0 4px}.about h2{margin-top:36px}
+.detail{max-width:680px;margin:8px 0 4px}.detail h2{margin-top:36px}.detail dt{font-weight:500;margin-top:12px}.detail dd{margin:2px 0 0}.detail ul{padding-left:1.4em}
+.venuelist{list-style:none;margin:0;padding:0}.venuelist li{padding:10px 0;border-top:1px solid var(--line)}.venuelist li:last-child{border-bottom:1px solid var(--line)}
+.venuelist a{color:var(--fg)}.venuelist b{font-weight:500}
+.vitems{list-style:none;margin:4px 0 0;padding:0 0 0 1em}.vitems li{padding:2px 0;border:0!important}.vitems .md{color:var(--ac);font-family:var(--serif);margin-right:8px}
+.vjump{background:none;border:0;padding:6px 0;min-height:40px;font:inherit;font-weight:500;color:var(--fg);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px;cursor:pointer}.vjump:hover{color:var(--ac)}.vjump[disabled]{text-decoration:none;cursor:default;color:var(--fg)}
+.tech{margin:8px 0 0;font-size:var(--fs-s)}.tech summary{cursor:pointer;color:var(--mut);padding:10px 0;min-height:44px}.tech p{margin-top:4px}
+.venuelist a:hover{color:var(--ac)}
+@media(max-width:560px){.crumbs{margin-bottom:-18px}}
+
+/* 表(外部サービスの一覧など) */
+.tblwrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch}
+.tbl{border-collapse:collapse;width:100%;min-width:560px;font-size:var(--fs-s);line-height:1.7}
+.tbl th,.tbl td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+.tbl thead th{background:var(--card);font-weight:500;color:var(--mut);letter-spacing:.1em;white-space:nowrap}
+.prose h3{font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin:28px 0 8px}
+/* 読み物(ガイド)の目次と出典 */
+.toc{margin:20px 0 8px;padding:14px 18px;border-left:2px solid var(--ac2);background:var(--card)}
+.totoc{margin:18px 0 0;font-size:var(--fs-s)}.totoc a{color:var(--mut);text-decoration:none;display:inline-block;padding:8px 0}.totoc a:hover{color:var(--ac)}
+@media(min-width:1320px){.guide .toc{position:fixed;top:96px;left:calc(50% - 430px - 236px);width:212px;max-height:calc(100vh - 120px);overflow:auto;margin:0;z-index:5}.totoc{display:none}}.toc ol{margin:0;padding-left:1.3em}.toc li{margin:6px 0}
+.prose li strong{font-weight:500}.prose ul.sources{font-size:var(--fs-s)}
+/* トップの「これからの神楽」: 地方のボタン、月の見出し、この先の月 */
+[hidden]{display:none!important}
+.regions{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.regions button{font:inherit;font-size:var(--fs-s);background:none;border:1px solid var(--line);color:var(--mut);padding:6px 14px;border-radius:999px;cursor:pointer;min-height:40px;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+.regions button:hover{border-color:var(--fg);color:var(--fg)}
+.regions button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.mhead{display:flex;align-items:center;gap:14px;margin:30px 0 2px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);letter-spacing:.1em;color:var(--mut)}
+.mhead:after{content:"";flex:1;border-top:1px solid var(--line)}
+.more{margin:14px 0 0}
+.regions.prefs{margin-top:0}.regions.prefs button{font-size:var(--fs-xs);min-height:36px}
+.later .tag span{color:var(--mut);font-size:var(--fs-xs);margin-left:2px}
+/* ガイド: 章(番号つき)と、項目ごとのカード(広い画面では2列)。出典は文末の小さな番号で、最後にまとめる */
+.prose.guide{max-width:880px}.guide>p,.guide>.toc{max-width:680px}
+.gsec{display:flex;align-items:baseline;gap:12px;margin:56px 0 14px!important;padding-top:20px;border-top:1px solid var(--line);font-family:var(--serif);font-weight:500;font-size:var(--fs-l)!important;scroll-margin-top:16px}
+.gsec .no{color:var(--ac);font-family:var(--sans);font-size:var(--fs-xs);letter-spacing:.18em}
+.gcards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));margin:14px 0 18px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px 18px;min-width:0}
+.prose .gcard h3{margin:0 0 6px;font-size:var(--fs-m);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.gcard h3 small{color:var(--mut);font-family:var(--sans);font-size:var(--fs-2xs);font-weight:400;letter-spacing:.1em}
+.gcard p{margin:6px 0}.prose .gcard ul{margin:6px 0;padding-left:1.2em}.gcard li{margin:3px 0}
+.tbl.cmp th[scope=row]{background:var(--card);color:var(--mut);font-weight:500;white-space:nowrap;width:4.5em}
+@media(min-width:561px){.tbl.cmp td{padding:12px 14px;line-height:1.85}}
+.tbl.cmp thead th{color:var(--fg);font-family:var(--serif)}
+sup.cite{font-size:.68em;line-height:0;margin-left:2px;white-space:nowrap}sup.cite a{color:var(--ac2);text-decoration:none;padding:0 1px;scroll-margin-top:90px}sup.cite a:hover{text-decoration:underline}
+ol.sources{font-size:var(--fs-s);padding-left:1.8em}ol.sources li{scroll-margin-top:16px}ol.sources li:target{background:var(--card)}
+ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
+.prose h2[id]{scroll-margin-top:16px}
+/* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
+.ph{display:inline-block}
+/* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
+   見出し・名前・短い説明は、Chrome・Edge では文節の境目で折り返す(auto-phrase)。長い本文は、いつもどおり字単位で詰める */
+body{line-break:strict;text-wrap:pretty}
+:is(h1,h2,h3,h4,a,button,label,summary,figcaption,td,th,dt,dd,li,small,.meta,.tagline,.d,.hero p){word-break:auto-phrase}
+:is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
+/* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
+.event-facts>.src:not(.src+.src){word-break:keep-all}
+/* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。
+   行の頭のかぎ括弧は半角ぶん詰めて、左の線をそろえる。どちらも対応していないブラウザでは、今までどおりの表示になる */
+@supports (text-autospace:normal){body{text-autospace:normal}:is(.date,.monthlist .md){text-autospace:no-autospace}}
+@supports (text-spacing-trim:trim-start){body{text-spacing-trim:trim-start}}
+
+/* 青海波(せいがいは)の文様: 広い画面の左右の余白に、うっすら敷く。
+   重なりを描くため、円は下地の色で塗りつぶす(下地の色と線の色を、昼・夜の配色ごとに用意) */
+:root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23f3eee4' stroke='%23b9a982' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+@media(prefers-color-scheme:dark){:root{--wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='%23171513' stroke='%236f6447' stroke-width='.7'%3E%3Cg%3E%3Ccircle cx='20' cy='10' r='19.5'/%3E%3Ccircle cx='20' cy='10' r='14'/%3E%3Ccircle cx='20' cy='10' r='8.5'/%3E%3Ccircle cx='20' cy='10' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='0' cy='20' r='19.5'/%3E%3Ccircle cx='0' cy='20' r='14'/%3E%3Ccircle cx='0' cy='20' r='8.5'/%3E%3Ccircle cx='0' cy='20' r='3'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='40' cy='20' r='19.5'/%3E%3Ccircle cx='40' cy='20' r='14'/%3E%3Ccircle cx='40' cy='20' r='8.5'/%3E%3Ccircle cx='40' cy='20' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}}
+body{overflow-x:clip}
+@media(min-width:1100px){
+  body:before,body:after{content:"";position:fixed;top:0;bottom:0;width:calc((100vw - 860px)/2);z-index:-1;pointer-events:none;background:var(--wave) 0 0/56px 28px;opacity:.4}
+  body:before{left:0;-webkit-mask-image:linear-gradient(to right,#000,transparent);mask-image:linear-gradient(to right,#000,transparent)}
+  body:after{right:0;-webkit-mask-image:linear-gradient(to left,#000,transparent);mask-image:linear-gradient(to left,#000,transparent)}
+}
+@media(min-width:1100px) and (prefers-color-scheme:dark){body:before,body:after{opacity:.55}}
+@media print{body:before,body:after{display:none}}/* 比較表: スマホでは、横に送らず、行ごとに縦に積む(列名は各欄の上に出す) */
+@media(max-width:560px){.tbl.cmp{min-width:0}.tbl.cmp thead{display:none}.tbl.cmp tr,.tbl.cmp th[scope=row],.tbl.cmp td{display:block;border:0}.tbl.cmp tr{border:1px solid var(--line);border-radius:6px;margin:0 0 10px;overflow:hidden}.tbl.cmp th[scope=row]{padding:7px 12px}.tbl.cmp td{padding:8px 12px;border-top:1px solid var(--line)}.tbl.cmp td:before{content:attr(data-k);display:block;color:var(--mut);font-size:var(--fs-2xs);letter-spacing:.1em}}
+
+/* 神楽の歴史: 横にスクロールする年表と、時代ページへの案内 */
+.tl{overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-inline:24px;margin:8px -24px 0;padding:6px 24px 14px;-webkit-overflow-scrolling:touch}
+.tl:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.tl-list{list-style:none;margin:0;padding:34px 0 0;display:flex;gap:0;position:relative;width:max-content}
+.tl-list:before{content:"";position:absolute;left:0;right:0;top:12px;height:1px;background:var(--line)}
+.tl-item{position:relative;width:236px;flex:none;padding:0 22px 0 0;scroll-snap-align:start}
+.tl-item:before{content:"";position:absolute;left:0;top:-27px;width:11px;height:11px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 4px var(--bg)}
+.tl-year{display:block;font-family:var(--serif);font-size:var(--fs-l);font-weight:500;color:var(--ac)}
+.tl-item p{margin:6px 0 8px;font-size:var(--fs-s);line-height:1.7}
+.tl-item a{font-size:var(--fs-xs);color:var(--mut)}
+.tl-hint{margin:0 0 8px}
+.era-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:8px 0 8px}
+.era{display:flex;flex-direction:column;gap:4px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:6px;color:var(--fg);text-decoration:none}
+.era:hover{border-color:var(--ac)}.era .no{font-family:var(--serif);color:var(--ac);font-size:var(--fs-s)}.era b{font-family:var(--serif);font-size:var(--fs-xl);font-weight:500}.era small{color:var(--mut)}.era span:last-child{font-size:var(--fs-s)}
+.hnav{display:flex;justify-content:space-between;gap:12px;margin:36px 0 8px}
+.hnav a{display:flex;flex-direction:column;gap:2px;padding:12px 16px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--fg);min-width:44%}
+.hnav a:hover{border-color:var(--ac)}.hnav small{color:var(--mut);font-size:var(--fs-xs)}.hnav .next{text-align:right;margin-left:auto}
+.history h2{margin-top:36px}
+@media(max-width:640px){.tl{margin:8px -18px 0;padding:6px 18px 14px;scroll-padding-inline:18px}.tl-item{width:200px}.era-grid{grid-template-columns:1fr}.hnav a{min-width:46%}}
+@media print{.tl{overflow:visible}.tl-list{flex-wrap:wrap;width:auto}}
+
+/* 図と表(はじめての神楽ガイド・神楽の歴史) */
+.fig{margin:22px 0;padding:16px 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.fig figcaption{margin-top:12px;font-size:var(--fs-s);color:var(--mut);line-height:1.8}
+.fig-h{font-family:var(--serif);font-size:var(--fs-m);font-weight:500;margin:22px 0 6px}
+.ic{width:1.15em;height:1.15em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.2em;margin-right:.35em;color:var(--ac);flex:none}
+.dg{width:100%;max-width:520px;height:auto;display:block;margin:0 auto;font-family:var(--sans)}
+.dg-box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}.dg-stage{fill:color-mix(in srgb,var(--ac2) 12%,var(--bg));stroke:var(--ac2);stroke-width:1.2}.dg-seat{fill:color-mix(in srgb,var(--ac) 8%,var(--bg))}
+.dg-t{fill:var(--fg)}.dg-m{fill:var(--mut)}.dg-ac{fill:var(--ac)}.dg-dot{fill:var(--ac2)}
+.dg-aclin,.dg-arrow,.dg-fire{stroke:var(--ac);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}.dg-arrow{stroke-width:2}
+.dg-line{stroke:var(--mut);stroke-width:2;stroke-linecap:round;fill:none}.dg-steam{stroke:var(--mut);stroke-width:1.6;opacity:.6;stroke-linecap:round;fill:none}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:none}
+.flow li{position:relative;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;padding:12px 14px 12px 44px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.flow li:not(:last-child):after{content:"↓";position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);color:var(--ac);font-size:var(--fs-s);line-height:1}
+.flow .n{position:absolute;left:12px;top:12px;width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--onac);font-size:var(--fs-xs);display:grid;place-items:center}
+.flow b{font-weight:500}.flow .d{flex-basis:100%;color:var(--mut);font-size:var(--fs-s)}
+@media(min-width:761px){
+  .flow.h{flex-direction:row;gap:22px}.flow.h li{flex:1;min-width:0;flex-direction:column;align-items:flex-start;padding:44px 12px 12px}
+  .flow.h .n{left:12px;top:12px}
+  .flow.h li:not(:last-child):after{content:"›";left:auto;right:-16px;top:50%;bottom:auto;transform:translateY(-50%);font-size:var(--fs-xl)}
+}
+.tree{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.tr-root{align-self:center;padding:8px 26px;background:var(--ac);color:var(--onac);border-radius:999px;font-family:var(--serif);font-size:var(--fs-l)}
+.tr-l1,.tr-l2{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.tr-l1{grid-template-columns:1fr}.tr-l2{grid-template-columns:1fr;margin-top:10px}
+.tr-n{padding:10px 14px;background:var(--bg);border:1px solid var(--line);border-top:3px solid var(--ac2);border-radius:6px}
+.tr-n b{display:block;font-weight:500}.tr-n .d{display:block;color:var(--mut);font-size:var(--fs-s);margin-top:2px}
+.tr-l1>li>.tr-n{border-top-color:var(--ac)}
+@media(min-width:761px){.tr-l1{grid-template-columns:1fr 2fr;align-items:start}.tr-l2{grid-template-columns:repeat(2,1fr)}}
+.tblwrap:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+
+.dg-pot{fill:color-mix(in srgb,var(--mut) 14%,var(--bg));stroke:var(--mut);stroke-width:2}.dg-leaf{stroke:var(--ac2);stroke-width:3;stroke-linecap:round;fill:none}.dg-drop{fill:var(--ac2)}.dg-num{fill:var(--onac);text-anchor:middle}
+@media(min-width:761px){.flow.h li{flex-wrap:nowrap}.flow.h .d{flex-basis:auto}}
+@media(min-width:561px){.tbl.cmp.nw td:nth-child(2){white-space:nowrap}}
+/* 英語ページ: 日本語向けの広い文字間隔をやめ、ロゴ・ボタンの折り返しを防ぐ */
+html[lang=en] body{letter-spacing:.015em}
+html[lang=en] .logo,html[lang=en] .menubtn,html[lang=en] .btn{letter-spacing:.03em;white-space:nowrap}
+html[lang=en] h1,html[lang=en] h2,html[lang=en] h3{letter-spacing:.02em}
+html[lang=en] .top nav a{letter-spacing:.01em}
+html[lang=en] .hero h1{line-height:1.3}
+/* 英語のトップ: 絵は日本語のトップと同じ。見出しは縦書きにせず、左上に横書きで置く */
+html[lang=en] .home-hero .copy{writing-mode:horizontal-tb;max-width:min(26em,62%)}
+html[lang=en] .home-hero h1{font-size:var(--fs-h1);line-height:1.35;letter-spacing:.02em;white-space:normal;margin:0 0 10px}
+html[lang=en] .home-hero p{color:var(--fg)}
+@media(max-width:640px){html[lang=en] .home-hero .copy{max-width:100%}}
+
+/* 余白: 塊と塊の間に、ひと呼吸おく(文字の大きさ・色は変えない) */
+h2{margin:64px 0 20px}
+.hero{padding-bottom:32px}
+.lead{margin:12px 0 24px}
+.card{gap:24px;padding:22px 0}
+.card :is(h3,h4){margin-bottom:6px}
+.event-facts{margin:6px 0 8px}
+.card.reg{padding-left:16px;padding-right:16px}
+.mhead{margin:40px 0 6px}
+.home-discovery{padding:28px 0 16px}
+.discovery-title{margin-bottom:14px}
+.discovery-prefs{margin-top:14px}
+.home-search-link{margin:12px 0 24px}
+.regions{margin:16px 0 10px}
+.taglist{gap:8px 0}
+.more{margin:24px 0 0}
+.keyinfo{padding:8px 22px;margin:24px 0 28px}
+.actions{margin:0 0 14px}
+.share{margin:0 0 32px}
+main>p:not([class]){margin:20px 0}
+.dates{margin:24px 0}
+.mapbox{margin-top:32px}
+.routebtn{margin:16px 0 24px}
+.detail p,.about p{margin:12px 0}
+.detail h2,.about h2,.history h2{margin-top:48px}
+.stay{margin:40px 0;padding:24px 26px}
+.stay p{margin:10px 0}.staylinks{margin:18px 0 10px!important}
+.aff{margin:64px 0 8px;padding-top:28px}
+.monthlist li{padding:16px 0}
+.venuelist li{padding:14px 0}
+.count{margin-top:28px}
+.finder{gap:22px}
+.quick a{padding:14px 18px}
+.prose p{margin:14px 0}.prose h2{margin:52px 0 14px}.prose li{margin:8px 0}
+.gcards{gap:16px;margin:20px 0 24px}.gcard{padding:20px 22px}
+.quiz-program{padding:8px 0 10px}.quiz-event{padding:14px 0}
+footer{margin-top:96px;padding-top:36px}
+@media(max-width:560px){
+  h2{margin:52px 0 16px}
+  .card{gap:16px;padding:18px 0}
+  .keyinfo{padding:6px 16px}
+  .stay{padding:20px 18px}
+  .quick a{padding:12px 4px}
+  /* トップの県のリンクは1行にして、横に送る(最初の画面に絵と見出しを入れる)。右端を薄くして、続きがあることを示す */
+  .discovery-prefs{flex-wrap:nowrap;overflow-x:auto;gap:0 18px;margin:6px -18px 0;padding:2px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .discovery-prefs::-webkit-scrollbar{display:none}
+  .discovery-prefs a{flex:none}
+  /* 公演カード: 出典の名前は1行に収め、はみ出す分は「…」で省く(全文は開催ページと、リンク先で読める)。確認日は次の行 */
+  .event-facts{line-height:1.7}
+  .event-facts>.src:nth-child(4){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .event-facts>.src:nth-child(4) a:focus-visible{outline-offset:-2px}
+  .event-facts>.src:nth-child(4):before{display:none}.event-facts>.src:has(+.src):after{content:none}
+  .card .tag{padding-top:4px}
+  .card>div:last-child{min-width:0}
+  /* 確認日の行は、出典と別の行になるので折り返してよい(「取得日: …(内容の確認日は未登録)」が画面からはみ出していた) */
+  .event-facts>.src+.src{white-space:normal}
+}
+
+/* 開催ページ・定期公演ページ: 題のすぐ下に要点の帯を寄せる。日時は一番大きく。本文は1行を短くして読みやすく。
+   地図には「会場の場所」の見出しを付け、説明文と区切る。スマホでは「公式情報を見る」を画面の幅いっぱいにする */
+.hero:has(+.keyinfo){padding-bottom:4px}
+.keyinfo{margin-top:16px}
+@media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
+main>p:not([class]){max-width:42em}
+.maph+.mapbox{margin-top:0}
+@media(max-width:560px){
+  .actions .btn:not(.ghost){display:flex;width:100%;min-height:48px;margin-right:0}
+  .share{margin-bottom:24px}
+}
+
+/* 日付・場所で探す: 条件の入力を1つの面にまとめ、結果の件数を見出しのように扱う。
+   結果の会場・料金・予約要否は、公演カードと同じく詰めて並べる(料金と予約要否は同じ行。広い画面では会場も同じ行) */
+.finder{padding:20px 22px 22px;background:var(--card);border:1px solid var(--line);border-radius:4px;max-width:44em}
+.finder input,.finder select{background:var(--bg)}
+.count{font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em;margin-top:36px}
+.comparison-facts>span:nth-child(2),.comparison-facts>span:nth-child(3){display:inline-block;margin-right:1.4em}
+@media(min-width:561px){.comparison-facts>span:first-child{display:inline;margin-right:1.4em}}
+/* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
+   結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
+@media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
+  #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
+
+/* 都道府県ページ: 先頭のリンクを整理する。「開催月から探す」は罫で挟んだ1本の帯にし、宿探しは月と線で分ける。
+   「観覧前に確認」は、その下に注釈の形で置く。スマホでは月の札を1行にして、横に送る */
+.pref-month-nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;margin:20px 0 6px;padding:6px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pref-month-nav .meta{display:inline;margin-right:4px;font-size:var(--fs-xs)}
+.pref-month-nav .tag{margin-right:0;font-size:var(--fs-xs);border-bottom-color:transparent;min-height:40px;display:inline-flex;align-items:center}
+.pref-month-nav .tag[href$="-stay"]{padding-left:18px;border-left:1px solid var(--line);border-bottom:0}
+.pref-month-nav+.viewing-preparation{display:block;margin:10px 0 0;padding-left:12px;border-left:2px solid var(--line);font-size:var(--fs-xs);color:var(--mut)}
+.pref-month-nav+.viewing-preparation .tag{font-size:var(--fs-xs);margin-right:12px;padding:6px 0 2px}
+@media(max-width:560px){
+  .pref-month-nav{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:4px 18px;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
+  .pref-month-nav::-webkit-scrollbar{display:none}
+  .pref-month-nav>*{flex:none}
+}
+
+/* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */
+.planning-banner{display:inline-flex;flex-direction:column;gap:10px;max-width:100%;font-size:var(--fs-s)}
+.planning-banner img{display:block;max-width:100%;height:auto;border:0}
+
+/* ---------- 見た目の更新(角丸・影・余白): カードとボタンを、軽く・すっきり見せる ----------
+   左の太い罫(アクセント)をやめ、薄い枠と、やわらかな影で、まとまりを示す */
+:root{--radius:14px;--radius-s:10px;--shadow:0 1px 2px rgb(60 40 20/.05),0 12px 32px -20px rgb(60 40 20/.35)}
+@media(prefers-color-scheme:dark){:root{--shadow:0 1px 2px rgb(0 0 0/.3),0 12px 32px -18px rgb(0 0 0/.8)}}
+:is(.keyinfo,.stay,.aff,.side-summary,.planning-card){border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);background:var(--card)}
+.keyinfo{padding:6px 22px}
+.keyinfo table.info th,.keyinfo table.info td{border-bottom-color:color-mix(in srgb,var(--line) 60%,transparent)}
+.btn{border-radius:var(--radius-s);letter-spacing:.08em}
+.btn.ghost{border-color:var(--line)}.btn.ghost:hover{border-color:var(--ac);color:var(--ac);opacity:1}
+/* 宿のカード: 見出し → 条件のチップ → バナー → 注意(たたむ) */
+.stay h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin:0 0 10px}
+.stay-cond{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px!important}
+.stay-cond span{padding:2px 10px;font-size:var(--fs-2xs);letter-spacing:.06em;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:999px}
+.stay-banner{border-radius:8px;border-color:transparent;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+@media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
+.stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
+/* たたんだ注意書き: 小さく、薄く */
+:is(.stay-note,.pc-more){margin:8px 0 4px}
+:is(.stay-note,.pc-more) summary{cursor:pointer;width:fit-content;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px;list-style-position:inside}
+:is(.stay-note,.pc-more) summary:hover{color:var(--ac)}
+.pc-more dl{margin:6px 0 0}
+/* 右の列の要点 */
+.side-summary{padding:18px 20px}
+/* 交通・体験・準備のカード */
+.planning-lead{font-size:var(--fs-m);margin:0 0 6px}
+.planning-links>a{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;transition:border-color var(--t-s) var(--ease)}
+@media(hover:hover){.planning-links>a:hover{border-color:var(--ac)}}
+.planning-card{padding:18px 20px}
+/* 観覧前のチップ・開催までの日数 */
+.d-top .viewing-preparation .tag{border-radius:999px;box-shadow:0 1px 2px rgb(0 0 0/.05)}
+
+/* ---------- 全ページ: 一覧のカード・入口・チップを、開催ページと同じ見た目に ---------- */
+.card{padding:18px 22px;margin:0 0 12px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.card:last-of-type{border-bottom:1px solid color-mix(in srgb,var(--line) 75%,transparent)}
+.card.reg{padding-left:22px;padding-right:22px;border-left:1px solid color-mix(in srgb,var(--line) 75%,transparent);background:color-mix(in srgb,var(--ac2) 6%,var(--card))}
+@media(hover:hover){.card:hover{background:var(--card);border-color:color-mix(in srgb,var(--ac) 55%,var(--line))}.card.reg:hover{background:color-mix(in srgb,var(--ac2) 6%,var(--card))}}
+.card .event-facts{font-size:var(--fs-s)}
+@media(max-width:560px){.card,.card.reg{padding:14px 16px}}
+/* トップの入口: 3つのタイル */
+.quick{gap:10px;border:0}
+.quick a,.quick a:first-child,.home-discovery .quick a:last-child{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.quick a:hover{border-color:var(--ac)}
+/* 月・準備・種類などの並び: 押しやすいチップ */
+:is(.pref-month-nav,.viewing-preparation,.taglist) .tag{margin:0 8px 8px 0;padding:6px 14px;min-height:36px;display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:var(--fs-xs)}
+:is(.pref-month-nav,.viewing-preparation,.taglist) .tag:hover{border-color:var(--ac);color:var(--ac)}
+.pref-month-nav+.viewing-preparation{border-left:0;padding-left:0}
+/* 見出しの下のタグ(種類・県): 小さなチップ */
+.hero .tag{margin:6px 6px 0 0;padding:3px 12px;border:1px solid var(--line);border-radius:999px;font-size:var(--fs-xs)}
+.hero .tag.gold{border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
+/* 日付の一覧(あわせて観たい神楽・今週末など): 線を薄く */
+.monthlist li,.monthlist li:last-child{border-color:color-mix(in srgb,var(--line) 60%,transparent)}
+/* 県・種類のページの宿の帯: バナーを横に並べる(スマホは縦) */
+.aff .stay-banners{flex-wrap:nowrap}.aff .stay-banner{flex:1 1 0;min-width:0}.aff .stay-banner img{width:100%}
+.d-side .aff .stay-banners{flex-direction:column}
+@media(max-width:560px){.aff .stay-banners{flex-direction:column}}
+.aff h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l)}
+/* 種類・県の解説、ガイドの囲み */
+.about{padding:4px 0}
+input,select,textarea,button{border-radius:var(--radius-s)}
+.pref-month-nav+.viewing-preparation .tag{margin:0 8px 8px 0;padding:6px 14px;font-size:var(--fs-xs)}
+/* 一覧のカード: 長い料金・会場は2行までにして、詳しくは開催ページで(カードの高さをそろえる) */
+@media(max-width:560px){.card .event-facts>div:is(:nth-child(1),:nth-child(2)){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}}
+/* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */
+.planning-card:has(.pick){display:flex;flex-direction:column}
+.pick{margin:auto 0 0!important;padding:10px 12px;background:var(--bg);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.6}
+.pick .pr{margin-right:8px}.pick a{font-weight:500}
+.pick small{display:block;margin-top:2px;color:var(--mut);font-size:var(--fs-2xs);line-height:1.6}
+.picks{display:grid;gap:8px;margin:12px 0}
+.guide .planning-card>.meta{margin:0}.guide .planning-card :is(h3,h4){margin:2px 0 6px}.guide .planning-card>p:not(.meta,.pick){margin:0 0 12px}
+.planning-card.compact .planning-banner img{max-width:min(100%,300px)}
+/* 日付・場所で探す: 探し方のタブ */
+.ftabs{display:flex;gap:0;margin:0 0 12px;border-bottom:1px solid var(--line)}
+.ftabs button{border-radius:0;font:inherit;font-size:var(--fs-s);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 14px;min-height:44px;color:var(--mut);cursor:pointer}
+.ftabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--ac);font-weight:500}
+.fpanel.keyword{display:grid;gap:6px}.fpanel.keyword[hidden]{display:none}
+/* 長い一覧の折りたたみ(検索結果は月ごと、地図の会場は県ごと) */
+.rgroup{border-top:1px solid var(--line)}.rgroup:last-of-type{border-bottom:1px solid var(--line)}
+.rgroup>summary{cursor:pointer;padding:12px 4px;min-height:44px;font-family:var(--serif);font-size:var(--fs-m)}
+.rgroup>summary .meta{margin-left:8px;font-family:inherit;font-size:var(--fs-xs)}
+.rgroup>.monthlist,.rgroup>.venuelist{margin-top:0}
+/* ページ下部にまとめた出典・注記・広告の説明 */
+.page-notes{margin:40px 0 0;padding:14px 0 0;border-top:1px solid var(--line);color:var(--mut);font-size:var(--fs-2xs);line-height:1.7}
+.page-notes h2{margin:0 0 6px;font-size:var(--fs-2xs);font-family:inherit;font-weight:500;letter-spacing:.04em}
+.page-notes p{margin:0 0 4px;max-width:none}
+.page-notes .pr{font-size:var(--fs-2xs);border:0;padding:0}
+
+/* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
+.trip-band{margin-top:32px}
+.more-picks .picks{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+
+/* 右の列の小さな枠(本・ふるさと納税) */
+.side-box{margin:0 0 16px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.side-box h2{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.side-box h2:after{display:none}
+.side-box>p{margin:0 0 10px;font-size:var(--fs-xs);color:var(--mut)}
+.side-box .picks{margin:0}.side-box .pick{font-size:var(--fs-xs)}
+.search-links{display:grid;gap:6px;margin:0!important}
+.search-link{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;min-height:40px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--bg);color:var(--fg);text-decoration:none;font-size:var(--fs-xs)}
+.search-link:after{content:"›";color:var(--ac2)}.search-link:hover{border-color:var(--ac);color:var(--ac)}
+.more-picks .search-links{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+/* 縦に並べるとき(右の列・スマホ)は、バナーの高さを画像のままにする(flex の伸び縮みで高さ0にならないように) */
+.d-side .aff .stay-banner{flex:none}
+@media(max-width:560px){.aff .stay-banner{flex:none}}
+
+/* ---------- ヘッダーのメニュー: ひと目で「押せるタブ」と分かる形に(PC・タブレット) ----------
+   メニュー全体を1本の帯(枠つき)にし、各項目を丸いタブにする。今いるページのタブは朱で塗る */
+@media(min-width:641px){
+  .top .wrap{max-width:1120px}
+  .top nav{gap:2px;padding:4px;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);border-radius:999px;background:color-mix(in srgb,var(--card) 85%,transparent);box-shadow:var(--shadow)}
+  .top nav a{padding:0 12px;min-height:38px;border:0;border-radius:999px;color:var(--fg);letter-spacing:.02em;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease)}
+  .top nav a:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);color:var(--fg)}
+  .top nav a.on{background:var(--ac);color:var(--onac);font-weight:500}
+  .top nav a.on:hover{background:var(--ac);color:var(--onac)}
+  .top nav a:focus-visible{outline-offset:1px}
+}
+/* 本・ふるさと納税の紹介: 商品画像つき(小さな正方形) */
+.pick.has-img a{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center;text-decoration:none;color:var(--fg)}
+.pick.has-img a img{width:72px;height:72px;object-fit:contain;border-radius:8px;background:#fff}
+.pick.has-img a span{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.pick.has-img a:hover span{color:var(--ac);text-decoration-color:var(--ac)}
+.pick.has-img small{margin-left:82px}
+.pick.has-img>.pr{display:inline-block;margin:0 0 6px}
+.quiz-offer.quiz-offer-inline{position:static;inset:auto;grid-column:1/-1;width:min(340px,100%);margin:16px 0;box-shadow:none}
+/* 診断の任意条件。ネイティブ入力と明示的な「次へ」でキーボード・タッチを共通化。 */
+#quiz-region,.quiz-date-label input{display:block;width:100%;max-width:32rem;min-height:48px;box-sizing:border-box;font:inherit;padding:10px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px}
+.quiz-date-label:not([hidden]),.quiz-select-label{display:block;margin:12px 0}
+.quiz-evidence,.quiz-conditions{overflow-wrap:anywhere}
+
+/* Issued VC anchor/image remain intact; presentation is owned by the wrapper. */
+.vc-ad[hidden]{display:none!important}
+.vc-ad:not([hidden]){display:inline-block}
+.vc-ad>a{display:block}
+.vc-ad.stay-btn,.vc-ad.vc-experience{padding:0;border:0;background:transparent}
+.vc-ad.stay-btn>a,.vc-ad.vc-experience>a,.vc-ad.vc-stay>a{padding:12px 16px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
+.experience-areas>.vc-ad:not([hidden]){display:block}
+.vc-disclosure{font-size:var(--fs-s);border-bottom:1px solid var(--line);padding:12px 0}
+
+/* 動き: ページの出現・視差・ホバー・導入演出。
+   方針: ①JavaScriptが動かなくても、内容は全部見える(.js クラスがあるときだけ、隠す)
+         ②OSの「視差効果を減らす」では、すべて止める(.js / .intro クラスを付けない)
+         ③動かすのは transform 系だけ(レイアウトを動かさない = 表示のずれ CLS を起こさない)
+         ④静かでゆったり: 加速の付け方は --ease の1種類。速さは --t-s(ホバー・状態)/ --t-m(出現)/ --t-l(演出)の3段階。
+           弾む・拡大する・浮き上がる動きは使わない。ホバーは「色が変わる・朱の線が入る」だけ */
+
+/* ---------- 1. ページを開いたとき: 本文全体が、1回だけ、静かに現れる(全ページ共通。部分ごと・スクロールごとには動かさない) ---------- */
+@keyframes pagein{from{opacity:0;translate:0 8px}to{opacity:1;translate:none}}
+/* 終わりの値を残さない(backwards)。残すと、本文の中の固定(fixed)の要素(ガイドの目次)の基準が本文になり、スクロールについてこない */
+.js main{animation:pagein var(--t-m) var(--ease) backwards}
+@media print{.js main{animation:none}}
+
+/* ---------- 2. 視差(パララックス): 背景の層は、ゆっくり。手前は、普通に ---------- */
+.home-hero:before{content:"";position:absolute;inset:-40px -12% auto;height:380px;pointer-events:none;
+  background:radial-gradient(ellipse at 72% 38%,color-mix(in srgb,var(--ac) 9%,transparent),transparent 62%)}
+.js .home-hero:before{translate:0 calc(var(--py,0px)*.5)}
+/* 月と社: 空(月)は、ゆっくり。霞、地(鳥居)の順に、手前ほど速く動かして、奥行きを出す */
+.js .ms-sky{translate:0 calc(var(--py,0px)*.42)}.js .ms-kasumi{translate:0 calc(var(--py,0px)*.3)}.js .ms-land{translate:0 calc(var(--py,0px)*.18)}
+.js .vert{translate:0 calc(var(--py,0px)*.12)}
+.js .sparks{translate:0 calc(var(--py,0px)*.2)}
+@media(max-width:560px){.home-hero:before{inset:-40px 0 auto}.js .home-hero:before,.js .ms g,.js .vert,.js .sparks{translate:none}}
+/* 情景の、ずっと続く動き: 霞はゆっくり漂い、月の光と星は、かすかに明滅する(JS が動き、動きを減らさない設定のときだけ) */
+@keyframes kasumi{from{transform:translateX(-12px)}to{transform:translateX(12px)}}
+@keyframes halo{0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+.js .ms-k1{animation:kasumi 19s ease-in-out infinite alternate}
+.js .ms-k2{animation:kasumi 26s ease-in-out -9s infinite alternate-reverse}
+.js .ms-halo{animation:halo 7s ease-in-out infinite}
+.js .ms-stars circle{animation:twinkle 4.6s ease-in-out infinite}.js .ms-stars circle:nth-child(2n){animation-duration:6.2s;animation-delay:-2s}.js .ms-stars circle:nth-child(3n){animation-duration:3.8s;animation-delay:-1s}
+
+/* ---------- 3. 篝火の火の粉(動画背景の代わりの、軽い演出) ---------- */
+.sparks{display:none;position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.js .sparks{display:block}
+.sparks i{position:absolute;bottom:-8px;left:var(--x);width:var(--s);height:var(--s);border-radius:50%;background:var(--ac);
+  box-shadow:0 0 7px 1px color-mix(in srgb,var(--ac) 55%,transparent);opacity:0;animation:spark var(--t) linear var(--d) infinite}
+@keyframes spark{0%{transform:translate(0,0);opacity:0}12%{opacity:.75}70%{opacity:.35}100%{transform:translate(var(--dx),-360px);opacity:0}}
+.sparks.off i{animation-play-state:paused}
+
+/* ---------- 4. 開いた瞬間の演出(そのセッションの最初の、トップページだけ) ----------
+   情景(地 → 月が昇る → 霞が流れ込む)とヘッダーが現れる。本文は、ほかのページと同じ「1. ページの出現」で現れる */
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes softin{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:none}}
+@keyframes moonrise{from{transform:translateY(38px);opacity:0}to{transform:none;opacity:1}}
+@keyframes kasumiin{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+/* オープニングのあとに始まるよう、--sd(オープニングの長さ)だけ遅らせる。押して飛ばしたら(.unsplash)、すぐ始める */
+.intro{--sd:3.7s}.intro.unsplash{--sd:0s}
+.intro .ms-land{animation:fadein var(--t-l) var(--sd) var(--ease) both}
+.intro .ms-sky{animation:moonrise var(--t-l) calc(var(--sd) + .2s) var(--ease) both}
+.intro .ms-kasumi{animation:kasumiin var(--t-l) calc(var(--sd) + .8s) var(--ease) both}
+/* ヘッダーは .wrap ごと出す(nav に付けると、スマホでメニューを開くたびに遅れて出る) */
+.intro .top .wrap{animation:fadein var(--t-m) calc(var(--sd) + .1s) var(--ease) both}
+.intro .vert{animation:fadein var(--t-l) calc(var(--sd) + .6s) var(--ease) both}
+/* 見出し: 日本語は、オープニングのあと一拍おいて、1文字ずつ読む順に(上から)、ぼかしの奥からふわっと現れる。英語は、フレーズごとに現れる */
+.intro .ch{animation:softin var(--t-l) calc(var(--sd) + 1.4s + var(--i)*.14s) var(--ease) both}
+.intro[lang=en] .ph{animation:fadein var(--t-l) calc(var(--sd) + .5s) var(--ease) both}
+.intro[lang=en] .ph:nth-of-type(2){animation-delay:calc(var(--sd) + 1.1s)}
+.intro[lang=en] .ph:nth-of-type(3),.intro[lang=en] .ph3{animation-delay:calc(var(--sd) + 1.7s)}
+/* オープニング: 地色の中から、ロゴがぼかしの奥からふわっと現れ、少し置いてから、まずロゴが消え、そのあと地色の画面が消えてトップが現れる(約4.7秒。ロゴとトップは重ならない)。
+   押す・キーを押すと、すぐ消える(scripts/motion.js)。intro がないとき(2回目以降・動きを減らす設定・JSなし)は出さない */
+@keyframes splashin{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:none}}
+@keyframes splashout{to{opacity:0;visibility:hidden}}
+@keyframes logoout{to{opacity:0}}
+.splash{display:none}
+.intro .splash{display:flex;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg) var(--paper);cursor:pointer;
+  animation:splashout 1s 3.7s ease-in-out forwards}
+.intro .splash>*{animation:splashin 2s .3s var(--ease) both,logoout .9s 2.8s ease-in-out forwards}
+.intro .splash b{animation-delay:.7s,2.8s}
+.intro.unsplash .splash{animation:splashout var(--t-s) var(--ease) forwards}
+.splash img{width:96px;height:96px}
+.splash b{font-family:var(--serif);font-weight:500;font-size:var(--fs-2xl);letter-spacing:.4em;margin-right:-.4em;color:var(--fg)}
+
+/* ---------- 5. ホバー: 色が変わる・朱の線が入る(浮き上がり・拡大はしない) ---------- */
+.btn{transition:background-color var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+.btn:hover{opacity:1;background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn.ghost:hover{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn[disabled]:hover{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
+.card:hover :is(h3,h4) a{color:var(--ac)}
+.card:before{content:"";position:absolute;left:-14px;top:22px;bottom:22px;width:2px;background:var(--ac);scale:1 0;transform-origin:top;transition:scale var(--t-s) var(--ease)}
+.card:hover:before{scale:1 1}
+.logo img{transition:opacity var(--t-s) var(--ease)}.logo:hover img{opacity:.8}
+/* 写真を載せたときの表示(いまは、写真がないので、使われていない)。拡大はせず、少し明るくする */
+.zoom{display:block;overflow:hidden}.zoom img{display:block;width:100%;height:auto;transition:filter var(--t-s) var(--ease)}.zoom:hover img{filter:brightness(1.06)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .home-hero:hover .ms{opacity:.36}
+  html{scroll-behavior:smooth}
+}
+
+/* ---------- 6. 動きを減らす設定のとき: すべて止める(念のための二重の保険) ---------- */
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .sparks{display:none!important}
+}
+
+/* ---------- 6. ページの移動(View Transitions): 前の画面が薄く消え、新しい画面が、少し下から現れる ----------
+   対応していないブラウザでは、普通に切り替わる。動きを減らす設定では、切り替えの演出をしない。
+   ヘッダーは名前を付けて、移動中も動かさない。公演の題名は切り離さず、本文と同じ速さ・距離で現れる */
+@media (prefers-reduced-motion:no-preference){
+  @view-transition{navigation:auto}
+  .top{view-transition-name:site-header}
+  ::view-transition-old(root){animation:vtout var(--t-s) var(--ease) both}
+  ::view-transition-new(root){animation:vtin var(--t-m) var(--ease) both}
+}
+@keyframes vtout{to{opacity:0}}
+@keyframes vtin{from{opacity:0;translate:0 8px}}
+/* 切り替えで現れたページでは、本文の出現(pagein)を重ねない */
+.vt main{animation:none}
+
+.sparks i:nth-child(1){--x:44.5%;--s:2.2px;--t:9.7s;--d:4.1s;--dx:-22px}
+.sparks i:nth-child(2){--x:25.6%;--s:3.2px;--t:8.3s;--d:2.8s;--dx:-38px}
+.sparks i:nth-child(3){--x:26.7%;--s:2.6px;--t:13.7s;--d:2.1s;--dx:33px}
+.sparks i:nth-child(4){--x:9.3%;--s:3.3px;--t:13.8s;--d:5.6s;--dx:36px}
+.sparks i:nth-child(5){--x:17.3%;--s:3.5px;--t:8.0s;--d:2.7s;--dx:-16px}
+.sparks i:nth-child(6){--x:65.5%;--s:3.4px;--t:12.1s;--d:0.1s;--dx:-28px}
+.sparks i:nth-child(7){--x:49.3%;--s:3.2px;--t:13.9s;--d:2.2s;--dx:21px}
+.sparks i:nth-child(8){--x:37.4%;--s:4.1px;--t:8.9s;--d:3.6s;--dx:-25px}
+.sparks i:nth-child(9){--x:63.0%;--s:2.5px;--t:9.3s;--d:2.3s;--dx:26px}
+.sparks i:nth-child(10){--x:39.4%;--s:2.9px;--t:13.3s;--d:4.0s;--dx:28px}
+.sparks i:nth-child(11){--x:41.2%;--s:3.4px;--t:12.4s;--d:2.8s;--dx:-14px}
+.sparks i:nth-child(12){--x:33.1%;--s:3.0px;--t:11.2s;--d:2.2s;--dx:23px}</style><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6313532246683561" crossorigin="anonymous"></script>
+<script data-goatcounter="https://kagurameguri.goatcounter.com/count" async src="https://gc.zgo.at/count.v5.js" integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ" crossorigin="anonymous"></script>
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"Event","name":"第61回 大朝神楽競演大会","startDate":"2026-11-07T13:00+09:00","eventAttendanceMode":"https://schema.org/OfflineEventAttendanceMode","eventStatus":"https://schema.org/EventScheduled","location":{"@type":"Place","name":"大朝体育館(大朝中学校隣)","address":{"@type":"PostalAddress","addressRegion":"広島県","addressLocality":"山県郡北広島町","streetAddress":"大朝4436","addressCountry":"JP"},"geo":{"@type":"GeoCoordinates","latitude":34.77584,"longitude":132.46243}},"url":"https://kagurameguri.jp/events/oasa-kagura-kyoen-2026.html","image":["https://kagurameguri.jp/og.jpg"],"description":"北広島町大朝地域の神楽団が舞を競う、毎年恒例の大会です。開場12:00、開会式12:30、開演13:00。入場無料(御花を受け付けています)。終了時刻・予約要否は主催者にご確認ください。","isAccessibleForFree":true},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ホーム","item":"https://kagurameguri.jp/"},{"@type":"ListItem","position":2,"name":"広島県","item":"https://kagurameguri.jp/pref/%E5%BA%83%E5%B3%B6%E7%9C%8C.html"},{"@type":"ListItem","position":3,"name":"第61回 大朝神楽競演大会"}]}]</script></head><body>
+<a class="skip" href="#main">本文へ移動</a>
+<header class="top"><div class="wrap"><a class="logo" href="/"><img src="/symbol-96.png" alt="" width="32" height="32">神楽めぐり</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>メニュー</button><nav id="gnav" aria-label="メインメニュー"><a href="/">開催予定</a><a href="/calendar.html">日付・場所で探す</a><a href="/map.html">地図で探す</a><a href="/kagura/">種類で探す</a><a href="/guide.html">神楽を初めて観る方へ</a><a href="/history/">神楽の歴史</a><a href="/organizers.html">主催者の方へ</a></nav></div></header><script>(function(){var h=document.documentElement,w=window,q=false;function sc(){q=false;h.classList.toggle('scrolled',(w.pageYOffset||0)>8)}w.addEventListener('scroll',function(){if(!q){q=true;w.requestAnimationFrame(sc)}},{passive:true});sc();var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()</script>
+<div class="wrap wide"><main id="main"><p class="vc-disclosure"><strong>広告</strong> このページにはアフィリエイト広告が含まれます。じゃらんの広告表示時には外部への通信が発生します。</p><nav class="crumbs" aria-label="パンくずリスト"><ol><li><a href="/">ホーム</a></li><li><a href="/pref/%E5%BA%83%E5%B3%B6%E7%9C%8C.html">広島県</a></li><li aria-current="page">第61回 大朝神楽競演大会</li></ol></nav><section class="hero"><h1>第61回 大朝神楽競演大会</h1><p><a class="tag gold" href="/kagura/%E5%BA%83%E5%B3%B6%E7%A5%9E%E6%A5%BD.html">広島神楽</a><a class="tag" href="/pref/%E5%BA%83%E5%B3%B6%E7%9C%8C.html">広島県</a><span class="until">開催まで あと12日</span></p></section>
+<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td>2026年11月7日(土) 13:00〜</td></tr><tr><th>会場</th><td>大朝体育館(大朝中学校隣)</td></tr>
+<tr><th>所在地</th><td>広島県 山県郡北広島町</td></tr><tr><th>料金</th><td>無料</td></tr><tr><th>予約要否</th><td>要確認</td></tr></table></div>
+<p class="calendar-notice">終了時刻は未確認です。カレンダーの終了は入力用に開始の2時間後を仮設定しており、公演の終了時刻ではありません。公式情報を確認し、必要に応じて予定を編集してください。</p>
+<p class="actions"><a class="btn" data-official-link href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547" rel="noopener" target="_blank">公式情報を見る</a> <a class="btn ghost sm" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=%E7%AC%AC61%E5%9B%9E+%E5%A4%A7%E6%9C%9D%E7%A5%9E%E6%A5%BD%E7%AB%B6%E6%BC%94%E5%A4%A7%E4%BC%9A%EF%BC%88%E7%B5%82%E4%BA%86%E6%9C%AA%E7%A2%BA%E8%AA%8D%E3%83%BB%E4%BB%AE2%E6%99%82%E9%96%93%EF%BC%89&amp;dates=20261107T130000%2F20261107T150000&amp;ctz=Asia%2FTokyo&amp;location=%E5%A4%A7%E6%9C%9D%E4%BD%93%E8%82%B2%E9%A4%A8%28%E5%A4%A7%E6%9C%9D%E4%B8%AD%E5%AD%A6%E6%A0%A1%E9%9A%A3%29+%E5%BA%83%E5%B3%B6%E7%9C%8C%E5%B1%B1%E7%9C%8C%E9%83%A1%E5%8C%97%E5%BA%83%E5%B3%B6%E7%94%BA%E5%A4%A7%E6%9C%9D4436&amp;details=%E7%B5%82%E4%BA%86%E6%99%82%E5%88%BB%E3%81%AF%E6%9C%AA%E7%A2%BA%E8%AA%8D%E3%81%A7%E3%81%99%E3%80%82%E3%82%AB%E3%83%AC%E3%83%B3%E3%83%80%E3%83%BC%E3%81%AE%E7%B5%82%E4%BA%86%E3%81%AF%E5%85%A5%E5%8A%9B%E7%94%A8%E3%81%AB%E9%96%8B%E5%A7%8B%E3%81%AE2%E6%99%82%E9%96%93%E5%BE%8C%E3%82%92%E4%BB%AE%E8%A8%AD%E5%AE%9A%E3%81%97%E3%81%A6%E3%81%8A%E3%82%8A%E3%80%81%E5%85%AC%E6%BC%94%E3%81%AE%E7%B5%82%E4%BA%86%E6%99%82%E5%88%BB%E3%81%A7%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93%E3%80%82%E5%85%AC%E5%BC%8F%E6%83%85%E5%A0%B1%E3%82%92%E7%A2%BA%E8%AA%8D%E3%81%97%E3%80%81%E5%BF%85%E8%A6%81%E3%81%AB%E5%BF%9C%E3%81%98%E3%81%A6%E4%BA%88%E5%AE%9A%E3%82%92%E7%B7%A8%E9%9B%86%E3%81%97%E3%81%A6%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%80%82%0A%E7%A5%9E%E6%A5%BD%E3%82%81%E3%81%90%E3%82%8A%3A+https%3A%2F%2Fkagurameguri.jp%2Fevents%2Foasa-kagura-kyoen-2026.html%0A%E5%85%AC%E5%BC%8F%E6%83%85%E5%A0%B1%3A+https%3A%2F%2Fkitahiro.rgr.jp%2Fpkobo_news%2Fnews-detail.php%3Fid%3D547%0A%E2%80%BB+%E6%97%A5%E6%99%82%E3%82%84%E4%BC%9A%E5%A0%B4%E3%81%AF%E5%A4%89%E3%82%8F%E3%82%8B%E3%81%93%E3%81%A8%E3%81%8C%E3%81%82%E3%82%8A%E3%81%BE%E3%81%99%E3%80%82%E5%87%BA%E3%81%8B%E3%81%91%E3%82%8B%E5%89%8D%E3%81%AB%E5%85%AC%E5%BC%8F%E6%83%85%E5%A0%B1%E3%82%92%E3%81%94%E7%A2%BA%E8%AA%8D%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%80%82" target="_blank" rel="noopener">Googleカレンダーに仮登録（終了未確認）</a></p>
+<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a><a class="tag" href="#venue-access">会場地図・経路</a></nav></div>
+<div class="d-side"><div class="side-summary"><p class="ss-when">2026年11月7日(土) 13:00〜</p><p class="ss-place">大朝体育館(大朝中学校隣)</p><p class="ss-fee">無料</p><a class="btn" data-official-side href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547" rel="noopener" target="_blank">公式情報を見る</a></div><aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場周辺の宿</h2>
+<p class="stay-cond"><span>11/7泊</span><span>大人2名</span><span>北広島町</span></p>
+<p class="staylinks"><span data-vc-ad="stay" class="vc-ad stay-btn" data-goatcounter-click="stay-jalan/oasa-kagura-kyoen-2026" data-goatcounter-title="stay-jalan/oasa-kagura-kyoen-2026" hidden><template><a href="//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&amp;pid=892732997&amp;vc_url=https%3A%2F%2Fwww.jalan.net%2Fuw%2Fuwp2011%2Fuww2011init.do%3Fkeyword%3D%2596%256B%258D%254C%2593%2587%2592%25AC%26stayYear%3D2026%26stayMonth%3D11%26stayDay%3D7%26stayCount%3D1%26roomCount%3D1%26adultNum%3D2" rel="nofollow sponsored noopener noreferrer" target="_blank"><img src="//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&amp;pid=892732997" height="1" width="0" border="0" alt="">北広島町の宿をじゃらんで探す</a></template></span> <a class="btn stay-btn" href="https://hb.afl.rakuten.co.jp/hgc/585fa57a.fb221d2f.585fa57b.dad29d3a/?pc=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_query%3D%25E5%258C%2597%25E5%25BA%2583%25E5%25B3%25B6%25E7%2594%25BA%26f_nen1%3D2026%26f_tuki1%3D11%26f_hi1%3D7%26f_nen2%3D2026%26f_tuki2%3D11%26f_hi2%3D8%26f_otona_su%3D2%26f_heya_su%3D1&amp;m=https%3A%2F%2Fkw.travel.rakuten.co.jp%2Fkeyword%2FSearch.do%3Fcharset%3Dutf-8%26f_query%3D%25E5%258C%2597%25E5%25BA%2583%25E5%25B3%25B6%25E7%2594%25BA%26f_nen1%3D2026%26f_tuki1%3D11%26f_hi1%3D7%26f_nen2%3D2026%26f_tuki2%3D11%26f_hi2%3D8%26f_otona_su%3D2%26f_heya_su%3D1" rel="sponsored noopener" target="_blank" data-goatcounter-click="stay-rakuten/oasa-kagura-kyoen-2026" data-goatcounter-title="stay-rakuten/oasa-kagura-kyoen-2026"><span>楽天トラベルで宿を探す</span><small>北広島町の空室・料金を見る</small></a></p>
+
+<span class="pr">PR</span></aside><aside class="side-box" aria-labelledby="event_learn-h"><h2 id="event_learn-h">広島神楽をもっと楽しむ</h2><p>本や映像で、物語や背景を。</p><div class="picks"><p class="pick has-img"><span class="pr">PR</span><a href="https://hb.afl.rakuten.co.jp/ichiba/58ce930b.9ff2191b.58ce930c.1d647f3f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcloverplain%2Fhk-101%2F&amp;link_type=picttext&amp;ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-learn/hiroshima-kagura-dvd" data-affiliate-category="learn" data-affiliate-partner="rakuten-ichiba" data-affiliate-placement="event_learn" data-affiliate-id="hiroshima-kagura-dvd"><img src="https://hbb.afl.rakuten.co.jp/hgb/58ce930b.9ff2191b.58ce930c.1d647f3f/?me_id=1254968&amp;item_id=10006395&amp;pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Fcloverplain%2Fcabinet%2Fcd_dvd%2Fhk-101-item01.jpg%3F_ex%3D240x240&amp;s=240x240&amp;t=picttext" alt="" width="72" height="72" loading="lazy" decoding="async"><span>DVD 広島神楽</span></a><small>楽天市場 ・ 広島神楽の映像作品</small></p></div></aside><aside class="side-box" aria-labelledby="event_furusato-h"><h2 id="event_furusato-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ町へ。</p><div class="picks"><p class="pick has-img"><span class="pr">PR</span><a href="https://hb.afl.rakuten.co.jp/ichiba/58ce9478.3bf97a73.58ce9479.d258958d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff343692-kitahiroshima%2Fsu089_002%2F&amp;link_type=picttext&amp;ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-furusato/kitahiroshima-kagura-mask" data-affiliate-category="furusato" data-affiliate-partner="rakuten-furusato" data-affiliate-placement="event_furusato" data-affiliate-id="kitahiroshima-kagura-mask"><img src="https://hbb.afl.rakuten.co.jp/hgb/58ce9478.3bf97a73.58ce9479.d258958d/?me_id=1371375&amp;item_id=10000830&amp;pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff343692-kitahiroshima%2Fcabinet%2Fprodacts_all%2Fc_su089_002_1.jpg%3F_ex%3D240x240&amp;s=240x240&amp;t=picttext" alt="" width="72" height="72" loading="lazy" decoding="async"><span>広島神楽面《般若(中)》 神楽面師・管沢良典作</span></a><small>楽天ふるさと納税 ・ 北広島町 ・ 神楽面師が手がける広島神楽の面</small></p></div></aside></div><div class="d-rest">
+<p class="desc-lead">北広島町大朝地域の神楽団が舞を競う、毎年恒例の大会です。開場12:00、開会式12:30、開演13:00。入場無料(御花を受け付けています)。終了時刻・予約要否は主催者にご確認ください。</p>
+
+
+<section id="venue-access" aria-label="会場の地図・経路"><h2 class="maph">会場の場所</h2><div class="mapbox"><div id="map" class="dmap" role="region" aria-label="会場周辺の地図" data-lat="34.77584" data-lng="132.46243" data-zoom="13"></div><button type="button" class="maplock" id="mapbig" aria-expanded="false">地図を大きく見る</button></div><script>/* 開催ページ・定期公演ページの地図: 最初は小さく、動かさない(ページのスクロールとぶつからない)。
+   「地図を大きく見る」を押すと、大きくなり、指やマウスで動かせる。位置は、地図の要素の data-lat / data-lng / data-zoom から読む */
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('map'), btn = document.getElementById('mapbig');
+  if (!el) return;
+  if (typeof L === 'undefined') { el.parentNode.hidden = true; return; }
+  var at = [+el.dataset.lat, +el.dataset.lng];
+  var m = L.map('map', { scrollWheelZoom: false, dragging: false, tap: false, zoomControl: false }).setView(at, +el.dataset.zoom || 15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(m);
+  L.marker(at, { icon: L.divIcon({ className: 'pin ev', iconSize: [24, 24], iconAnchor: [12, 12] }), title: el.getAttribute('aria-label') }).addTo(m);
+  var zc = L.control.zoom();
+  if (btn) btn.addEventListener('click', function () {
+    var big = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', String(big)); btn.textContent = big ? '地図を小さくする' : '地図を大きく見る';
+    el.parentNode.classList.toggle('big', big);
+    if (big) { m.dragging.enable(); m.scrollWheelZoom.enable(); zc.addTo(m); } else { m.dragging.disable(); m.scrollWheelZoom.disable(); zc.remove(); }
+    m.invalidateSize(); m.setView(at, m.getZoom());
+  });
+});</script><p class="routebtn"><a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=%E5%A4%A7%E6%9C%9D%E4%BD%93%E8%82%B2%E9%A4%A8(%E5%A4%A7%E6%9C%9D%E4%B8%AD%E5%AD%A6%E6%A0%A1%E9%9A%A3)%20%E5%BA%83%E5%B3%B6%E7%9C%8C%E5%B1%B1%E7%9C%8C%E9%83%A1%E5%8C%97%E5%BA%83%E5%B3%B6%E7%94%BA" target="_blank" rel="noopener">経路を調べる</a></p></section>
+
+<section class="planning-section" aria-labelledby="rental-h"><h2 id="rental-h">車で行くなら</h2><p class="planning-lead">レンタカーやカーシェアは、ここから探せます。</p><section class="planning-ads" aria-label="レンタカー・カーシェアを探す・広告"><div class="planning-grid"><article class="planning-card compact"><h3>レンタカーを探す</h3><details class="pc-more"><summary>詳しく・注意</summary><p class="meta">全国の店舗を検索</p><p>公共交通を確認したうえで、車での移動も比べたい方へ。全国の検索から出発場所と日時を選べます。</p><dl><dt>選ぶときに</dt><dd>利用する地域・出発場所・日時・返却店舗と営業時間、補償条件をリンク先で確認。</dd><dt>不要な場面・注意</dt><dd>公共交通で無理なく往復できる場合は不要です。会場の駐車場、終演後の返却・移動時間も確認してください。</dd></dl></details><a class="planning-banner" href="https://hb.afl.rakuten.co.jp/hsc/58ccf272.42d284bf.585fa57b.dad29d3a/_RTLink152141?link_type=pict&amp;ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6Mjc2MjQ5NiwiYW1wIjpmYWxzZX0%3D" aria-label="楽天トラベルでレンタカーを探す（広告）" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/rakuten-rental-national" data-affiliate-category="rental" data-affiliate-partner="rakuten-rental" data-affiliate-placement="event_rental" data-affiliate-id="rakuten-rental-national"><img src="https://hbb.afl.rakuten.co.jp/hsb/58ccf272.42d284bf.585fa57b.dad29d3a/?me_id=2100017&amp;me_adv_id=2762496&amp;t=pict" alt="" loading="lazy"><span>楽天トラベルでレンタカーを探す（広告）</span></a></article><article class="planning-card compact"><h3>カーシェアを探す</h3><details class="pc-more"><summary>詳しく・注意</summary><p class="meta">対応エリア・ステーションを確認</p><p>会場への移動に車を使いたい方へ。訪問先で利用できるか、対応エリアとステーションから確認できます。</p><dl><dt>選ぶときに</dt><dd>利用登録の条件、訪問先のステーション、利用日時、料金・補償、返却条件を公式案内で確認。</dd><dt>不要な場面・注意</dt><dd>開催地域での利用可否や車両の空きは未確認です。公共交通で往復できる場合は不要です。会場の駐車場も確認してください。</dd></dl></details><a class="planning-banner" href="https://hb.afl.rakuten.co.jp/hsc/58cd09f6.7960bea0.585fa57b.dad29d3a/_RTLink152141?link_type=pict&amp;ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6MjEzODQyNiwiYW1wIjpmYWxzZX0%3D" aria-label="楽天カーシェアでカーシェアを探す（広告）" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/rakuten-carshare-stations" data-affiliate-category="rental" data-affiliate-partner="rakuten-carshare" data-affiliate-placement="event_rental" data-affiliate-id="rakuten-carshare-stations"><img src="https://hbb.afl.rakuten.co.jp/hsb/58cd09f6.7960bea0.585fa57b.dad29d3a/?me_id=2101064&amp;me_adv_id=2138426&amp;t=pict" alt="" loading="lazy"><span>楽天カーシェアでカーシェアを探す（広告）</span></a></article></div></section></section><nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a><a href="#nearby-experiences"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a></nav><section id="nearby-experiences" class="planning-section" aria-labelledby="nearby-experiences-h"><p class="planning-eyebrow">公演の前後も楽しむ</p><h2 id="nearby-experiences-h">広島県で立ち寄れる体験を探す</h2><p><span data-vc-ad="activity" class="vc-ad vc-experience" data-goatcounter-click="experience-jalan/340000" data-affiliate-category="experiences" data-affiliate-partner="vc-jalan-activity" data-affiliate-placement="nearby_experiences" data-affiliate-id="experience-pref-340000" data-goatcounter-title="experience-jalan/340000" hidden><template><a href="//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&amp;pid=892732911&amp;vc_url=https%3A%2F%2Fwww.jalan.net%2Factivity%2F340000%2F%3FfromPage%3Dsearch-area" rel="nofollow sponsored noopener noreferrer" target="_blank"><img src="//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&amp;pid=892732911" height="1" width="0" border="0" alt="">広島県の体験をじゃらんで探す</a></template></span> <a href="/experiences.html#experience-pref-340000">ほかの都道府県から探す</a></p></section>
+<p class="share"><span class="meta">共有</span><a class="btn ghost sm" href="https://social-plugins.line.me/lineit/share?url=https%3A%2F%2Fkagurameguri.jp%2Fevents%2Foasa-kagura-kyoen-2026.html" target="_blank" rel="noopener" data-goatcounter-click="share-line">LINEで送る</a><button type="button" class="btn ghost sm" data-copy="https://kagurameguri.jp/events/oasa-kagura-kyoen-2026.html">リンクをコピー</button></p><script>/* 共有: 「リンクをコピー」を押すと、このページの URL をコピーする(コピーできない環境では、URL を選べる形で出す) */
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('[data-copy]');
+  if (!b) return;
+  var u = b.getAttribute('data-copy'), done = function () { b.textContent = 'コピーしました'; setTimeout(function () { b.textContent = 'リンクをコピー'; }, 2500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function () { window.prompt('このリンクをコピーしてください', u); });
+  else window.prompt('このリンクをコピーしてください', u);
+});</script>
+<h2>あわせて観たい神楽</h2><ol class="monthlist"><li><span class="md">11月3日<small>(火)</small></span><span><a href="/events/hiroshimane-kagura-day-2026-11.html">ひろしまね神楽デー</a><br><span class="meta">広島神楽 ・ 広島県安芸高田市</span></span></li><li><span class="md">11月7日<small>(土)</small></span><span><a href="/events/akitakata-5f97589558.html">神楽門前湯治村キャンドルナイト 秋の灯火 ～音楽と灯りに包まれて～</a><br><span class="meta">安芸高田神楽 ・ 広島県安芸高田市</span></span></li><li><span class="md">11月15日<small>(日)</small></span><span><a href="/events/geihoku-kagura-kenkyu-2026.html">芸北神楽研究発表大会</a><br><span class="meta">広島神楽 ・ 広島県山県郡北広島町</span></span></li><li><span class="md">11月15日<small>(日)</small></span><span><a href="/events/npo-hiroshima-0cf097bb64.html">あさきた神楽公演 あさひが丘神楽団</a><br><span class="meta">広島神楽 ・ 広島県広島市</span></span></li><li><span class="md">11月15日<small>(日)</small></span><span><a href="/events/hiroshima-shinrin-kagura-2026-11.html">広島市森林公園 神楽鑑賞(綾西神楽團)</a><br><span class="meta">広島神楽 ・ 広島県広島市</span></span></li><li><span class="md">11月15日<small>(日)</small></span><span><a href="/events/heiwa-no-mai-2026.html">第四回 平和の舞〈神楽の学校2026 inアステールプラザ〉</a><br><span class="meta">広島神楽 ・ 広島県広島市中区</span></span></li><li><span class="md">11月15日<small>(日)</small></span><span><a href="/events/michinoeki-chiyoda-kagura-2026-11.html">道の駅舞ロードIC千代田「神楽の日」</a><br><span class="meta">広島神楽 ・ 広島県山県郡北広島町</span></span></li><li><span class="md">11月21日<small>(土)</small></span><span><a href="/events/hongo-kagura-matsuri-2026.html">本郷神楽祭り</a><br><span class="meta">広島神楽 ・ 広島県安芸高田市</span></span></li></ol>
+</div></div><script>(function(){var k=document.querySelector('.keyinfo'),s=document.querySelector('.side-summary');if(!k||!s||!window.IntersectionObserver)return;new IntersectionObserver(function(x){s.classList.toggle('on',!x[0].isIntersecting&&x[0].boundingClientRect.top<0)}).observe(k)})()</script><section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2><p>2026年11月7日泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。北広島町周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p><p>PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p><p><span class="pr">PR</span> 紹介している商品・返礼品のリンクは広告(アフィリエイトリンク)です。購入・寄付で当サイトに報酬が入ることがあります。</p><p>地図のピンは町名ごとのおおよその位置です。</p><p>出典: 北広島町観光情報(2026年10月26日確認)</p><p>会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p><p><span class="pr">広告</span> 外部サービスの広告です。購入・予約で当サイトに報酬が入ることがあります。</p><p>掲載情報確認: 2026-10-25</p><p>県内全域の一覧です。会場からの距離・市町村・日付・所要時間はリンク先で確認してください。公演会場からの移動時間は未確認です。<span class="pr">広告</span> じゃらん遊び・体験へのアフィリエイトリンクです。予約で当サイトに報酬が入ることがあります。公演の受付・移動・食事の時間を先に確保して、訪問先の体験を選びましょう。</p><p>営業状況・空き・価格はリアルタイム表示ではありません。公演前に利用できることを保証するものではありません。</p></section></main>
+<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/quiz.html">神楽の好み診断</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
+<a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© 神楽めぐり</footer></div>
+<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">10問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside><script>(() => {
+  const box=document.getElementById('quiz-offer');
+  if(!box||typeof matchMedia!=='function'||window.top!==window.self||location.pathname==='/quiz.html')return;
+  const key='km-quiz-offer';
+  try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'0');sessionStorage.removeItem(key);}catch{return;}
+  const desktop=matchMedia('(hover: hover) and (pointer: fine)').matches;
+  let peak=scrollY,previous=null,dirty=false,shown=false,elapsed=0,visibleSince=document.visibilityState==='visible'?Date.now():null;
+  const close=box.querySelector('button');
+  const visible=n=>n&&!n.hidden&&getComputedStyle(n).display!=='none'&&getComputedStyle(n).visibility!=='hidden'&&n.getClientRects().length>0;
+  const typing=()=>document.activeElement?.matches('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
+  const blocked=()=>Array.from(document.querySelectorAll('dialog[open],[role="dialog"],#CybotCookiebotDialog')).some(n=>visible(n));
+  const engagedTime=()=>elapsed+(visibleSince===null?0:Date.now()-visibleSince);
+  function dismiss(){
+    if(box.hidden)return;
+    const restore=box.contains(document.activeElement);box.hidden=true;document.body.style.removeProperty('--quiz-offer-space');document.body.classList.remove('quiz-offer-visible');observer.disconnect();
+    if(restore&&previous?.isConnected)previous.focus({preventScroll:true});
+  }
+  const observer=new MutationObserver(()=>{if(!box.hidden&&(blocked()||typing()))dismiss();});
+  function offer(){
+    if(shown||engagedTime()<30000||document.visibilityState!=='visible'||dirty||typing()||blocked())return;
+    try{if(sessionStorage.getItem(key))return;}catch{return;}
+    // 本文と重ならない余白があるPCだけ右下へ。スマホ/狭幅は読んでいる本文の区切りに挿入する。
+    const main=document.querySelector('main');
+    const mainRect=main?.getBoundingClientRect();
+    const inline=!desktop||!mainRect||innerWidth-mainRect.right<372;
+    if(inline&&main){
+      const candidates=Array.from(main.querySelectorAll('.card,section,article,p')).filter(n=>!box.contains(n)&&n!==box&&!n.closest('a,button,form,header,aside')&&n.getBoundingClientRect().bottom>=innerHeight*.4&&n.getBoundingClientRect().bottom<=innerHeight);
+      const anchor=candidates.sort((a,b)=>Math.abs(a.getBoundingClientRect().bottom-innerHeight*.7)-Math.abs(b.getBoundingClientRect().bottom-innerHeight*.7))[0];
+      box.classList.add('quiz-offer-inline');if(anchor)anchor.after(box);else main.append(box);
+    }
+    let bottom=16;
+    if(!inline)for(const n of document.querySelectorAll('body *')){
+      if(n===box||box.contains(n)||!visible(n))continue;
+      const style=getComputedStyle(n),r=n.getBoundingClientRect();
+      if(['fixed','sticky'].includes(style.position)&&r.top>=innerHeight/2&&r.top<innerHeight&&r.bottom>0)bottom=Math.max(bottom,innerHeight-r.top+12);
+    }
+    box.style.bottom=`${bottom}px`;box.hidden=false;
+    const rect=box.getBoundingClientRect();
+    if(rect.height>innerHeight*.45||(!inline&&rect.top<Math.max(100,innerHeight*.3))){box.hidden=true;return;}
+    try{sessionStorage.setItem(key,'1');}catch{box.hidden=true;return;}
+    shown=true;previous=document.activeElement;
+    if(!inline){document.body.style.setProperty('--quiz-offer-space',`${rect.height+bottom}px`);document.body.classList.add('quiz-offer-visible');}
+    // region + hidden を使用し、dialog.show()の暗黙のフォーカス移動も避ける。
+    observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open','hidden','style','class','aria-modal']});
+    document.removeEventListener('mouseout',leave);window.removeEventListener('scroll',scroll);
+  }
+  function leave(e){if(desktop&&peak>=120&&e.relatedTarget===null&&e.clientY<=0)offer();}
+  function scroll(){
+    peak=Math.max(peak,scrollY);
+    const distance=document.documentElement.scrollHeight-innerHeight;
+    if(!desktop&&distance>0&&peak>=Math.max(200,distance/2)&&peak-scrollY>=200)offer();
+  }
+  function visibility(){if(visibleSince!==null)elapsed+=Date.now()-visibleSince;visibleSince=document.visibilityState==='visible'?Date.now():null;if(visibleSince===null)dismiss();}
+  close.addEventListener('click',dismiss);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!box.hidden){e.preventDefault();dismiss();}});
+  document.addEventListener('input',e=>{if(e.target.closest('form')){dirty=true;dismiss();}});
+  document.addEventListener('focusin',()=>{if(typing())dismiss();});
+  window.addEventListener('CookiebotOnDialogDisplay',dismiss);
+  window.addEventListener('resize',dismiss); // 回転・狭幅化で本文を覆う位置に残さない。
+  document.addEventListener('visibilitychange',visibility);
+  document.addEventListener('mouseout',leave);window.addEventListener('scroll',scroll,{passive:true});
+})();</script>
+<script>// Google Analytics 4: count only sponsored affiliate links.
+// Existing data-goatcounter-click attributes are reused without changing GoatCounter.
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  let link = target instanceof Element ? target.closest("a[data-goatcounter-click]") : null;
+  if (!link && target instanceof Element) {
+    const candidate = target.closest("a");
+    if (candidate?.closest("[data-vc-ad]")) link = candidate;
+  }
+  if (!link || !link.relList.contains("sponsored")) return;
+  link = link.closest?.("[data-vc-ad]") || link;
+
+  // The bootstrap enables GA4 only after explicit statistics consent.
+  // Do not trust Cookiebot's potentially automatic/implied consent here.
+  if (window.kaguraGa4Allowed !== true) return;
+
+  const category=link.getAttribute('data-affiliate-category');
+  if(category) {
+    const partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');
+    if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-rental','rakuten-carshare','vc-jalan-activity','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','experience_directory','nearby_experiences','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato','kagura_furusato','event_learn','event_furusato','regular_learn','regular_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??'')||typeof window.gtag!=='function')return;
+    window.gtag('event','affiliate_click',{affiliate_partner:partner,affiliate_category:category,affiliate_placement:placement,affiliate_content_id:id,affiliate_page_path:window.location.pathname});
+    return;
+  }
+
+  const label = link.getAttribute("data-goatcounter-click") || "";
+  const match = /^(stay|aff|banner)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
+  if (!match || typeof window.gtag !== "function") return;
+
+  window.gtag("event", "affiliate_click", {
+    affiliate_partner: match[2],
+    affiliate_placement: match[1] === "stay" ? "event_stay" : match[1] === "banner" ? "stay_banner" : "travel_block",
+    affiliate_content_id: match[3],
+    affiliate_page_path: window.location.pathname
+  });
+});
+
+// 新しい3カテゴリは、同意後に実際に見えた広告リンクを1ページ1回だけ数える。
+// 未表示・同意前の広告を表示数に混ぜない。古いブラウザで推測の表示数を送らない。
+(() => {
+  if(typeof IntersectionObserver!=='function'||typeof document.querySelectorAll!=='function')return;
+  const sent=new Set();
+  const observer=new IntersectionObserver(entries=>{
+    if(window.kaguraGa4Allowed!==true||typeof window.gtag!=='function'||document.visibilityState!=='visible')return;
+    for(const entry of entries) {
+      const link=entry.target;
+      const source=link.matches?.('[data-vc-ad]')?link.querySelector(':scope > a'):link;
+      if(!source||!entry.isIntersecting||entry.intersectionRatio<0.5||sent.has(link)||!source.relList.contains('sponsored'))continue;
+      const bm=/^banner-(jalan|rakuten)\/(.+)$/.exec(link.getAttribute('data-goatcounter-click')||'');
+      if(bm&&link.hasAttribute('data-banner-partner')) {
+        window.gtag('event','affiliate_view',{affiliate_partner:bm[1],affiliate_placement:'stay_banner',affiliate_content_id:bm[2],affiliate_page_path:window.location.pathname});
+        sent.add(link);observer.unobserve(link);continue;
+      }
+      const category=link.getAttribute('data-affiliate-category'),partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');
+      if(!['supplies','experiences','rental','learn','furusato'].includes(category)||!['rakuten-ichiba','vc-asoview','vc-jalan-rental','rakuten-rental','rakuten-carshare','vc-jalan-activity','rakuten-books','rakuten-furusato'].includes(partner)||!['guide_supplies','guide_rental','experience_guide','experience_directory','nearby_experiences','event_experiences','event_rental','regular_experiences','regular_rental','kagura_learn','history_learn','pref_furusato','kagura_furusato','event_learn','event_furusato','regular_learn','regular_furusato'].includes(placement)||!/^[-a-z0-9]{1,48}$/.test(id??''))continue;
+      window.gtag('event','affiliate_view',{affiliate_partner:partner,affiliate_category:category,affiliate_placement:placement,affiliate_content_id:id,affiliate_page_path:window.location.pathname});
+      sent.add(link);observer.unobserve(link);
+    }
+  },{threshold:0.5});
+  function observe(){for(const link of document.querySelectorAll('a[data-affiliate-category],a[data-banner-partner],[data-vc-ad][data-affiliate-category],[data-vc-ad][data-banner-partner]'))if(!sent.has(link)){observer.unobserve(link);observer.observe(link);}}
+  window.addEventListener('kagura:analytics-ready',observe);
+  window.addEventListener('kagura:ads-ready',observe);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')observe();});
+  observe();
+})();</script><script>// Consent-gated funnel events. No text input, link query, form content or user IDs.
+(() => {
+  if (window.kaguraAnalyticsEvents) return;
+  window.kaguraAnalyticsEvents = true;
+  const path = window.location.pathname;
+  const detail = /^\/(events|regular)\/([A-Za-z0-9_-]+)\.html$/.exec(path);
+  function send(name, params) {
+    if (window.kaguraGa4Allowed !== true || typeof window.gtag !== "function") return false;
+    window.gtag("event", name, { ...params, transport_type: "beacon" });
+    return true;
+  }
+  let viewed = false;
+  function view() {
+    if (!viewed && detail) viewed = send("view_event", { content_id: detail[2], content_type: detail[1] });
+  }
+  window.addEventListener("kagura:analytics-ready", view);
+  view();
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest("a[href]");
+    if (link) {
+      let url;
+      try { url = new URL(link.href, window.location.href); } catch (_) { return; }
+      if (url.origin === window.location.origin) {
+        const target = /^\/(events|regular)\/([A-Za-z0-9_-]+)\.html$/.exec(url.pathname);
+        if (target) send("select_event", { content_id: target[2], content_type: target[1], source_page: path });
+      } else if (detail && (link.hasAttribute("data-official-link") || link.hasAttribute("data-official-side")) && !link.relList.contains("sponsored")) {
+        // Official information button only; do not record arbitrary external URLs.
+        send("official_link_click", { content_id: detail[2], link_domain: url.hostname });
+      }
+      return;
+    }
+    const button = event.target.closest(".regions button[data-r], .regions button[data-p]");
+    if (button) send("filter_events", {
+      filter_type: button.hasAttribute("data-p") ? "prefecture" : "region"
+    });
+  });
+  document.addEventListener("change", (event) => {
+    // Measure the filter kind, never free-text input or its value.
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest("#finder")) return;
+    if (["region", "pref", "from", "to"].includes(target.id)) {
+      send("filter_events", { filter_type: target.id });
+    }
+  });
+})();</script><script>/* 動きの制御。.js クラス(head のスクリプトが、動きを減らす設定でないときだけ付ける)がないと、何もしない */
+(function () {
+  var d = document, h = d.documentElement, w = window;
+  if (!h.classList.contains('js')) return;
+
+  /* オープニング(トップの最初の訪問だけ): 押す・キーを押すと、すぐ消す。消えたあとは、画面から外す。
+     画面が消えはじめたら(トップが見えはじめたら)、押しても受け止めない。メニューなどを、すぐ押せるようにする */
+  var splash = d.querySelector('.splash');
+  if (splash && h.classList.contains('intro')) {
+    var passThrough = function () { splash.style.pointerEvents = 'none'; };
+    var skip = function () { h.classList.add('unsplash'); passThrough(); };
+    splash.addEventListener('click', skip);
+    w.addEventListener('keydown', skip, { once: true });
+    splash.addEventListener('animationstart', function (e) { if (e.target === splash) passThrough(); });
+    splash.addEventListener('animationend', function (e) { if (e.target === splash) splash.remove(); });
+  }
+
+  /* 視差(パララックス): スクロール量を、CSS変数 --py に渡すだけ。動かす計算は、CSSの translate が行う */
+  var hero = d.querySelector('.home-hero');
+  if (hero && 'IntersectionObserver' in w && w.matchMedia && w.matchMedia('(min-width:561px)').matches) {
+    var visible = true, ticking = false;
+    var update = function () { h.style.setProperty('--py', Math.min(w.pageYOffset || 0, 900) + 'px'); };
+    new IntersectionObserver(function (es) {
+      visible = es[0].isIntersecting;
+      var sp = hero.querySelector('.sparks'); if (sp) sp.classList.toggle('off', !visible); // 見えていない間は、火の粉を止める
+      // 一気に先頭へ戻ったときは、「見えるようになった」通知が、スクロールより遅れる。見えた瞬間に、最新の値へそろえる
+      if (visible) update();
+    }, { rootMargin: '120px' }).observe(hero);
+    w.addEventListener('scroll', function () {
+      if (!visible || ticking) return;
+      ticking = true;
+      w.requestAnimationFrame(function () { ticking = false; update(); });
+    }, { passive: true });
+    // 戻る/進む(ページの復元)のときも、いまの位置にそろえる
+    w.addEventListener('pageshow', update);
+    update();
+  }
+})();
+</script></body></html>
