@@ -822,8 +822,9 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .experience-areas>.vc-ad:not([hidden]){display:block}
 .vc-disclosure{font-size:var(--fs-s);border-bottom:1px solid var(--line);padding:12px 0}
 
-.cookie-controls{margin:24px 0;padding:16px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}
-.cookie-controls h2{font-size:var(--fs-m);margin-top:0}
-.cookie-controls button{min-height:44px;white-space:normal}
-.cookie-controls button[aria-disabled="true"]{opacity:.7;cursor:default}
-.cookie-controls button:focus-visible{outline:3px solid var(--fg);outline-offset:4px}
+/* Quiet footer entry; native Cookiebot owns the popup and all consent choices. */
+.cookie-settings{margin:4px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}
+.cookie-settings button{font:inherit;color:inherit;background:none;border:0;padding:10px 0;min-height:44px;text-decoration:underline;text-underline-offset:.25em;cursor:pointer}
+.cookie-settings button[aria-disabled="true"]{cursor:default}
+.cookie-settings button:focus-visible{outline:2px solid var(--ac);outline-offset:4px}
+.cookie-settings [role="status"]:not(:empty){display:block;margin-top:4px}
