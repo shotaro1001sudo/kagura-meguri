@@ -167,3 +167,30 @@ node tests/valuecommerce-transfer-probe.mjs > vc-persistence-progress.jsonl
 VC_UI_SEQUENCE/VC_MOCK_UIは解除済みとする。初期・reject前後・reload前後に、実targetId/browserContextId/origin/portとCookieの名前/domain/path/expires/session/secure/httpOnly/sameSiteだけを保存する。CDPのCookie応答には値も含まれるが、受信後直ちに許可したmetadataだけを取り出し、値・cookieLine・headers・tokenはログ/チェックポイントに保存しない。ブラウザAuditsのCookie除外/警告理由とNetwork ExtraInfoのblockedReasonsも保存する。
 
 設定変更、Cookie注入、allowlist緩和はない。コード上は同一Chrome profile/target/origin/portでPage.reloadするが、実測metadataで確認する。Cookie absentの場合とpresent-but-excludedの場合を区別し、同じCookie属性が保持されてもCMPが未回答になる場合は別の原因として扱う。Aliasで同意データを収集しないという一般説明だけでは、client側Cookieの保存可否やlogconsentの因果を証明できない。
+
+## 承認済み・最大4回の同意ログを伴うSDK検証
+
+2026-10-26 23:54 JSTに、テスト選択・テストURL・ブラウザ情報・接続元IPのCookiebotへの送信をユーザーが承認。前節のログ遮断による保存診断に代わり、次の1回を使用する。実CMPの応答で保存を検証し、Cookieを注入したり応答を模造しない。
+
+指定headを取得し全manifestを照合後、既存CHROMIUM_BINを保持して実行:
+
+```powershell
+Remove-Item Env:VC_UI_SEQUENCE -ErrorAction SilentlyContinue
+Remove-Item Env:VC_MOCK_UI -ErrorAction SilentlyContinue
+Remove-Item Env:VC_SDK_PERSISTENCE_ONLY -ErrorAction SilentlyContinue
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_SDK_SEQUENCE = '1'
+$env:VC_ALLOW_CONSENT_LOG = '1'
+$env:VC_CAPTURE_DIR = Join-Path $PWD 'vc-sdk-authorized-captures'
+$env:VC_EVIDENCE_FILE = Join-Path $PWD 'vc-sdk-authorized-checkpoint.json'
+try {
+  node tests/valuecommerce-transfer-probe.mjs > vc-sdk-authorized-progress.jsonl
+} finally {
+  Remove-Item Env:VC_ALLOW_CONSENT_LOG -ErrorAction SilentlyContinue
+}
+```
+
+通常の公開CMPリソースに加え、正確に `https://consent.cookiebot.com/logconsent.ashx` の初回GETだけを実行全体で最大4回許可。全リダイレクトは拒否（別CMP/local宛も拒否）。別host/path/port、POST、広告/GAは許可しない。上限到達/redirect/保存失敗時はそこで証拠を返し、自動再実行や上限拡張をしない。
+
+consentLogScope/consentLogRequestsに許可条件・回数・判断を記録。query値、Cookie値、応答本文は保存しない。callbackやHTTP 200だけで保存成功とせず、実Cookie metadata、拒否reload時の実CMP状態とVC要求0を確認。成功すれば許可→撤回へ進み、失敗すれば停止。通常UIからの拒否到達性は別の未解決事項。今回も本番公開しない。

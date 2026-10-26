@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "09519a7f3c1451855db5cb90cbf2a590e378835f5505980cc6e6767af6fecf89",
-    "bytes": 22883
+    "sha256": "ed627e64974e85df5471370f4dbff16d7abfff4a56b665a11d583235ac3efd40",
+    "bytes": 23616
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -86,5 +86,13 @@
   "tests/cookie-metadata-test.mjs": {
     "sha256": "b9384ed8530d81c4038ce9be41e8bdd78dde3127caf2493e825a42c816e419a4",
     "bytes": 615
+  },
+  "tests/helpers/cmp-request-policy.mjs": {
+    "sha256": "df7fa34222a5f9d05183e20f8b978dbba3acb6165cbeca1585c84e59f7737e4b",
+    "bytes": 983
+  },
+  "tests/cmp-request-policy-test.mjs": {
+    "sha256": "9f3bce12344cfad11c6fc0b6c532b03fca69e7f02f49429eb5d201f13fc1eebb",
+    "bytes": 1506
   }
 }

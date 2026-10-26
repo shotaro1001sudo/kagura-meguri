@@ -1,3 +1,4 @@
+import {createCmpRequestPolicy} from './helpers/cmp-request-policy.mjs';
 import {cookieMetadata} from './helpers/cookie-metadata.mjs';
 import {summarizeSdkPhase,assertSdkPhase} from './helpers/vc-sdk-assertions.mjs';
 import {boundedCdp} from './helpers/bounded-cdp.mjs';
@@ -10,6 +11,9 @@ import {join} from 'node:path';
 import {vcTag} from '../scripts/lib/valuecommerce.mjs';
 import {cspFor} from '../scripts/lib/csp.mjs';
 if(process.env.VC_SDK_SEQUENCE==='1'&&(process.env.VC_UI_SEQUENCE==='1'||process.env.VC_MOCK_UI==='1'||process.env.VC_REAL_CMP!=='1'))throw Error('SDK verification requires real CMP and excludes UI/mock modes');
+const consentLogOptIn=process.env.VC_ALLOW_CONSENT_LOG==='1';
+if(consentLogOptIn&&(process.env.VC_REAL_CMP!=='1'||process.env.VC_SDK_SEQUENCE!=='1'))throw Error('Consent-log opt-in requires isolated real CMP SDK verification');
+const cmpRequestPolicy=createCmpRequestPolicy({enabled:consentLogOptIn});
 const mockUi=process.env.VC_MOCK_UI==='1';
 if(mockUi&&process.env.VC_REAL_CMP==='1')throw Error('Choose mock UI or real CMP, not both.');
 const chromePath=process.env.CHROMIUM_BIN;
@@ -27,7 +31,7 @@ const server=createServer((req,res)=>{res.setHeader('Content-Type',req.url==='/w
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin='http://127.0.0.1:'+server.address().port;
 const profile=mkdtempSync(join(tmpdir(),'vc-guard-'));
 const chrome=spawn(chromePath,['--headless','--window-size=1280,1400','--force-device-scale-factor=1','--disable-gpu','--disable-background-networking','--disable-component-update','--disable-default-apps','--no-first-run','--disable-sync','--disable-extensions',...(process.platform==='linux'?['--no-sandbox']:[]),'--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
-let ws;let fatal=null;const evidence={targets:[],blocked:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
+let ws;let fatal=null;const evidence={consentLogScope:{explicitOptIn:consentLogOptIn,maximumRequests:4,endpoint:'https://consent.cookiebot.com/logconsent.ashx',method:'GET',redirectsAllowed:false},targets:[],blocked:[],continued:[],states:[],responses:[],failures:[],consoleErrors:[],cmpEvents:[]};
 const checkpoint=operation=>{evidence.operations??=[];evidence.operations.push(operation);writeFileSync(process.env.VC_EVIDENCE_FILE||'vc-probe-checkpoint.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify({checkpoint:operation}));};
 const safeUrl=value=>{try{const u=new URL(value);return u.origin+u.pathname.replace(/[a-f0-9]{8}-[a-f0-9-]{27,}/gi,'[id]');}catch{return '[non-url]'}};
 const safeText=value=>String(value).replace(/https?:\/\/[^\s"'<>]+/g,safeUrl).slice(0,800);
@@ -73,9 +77,11 @@ try {
    if(m.method==='Network.loadingFailed'&&m.params.blockedReason){const url=workerRequests.get(m.sessionId+':'+m.params.requestId);if(url){const u=new URL(url);evidence.blocked.push({targetSession:m.sessionId,host:u.hostname,path:u.pathname,guard:'Network.setBlockedURLs',blockedReason:m.params.blockedReason});}}
    if(m.method==='Fetch.requestPaused'){
     const {requestId,request}=m.params,u=new URL(request.url);
-    const local=u.origin===origin;
-    const cmp=live&&request.method==='GET'&&u.protocol==='https:'&&['consent.cookiebot.com','consentcdn.cookiebot.com','imgsct.cookiebot.com'].includes(u.hostname)&&!/logconsent|collect|\/log(?:\.|\/)/i.test(u.pathname);
+    const local=u.origin===origin&&!m.params.redirectedRequestId;
+    const policy=cmpRequestPolicy({url:request.url,method:request.method,live,redirected:!!m.params.redirectedRequestId});
+    const cmp=policy.allow;
     const entry={targetSession:m.sessionId,host:u.hostname,path:new URL(safeUrl(request.url)).pathname,method:request.method,...(u.hostname.endsWith('.valuecommerce.com')&&/^\d+$/.test(u.searchParams.get('pid')||'')?{placement:u.searchParams.get('pid')}: {})};
+    if(policy.consentLog){evidence.consentLogRequests??=[];evidence.consentLogRequests.push({...entry,allowed:cmp,ordinal:policy.ordinal,limit:policy.limit});checkpoint({phase:'consent-log-decision',allowed:cmp,ordinal:policy.ordinal});}
     (local||cmp?evidence.continued:evidence.blocked).push(entry);
     await send(local||cmp?'Fetch.continueRequest':'Fetch.failRequest',local||cmp?{requestId}:{requestId,errorReason:'BlockedByClient'},m.sessionId);
    }

@@ -76,3 +76,38 @@ DialogDisplayがcontroller前/後、保存済み拒否、イベント重複、�
 head59d093dのWindows実証: 全18ハッシュ・ガード6成功、CMP GET5のみ続行、unselectedで正式画像2件要求を遮断。実text-toggleの展開成功後も拒否/カテゴリUIなし、OK未操作。通常UIテストはここで停止。親承認により実SDKの必要Cookieのみ→保存拒否reload→marketingのみexplicit許可→withdrawの独立検証を準備。実SDK成功は公開UIのアクセス可能性を証明しない。passive recorderの先行は公式first-script文言への限定技術的逸脱として保持し、別途ベンダー承認が必須だとは扱わない。公開の工学的条件は実状態・要求・拒否/撤回の保護確認である。
 
 実SDK head43ff36f: reject成功、reloadで未回答へ戻り失敗。親保管vc-sdk-checkpoint.json SHA256=329a28fd36ea019d403ae6e409e23b9c469cb99a4b624fc991bc62b3dfea996b。allow/withdraw未実施。logconsent GET遮断の因果不明。metadataのみのreject/reload限定診断を追加。保存Cookie属性とブラウザ除外理由、同一context/origin/portを比較する。生Cookie値/headersの記録・Cookie注入・許可先変更はしない。
+
+## Pending consent-log diagnostic authorization (2026-10-26)
+
+Windows reports public uc.js HTTP 200, 121004 bytes, SHA-256
+`87c526734a40916659708d6605885ed495c342cf79e0e8bdc1cb28c57d97617a`.
+Its static inspection found submitCustomConsent updates memory and calls logConsent;
+logConsent loads an external response script through getScript. The callback also
+runs on error and is therefore not success evidence. No choice-cookie write was
+found in submitCustomConsent or onSuccess; the observed setCookie call was in the
+region-excluded implicit-allow path. This supports, but does not establish, the
+hypothesis that the log response script performs persistence. Server response
+behavior remains unobserved. No alias special case was found in the inspected path.
+
+Prepared locally only: `VC_ALLOW_CONSENT_LOG=1` requires both real-CMP and SDK modes.
+Default remains blocked. This permits at most four initial GET requests to exactly
+`https://consent.cookiebot.com/logconsent.ashx` (one bounded test sequence), and no
+redirects, including redirects to otherwise permitted CMP or local destinations.
+Every log decision is checkpointed with endpoint metadata, count and limit only;
+query values, cookies and response bodies are not logged. Advertising/GA requests
+remain blocked. A cap/redirect failure is a diagnostic blocker, not consent success.
+
+Do not run this opt-in or push this preparation until parent confirms permission
+for real test-consent transmission. No such request was sent during preparation.
+Local policy assertions cover disabled mode, exact endpoint, method/port/host,
+credentials, redirects, cap and absence of query values in returned evidence.
+Generated fixture and transfer hash manifest have not been updated: this is not
+yet a Windows handoff. Public production remains held.
+
+Parent relayed explicit user approval at 2026-10-26 23:54 JST for bounded test
+consent transmission. The prepared opt-in harness is now authorized for draft PR
+transfer and CI, not production release. See the final Windows instructions for
+the one-run sequence. Existing generated Oasa fixture was compared byte-for-byte
+against the current 142-page build and is unchanged; the manifest is refreshed
+with the new policy helper and regression test. Real execution remains delegated
+to Windows; no consent-log request was sent from this cloud checkout.
