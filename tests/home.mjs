@@ -120,7 +120,7 @@ export async function homeTests({ ok, section, OUT, build }) {
   ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島県の神楽 日程【2026年】"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));
   const ldOf = (id) => { const $e = cheerio.load(read(join(OUT, `events/${id}.html`))); return $e('script[type="application/ld+json"]').map((_, s) => JSON.parse($e(s).text())).get().flat().find((x) => x["@type"] === "Event"); };
   const full = ldOf("t-full"), xss = ldOf("t-xss");
-  ok(full.offers?.price === "1000" && full.offers.priceCurrency === "JPY" && xss.offers?.price === "500", "料金に金額があれば、構造化データの価格にする(最初の金額)", JSON.stringify([full.offers, xss.offers]));
+  ok(!full.offers && !xss.offers, "自由記述料金から販売中・券種価格・販売URLを推測しない", JSON.stringify([full.offers, xss.offers]));
 
   // 開催が多いとき: 最初は8件まで出し、残りは「すべて見る」・地方・県で出す(JS がなければ、日付・場所で探すへ)
   const base = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.prefecture === "広島県");
