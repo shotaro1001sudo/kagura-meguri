@@ -220,6 +220,20 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const verified = build("data/events.json", "dist-test-verified-hiroshima");
   ok(verified.status === 0, "公式確認済みの本番データでビルド成功", verified.stderr);
   if (verified.status === 0) {
+    // 町公式PDF27361の施設案内に「当日の施設内レシートの提示が必要」。
+    // 4開催に共有する見どころ・冒頭と、短縮されるmetaでも条件を落とさない。
+    for (const suffix of ['2026-11', '2026-12', '2027-01', '2027-02']) {
+      const page = cheerio.load(read(`dist-test-verified-hiroshima/events/michinoeki-chiyoda-kagura-${suffix}.html`));
+      const condition = '当日の施設内レシートの提示が必要';
+      ok(page('.desc-lead').text().includes(condition) && page('main li').text().includes(condition),
+        `千代田${suffix}: 冒頭・共有見どころに観覧条件を明記`);
+      ok(page('meta[name="description"]').attr('content').includes(condition),
+        `千代田${suffix}: metaの短縮後もレシート条件が残る`);
+      const ld = page('script[type="application/ld+json"]').toArray()
+        .flatMap(n => JSON.parse(page(n).text())).find(v => v['@type'] === 'Event');
+      ok(!ld.offers && ld.isAccessibleForFree === undefined && ld.description.includes(condition),
+        `千代田${suffix}: 条件付き無料を無条件無料や販売情報にしない`);
+    }
     const pref = cheerio.load(read("dist-test-verified-hiroshima/pref/広島県.html"));
     const facts = pref(`.card h3 a[href='/events/${eventId}.html']`).closest(".card").find(".event-facts");
     ok(facts.text().includes("料金: 参加無料") && facts.text().includes("予約要否: 不要（当日会場へ）") &&
