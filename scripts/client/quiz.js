@@ -1,87 +1,58 @@
 (() => {
-  const root=document.getElementById('quiz');
-  if (!root) return;
+  const root=document.getElementById('quiz');if(!root)return;
   const data=JSON.parse(document.getElementById('quiz-data').textContent);
-  const scoreAnswers=/* scoreAnswers */;
-  const start=document.getElementById('quiz-start'), form=document.getElementById('quiz-form');
-  const field=document.getElementById('quiz-field'), progress=document.getElementById('quiz-progress');
-  const back=document.getElementById('quiz-back'), next=document.getElementById('quiz-next');
-  const result=document.getElementById('quiz-result'), error=document.getElementById('quiz-error');
-  let index=0,answers=Array(10).fill(null),complete=false,tapped=false;
-  function event(name) {
-    if (window.kaguraGa4Allowed===true && typeof window.gtag==='function') window.gtag('event',name,{content_type:'kagura_quiz'});
-  }
-  function el(tag,text,cls) {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;}
-  // 「2026-11-08T13:00」→「11月8日(日)」
-  function jpDay(s) {const [y,m,d]=s.slice(0,10).split('-').map(Number);return `${m}月${d}日(${'日月火水木金土'[new Date(Date.UTC(y,m-1,d)).getUTCDay()]})`;}
-  function draw() {
-    field.replaceChildren(); error.textContent=''; tapped=false;
-    progress.textContent=`${index+1}/10`;progress.style.setProperty('--p',`${(index+1)*10}%`);
+  const engine=(/* quizEngine */)(data.questions,data.traditions);
+  const start=document.getElementById('quiz-start'),form=document.getElementById('quiz-form'),field=document.getElementById('quiz-field'),progress=document.getElementById('quiz-progress'),back=document.getElementById('quiz-back'),next=document.getElementById('quiz-next'),result=document.getElementById('quiz-result'),error=document.getElementById('quiz-error');
+  const count=data.questions.length;
+  let index=0,answers=[],day='',complete=false;
+  function event(name){if(window.kaguraGa4Allowed===true&&typeof window.gtag==='function')window.gtag('event',name,{content_type:'kagura_quiz'});}
+  function el(tag,text,cls){const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;}
+  function draw(){
+    field.replaceChildren();error.textContent='';progress.textContent=`${index+1}/${count}`;progress.style.setProperty('--p',`${(index+1)/count*100}%`);
     const q=data.questions[index],legend=el('legend',q.text);legend.tabIndex=-1;field.append(legend);
-    q.choices.forEach(choice=>{
-      const label=el('label',null,'quiz-choice'),radio=el('input');radio.type='radio';radio.name='answer';radio.value=choice.axis;radio.checked=answers[index]===choice.axis;
-      // 指で選んだときだけ、少し待って次の問いへ進む(キーボードの矢印キーで選び直すときは進まない)
-      label.addEventListener('pointerdown',()=>{tapped=true;});label.addEventListener('pointercancel',()=>{tapped=false;});
-      radio.addEventListener('change',()=>{
-        answers[index]=choice.axis;error.textContent='';next.disabled=false;
-        if(tapped&&index<9){const at=index;setTimeout(()=>{if(at===index&&!complete){index++;draw();}},280);}
-        tapped=false;
-      });
-      label.append(radio,el('span',choice.label));field.append(label);
-    });
-    back.disabled=index===0;next.disabled=!answers[index];next.textContent=index===9?'結果を見る':'次へ';legend.focus();
+    if(q.type==='region'){
+      const label=el('label','都道府県を選ぶ','quiz-select-label'),select=el('select');select.id='quiz-region';label.htmlFor=select.id;
+      [...q.choices,...data.prefectures.map(p=>({id:p,label:p}))].forEach(c=>{const o=el('option',c.label);o.value=c.id;select.append(o)});select.value=answers[index];select.addEventListener('change',()=>{answers[index]=select.value});field.append(label,select);
+    }else{
+      q.choices.forEach(c=>{const label=el('label',null,'quiz-choice'),radio=el('input');radio.type='radio';radio.name='answer';radio.value=c.id;radio.checked=answers[index]===c.id;
+        radio.addEventListener('change',()=>{answers[index]=c.id;error.textContent='';next.disabled=false;const date=document.getElementById('quiz-day');if(date)date.hidden=c.id!=='specified';});label.append(radio,el('span',c.label));field.append(label);});
+    }
+    if(q.type==='date'){
+      const label=el('label','希望日（日本時間）','quiz-date-label');label.id='quiz-day';label.hidden=answers[index]!=='specified';const input=el('input');input.type='date';input.value=day;input.addEventListener('input',()=>{day=input.value});label.append(input);field.append(label);
+    }
+    if(q.id==='budget')field.append(el('p','時間は比較の目安です。途中観覧の可否や所要時間が不明な公演を、希望に合うと断定しません。','meta'));
+    back.disabled=index===0;next.disabled=!answers[index];next.textContent=index===count-1?'結果を見る':'次へ';legend.focus();
   }
-  function begin() {
-    try{sessionStorage.setItem('km-quiz-offer','1')}catch{}
-    index=0;answers=Array(10).fill(null);complete=false;result.hidden=true;result.replaceChildren();start.hidden=true;form.hidden=false;draw();event('quiz_start');
-  }
-  start.hidden=false;start.addEventListener('click',begin);
-  back.addEventListener('click',()=>{if(index>0){index--;draw();}});
+  function begin(){try{sessionStorage.setItem('km-quiz-offer','1')}catch{}index=0;answers=data.questions.map(q=>q.type==='preference'?null:'unknown');day='';complete=false;result.hidden=true;result.replaceChildren();start.hidden=true;form.hidden=false;draw();event('quiz_start');}
+  start.textContent=`${count}問の診断をはじめる`;start.hidden=false;start.addEventListener('click',begin);back.addEventListener('click',()=>{if(index>0){index--;draw()}});
   form.addEventListener('submit',e=>{
     e.preventDefault();if(complete)return;
-    if(!answers[index]){error.textContent='ひとつ選んでから進んでください。';return;}
-    if(index<9){index++;draw();return;}
-    const scored=scoreAnswers(answers);if(!scored){error.textContent='回答を確認して、もう一度お試しください。';return;}
+    if(!answers[index]){error.textContent='ひとつ選んでください。「まだ分からない」でも進めます。';return;}
+    if(data.questions[index].type==='date'&&answers[index]==='specified'&&!engine.validDate(day)){error.textContent='希望日を入力するか、「まだ決めていない」を選んでください。';return;}
+    if(index<count-1){index++;draw();return;}
+    const scored=engine.scoreAnswers(answers);if(!scored){error.textContent='回答を確認してください。';return;}
     complete=true;form.hidden=true;result.hidden=false;
-    // 結果の要: 惹かれる楽しみ方を大きく示す(同点は併記)
-    const head=el('div',null,'quiz-type');
-    const heading=el('h2',scored.winners.length>1?'あなたは、いくつもの楽しみ方に惹かれています':'あなたが惹かれるのは');heading.tabIndex=-1;head.append(heading);
-    const kinds=[];
-    scored.winners.forEach(k=>{const a=data.axes[k];head.append(el('p',a.label,'quiz-type-label'),el('p',a.reason));a.kinds.forEach(x=>{if(!kinds.some(y=>y.kind===x.kind))kinds.push(x);});});
-    result.append(head);
-    // 回答の内訳(画面に出すだけ。保存も送信もしない)
-    const bars=el('ul',null,'quiz-bars');bars.setAttribute('aria-label','回答の内訳');
-    Object.keys(data.axes).sort((x,y)=>scored.counts[y]-scored.counts[x]).forEach(k=>{
-      const li=el('li',null,scored.winners.includes(k)?'win':''),bar=el('span',null,'bar');bar.style.setProperty('--n',scored.counts[k]);
-      li.append(el('span',data.axes[k].label,'name'),bar,el('span',`${scored.counts[k]}問`,'num'));bars.append(li);
+    const byId=Object.fromEntries(data.questions.map((q,i)=>[q.id,answers[i]])),conditions={region:byId.region,date:byId.date,day,budget:byId.budget};
+    const head=el('div',null,'quiz-type'),heading=el('h2',scored.ranked.length?'好みから見つける神楽':'まずは、気になる公演を探してみませんか');heading.tabIndex=-1;head.append(heading,el('p','回答と出典付きの解説をもとにした編集上の提案です。性格・適性や相性の確率を示すものではありません。神楽の特徴や演目は、地域・団体・公演によって異なります。'));result.append(head);
+    if(!scored.ranked.length)result.append(el('p','まだ好みが決まっていないため、特定の神楽をおすすめと判定していません。対象の神楽のうち、条件に合う掲載公演を下に示します。'));
+    if(scored.tied)result.append(el('p','同じ点数の候補があります。表示は編集上の掲載順で最大3種類です。優劣を示す順番ではありません。','meta'));
+    scored.ranked.forEach(t=>{
+      const box=el('section',null,'quiz-program'),h=el('h3'),a=el('a',t.kind);a.href=t.href;h.append(a);box.append(h);
+      t.matched.slice().sort((a,b)=>scored.scores[b.feature]-scored.scores[a.feature]).slice(0,2).forEach(m=>{box.append(el('p',`「${scored.reasons[m.feature][0]}」という回答から、${data.features[m.feature]}の見どころをご案内します。`),el('p',m.text,'quiz-evidence'));});
+      box.append(el('p',`解説の出典：${t.source}。実際の上演内容は公演詳細・公式情報をご確認ください。`,'meta'));result.append(box);
     });
-    result.append(el('h3','回答の内訳'),bars);
-    // おすすめの神楽(各地の主要な神楽から、回答の多い楽しみ方に合うもの)
-    result.append(el('h3','おすすめの神楽'));
-    kinds.forEach(x=>{
-      const k=data.kinds[x.kind],box=el('div',null,'quiz-program'),h=el('h4'),link=el('a',x.kind);link.href=k.href;h.append(link);
-      box.append(h,el('p',k.tagline,'meta'),el('p',x.why));
-      if(k.program)box.append(el('p',`代表的な演目「${k.program.name}」: ${k.program.text}`,'quiz-sample'));
-      result.append(box);
-    });
-    // その神楽の、これからの公演(近い順に6件まで)と定期公演
-    const want=new Set(kinds.map(x=>x.kind)),nowJst=new Date(Date.now()+9*3600e3).toISOString().slice(0,16);
-    const matches=data.events.filter(e=>want.has(e.kind)&&e.start>nowJst).sort((a,b)=>a.start<b.start?-1:1);
-    const regs=data.regular.filter(r=>want.has(r.kind));
-    result.append(el('h3','近く観られる公演'));
-    if(!matches.length&&!regs.length)result.append(el('p','現在掲載中の該当公演はありません'));
-    const seen=new Set();matches.slice(0,6).forEach(e=>{
-      if(seen.has(e.id))return;seen.add(e.id);
-      const line=el('div',null,'quiz-event'),link=el('a',null);link.href=`/events/${e.id}.html`;link.addEventListener('click',()=>event('quiz_event_click'));
-      link.append(el('b',jpDay(e.start)),el('span',e.name));line.append(link,el('p',[e.kind,e.place].filter(Boolean).join(' ・ '),'meta annotation'));result.append(line);
-    });
-    regs.forEach(r=>{
-      const line=el('div',null,'quiz-event'),link=el('a',null);link.href=`/regular/${r.id}.html`;link.addEventListener('click',()=>event('quiz_event_click'));
-      link.append(el('b','定期公演'),el('span',r.name));line.append(link,el('p',[r.kind,r.schedule].filter(Boolean).join(' ・ '),'meta annotation'));result.append(line);
-    });
-    if(matches.length>6)result.append(el('p',`ほかに${matches.length-6}件の公演があります。各神楽のページから探せます。`,'meta'));
+    const help={highlights:'解説ページの「特徴」や「主な演目」から見どころを確認できます。',synopsis:'解説ページの「主な演目」から、掲載されているあらすじを確認できます。',history:'解説ページでは、掲載されている歴史や地域の背景もご覧ください。',watch:'事前知識がなくても、まずは気になる公演の公式案内から観覧方法を確認できます。'};
+    if(help[byId.help])result.append(el('p',help[byId.help]+' この回答は推薦順位には使っていません。'));
+    const now=new Date(Date.now()+9*3600e3).toISOString().slice(0,16),dates=engine.range(conditions.date,day,now),kinds=scored.ranked.length?scored.ranked.map(t=>t.kind):data.traditions.map(t=>t.kind);
+    result.append(el('h3','条件から探す開催情報'),el('p',`推薦対象は現在${data.traditions.length}種類です。掲載のない神楽や公演もあります。`,'meta'));
+    result.append(el('p',`地域：${['unknown','all'].includes(conditions.region)?'全国':conditions.region} ／ 日程：${dates?dates.join('〜'):'未指定'}（日本時間）。時間の希望は候補を除外せず、各公演に確認事項を示します。`,'quiz-conditions'));
+    const matches=engine.selectEvents(data.events,kinds,conditions,now);
+    if(!matches.length)result.append(el('p','現在掲載中の公演には、該当するものがありません。条件を変えるか、ほかの公演を探せます。'));
+    matches.slice(0,6).forEach(e=>{const line=el('div',null,'quiz-event'),a=el('a',e.name);a.href=`/events/${e.id}.html`;a.addEventListener('click',()=>event('quiz_event_click'));line.append(a,el('p',e.when||e.start.slice(0,10)),el('p',[e.kind,e.place].filter(Boolean).join(' ・ '),'meta'),el('p',engine.duration(e,conditions.budget),'meta'));result.append(line)});
+    if(matches.length>6)result.append(el('p',`ほかに${matches.length-6}件あります。各神楽のページから探せます。`));
+    const regs=data.regular.filter(r=>kinds.includes(r.kind)&&(!r.until||r.until>=(dates&&dates[0]>now.slice(0,10)?dates[0]:now.slice(0,10)))&&(['all','unknown'].includes(conditions.region)||r.prefecture===conditions.region));
+    if(regs.length){result.append(el('h3','日程を個別に確認する定期公演'),el('p','以下は希望日・時間への適合を確認していない参考情報です。開催日、休演、所要時間は詳細・公式情報をご確認ください。','meta'));regs.forEach(r=>{const p=el('p',null,'quiz-event'),a=el('a',r.name);a.href=`/regular/${r.id}.html`;a.addEventListener('click',()=>event('quiz_event_click'));p.append(a,el('span',` ${r.prefecture||'地域要確認'}・${r.schedule}`));result.append(p)})}
     const search=el('a','ほかの公演を探す','btn');search.href='/calendar.html';search.addEventListener('click',()=>event('quiz_search_click'));
-    const restart=el('button','もう一度診断する','btn ghost');restart.type='button';restart.addEventListener('click',begin);
-    const actions=el('p',null,'quiz-actions');actions.append(search,restart);result.append(actions);heading.focus();event('quiz_complete');
+    const restart=el('button','もう一度診断する','btn ghost');restart.type='button';restart.addEventListener('click',begin);const actions=el('p',null,'quiz-actions');actions.append(search,restart);result.append(actions);heading.focus();event('quiz_complete');
   });
 })();
