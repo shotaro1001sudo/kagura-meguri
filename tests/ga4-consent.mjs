@@ -62,8 +62,10 @@ export function ga4ConsentTests({ ok, section, build }) {
         path + ": 正しいCBIDを持つCookiebotが1回だけ設置される");
       ok(bot.attr("data-blockingmode") === "auto" && bot.attr("async") === undefined,
         path + ": 自動ブロック、非asyncで初期化する");
-      ok($("head script").first().attr("id") === "Cookiebot",
-        path + ": Cookiebotはhead内の最初のスクリプト");
+      const first = $("head script").first();
+      const listener = readFileSync("scripts/client/valuecommerce-ready.js", "utf8").trim();
+      ok((first.attr("id") === "Cookiebot" || (first.text().trim() === listener && first.nextAll("script").first().attr("id") === "Cookiebot")) && $("head script[src]").first().attr("id") === "Cookiebot",
+        path + ": CMP前は通信/描画しない正確なVC監視コードのみ、Cookiebotは最初の外部script");
       ok(html.indexOf('id="Cookiebot"') < html.indexOf('data-ga4-id="G-TEST123456"'),
         path + ": Cookiebotの後にGA4同意制御を初期化する");
       ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('id="Cookiebot"'),

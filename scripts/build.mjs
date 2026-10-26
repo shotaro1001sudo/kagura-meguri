@@ -299,12 +299,13 @@ const collectNotes = (body) => {
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
   const en = lang === "en";
   const quizOffer = !en && !noindex && !withForm && (path === '/' || /^\/(calendar|map|weekend|this-month)\.html$/.test(path) || /^\/(events|regular|pref|month|kagura)\//.test(path));
-  // Cookiebot automatic blocking must load synchronously as the first script in <head>.
+  // A resource-free VC readiness listener precedes CMP only on VC pages.
+  // Cookiebot remains the first external script, synchronous; all rendering/analytics follow it.
   const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
   // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${cookieBotBootstrap}${body.includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${body.includes('data-vc-ad=') ? clientJs("valuecommerce-ready") : ""}${cookieBotBootstrap}${body.includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>
 <script>${HEAD_MOTION}</script>
 <script>${VT_JS}</script><link rel="expect" href="#main" blocking="render">

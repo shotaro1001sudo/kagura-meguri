@@ -58,6 +58,37 @@ export function valuecommerceIssuedTests({ok,section}) {
     ok(d.window.Cookiebot===undefined&&!JSON.stringify(logs).includes('CookieConsent='),'Diagnostic never manufactures CMP state or reads cookie tokens');
     d.window.close();
   }
+  for(const early of [true,false]) for(const denied of [true,false]) {
+    const d=new JSDOM(ads.join(''),{runScripts:'outside-only'}),v=d.window;
+    v.eval(readFileSync('scripts/client/valuecommerce-ready.js','utf8'));
+    v.Cookiebot={hasResponse:denied,consent:{marketing:false,method:denied?'explicit':null}};
+    if(!early)v.eval(script);
+    v.dispatchEvent(new v.Event('CookiebotOnDialogDisplay'));
+    if(early)v.eval(script);
+    const expected=denied?'denied':'unselected';
+    ok(v.kaguraVcConsent.state===expected,'DialogDisplay before/after adapter preserves '+expected);
+    const originals=[...v.document.querySelectorAll('[data-vc-ad]>a img')];
+    v.dispatchEvent(new v.Event('CookiebotOnDialogDisplay'));v.eval(script);
+    ok(v.document.querySelectorAll('[data-vc-ad]>a img').length===(denied?0:5)&&originals.every(n=>n.isConnected),'Repeated readiness does not duplicate or bypass rejection');
+    v.Cookiebot.hasResponse=true;v.Cookiebot.consent={marketing:false,method:'explicit'};v.dispatchEvent(new v.Event('CookiebotOnDecline'));
+    ok(v.kaguraVcConsent.state==='denied'&&v.document.querySelectorAll('[data-vc-ad]>a img').length===0,'Early capture does not override later rejection/revocation');
+    d.window.close();
+  }
+  {
+    const d=new JSDOM(ads.join(''),{runScripts:'outside-only'}),v=d.window;
+    v.eval(readFileSync('scripts/client/valuecommerce-ready.js','utf8'));
+    v.Cookiebot={hasResponse:false,loaded:true,consent:{marketing:false,method:null}};v.eval(script);
+    ok(v.kaguraVcConsent.state==='unknown'&&v.document.querySelectorAll('[data-vc-ad]>a img').length===0,'Loaded/default API values without observed event remain unknown');
+    d.window.close();
+  }
+  {
+    const d=new JSDOM(ads.join(''),{runScripts:'outside-only'}),v=d.window;
+    v.eval(readFileSync('scripts/client/valuecommerce-ready.js','utf8'));
+    v.Cookiebot={hasResponse:false,consent:{marketing:false,method:null}};v.dispatchEvent(new v.Event('CookiebotOnDialogDisplay'));
+    v.Cookiebot.hasResponse=true;v.Cookiebot.consent={marketing:false,method:'explicit'};v.dispatchEvent(new v.Event('CookiebotOnDecline'));v.eval(script);
+    ok(v.kaguraVcConsent.state==='denied'&&v.document.querySelectorAll('[data-vc-ad]>a img').length===0,'Rejection before deferred adapter wins over earlier unselected event');
+    d.window.close();
+  }
   const dom=new JSDOM(ads.join(''),{url:'https://kagurameguri.jp/example.html',runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;const imageNodes=new Set();let insertions=0;const append=w.Node.prototype.appendChild;
   w.Node.prototype.appendChild=function(node){if(this.matches?.('[data-vc-ad]'))for(const img of node.querySelectorAll('img'))if(!imageNodes.has(img)){imageNodes.add(img);insertions++;}return append.call(this,node)};

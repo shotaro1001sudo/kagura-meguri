@@ -119,3 +119,9 @@ node tests/valuecommerce-transfer-probe.mjs > vc-layout-progress.jsonl
 ```
 
 チェックポイントJSONとprogress JSONLを返す。エラーでも同一実行を繰り返さず最後のmethod/id/labelを確認する。終了後、使用した環境変数を削除。VC_MOCK_UIは実CMPと同時指定不可。SDK代替は追加していない。すべて隔離プロフィール内で、本番設定/サイト挙動変更なし。
+
+## 初期化競合の修正候補
+
+VC readiness専用の小さなinline記録コードがCMP外部scriptより前に入り、controllerは後に残る。正式イベントよりcontrollerが遅れても現在のAPI状態を判定できる。広告処理/GA4をCMPより前へ移していない。公式の「CMPを最初のscript」推奨に対する記録専用コードの限定例外であり、公式承認済みとは扱わない。実CMP auto動作の検証と公開前レビューを継続する。
+
+更新head/manifest確認後、前節の単一実行コマンドを使用する。観測上はDialogDisplayがcontroller前でも後でもunselectedになる必要がある。拒否/許可/保存拒否再読込/撤回を確認するまでは公開しない。stdout JSONLとVC_EVIDENCE_FILEを両方保存する。新しいアカウント/カテゴリ/許可先変更は不要。

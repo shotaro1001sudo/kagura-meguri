@@ -62,3 +62,13 @@ Windowsへの読み取り依頼: 現headのログcmpEvents（順序を保持）�
 追記: Windowsのもっと見る中心y974は900px viewport外でhit=false。非表示の選択・拒否controlはDOMに存在するが未操作。設定機能欠如と結論しない。Chrome実ウィンドウ/エミュレーションを1280x1400へ一致させ、layout/window/visualViewportとスクリーンショット、祖先overflowを同時記録する診断を準備。CSSや非表示controlを変更せず、hit検査を維持。
 
 ハング診断: bounded CDP導入後、クラウドの実Chrome可視mockでPage.captureScreenshotが8秒無応答になることを再現し、timeoutと直前の初期DOM/layoutを保存できた。遮断用追加タブを閉じ、対象ページを前面に戻して再検証した結果、初回/直前撮影、座標hit、祖先走査、実クリック1回が完了。無限祖先ループは再現せず（最大7段、実例4段）。Windowsの過去ハング操作は未記録なので同一原因との断定は避ける。実CMP再実行時は8秒CDP上限、3秒同期evaluate上限、逐次JSONL+JSON証拠を使う。
+
+## 実イベント先行の初期化競合（Windows head8541a0c）
+
+親報告: DialogDisplay924ms時点adapterPresent=false、adapter出現948ms/state unknown、TagsExecuted971msでもunknown。イベント前後のAPIはhasResponse=false/marketing=false/method=null。画像・要求0で停止。これはloadedフラグや待機時間では解決しない。
+
+修正はVCページ限定のvaluecommerce-ready.jsをCMP外部script直前へ配置し、公式の準備完了イベントでCMPオブジェクト参照だけをメモリーに保持する。通信・保存・描画・同意判断は行わず、controllerはCMP後のまま現在のhasResponse/marketing/methodを厳格判定する。イベントの有無とオブジェクト同一性を確認し、古い許可値のスナップショットを再生しない。pagehideで参照を破棄。GA4の順序/条件は維持。
+
+公式 https://support.cookiebot.com/hc/en-us/articles/10714664673564-Manually-implementing-Cookiebot-CMP-Cookiebot-Admin はCookiebotをheadの最初のscriptにすることを推奨する。今回の記録専用inlineだけがその前に置かれる限定例外で、Cookiebotは最初の外部scriptとして維持。公式にこの例外の承認を得たとは主張しない。CSPは既存のハッシュ生成を使い許可先を拡張しない。ignore属性やカテゴリ変更はない。draftで実CMPの自動ブロックと拒否保護を検証し、公開前レビュー対象として残す。
+
+DialogDisplayがcontroller前/後、保存済み拒否、イベント重複、撤回、controller前に拒否へ変化、loadedだけではunknownを検証。任意時間のdelay/pollを許可判断に使わない。生成fixtureもこの順序へ更新する。

@@ -4,6 +4,7 @@
   if(window.kaguraVcConsent)return;
   const status=window.kaguraVcConsent={state:'unknown'};
   let readyObject=null;
+  try { readyObject=window.kaguraVcReady?.object||null; } catch (_) { /* unknown stays closed */ }
   const nodes=new Map();
   function readState() {
     try {

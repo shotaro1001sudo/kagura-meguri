@@ -4,8 +4,8 @@
     "bytes": 1496
   },
   "scripts/build.mjs": {
-    "sha256": "5a8a126283540385a320b681648d962525443b83ed4a7069680e1083b1683311",
-    "bytes": 124328
+    "sha256": "c5c5d5ed727ebf6a5afa30a8adbc2b20acfd88f0cf05a9670479b7ec584694af",
+    "bytes": 124481
   },
   "scripts/lib/valuecommerce.mjs": {
     "sha256": "98e90dc667952cde0ddb9c0f7c391dd6d20d72cd0a5c9aae7563737173518623",
@@ -24,8 +24,8 @@
     "bytes": 15625
   },
   "scripts/client/valuecommerce-consent.js": {
-    "sha256": "e5311dace7a754ab82c4f93b5a63dfb384db200494eb78387add6941fe41c5ce",
-    "bytes": 2789
+    "sha256": "5f0d17587d8fe0e209f87ea1cc9e4b6c627400642b210f421f6f62a62f9d1af9",
+    "bytes": 2888
   },
   "scripts/client/affiliate.js": {
     "sha256": "6b3688b2189e0be041556a7cc13cae0c82a14731e7641bc6d39e197bea3301a0",
@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "84282bd4cadfb1161471f42d9db60482bfc78757afe4fd89ea023d715275257a",
-    "bytes": 18192
+    "sha256": "bf5ce7a64fefbb71c7dd29d348bb7e6606f19b7e5ca3f74a89e07bd353ed25a5",
+    "bytes": 18299
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -48,8 +48,8 @@
     "bytes": 57207
   },
   "tests/fixtures/vc-generated-event.html": {
-    "sha256": "a2013fb69face7c0ea2e7c2c95790f05210207f378cff580ab177850b20d204b",
-    "bytes": 143137
+    "sha256": "c41f346c2b9d83572b651bb660857005ae6868888184fe8aaf0a05e7545966f7",
+    "bytes": 143835
   },
   "tests/fixtures/vc-observe.js": {
     "sha256": "849ae7a43fb9ab4948e9a0dd63742e28132c0f9b440ac41ece6ddf64f32214c3",
@@ -62,5 +62,13 @@
   "tests/bounded-cdp-test.mjs": {
     "sha256": "761b1b984ae58f3bf0ae44c1402e8b32c17988387a694e94850c071e0cffe4e2",
     "bytes": 776
+  },
+  "scripts/client/valuecommerce-ready.js": {
+    "sha256": "c9e229e5ea99f32ead1ceb404577521322d87943f61dae0345c7b1a2bd1dcc5d",
+    "bytes": 529
+  },
+  "tests/valuecommerce-real-cmp.mjs": {
+    "sha256": "8cc7b397e66011269ded978e877287725d60369b86d6f2aaa21f9cc44dddeb42",
+    "bytes": 6429
   }
 }

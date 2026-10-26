@@ -12,9 +12,10 @@ if(mockUi&&process.env.VC_REAL_CMP==='1')throw Error('Choose mock UI or real CMP
 const chromePath=process.env.CHROMIUM_BIN;
 if(!chromePath)throw Error('Set CHROMIUM_BIN to an existing Chrome/Chromium executable; do not install.');
 const cfg=JSON.parse(readFileSync('config.json','utf8'));
+const readiness=readFileSync('scripts/client/valuecommerce-ready.js','utf8');
 const controller=readFileSync('scripts/client/valuecommerce-consent.js','utf8');
 const ads=vcTag({kind:'stay',destination:'https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC',text:'高千穂町の宿をじゃらんで探す'})+vcTag({kind:'activity',destination:'https://www.jalan.net/activity/450000/?fromPage=search-area',text:'宮崎県の体験をじゃらんで探す'})+vcTag({kind:'banner'});
-let html=`<!doctype html><html><head><meta charset="utf-8"><script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${cfg.cookiebotId}" data-blockingmode="auto"></script><script>${controller}</script></head><body><p>広告・通信遮断検証（ローカルのみ）</p>${ads}</body></html>`;
+let html=`<!doctype html><html><head><meta charset="utf-8"><script>${readiness}</script><script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${cfg.cookiebotId}" data-blockingmode="auto"></script><script>${controller}</script></head><body><p>広告・通信遮断検証（ローカルのみ）</p>${ads}</body></html>`;
 if(process.env.VC_FIXTURE==='generated')html=readFileSync('tests/fixtures/vc-generated-event.html','utf8');
 else html=html.replace('<head>','<head><meta http-equiv="Content-Security-Policy" content="'+cspFor(html,cfg)+'">');
 if(mockUi)html='<!doctype html><style>body{margin:0;height:2000px}#CybotCookiebotDialog{position:fixed;top:950px;left:20px;width:500px;background:white}</style><div id="CybotCookiebotDialog"><button id="CybotCookiebotDialogBodyContentTextToggle" onclick="this.dataset.clicked=String(Number(this.dataset.clicked||0)+1)">もっと見る</button></div>';
