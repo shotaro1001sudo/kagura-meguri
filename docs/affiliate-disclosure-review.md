@@ -1,0 +1,19 @@
+# 外部広告画像の説明追記案（2026-10-26）
+
+基準 main: 9b5b3b14798fe8f524b81ceedbcb1d6a24e09ecd。広告の動作変更ではなくprivacy説明のみ。千代田PR124と未公開VC原本準拠パッチは含まない。
+
+## 根拠
+
+- 現行 scripts/lib/stay-banners.mjs、data/more-offers.json、data/visitor-planning.json の画像URL。生成HTMLで hbb.afl.rakuten.co.jp と i.imgvc.com のsrcを確認。ba.afl.rakuten.co.jpは既存stay-bannersの転送先記録・CSP許可先。各利用者の実リダイレクト全経路を今回検証したわけではない。
+- 楽天公式 https://affiliate.rakuten.co.jp/info/back2016.html の2016-12-14 SSL移行告知がhbb画像・hbリンクを明記。古い資料はホストの用途確認にのみ利用。
+- https://affiliate.rakuten.co.jp/guideline/terms/ 第1条は提供会社を楽天グループ株式会社、第4条は経由アクセスと成果・業務の一部委託を説明。
+- https://privacy.rakuten.co.jp/ 2-4は広告・コンテンツ接触時の端末情報やCookie等の取り扱いを説明。
+- https://www.valuecommerce.co.jp/privacy_policy/privacy_action/ はバリューコマース株式会社のサービス全体の識別子利用、広告表示・クリック履歴、成果計測等の説明。全項目が現行JPEG要求で送信される根拠にはしない。
+
+## 確認限界
+
+表は広告サービスの提供会社と現行コードの配信ホストを区別する。i.imgvc.comのインフラ所有者・CDN委託関係は今回の一次資料では確定していないため、独立した運営主体やサーバー所在国を断定しない。公式VCサイトのHTML直接取得は環境の接続経路で403となり未取得。制限の変更・回避・再試行はしていない。公式方針はwebツールで参照できた。
+
+IP、要求先画像URL、ブラウザのヘッダーは画像通信の仕組みの説明であり、実ユーザーの通信ログ収集ではない。リファラーは設定依存。Cookieの有無・値・保持期間、完全な閲覧URL、実CMPによる分類・遮断は未実証。説明で保証しない。サービス全体の方針と個々の画像要求を区別する。
+
+新しい画像・広告リクエスト、クリック、Cookie変更、GA4送信は行わない。公開前に本文の表現をレビューし、必要なら親の既存ブラウザ検証結果と照合する。法適用・適法性を保証する変更ではない。

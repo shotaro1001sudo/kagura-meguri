@@ -23,7 +23,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const pv = text(join(OUT, "privacy.html")), ds = text(join(OUT, "disclaimer.html"));
   for (const h of ["運営者", "取得する情報", "利用目的", "外部サービスの利用と、情報の送信", "投稿フォーム・お問い合わせフォームについて", "第三者への提供", "保存期間", "開示・訂正・削除", "この方針の改定"]) ok(pv.includes(h), `プライバシーポリシーに「${h}」の項目がある`);
   ok(pv.includes("迷惑投稿") && pv.includes("個人情報の保護に関する法律"), "迷惑投稿対策と、関係する法令への言及がある");
-  ok(pv.includes('最終更新: 2026年10月25日') && pv.includes('案内の表示済み情報の一時保存を追記') && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "診断の改定日と従来の改定履歴が出る");
+  ok(pv.includes('最終更新: 2026年10月26日') && pv.includes('外部広告画像の読み込みと広告リンク利用時の通信の違いを追記') && pv.includes('案内の表示済み情報の一時保存を追記') && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "診断の改定日と従来の改定履歴が出る");
   section("利用規約・法令に沿った記載");
   const tm = text(join(OUT, "terms.html"));
   ok(["適用", "開催情報の投稿", "禁止事項", "違反への対応", "知的財産権", "免責", "規約の変更", "分離可能性", "準拠法・管轄裁判所"].every((t) => tm.includes(`(${t})`)), "利用規約に、適用・投稿・禁止事項・知的財産・免責・変更・準拠法と管轄の各条がある");
@@ -82,6 +82,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(pf(".aff").length===0,"未設定の県別おすすめ枠を省略");
   ok(pv.includes("現在、当サイトの閲覧に関するアクセスログ") && !["広告の配信について", "Google AdSense(", "Googleアナリティクス", "アフィリエイトプログラムに参加"].some((w) => pv.split("改定の履歴")[0].includes(w)), "広告・解析・アフィリエイト未設定の間は、それらを「使っている」と書かない");
   ok(!pv.includes("専門家") && !ds.includes("専門家"), "プライバシーポリシー・免責事項に、運営者向けの注意書き(専門家の確認のすすめ)を載せない");
+  ok(!pv.includes("画像配信先:"), "広告未設定時は広告画像の利用を記載しない");
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
   ok(text(join(OUT, "about.html")).includes("収益を得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
 
@@ -116,6 +117,10 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(stays.length === 2 && stays[0].startsWith(`https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${prodCfg.affiliate.valueCommerceSid}&pid=${prodCfg.affiliate.jalanPid}&vc_url=${encodeURIComponent("https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=")}`) && stays[1].startsWith(`https://hb.afl.rakuten.co.jp/hgc/${prodCfg.affiliate.rakutenAffiliateId}/?pc=${encodeURIComponent("https://kw.travel.rakuten.co.jp/keyword/Search.do?")}`) && $(".d-side .staylinks a").toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").length === 1, "本番: 宿は、じゃらん(バリューコマース)・楽天トラベル(楽天アフィリエイト)経由で、会場の市区町村・開催日の検索へ直接つなぐ(sponsored・PR表記つき)");
     ok($(".d-side .stay-banner").length === 0, "本番: 開催ページの宿は、宿のトップへ飛ぶだけのバナーを使わない");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
+    ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','i.imgvc.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');
+    ok(p.includes('リンクを押す前にも発生') && p.includes('広告画像の取得・表示') && p.includes('接続元IPアドレス'), '本番: 画像通信の時機・目的・通信情報を説明');
+    ok(p.includes('Cookie等を利用する場合') && p.includes('すべての画像要求でCookieや閲覧ページの完全なURLが送られるという意味ではありません'), '本番: Cookieや完全URLを全要求の確定動作としない');
+
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
     const pub = prodCfg.adsense.client;
     ok(/^ca-pub-\d{16}$/.test(pub) && read(join(d, "index.html")).includes(`adsbygoogle.js?client=${pub}`) && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense のコード・ads.txt・ポリシーの広告の項目がそろう(審査の準備)");
@@ -136,7 +141,7 @@ export async function policyTests({ ok, section, OUT, build }) {
       const [jl, rk] = q(".staylinks a").map((_, x) => q(x).attr("href")).get();
       ok(q(".stay,.staylinks,.stay-banner").length===0,"未設定の宿は通常リンクで代替しない");
     }
-    ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && !p.includes("楽天") && !p.includes("バリューコマース"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目が現れる(提携先の名前は出さない)");
+    ok(p.includes("アフィリエイトプログラムについて") && p.includes("成果報酬型の広告") && p.includes("hbb.afl.rakuten.co.jp") && p.includes("i.imgvc.com"), "宿のアフィリエイトを設定すると、ポリシーにも、その項目と画像配信先が現れる");
   }
   { // アクセス解析(GoatCounter)
     const d = sub("gc", { TEST_GOATCOUNTER: "kagura-test" }); const p = text(join(d, "privacy.html"));
