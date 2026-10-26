@@ -808,3 +808,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .pick.has-img small{margin-left:82px}
 .pick.has-img>.pr{display:inline-block;margin:0 0 6px}
 .quiz-offer.quiz-offer-inline{position:static;inset:auto;grid-column:1/-1;width:min(340px,100%);margin:16px 0;box-shadow:none}
+/* 診断の任意条件。ネイティブ入力と明示的な「次へ」でキーボード・タッチを共通化。 */
+#quiz-region,.quiz-date-label input{display:block;width:100%;max-width:32rem;min-height:48px;box-sizing:border-box;font:inherit;padding:10px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px}
+.quiz-date-label:not([hidden]),.quiz-select-label{display:block;margin:12px 0}
+.quiz-evidence,.quiz-conditions{overflow-wrap:anywhere}

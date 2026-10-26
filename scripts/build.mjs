@@ -16,7 +16,7 @@ import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
-import { questions, axes, scoreAnswers, QUIZ_CHECKED } from './lib/quiz.mjs';
+import { questions, features, traditions, quizEngine, QUIZ_CHECKED } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -493,23 +493,27 @@ ${clientJs("home")}`,
 }));
 
 // PLAN-004: 回答はブラウザ内のみ。おすすめは神楽の種類(出典つきの解説ページ)と、その種類の公演。演目の上演は約束しない。
-const quizKinds = Object.fromEntries(Object.values(axes).flatMap((a) => a.kinds).map(({ kind, program }) => {
-  const info = kaguraInfo[kind];
-  if (!info) throw new Error(`quiz: 神楽の解説がない種類です: ${kind}`);
-  const p = program && info.programs?.find((x) => x.name === program);
-  if (program && !p) throw new Error(`quiz: ${kind} の解説に演目「${program}」がありません`);
-  return [kind, { href: kaguraHref(kind), tagline: info.tagline, program: p ? { name: p.name, text: p.text } : null }];
-}));
-const quizEvents = upcoming.filter((e) => quizKinds[e.kagura]).map((e) => ({ id:e.id, name:e.name, start:e.start, place:[e.prefecture, e.city].filter(Boolean).join(' '), kind:e.kagura }));
-const quizRegular = regular.filter((r) => quizKinds[r.kagura]).map((r) => ({ id:r.id, name:r.name, schedule:r.schedule, kind:r.kagura }));
-const quizData = JSON.stringify({ questions, axes, kinds:quizKinds, events:quizEvents, regular:quizRegular }).replace(/</g,'\\u003c');
-const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* scoreAnswers */',scoreAnswers.toString());
+const quizTraditions = traditions.map(t => {
+  const info = kaguraInfo[t.kind];
+  if(!info?.source) throw new Error(`quiz: 出典のない種類 ${t.kind}`);
+  const evidence = t.evidence.map(([feature,path]) => {
+    const text = path.split('.').reduce((v,k)=>v?.[k],info);
+    if(!features[feature] || typeof text !== 'string' || !text) throw new Error(`quiz: 根拠不足 ${t.kind}/${path}`);
+    return {feature,path,text};
+  });
+  return {kind:t.kind,href:kaguraHref(t.kind),source:info.source,evidence};
+});
+const quizKindNames = new Set(traditions.map(t=>t.kind));
+const quizEvents = upcoming.filter(e=>quizKindNames.has(e.kagura)).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,timeUnknown:e.timeUnknown,sessions:e.sessions,when:whenOf(e),prefecture:e.prefecture,place:[e.prefecture,e.city].filter(Boolean).join(' '),kind:e.kagura}));
+const quizRegular = regular.filter(r=>quizKindNames.has(r.kagura)).map(r=>({id:r.id,name:r.name,schedule:r.schedule,prefecture:r.prefecture,until:r.until,kind:r.kagura}));
+const quizData = JSON.stringify({questions,features,traditions:quizTraditions,prefectures:REGIONS.flatMap(([,ps])=>ps),events:quizEvents,regular:quizRegular}).replace(/</g,'\\u003c');
+const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* quizEngine */',quizEngine.toString());
 write('dist/quiz.html',layout({
-  title:`あなたが惹かれる神楽はどれ？10問の好み診断 | ${cfg.siteName}`,
-  desc:padDesc('10問に答えて、舞の動き・面や衣装・物語・雰囲気から自分の好みを探してみませんか。回答に合わせて各地の主要な神楽と、近く開催される公演をご案内します。登録不要で、回答はブラウザ内だけで計算します。'),
+  title:`あなたが惹かれる神楽はどれ？${questions.length}問の好み診断 | ${cfg.siteName}`,
+  desc:padDesc(`${questions.length}問に答えて、舞の動き・面や衣装・物語・雰囲気から自分の好みを探してみませんか。好みと任意の観覧条件から、神楽の楽しみ方と開催情報をご案内します。登録不要で、回答はブラウザ内だけで計算します。`),
   path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
-  body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたが惹かれる神楽はどれ？','10問で、好きな舞の雰囲気を探してみませんか。')}
-<section id="quiz" aria-label="10問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>10問の診断をはじめる</button>
+  body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたが惹かれる神楽はどれ？',`${questions.length}問で、好きな舞の雰囲気を探してみませんか。好み${questions.filter(q=>q.type==='preference').length}問と、任意の観覧条件${questions.filter(q=>q.type!=='preference').length}問。分からない項目はそのままで大丈夫です。`)}
+<section id="quiz" aria-label="${questions.length}問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>${questions.length}問の診断をはじめる</button>
 <noscript><p>診断にはJavaScriptが必要です。<a href="/calendar.html">公演を探す</a>・<a href="/guide.html">はじめての神楽ガイド</a>もご利用ください。</p></noscript>
 <form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
 <section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
