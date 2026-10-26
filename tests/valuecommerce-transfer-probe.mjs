@@ -125,7 +125,10 @@ try {
    const cookieCheckpoint=async label=>{const cookies=await send('Network.getCookies',{urls:[origin+'/cmp']},session);const info=await send('Target.getTargetInfo',{targetId});const doc=await evaluate('({origin:location.origin,pathname:location.pathname,port:location.port,secureContext:isSecureContext})','cookie-context');evidence.cookieSnapshots??=[];evidence.cookieSnapshots.push({label,targetId,browserContextId:info.targetInfo.browserContextId||'default-isolated-profile',...doc,cookies:cookies.cookies.map(cookieMetadata)});checkpoint({phase:'cookie-metadata',label});};
    await cookieCheckpoint('initial');
    for(const name of (withdrawalOnly?['allow','withdraw','withdraw-reload']:persistenceOnly?['reject','reload']:['reject','reload','allow','withdraw'])){
-    const before=evidence.blocked.length,mountStart=evidence.cmpEvents.length;
+    // Fresh B-policy page already mounted its unselected slots; include that initial
+    // interval when checking that permission does not mount/request them twice.
+    const includeInitial=withdrawalOnly&&name==='allow';
+    const before=includeInitial?0:evidence.blocked.length,mountStart=includeInitial?0:evidence.cmpEvents.length;
     await cookieCheckpoint('before-'+name);
     checkpoint({phase:'sdk-before',name});
     if(name==='reload'||name==='withdraw-reload')await send('Page.reload',{ignoreCache:true},session);
@@ -141,7 +144,7 @@ try {
     await new Promise(r=>setTimeout(r,1000));
     const state=await snapshot('sdk-'+name);
     const mounts=evidence.cmpEvents.slice(mountStart).filter(x=>x.event==='vc-mount').reduce((n,x)=>n+x.count,0);
-    const result=summarizeSdkPhase(name,before,evidence.blocked,state,mounts);result.observedExpectedApiState=matched;evidence.sdkPhases.push(result);
+    const result=summarizeSdkPhase(name,before,evidence.blocked,state,mounts);result.observedExpectedApiState=matched;result.includesInitialUnselected=includeInitial;evidence.sdkPhases.push(result);
     await cookieCheckpoint('after-'+name);
     checkpoint({phase:'sdk-after',name});await capture('sdk-'+name);
     if(!matched)throw Error('SDK state transition did not complete: '+name);

@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "eef5921e7d20198b0d9b204f2f4badaa2e5c55f081fe67c872883b01ba1e0ca7",
-    "bytes": 24520
+    "sha256": "57bf67d4ba3718e4d54b5841306b21be74e4683e2b9ef2af7ece05c12a46d66c",
+    "bytes": 24826
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",

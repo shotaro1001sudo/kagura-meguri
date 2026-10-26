@@ -223,3 +223,5 @@ try {
 ```
 
 withdrawalCheckPassedはこの限定続行の結果であり、sdkPassed（全段階を同headで実施）とは別。前回headの拒否保存証拠と混同しない。callback/HTTP 200だけで成功にしない。追加要求が必要な場合も上限を増やさず停止。公開UIの拒否到達性、本番公開は別途保留。
+
+限定続行のallow集計は初期unselectedから許可後までを含む（includesInitialUnselected=true）。B方針で初期表示済みの2枠を許可時に再挿入しないことを検証するため。撤回/reloadは従来どおり各操作直前からの差分を測る。
