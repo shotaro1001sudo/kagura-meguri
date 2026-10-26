@@ -1,60 +1,72 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
-import { questions,scoreAnswers,axes } from '../scripts/lib/quiz.mjs';
-
+import { questions,features,traditions,quizEngine } from '../scripts/lib/quiz.mjs';
 export function quizTests({ok,section,OUT}) {
-  section('10問診断: 配点・画面・同点・やり直し・個別回答を送らない');
-  ok(questions.length===10&&questions.every(q=>new Set(q.choices.map(c=>c.axis)).size===4),'10問が各4軸の選択肢を持つ');
-  ok(new Set(questions.map(q=>q.choices[0].axis)).size===4,'選択肢の先頭位置を分散する');
-  for(const axis of ['P','V','S','R'])ok(scoreAnswers(Array(10).fill(axis)).winners.join()===axis,`全問${axis}の判定`);
-  ok(scoreAnswers(['P','V','P','V','P','V','P','V','P','V']).winners.join()==='P,V','同点を併記する');
-  ok([null,[],Array(10),Array(10).fill('X'),Array(9).fill('P')].every(a=>scoreAnswers(a)===null),'未回答・不正回答を結果にしない');
-  const info=JSON.parse(readFileSync('data/kagura-info.json','utf8').replace(/^﻿/,''));
-  const allKinds=Object.values(axes).flatMap(a=>a.kinds);
-  ok(Object.values(axes).every(a=>a.kinds.length===3)&&new Set(allKinds.map(x=>x.kind)).size===12,'各軸に主要な神楽を3つずつ、重複なく12種類');
-  ok(allKinds.every(x=>info[x.kind]?.source&&x.why&&(!x.program||info[x.kind].programs?.some(p=>p.name===x.program))),'おすすめの神楽は、出典つきの解説がある種類と、その解説にある演目だけ');
+  section('診断: 根拠付き推薦・任意条件・未確定情報');
+  const info=JSON.parse(readFileSync('data/kagura-info.json','utf8').replace(/^\uFEFF/,''));
+  const mapped=traditions.map(t=>({...t,evidence:t.evidence.map(([feature,path])=>({feature,path,text:path.split('.').reduce((v,k)=>v?.[k],info[t.kind])}))}));
+  const engine=quizEngine(questions,mapped),unknown=questions.map(()=>'unknown');
+  ok(questions.length===10&&questions.filter(q=>q.type==='preference').length===7,'好み7問と任意条件3問');
+  ok(questions.every(q=>q.choices.some(c=>c.id==='unknown'))&&new Set(questions.map(q=>q.id)).size===questions.length,'全問に不明を用意しID重複なし');
+  ok(mapped.every(t=>info[t.kind].source&&t.evidence.every(e=>features[e.feature]&&typeof e.text==='string'&&e.text.length)),'全推薦特徴に既存解説の根拠フィールド');
+  ok(engine.scoreAnswers(unknown).ranked.length===0,'全不明を特定タイプへ誘導しない');
+  ok([null,[],Array(10),Array(10).fill('invalid')].every(a=>engine.scoreAnswers(a)===null),'不正・未回答を判定しない');
+  const pref=['visual','both','change','both','mask','history','beauty','unknown','unknown','unknown'];
+  const scored=engine.scoreAnswers(pref);
+  ok(scored.ranked.length<=3&&scored.ranked.every(t=>t.matched.length&&t.matched.every(e=>scored.scores[e.feature]>0)),'最大3種類と回答に合う根拠のみ');
+  ok(Math.abs(Object.values(scored.scores).reduce((a,b)=>a+b,0)-6)<1e-9,'複数特徴の選択肢も各問の合計1点、案内質問は非加点');
+  const changed=[...pref];changed[5]='watch';changed[7]='広島県';changed[8]='next';changed[9]='short';
+  ok(JSON.stringify(engine.scoreAnswers(changed))===JSON.stringify(scored),'説明希望と地域・日付・時間は推薦順位に影響しない');
+  const tie=quizEngine(questions,Array.from({length:4},(_,i)=>({kind:String(i),evidence:[{feature:'mask',text:'根拠'}]}))).scoreAnswers(pref);
+  ok(tie.tied&&tie.ranked.map(t=>t.kind).join()==='0,1,2','同点は安定した掲載順で最大3件、同点を明示');
+  ok(JSON.stringify(engine.scoreAnswers(pref))===JSON.stringify(scored),'再集計は決定的、重複加点なし');
+  const now='2026-10-31T23:59';
+  const events=[
+    {id:'past',start:'2026-10-30T10:00',end:'2026-10-30T12:00'},
+    {id:'ongoing',start:'2026-10-31T23:00',end:'2026-11-01T01:00'},
+    {id:'today',start:'2026-10-31T00:00',timeUnknown:true},
+    {id:'tomorrow',start:'2026-11-01T00:00',timeUnknown:true},
+    {id:'multi',start:'2026-10-30T10:00',end:'2026-11-02T15:00'},
+    {id:'noend',start:'2026-10-31T22:00'},
+    {id:'old-noend',start:'2026-10-31T19:00'},
+  ].map(e=>({...e,kind:'石見神楽',prefecture:'島根県'}));
+  const selected=engine.selectEvents(events,['石見神楽'],{},now).map(e=>e.id);
+  ok(['ongoing','today','tomorrow','multi','noend'].every(id=>selected.includes(id))&&!selected.includes('past')&&!selected.includes('old-noend'),'開催中・複数日・当日時刻不明を維持、終了と3時間超を除外');
+  ok(!engine.upcoming(events.find(e=>e.id==='today'),'2026-11-01T00:00'),'JST日付境界で時刻不明の前日公演を除外');
+  ok(engine.upcoming({start:'2026-11-01T00:00',end:'2026-11-01T01:00'},'2026-11-01T01:00'),'終了境界は既存サイトと同じ包含');
+  ok(engine.range('next','',now).join()==='2026-11-01,2026-11-30'&&engine.range('next','','2026-12-31T23:59').join()==='2027-01-01,2027-01-31','月末と年末の来月計算');
+  ok(engine.range('month','','2028-02-29T12:00').join()==='2028-02-01,2028-02-29','うるう月');
+  ok(!engine.validDate('2026-02-30')&&engine.validDate('2028-02-29'),'不正日付を正規化して受理しない');
+  ok(engine.selectEvents(events,['石見神楽'],{region:'広島県'},now).length===0,'指定県が違えば表示しない');
+  ok(engine.selectEvents(events,['石見神楽'],{date:'specified',day:'2026-11-01'},now).map(e=>e.id).sort().join()==='multi,ongoing,tomorrow','日付指定は日またぎの重なりも含む');
+  ok(engine.selectEvents([...events,events[1]],['石見神楽'],{},now).length===selected.length,'公演IDを重複表示しない');
+  for(const e of events.filter(e=>['multi','today','noend'].includes(e.id)))ok(engine.duration(e,'short')==='所要時間は要確認',e.id+': 不明な所要時間を適合済みにしない');
+  ok(engine.duration({start:'2026-11-01T10:00',end:'2026-11-01T11:00'},'short').includes('60分')&&engine.duration({start:'2026-11-01T10:00',end:'2026-11-01T17:00'},'half').includes('途中観覧'),'掲載時間枠だけから必要観覧時間を断定しない');
   const html=readFileSync(join(OUT,'quiz.html'),'utf8');
-  const dom=new JSDOM(html,{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});
-  const w=dom.window,d=w.document,calls=[];w.kaguraGa4Allowed=true;w.gtag=(...args)=>calls.push(args);
-  ok(!d.querySelector('#quiz-offer')&&d.querySelector('noscript'),'診断ページは案内対象外、JSなしの検索入口を持つ');
-  d.querySelector('#quiz-start').click();
-  ok(d.querySelector('#quiz-next').disabled&&d.querySelector('#quiz-progress').textContent==='1/10','未回答で進めず進捗を表示');
-  d.querySelector('input[value=P]').click();d.querySelector('#quiz-next').click();d.querySelector('input[value=V]').click();d.querySelector('#quiz-back').click();
-  ok(d.querySelector('input[value=P]').checked,'前に戻ると選択を保持');
-  d.querySelector('input[value=V]').click();
-  while(!d.querySelector('#quiz-form').hidden){d.querySelector('input[value=V]').click();d.querySelector('#quiz-next').click();}
-  ok(d.querySelector('.quiz-type').textContent.includes('面や衣装の視覚的な魅力')&&!d.querySelector('.quiz-type').textContent.includes('迫力・躍動'),'回答変更を再集計し、重複加点しない');
-  const bars=[...d.querySelectorAll('.quiz-bars li')].map(li=>li.textContent);
-  ok(bars.length===4&&bars[0]==='面や衣装の視覚的な魅力10問'&&bars.slice(1).every(t=>t.endsWith('0問')),'回答の内訳を4軸すべて、多い順に表示する');
-  ok(d.querySelector('#quiz-progress').style.getPropertyValue('--p')==='100%','進み具合の線を問いの番号に合わせる');
-  const vKinds=axes.V.kinds.map(x=>x.kind);
-  ok([...d.querySelectorAll('.quiz-program h4 a')].map(a=>a.textContent).join()===vKinds.join()&&[...d.querySelectorAll('.quiz-program h4 a')].every(a=>a.getAttribute('href').startsWith('/kagura/')),'おすすめの神楽3種類を、解説ページへのリンクつきで示す');
-  ok(d.querySelector('.quiz-sample')?.textContent.startsWith('代表的な演目「滝夜叉姫」'),'代表的な演目を、解説ページの説明で添える');
-  const firstCount=calls.filter(c=>c[1]==='quiz_complete').length;
-  d.querySelector('#quiz-form').dispatchEvent(new w.Event('submit',{cancelable:true}));
-  ok(calls.filter(c=>c[1]==='quiz_complete').length===firstCount,'結果の多重送信を防ぐ');
-  ok(calls.every(c=>Object.keys(c[2]).join()==='content_type')&&!JSON.stringify(calls).includes('answers'),'個別回答やスコアを計測に送らない');
-  d.querySelector('#quiz-result button').click();ok(d.querySelector('#quiz-next').disabled&&d.querySelector('#quiz-result').hidden,'やり直しで回答を消す');
-  const before=calls.length;w.kaguraGa4Allowed=false;d.querySelector('#quiz-start').click();ok(calls.length===before,'同意・自己除外で許可がない場合はイベントを送らない');
-  dom.window.close();
-
   const dataMatch=html.match(/(<script id="quiz-data" type="application\/json">)([\s\S]*?)(<\/script>)/);
   const config=JSON.parse(dataMatch[2]);
-  ok(config.events.every(e=>config.kinds[e.kind])&&config.regular.every(r=>config.kinds[r.kind]),'診断に渡す公演は、おすすめの神楽の種類のものだけ');
-  config.events=[{kind:'備中神楽',id:'verified-future',name:'確認済み未来公演',start:'2050-01-01T10:00',place:'島根県 益田市'},{kind:'備中神楽',id:'expired',name:'終了済み公演',start:'2000-01-01T10:00'},{kind:'石見神楽',id:'different',name:'異なる神楽',start:'2050-01-01T10:00'},
-    ...Array.from({length:7},(_,i)=>({kind:'秩父神楽',id:`later-${i}`,name:`後の公演${i}`,start:`2051-01-0${i+1}T10:00`}))];
-  config.regular=[{kind:'相模里神楽',id:'reg-s',name:'定期テスト',schedule:'毎週土曜'},{kind:'石見神楽',id:'reg-x',name:'別の定期',schedule:'毎週'}];
-  const futureDom=new JSDOM(html.replace(dataMatch[0],dataMatch[1]+JSON.stringify(config)+dataMatch[3]),{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});
-  const fd=futureDom.window.document;fd.querySelector('#quiz-start').click();
-  while(!fd.querySelector('#quiz-form').hidden){fd.querySelector('input[value=S]').click();fd.querySelector('#quiz-next').click();}
-  ok(fd.querySelector('#quiz-result a[href="/events/verified-future.html"]')&&!fd.querySelector('#quiz-result a[href="/events/expired.html"]')&&!fd.querySelector('#quiz-result a[href="/events/different.html"]'),'結果はおすすめの神楽の未来公演だけを表示し、ビルド後に終了した公演も除外');
-  ok(fd.querySelectorAll('#quiz-result a[href^="/events/"]').length===6&&!fd.querySelector('#quiz-result a[href="/events/later-6.html"]')&&fd.querySelector('#quiz-result').textContent.includes('ほかに2件の公演があります'),'公演は近い順に6件まで、残りの件数を示す');
-  ok(fd.querySelector('#quiz-result a[href="/regular/reg-s.html"]')&&!fd.querySelector('#quiz-result a[href="/regular/reg-x.html"]'),'おすすめの神楽の定期公演も示す');
-  const ev=fd.querySelector('#quiz-result .quiz-event');
-  ok(ev.querySelector('a').textContent==='1月1日(土)確認済み未来公演'&&ev.textContent.includes('島根県 益田市'),'公演は日本語の日付(曜日つき)と開催地で示す');
-  ok(fd.querySelector('.quiz-type-label').textContent==='物語・人物','結果の楽しみ方を見出しとして大きく示す');
-  futureDom.window.close();
+  ok(config.questions.length===questions.length&&config.prefectures.length===47,'同じ質問定義と47都道府県を配信');
+  ok(config.events.every(e=>config.traditions.some(t=>t.kind===e.kind)&&typeof e.when==='string'),'公演表示日時は既存の共通書式を使用');
+  function setupQuiz(configOverride){const markup=configOverride?html.replace(dataMatch[0],dataMatch[1]+JSON.stringify(configOverride)+dataMatch[3]):html;const dom=new JSDOM(markup,{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});const w=dom.window,d=w.document,calls=[];w.kaguraGa4Allowed=true;w.gtag=(...a)=>calls.push(a);return {dom,w,d,calls};}
+  function pick(d,id){d.querySelector(`input[value="${id}"]`).click();d.querySelector('#quiz-next').click();}
+  let ui=setupQuiz();let {d,w,calls}=ui;
+  d.querySelector('#quiz-start').click();ok(d.querySelector('#quiz-next').disabled&&d.querySelector('#quiz-progress').textContent==='1/10','初問の未選択と進捗');
+  pick(d,'visual');pick(d,'slow');d.querySelector('#quiz-back').click();ok(d.querySelector('input[value="slow"]').checked,'戻って選択を保持');pick(d,'both');
+  for(const id of ['change','both','mask','history','beauty'])pick(d,id);
+  ok(d.querySelector('#quiz-region')&&!d.querySelector('#quiz-next').disabled,'地域は未指定で進める');
+  d.querySelector('#quiz-region').value='広島県';d.querySelector('#quiz-region').dispatchEvent(new w.Event('change'));d.querySelector('#quiz-next').click();
+  d.querySelector('input[value="specified"]').click();d.querySelector('#quiz-next').click();ok(d.querySelector('#quiz-error').textContent.includes('希望日'),'指定日が空なら結果へ進めない');
+  pick(d,'unknown');pick(d,'short');
+  ok(d.querySelectorAll('.quiz-program').length===scored.ranked.length&&d.querySelector('.quiz-conditions').textContent.includes('広島県'),'3件以内の推薦と観覧条件を表示');
+  ok(d.querySelector('#quiz-result').textContent.includes('公演によって異なります')&&!d.querySelector('#quiz-result').textContent.includes('近く観られる'),'地域文化の断定と地理的な近さの誤認を避ける');
+  const n=calls.filter(c=>c[1]==='quiz_complete').length;d.querySelector('#quiz-form').dispatchEvent(new w.Event('submit',{cancelable:true}));ok(calls.filter(c=>c[1]==='quiz_complete').length===n,'二重完了なし');
+  d.querySelector('#quiz-result a[href="/calendar.html"]').dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
+  ok(calls.every(c=>Object.keys(c[2]).join()==='content_type')&&!JSON.stringify(calls).includes('answers'),'既存イベントだけ、回答・条件・結果は送信しない');
+  d.querySelector('#quiz-result button').click();ok(d.querySelector('#quiz-next').disabled&&d.querySelector('#quiz-result').hidden,'再開は回答と結果を初期化');
+  w.kaguraGa4Allowed=false;const before=calls.length;d.querySelector('#quiz-result button')?.click();ok(calls.length===before,'非許可時には送信しない');ui.dom.window.close();
+  const emptyConfig={...config,events:[],regular:[]};ui=setupQuiz(emptyConfig);d=ui.d;d.querySelector('#quiz-start').click();for(const q of questions){if(q.type==='region')d.querySelector('#quiz-next').click();else pick(d,'unknown');}
+  ok(d.querySelectorAll('.quiz-program').length===0&&d.querySelector('#quiz-result').textContent.includes('該当するものがありません')&&d.querySelector('a[href="/calendar.html"]'),'全不明・0件でも一般検索へ進める');ui.dom.window.close();
 
   section('離脱意向案内: 待機・端末・1回制限・競合回避');
   const js=readFileSync('scripts/client/quiz-offer.js','utf8');
