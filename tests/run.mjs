@@ -194,7 +194,9 @@ const gcal = (id) => { const $ = cheerio.load(read(join(OUT, `events/${id}.html`
   ok(cheerio.load(read(join(OUT, "events/t-full.html")))('main a[href$=".ics"]').length === 0, "開催ページに、.ics ファイルへのリンクは出さない");
 }
 ok(gcal("t-timeunknown").u?.searchParams.get("dates") === "20261010/20261011", "時間未定の開催は、終日の予定になる");
-ok(gcal("t-minimal").u?.searchParams.get("dates") === "20261103T100000/20261103T120000", "終了時刻がない開催は、開始から2時間の予定になる(ICSと同じ)");
+ok(gcal("t-minimal").u?.searchParams.get("dates") === "20261103T100000/20261103T120000", "終了未確認の仮登録は入力用2時間（別途注記を検証）");
+ok(gcal('t-minimal').u.searchParams.get('text').includes('終了未確認・仮2時間') && gcal('t-minimal').u.searchParams.get('details').includes('公演の終了時刻ではありません') && vevent('t-minimal').includes('DESCRIPTION:終了時刻は未確認'), '未確認終了の仮設定をGoogle予定とICSに明記');
+ok(gcal('t-timeunknown').u.searchParams.get('text').includes('時刻未確認・日付のみ') && vevent('t-timeunknown').includes('終日開催や終日の観覧を意味しません'), '時刻未確認の日付予定を終日公演と表現しない');
 { const h = read(join(OUT, "events/t-xss.html")); const raw = h.match(/href="(https:\/\/calendar\.google\.com\/[^"]*)"/)?.[1] ?? ""; ok(raw && !/[<>"']/.test(raw), "名称に記号があっても、リンクのURLが壊れない(エスケープされる)"); }
 
 // ---------- 7. サイトマップ ----------

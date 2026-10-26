@@ -1,3 +1,4 @@
+import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
 import { upcomingSummary, upcomingSummaryDescription } from './lib/upcoming-summary.mjs';
 import { reservationLabel } from './lib/reservation.mjs';
@@ -722,7 +723,8 @@ const dt = (s) => `${ymd(s)}T${s.slice(11, 13)}${s.slice(14, 16)}00`;
 const nextDay = (s) => new Date(asMs(s.slice(0, 10) + "T00:00") + 864e5).toISOString().slice(0, 10).replace(/-/g, "");
 const veventLines = (e) => [
   "BEGIN:VEVENT", `UID:${e.id}@${cfg.domain || "kagura"}`, `DTSTAMP:${nowJst.slice(0, 10).replace(/-/g, "")}T000000Z`,
-  `SUMMARY:${ie(e.name)}`,
+  `SUMMARY:${ie(e.name + calendarNotice(e).suffix)}`,
+  ...(calendarNotice(e).text ? [`DESCRIPTION:${ie(calendarNotice(e).text)}`] : []),
   ...(e.timeUnknown ? [`DTSTART;VALUE=DATE:${ymd(e.start)}`, `DTEND;VALUE=DATE:${nextDay(e.end || e.start)}`]
     : [`DTSTART;TZID=Asia/Tokyo:${dt(e.start)}`, `DTEND;TZID=Asia/Tokyo:${dt(e.end || new Date(asMs(e.start) + 2 * 3600e3).toISOString().slice(0, 16))}`]),
   `LOCATION:${ie(`${e.venue ?? ""} ${e.prefecture}${e.city ?? ""}`.trim())}`,
@@ -732,9 +734,9 @@ const veventLines = (e) => [
 // Googleカレンダーの予定作成画面を、この開催の内容を入れた状態で開くリンク(日時・終日の扱いは、ICS と同じ)
 const gcalEvent = (e) => {
   const dates = e.timeUnknown ? `${ymd(e.start)}/${nextDay(e.end || e.start)}` : `${dt(e.start)}/${dt(e.end || new Date(asMs(e.start) + 2 * 3600e3).toISOString().slice(0, 16))}`;
-  const details = [`${cfg.siteName}: ${cfg.baseUrl}/events/${e.id}.html`, e.url ? `公式情報: ${e.url}` : "", "※ 日時や会場は変わることがあります。出かける前に公式情報をご確認ください。"].filter(Boolean).join("\n");
+  const details = [calendarNotice(e).text, `${cfg.siteName}: ${cfg.baseUrl}/events/${e.id}.html`, e.url ? `公式情報: ${e.url}` : "", "※ 日時や会場は変わることがあります。出かける前に公式情報をご確認ください。"].filter(Boolean).join("\n");
   const location = `${e.venue ?? ""} ${e.prefecture}${e.city ?? ""}${e.address ?? ""}`.trim();
-  return `https://calendar.google.com/calendar/render?${new URLSearchParams({ action: "TEMPLATE", text: e.name, dates, ctz: "Asia/Tokyo", location, details })}`;
+  return `https://calendar.google.com/calendar/render?${new URLSearchParams({ action: "TEMPLATE", text: e.name + calendarNotice(e).suffix, dates, ctz: "Asia/Tokyo", location, details })}`;
 };
 const vcal = (list) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteName}//JA`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${ie(cfg.siteName)}`, "X-WR-TIMEZONE:Asia/Tokyo", ...list.flatMap(veventLines), "END:VCALENDAR"].join("\r\n") + "\r\n";
 // 共有: LINE で送る・リンクをコピー(押したときだけ、外部へ移動する。コピーはこのページの中だけで動く)
@@ -786,7 +788,8 @@ for (const e of events) {
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
 <tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr><tr><th>予約要否</th><td>${esc(reservationLabel(e))}</td></tr></table></div>
-<p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに追加</a></p>
+${calendarNotice(e).text ? `<p class="calendar-notice">${esc(calendarNotice(e).text)}</p>` : ""}
+<p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録（終了未確認）" : "追加"}</a></p>
 ${showPreparation ? preparationLinks(e.lat != null) : ""}</div>
 ${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 <p class="desc-lead">${esc(e.description)}</p>
