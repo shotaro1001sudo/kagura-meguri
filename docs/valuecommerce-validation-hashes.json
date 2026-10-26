@@ -4,8 +4,8 @@
     "bytes": 1496
   },
   "scripts/build.mjs": {
-    "sha256": "fd7c08c7e63da903558383b4cce1327595160fd189030cb2f7264c14e711ca0b",
-    "bytes": 124613
+    "sha256": "087eaa0b9ac477ecde4ca33a4a3dccdce315c69c950a1bbcb392ceccbb326658",
+    "bytes": 124800
   },
   "scripts/lib/valuecommerce.mjs": {
     "sha256": "98e90dc667952cde0ddb9c0f7c391dd6d20d72cd0a5c9aae7563737173518623",
@@ -48,8 +48,8 @@
     "bytes": 57207
   },
   "tests/fixtures/vc-generated-event.html": {
-    "sha256": "008cf30aa40b2824915d6a60849871bbb1efd9295073a41d22377227fd25743a",
-    "bytes": 147802
+    "sha256": "70d7b1fe8e5c25c60f1e113846df209322e0c443be5a462829763615c48622e2",
+    "bytes": 147905
   },
   "tests/fixtures/vc-observe.js": {
     "sha256": "573b5a419403b418dfdae4ec0d0b1cd0b1c132c13c755ddad6a07cd6c3974d4d",
@@ -100,7 +100,7 @@
     "bytes": 2673
   },
   "scripts/lib/cookie-controls.mjs": {
-    "sha256": "e991ca036ac1143c7511c85331f7eb620106e56d6f24aa6d73f4234615f93ef5",
+    "sha256": "fe1768d62fddae765b71a96ca45c917e7e51c02c4f7fdca5923956e0e867efbe",
     "bytes": 1347
   },
   "scripts/style.css": {
@@ -108,7 +108,7 @@
     "bytes": 76257
   },
   "scripts/lib/policy.mjs": {
-    "sha256": "03ee27ad45a81335943647ca860f9526475394e7eb9dc45fcd054ce836bb7a59",
+    "sha256": "eb67c7ae2bff085ab900e5f27269c0de0db3cef1e3af1c5bcf45a047d876c93f",
     "bytes": 38279
   },
   "tests/cookie-controls-test.mjs": {
@@ -116,11 +116,11 @@
     "bytes": 3405
   },
   "tests/cookie-controls-browser.mjs": {
-    "sha256": "c26785a3c00f91beeddd5d81a037f6ea282107451f4cb4157409415d9c181fad",
-    "bytes": 6366
+    "sha256": "0a88900bc99c31733caae44a916faa3f0046c1a1588cf61a2b66d17c735ac91a",
+    "bytes": 9152
   },
   "tests/helpers/button-geometry.mjs": {
-    "sha256": "9fa9d8a39986baa8c5f71fdcb1658f94f0ff43f822a4123f26e72fc6e9aebca3",
-    "bytes": 1887
+    "sha256": "e0bfded1dffca80f316ce151905262279dc5602dab7e4600c445a37239fabb70",
+    "bytes": 2186
   }
 }

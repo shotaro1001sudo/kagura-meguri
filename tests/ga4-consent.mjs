@@ -58,6 +58,7 @@ export function ga4ConsentTests({ ok, section, build }) {
       ok($('script[src*="googletagmanager.com/gtag/js"]').length === 0,
         path + ": 初期HTMLはGA4外部タグを読まない");
       ok($('#cookie-reject-optional[type="button"]').length===1,path+': 明示拒否ボタンが1つ');
+      ok(html.indexOf('id="cookie-controls"')<html.indexOf('<main id="main">')&&$('.cookie-settings-link a[href="#cookie-controls"]').length===1,path+': 拒否操作は下部バナーから離れた通常フロー、末尾からリンク');
       ok($('#cookie-reject-status[role="status"][aria-live="polite"]').length===1,path+': 拒否操作の状態読み上げ');
       ok($('script').filter((_,n)=>$(n).text().trim()===readFileSync('scripts/client/cookie-controls.js','utf8').trim()).length===1,path+': 拒否操作コードが1回');
       const bot = $("head > script#Cookiebot");

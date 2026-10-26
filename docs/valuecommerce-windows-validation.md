@@ -262,3 +262,14 @@ settling observation; this does not change the banner, CSS, focus trap or checks
 No keyboard input occurs unless all actual conditions pass. A real overlay/focus
 trap remains a usability blocker. The production button has not been moved or
 restyled based on the earlier missing evidence. No new real consent log is allowed.
+
+### Final layout candidate after confirmed obstruction
+
+The one refusal section is now before main content, in normal flow below the site
+header; footer is a normal anchor back to it. Button and status precede the long
+explanation. Existing CMP overlay/configuration is untouched. Same invocation-only
+command and no-log restriction apply. Check the refreshed generated fixture and
+31-file manifest. Expect center plus all four inset button corners to hit the
+button, focus to remain on it, and no overflow. Return button-after-scroll.png,
+button-timeout.png and checkpoint. The prior old-footer obstruction is established;
+local mock-overlay success is not a substitute for this final actual-overlay check.

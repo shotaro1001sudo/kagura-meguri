@@ -240,3 +240,32 @@ checks still pass. This is a test overlay, not evidence of the real CMP layout.
 Production UI is unchanged pending exact Windows cause. If the real banner covers
 or traps focus away from the footer, the public refusal route is still blocked and
 must be corrected before release; diagnostic success alone is not release approval.
+
+## Confirmed bottom-banner obstruction and normal-flow layout correction
+
+Windows at 6d27f07 established focused=true, visible=true, overflow=false but
+hit=false: button rect (153.5,1288.70,182.67,46.69), hit target
+CybotCookiebotDialogBodyContent; fixed CMP rect (18.75,1123.13,374,258.13),
+scrollY2517 at page bottom. No click/SDK/log. This was a real footer obstruction.
+
+The single refusal section now appears in normal flow immediately after the
+header, before main content. Footer contains only an anchor back to that section;
+privacy wording points to the upper section. Button and status precede its longer
+explanation so narrow screens expose both. No duplicate refusal button, automatic
+focus, CMP styling/removal, z-index override or account changes. SDK handler,
+consent adapter and issued tags are unchanged.
+
+Local real Chromium reproduced the exact old rectangles and blocked hit target.
+With an unchanged fixed bottom-left mock overlay (same 374x258.13 geometry, width
+clamped to viewport on narrow screens), the new normal-flow control passed at
+1280x1400,390x844,320x640 with native keyboard invocation once. Screenshots were
+visually inspected. Read-only geometry now checks center AND four inset corners
+so a partly covered button cannot pass by center alone. Full-screen/focus-trap
+negative cases still stop without invocation. Test-only navigation now waits for
+Page.loadEventFired instead of a fixed 300ms delay after an intermittent stale
+focus observation under load. No production timing workaround was introduced.
+
+Local full suite 10,542 passed / 0 failed; final control unit/browser checks and
+142-page build passed. Final-head CI remains the authoritative combined check.
+Real CMP layout on Windows still needs the same invocation-only test, without
+calling actual submitCustomConsent or consuming any more log budget.
