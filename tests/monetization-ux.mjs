@@ -234,6 +234,18 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
       ok(!ld.offers && ld.isAccessibleForFree === undefined && ld.description.includes(condition),
         `千代田${suffix}: 条件付き無料を無条件無料や販売情報にしない`);
     }
+    const oasa=cheerio.load(read('dist-test-verified-hiroshima/events/oasa-kagura-kyoen-2026.html'));
+    const horo=cheerio.load(read('dist-test-verified-hiroshima/events/horowasan-shimotsuki-kagura-2026.html'));
+    const eventLdOf=$=>$('script[type="application/ld+json"]').toArray().flatMap(n=>JSON.parse($(n).text())).find(v=>v['@type']==='Event');
+    const oa=eventLdOf(oasa), ho=eventLdOf(horo);
+    ok(oa.startDate==='2026-11-07T13:00+09:00' && !oa.endDate && oasa('main').text().includes('開場12:00、開会式12:30、開演13:00'), '大朝: 開演を13時とし、開場/式と区別・閉会式を終了時刻にしない');
+    ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否要確認'), '大朝: 個別公式リンク・住所・予約不明を維持');
+    ok(ho.startDate==='2026-11-07' && ho.endDate==='2026-11-08' && horo('main').text().includes('時間は公式情報をご確認ください'), '保呂羽山: schemaの日付範囲と時刻未確認を維持');
+    const gc=new URL(horo('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href'));
+    ok(gc.searchParams.get('dates')==='20261107/20261109' && gc.searchParams.get('location').includes('木ノ根坂200'), '保呂羽山: Google予定の終日は8日を含み排他的終了9日・里宮住所');
+    const ics=read('dist-test-verified-hiroshima/events.ics').split('BEGIN:VEVENT').find(v=>v.includes('UID:horowasan-shimotsuki-kagura-2026@'));
+    ok(ics.includes('DTSTART;VALUE=DATE:20261107') && ics.includes('DTEND;VALUE=DATE:20261109'), '保呂羽山: ICSも排他的終了11月9日');
+    ok(horo('main').text().includes('2026年の確定時刻としては掲載していません') && horo('a[href="https://rurubu.jp/andmore/spot/20000345"]').length>0, '保呂羽山: 年次時刻と2026日程の根拠を区別し補足出典を保持');
     const pref = cheerio.load(read("dist-test-verified-hiroshima/pref/広島県.html"));
     const facts = pref(`.card h3 a[href='/events/${eventId}.html']`).closest(".card").find(".event-facts");
     ok(facts.text().includes("料金: 参加無料") && facts.text().includes("予約要否: 不要（当日会場へ）") &&
