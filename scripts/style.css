@@ -186,9 +186,11 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .experience-areas>a:target{outline:2px solid var(--ac);outline-offset:2px}
 @media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a{padding:14px 18px}.planning-card{padding:18px}}
 /* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
-.quiz-offer{position:fixed;inset:auto 20px 20px auto;margin:0;z-index:100;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:20px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003}
-.quiz-offer #quiz-offer-title{font-family:var(--serif);font-size:var(--fs-l);margin:8px 0}
-.quiz-offer #quiz-offer-desc{font-size:var(--fs-s);margin:8px 0 16px}
+.quiz-offer[hidden]{display:none}
+body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
+.quiz-offer{box-sizing:border-box;position:fixed;inset:auto 20px 20px auto;margin:0;z-index:100;width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:12px 16px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px #0003}
+.quiz-offer #quiz-offer-title{font-family:var(--serif);font-size:var(--fs-m);margin:4px 0}
+.quiz-offer #quiz-offer-desc{font-size:var(--fs-s);margin:4px 0 8px}
 .quiz-close{display:block;margin-left:auto;min-height:44px}
 #quiz{max-width:40em;margin:28px 0}
 #quiz fieldset{border:0;padding:0;margin:0;min-width:0}
@@ -805,6 +807,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .pick.has-img a:hover span{color:var(--ac);text-decoration-color:var(--ac)}
 .pick.has-img small{margin-left:82px}
 .pick.has-img>.pr{display:inline-block;margin:0 0 6px}
+.quiz-offer.quiz-offer-inline{position:static;inset:auto;grid-column:1/-1;width:min(340px,100%);margin:16px 0;box-shadow:none}
 /* 診断の任意条件。ネイティブ入力と明示的な「次へ」でキーボード・タッチを共通化。 */
 #quiz-region,.quiz-date-label input{display:block;width:100%;max-width:32rem;min-height:48px;box-sizing:border-box;font:inherit;padding:10px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:4px}
 .quiz-date-label:not([hidden]),.quiz-select-label{display:block;margin:12px 0}

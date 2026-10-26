@@ -68,26 +68,36 @@ export function quizTests({ok,section,OUT}) {
   const emptyConfig={...config,events:[],regular:[]};ui=setupQuiz(emptyConfig);d=ui.d;d.querySelector('#quiz-start').click();for(const q of questions){if(q.type==='region')d.querySelector('#quiz-next').click();else pick(d,'unknown');}
   ok(d.querySelectorAll('.quiz-program').length===0&&d.querySelector('#quiz-result').textContent.includes('該当するものがありません')&&d.querySelector('a[href="/calendar.html"]'),'全不明・0件でも一般検索へ進める');ui.dom.window.close();
 
-  section('離脱意向案内: 待機・端末・1回制限・競合回避');
+  section('診断案内: 閲覧後の推測・フォーカスを奪わない・1回制限');
   const js=readFileSync('scripts/client/quiz-offer.js','utf8');
-  function setup(desktop=true,blocked=false) {
-    const dom=new JSDOM('<button id="previous">前の操作</button><input id="editing"><dialog id="quiz-offer"><button>閉じる</button><a href="/quiz.html">診断</a></dialog>',{url:'https://kagurameguri.jp/',runScripts:'outside-only',pretendToBeVisual:true});
-    const w=dom.window,d=w.document,box=d.querySelector('dialog');let now=0,y=0;
+  function setup(desktop=true,blockedStorage=false,saved=false) {
+    const dom=new JSDOM('<button id="previous">前の操作</button><form><input id="editing"></form><a id="official" href="https://example.com">公式</a><aside id="quiz-offer" hidden><button>閉じる</button><a href="/quiz.html">好みから探す</a></aside>',{url:'https://kagurameguri.jp/',runScripts:'outside-only',pretendToBeVisual:true});
+    const w=dom.window,d=w.document,box=d.querySelector('#quiz-offer');let now=0,y=0;
     w.Date.now=()=>now;w.matchMedia=()=>({matches:desktop});
     Object.defineProperty(w,'scrollY',{get:()=>y});Object.defineProperty(w,'innerHeight',{value:800});Object.defineProperty(d.documentElement,'scrollHeight',{value:2400});
-    box.show=()=>box.setAttribute('open','');box.close=()=>box.removeAttribute('open');
-    if(blocked)Object.defineProperty(w,'sessionStorage',{get(){throw Error('blocked')}});
+    box.getBoundingClientRect=()=>({top:540,bottom:780,height:240});
+    if(saved)w.sessionStorage.setItem('km-quiz-offer','1');
+    if(blockedStorage)Object.defineProperty(w,'sessionStorage',{get(){throw Error('blocked')}});
     w.eval(js);
-    return {dom,w,d,box,time:n=>now=n,scroll:n=>{y=n;w.dispatchEvent(new w.Event('scroll'));},leave:(y=-1,x=null)=>d.dispatchEvent(new w.MouseEvent('mouseout',{clientY:y,relatedTarget:x})),close:()=>dom.window.close()};
+    return {dom,w,d,box,time:n=>now=n,scroll:n=>{y=n;w.dispatchEvent(new w.Event('scroll'));},leave:(y=-1,x=null)=>d.dispatchEvent(new w.MouseEvent('mouseout',{clientY:y,relatedTarget:x})),hide:value=>{Object.defineProperty(d,'visibilityState',{configurable:true,value});d.dispatchEvent(new w.Event('visibilitychange'));},close:()=>dom.window.close()};
   }
-  let t=setup();t.leave();ok(!t.box.open,'30秒前には表示しない');t.time(31000);t.leave(20);ok(!t.box.open,'左右や下端退出では表示しない');
-  t.d.querySelector('#editing').focus();t.leave();ok(!t.box.open,'入力中は案内しない');
-  const consent=t.d.createElement('div');consent.setAttribute('role','dialog');consent.setAttribute('aria-modal','true');consent.getClientRects=()=>[{}];t.d.body.append(consent);t.d.querySelector('#previous').focus();t.leave();ok(!t.box.open,'他のモーダル表示中は案内しない');consent.remove();
-  Object.defineProperty(t.d,'visibilityState',{configurable:true,value:'hidden'});t.leave();ok(!t.box.open,'非表示タブでは案内しない');
-  Object.defineProperty(t.d,'visibilityState',{value:'visible'});t.leave();ok(t.box.open&&t.w.sessionStorage.getItem('km-quiz-offer')==='1','待機後のPC上端退出で1回表示');
-  t.d.dispatchEvent(new t.w.KeyboardEvent('keydown',{key:'Escape'}));ok(!t.box.open&&t.d.activeElement.id==='previous','Escapeで閉じてフォーカスを戻す');t.leave();ok(!t.box.open,'閉じた後は再表示しない');t.close();
-  t=setup(false);t.time(31000);t.leave();ok(!t.box.open,'スマホではマウス退出を使わない');t.scroll(900);t.scroll(750);ok(!t.box.open,'スマホの上スクロール200px未満は表示しない');t.scroll(650);ok(t.box.open,'半分以上閲覧後の上方向200pxでスマホ案内');t.box.querySelector('button').click();ok(!t.box.open,'閉じるボタンが機能');t.close();
-  t=setup(true,true);t.time(31000);t.leave();ok(!t.box.open,'保存領域が使えない場合は自動表示しない');t.close();
-  for(const page of ['contact.html','submit.html','privacy.html','terms.html','disclaimer.html','en/index.html'])ok(!readFileSync(join(OUT,page),'utf8').includes('id="quiz-offer"'),`${page}: 案内を設置しない`);
-  ok(readFileSync(join(OUT,'index.html'),'utf8').includes('id="quiz-offer"'),'トップに案内を設置');
+  let t=setup();t.leave();ok(t.box.hidden,'30秒前には表示しない');t.time(31000);t.leave();ok(t.box.hidden,'PCも滞在時間だけでは表示しない');t.scroll(200);t.leave(20);ok(t.box.hidden,'左右や下端退出では表示しない');
+  t.d.querySelector('#editing').focus();t.leave();ok(t.box.hidden,'入力中は案内しない');
+  const consent=t.d.createElement('div');consent.setAttribute('role','dialog');consent.getClientRects=()=>[{}];t.d.body.append(consent);t.d.querySelector('#previous').focus();t.leave();ok(t.box.hidden,'CMP/他のダイアログ表示中は案内しない');consent.remove();
+  t.hide('hidden');t.leave();ok(t.box.hidden,'非表示タブでは案内しない');t.hide('visible');t.leave();ok(!t.box.hidden&&t.w.sessionStorage.getItem('km-quiz-offer')==='1','閲覧後のPC上端退出で1回表示');
+  ok(t.d.activeElement.id==='previous','表示してもフォーカスを奪わない');
+  t.d.dispatchEvent(new t.w.KeyboardEvent('keydown',{key:'Escape',cancelable:true}));ok(t.box.hidden&&t.d.activeElement.id==='previous','Escapeで閉じる、外のフォーカス維持');t.leave();ok(t.box.hidden,'閉じた後は再表示しない');t.close();
+  t=setup(false);t.time(31000);t.leave();ok(t.box.hidden,'スマホではマウス退出を使わない');t.scroll(900);t.scroll(750);ok(t.box.hidden,'上スクロール200px未満は表示しない');t.scroll(650);ok(!t.box.hidden,'半分以上閲覧後の上方向200pxで案内');
+  t.box.querySelector('button').focus();t.box.querySelector('button').click();ok(t.box.hidden&&!t.d.body.classList.contains('quiz-offer-visible'),'閉じるボタンと余白解除');t.close();
+  for(const [storage,saved] of [[true,false],[false,true]]){t=setup(true,storage,saved);t.time(31000);t.scroll(200);t.leave();ok(t.box.hidden,'保存不可/表示済みは表示しない');t.close();}
+  t=setup();t.time(1000);t.hide('hidden');t.time(60000);t.hide('visible');t.scroll(200);t.leave();ok(t.box.hidden,'非表示の滞在時間を閲覧と数えない');t.time(90000);t.leave();ok(!t.box.hidden,'可視閲覧時間が閾値に達してから表示');t.hide('hidden');ok(t.box.hidden,'タブ非表示では既存案内も閉じる');t.close();
+  t=setup();t.time(31000);t.scroll(200);t.d.querySelector('#editing').dispatchEvent(new t.w.Event('input',{bubbles:true}));t.d.querySelector('#previous').focus();t.leave();ok(t.box.hidden,'入力済みフォームはフォーカス外でも抑制');t.close();
+  t=setup();t.time(31000);t.scroll(200);t.box.getBoundingClientRect=()=>({top:20,height:700});t.leave();ok(t.box.hidden&&!t.w.sessionStorage.getItem('km-quiz-offer'),'安全な表示領域がない場合は出さない');t.close();
+  t=setup();t.time(31000);t.scroll(200);t.leave();t.w.dispatchEvent(new t.w.Event('CookiebotOnDialogDisplay'));ok(t.box.hidden,'案内後にCMPを開いた場合も除去');
+  const click=new t.w.MouseEvent('click',{bubbles:true,cancelable:true});t.d.querySelector('#official').dispatchEvent(click);ok(!click.defaultPrevented,'公式リンクのクリックを横取りしない');t.close();
+  t=setup();t.time(31000);t.scroll(200);t.leave();t.w.dispatchEvent(new t.w.Event('resize'));ok(t.box.hidden,'画面回転/リサイズ時は閉じて再配置による遮蔽を避ける');t.close();
+  ok(!/beforeunload|pushState|popstate|showModal|box\.show\(/.test(js),'離脱ダイアログ・履歴操作・モーダル表示なし');
+  ok(!/gtag|fetch\(|sendBeacon/.test(js),'新規計測や外部通信なし');
+  for(const page of ['quiz.html','contact.html','submit.html','privacy.html','terms.html','disclaimer.html','en/index.html'])ok(!readFileSync(join(OUT,page),'utf8').includes('id="quiz-offer"'),`${page}: 案内対象外`);
+  const home=readFileSync(join(OUT,'index.html'),'utf8');ok(home.includes('気になる神楽、まだ迷っていますか？')&&home.includes('好みから探す')&&home.includes('role="region"'),'押し付けない案内文と非モーダル領域');
 }
