@@ -118,6 +118,9 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok($(".d-side .stay-banner").length === 0, "本番: 開催ページの宿は、宿のトップへ飛ぶだけのバナーを使わない");
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','i.imgvc.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');
+    ok(p.includes('サービス提供会社と画像配信先のホスト名を区別') && !p.includes('これらの事業者へ次の情報が直接送られます'), '外部送信: 提供会社を画像ホストの運営主体と同一視しない');
+    ok(p.includes('異なるタイミングで発生します') && !p.includes('成果計測は別の処理です'), '外部送信: 通信のタイミングを説明し内部処理を断定しない');
+    ok(p.includes('当サイト側：広告画像の取得・表示') && p.includes('サービス提供会社が公表する利用目的') && p.includes('個々の画像要求でどの情報が何に利用されるかを確認したものでもありません'), '外部送信: 当サイトの目的と提供会社の一般方針・未確認事項を区別');
     ok(p.includes('リンクを押す前にも発生') && p.includes('広告画像の取得・表示') && p.includes('接続元IPアドレス'), '本番: 画像通信の時機・目的・通信情報を説明');
     ok(p.includes('Cookie等を利用する場合') && p.includes('すべての画像要求でCookieや閲覧ページの完全なURLが送られるという意味ではありません'), '本番: Cookieや完全URLを全要求の確定動作としない');
 
