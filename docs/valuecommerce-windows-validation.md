@@ -125,3 +125,26 @@ node tests/valuecommerce-transfer-probe.mjs > vc-layout-progress.jsonl
 VC readiness専用の小さなinline記録コードがCMP外部scriptより前に入り、controllerは後に残る。正式イベントよりcontrollerが遅れても現在のAPI状態を判定できる。広告処理/GA4をCMPより前へ移していない。公式の「CMPを最初のscript」推奨に対する記録専用コードの限定例外であり、公式承認済みとは扱わない。実CMP auto動作の検証と公開前レビューを継続する。
 
 更新head/manifest確認後、前節の単一実行コマンドを使用する。観測上はDialogDisplayがcontroller前でも後でもunselectedになる必要がある。拒否/許可/保存拒否再読込/撤回を確認するまでは公開しない。stdout JSONLとVC_EVIDENCE_FILEを両方保存する。新しいアカウント/カテゴリ/許可先変更は不要。
+
+## 実SDK統合検証（通常バナーUIとは別）
+
+現行バナーの説明展開は成功したが、拒否/カテゴリ選択UIは現れず、OKは押していない。通常UIの再試行はしない。公式 https://www.cookiebot.com/en/developer/ のSDK呼出しを、同じ隔離プロフィールと既存ガード下で検証する専用フラグを追加した。
+
+```powershell
+Remove-Item Env:VC_UI_SEQUENCE -ErrorAction SilentlyContinue
+Remove-Item Env:VC_MOCK_UI -ErrorAction SilentlyContinue
+$env:VC_REAL_CMP = '1'
+$env:VC_FIXTURE = 'generated'
+$env:VC_SDK_SEQUENCE = '1'
+$env:VC_CAPTURE_DIR = Join-Path $PWD 'vc-sdk-captures'
+$env:VC_EVIDENCE_FILE = Join-Path $PWD 'vc-sdk-checkpoint.json'
+node tests/valuecommerce-transfer-probe.mjs > vc-sdk-progress.jsonl
+```
+
+初期unselectedと実画像要素が成立した後、submitCustomConsent(false,false,false) → 同じprofileでreload → submitCustomConsent(false,false,true) → withdraw()を各1回。実プロパティは書き換えない。APIがなければ停止。実状態を最大5秒待ち、さらに1秒間の要求/DOMを観測してphaseを記録する。Cookie値は読まない。public PIDのみを要求識別に使い、同じ画像pathでも宿/体験を区別する。
+
+sdkPhasesには前後のVC要求差分/ユニーク要求数/重複数、MutationObserverによるmount数、実API/stateを記録。reject/reload/withdrawでは新規要求0・mount0・画像0が必要。allowはexplicit/marketing=true、予定数のmount1回ずつ、同一宛先への重複要求なしを要求。撤回後に未選択扱いへ戻って画像が出れば失敗とし、成功へ丸めない。撤回後のhasResponseはfalseでもよいがgateはdeniedかunknownのみ許容。
+
+これは実SDK/保存/ネットワーク制御の検証であり、公開バナーから拒否できる証明ではない。B案は確認済み未選択での広告要求を許容し、この試験ではそれを送信前に遮断する。『同意前通信が常に0』とは言わない。DOM除去は既に開始された要求を取消さず、拒否後に新たな要求がないことを検証する。account設定・課金・privacyカテゴリ・本番変更なし。
+
+最小の公開UI案（未実装）: Cookiebot.renew()への設定リンクは既存バナーを再表示するだけなので、今回のバナーに拒否controlがなければ単独で解決しない。公式SDKで必要Cookieのみを選択する明示的な『任意Cookieを拒否』ボタンをサイト側に設ける案がある。これはユーザーの操作でsubmitCustomConsent(false,false,false)を呼ぶ変更で、同意/アクセス解析の条件コード自体は変えないが、公開UI変更として親が範囲を判断する。ベンダー設定の無断変更はしない。

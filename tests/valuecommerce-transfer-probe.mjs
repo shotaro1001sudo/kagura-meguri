@@ -1,3 +1,4 @@
+import {summarizeSdkPhase,assertSdkPhase} from './helpers/vc-sdk-assertions.mjs';
 import {boundedCdp} from './helpers/bounded-cdp.mjs';
 // Dependency-free isolated CDP probe. Default is guard preflight ONLY.
 import {createServer} from 'node:http';
@@ -7,6 +8,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {vcTag} from '../scripts/lib/valuecommerce.mjs';
 import {cspFor} from '../scripts/lib/csp.mjs';
+if(process.env.VC_SDK_SEQUENCE==='1'&&(process.env.VC_UI_SEQUENCE==='1'||process.env.VC_MOCK_UI==='1'||process.env.VC_REAL_CMP!=='1'))throw Error('SDK verification requires real CMP and excludes UI/mock modes');
 const mockUi=process.env.VC_MOCK_UI==='1';
 if(mockUi&&process.env.VC_REAL_CMP==='1')throw Error('Choose mock UI or real CMP, not both.');
 const chromePath=process.env.CHROMIUM_BIN;
@@ -68,7 +70,7 @@ try {
     const {requestId,request}=m.params,u=new URL(request.url);
     const local=u.origin===origin;
     const cmp=live&&request.method==='GET'&&u.protocol==='https:'&&['consent.cookiebot.com','consentcdn.cookiebot.com','imgsct.cookiebot.com'].includes(u.hostname)&&!/logconsent|collect|\/log(?:\.|\/)/i.test(u.pathname);
-    const entry={targetSession:m.sessionId,host:u.hostname,path:new URL(safeUrl(request.url)).pathname,method:request.method};
+    const entry={targetSession:m.sessionId,host:u.hostname,path:new URL(safeUrl(request.url)).pathname,method:request.method,...(u.hostname.endsWith('.valuecommerce.com')&&/^\d+$/.test(u.searchParams.get('pid')||'')?{placement:u.searchParams.get('pid')}: {})};
     (local||cmp?evidence.continued:evidence.blocked).push(entry);
     await send(local||cmp?'Fetch.continueRequest':'Fetch.failRequest',local||cmp?{requestId}:{requestId,errorReason:'BlockedByClient'},m.sessionId);
    }
@@ -97,6 +99,34 @@ try {
   const initial=await snapshot('initial');await capture('initial');
   evidence.frames=await send('Page.getFrameTree',{},session).then(r=>({mainFrameId:r.frameTree.frame.id,childFrameCount:r.frameTree.childFrames?.length||0}));
   if(!initial.observerInstalled||!evidence.cmpEvents.some(e=>e.event==='observer-installed'&&e.path==='/cmp'))throw Error('Document-start observer handshake missing; diagnostics unreliable.');
+  if(process.env.VC_SDK_SEQUENCE==='1'){
+   if(initial.gate!=='unselected'||initial.hasResponse!==false||initial.images===0)throw Error('Real initial unselected state not established for SDK sequence');
+   evidence.sdkScope='Actual vendor SDK in isolated profile; NOT public banner UI verification. Initial unselected advertising attempts are permitted by B policy and intercepted. Removal cannot undo earlier requests.';
+   const expectedImages=initial.images;
+   evidence.sdkPhases=[];
+   for(const name of ['reject','reload','allow','withdraw']){
+    const before=evidence.blocked.length,mountStart=evidence.cmpEvents.length;
+    checkpoint({phase:'sdk-before',name});
+    if(name==='reload')await send('Page.reload',{ignoreCache:true},session);
+    else if(name==='withdraw')await evaluate("(()=>{if(typeof Cookiebot?.withdraw!=='function')throw Error('Documented withdraw unavailable');Cookiebot.withdraw();return true;})()",'sdk-withdraw');
+    else await evaluate(`(()=>{if(typeof Cookiebot?.submitCustomConsent!=='function')throw Error('Documented submitCustomConsent unavailable');Cookiebot.submitCustomConsent(false,false,${name==='allow'});return true;})()`,'sdk-'+name);
+    // Await observable real state, never mutate properties or synthesize consent events.
+    let matched=false;
+    for(let tick=0;tick<20;tick++){
+     await new Promise(r=>setTimeout(r,250));
+     matched=await evaluate(`(()=>{const c=window.Cookiebot;return typeof c?.hasResponse==='boolean'&&c?.consent?.marketing===${name==='allow'}${name==='withdraw'?'':'&&c.hasResponse===true'};})()`,'sdk-state-'+name);
+     if(matched)break;
+    }
+    await new Promise(r=>setTimeout(r,1000));
+    const state=await snapshot('sdk-'+name);
+    const mounts=evidence.cmpEvents.slice(mountStart).filter(x=>x.event==='vc-mount').reduce((n,x)=>n+x.count,0);
+    const result=summarizeSdkPhase(name,before,evidence.blocked,state,mounts);result.observedExpectedApiState=matched;evidence.sdkPhases.push(result);
+    checkpoint({phase:'sdk-after',name});await capture('sdk-'+name);
+    if(!matched)throw Error('SDK state transition did not complete: '+name);
+    assertSdkPhase(result,expectedImages);
+   }
+   evidence.sdkPassed=true;
+  }
   if(process.env.VC_UI_SEQUENCE==='1'||mockUi){
    const click=async selectors=>{
     const selector=await evaluate(`(()=>{for(const s of ${JSON.stringify(selectors)}){const e=document.querySelector(s);if(e&&!e.disabled&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'){e.scrollIntoView({block:'center',inline:'center'});return s;}}return null})()`,'control-scroll');

@@ -36,8 +36,8 @@
     "bytes": 3257
   },
   "tests/valuecommerce-transfer-probe.mjs": {
-    "sha256": "bf5ce7a64fefbb71c7dd29d348bb7e6606f19b7e5ca3f74a89e07bd353ed25a5",
-    "bytes": 18299
+    "sha256": "f67711d46369a48ecfd63b0f2ee11c41349284fec6d2e92023eca3b99e768011",
+    "bytes": 20934
   },
   "package.json": {
     "sha256": "67f65be6c2f1ced85ccd6cb031c6e4b4198ed0a45723eebdb410c82c3927e6df",
@@ -52,8 +52,8 @@
     "bytes": 143835
   },
   "tests/fixtures/vc-observe.js": {
-    "sha256": "849ae7a43fb9ab4948e9a0dd63742e28132c0f9b440ac41ece6ddf64f32214c3",
-    "bytes": 1514
+    "sha256": "573b5a419403b418dfdae4ec0d0b1cd0b1c132c13c755ddad6a07cd6c3974d4d",
+    "bytes": 1918
   },
   "tests/helpers/bounded-cdp.mjs": {
     "sha256": "3de4f0947e95334e3b6828742eef4d6a34d1f39c4dcb01b8a246bd7a40f802a2",
@@ -70,5 +70,13 @@
   "tests/valuecommerce-real-cmp.mjs": {
     "sha256": "8cc7b397e66011269ded978e877287725d60369b86d6f2aaa21f9cc44dddeb42",
     "bytes": 6429
+  },
+  "tests/helpers/vc-sdk-assertions.mjs": {
+    "sha256": "704056956965d7ec396b616dbdf663e509df13b631491da45468131c4adc6e74",
+    "bytes": 1137
+  },
+  "tests/vc-sdk-harness-test.mjs": {
+    "sha256": "ca8a0a437269bdbae977a6c580c02bcfebb6e5496985735f70839c56754b7f87",
+    "bytes": 2095
   }
 }
