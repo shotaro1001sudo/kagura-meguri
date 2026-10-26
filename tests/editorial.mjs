@@ -101,6 +101,32 @@ export function editorialTests({ ok, section, OUT, build }) {
   }
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 
+  section("宿泊案内: 時間帯を推測せず検索条件を維持");
+  const stayCases = [
+    mk("stay-day", "2026-11-03T08:45", { end: "2026-11-03T17:00" }),
+    mk("stay-before-five", "2026-11-03T10:00", { end: "2026-11-03T16:59" }),
+    mk("stay-night", "2026-11-03T20:00", { end: "2026-11-03T21:00" }),
+    mk("stay-unknown", "2026-11-03T00:00", { timeUnknown: true }),
+    mk("stay-no-end", "2026-11-03T18:00"),
+    mk("stay-overnight", "2026-11-03T19:00", { end: "2026-11-04T08:00" }),
+    mk("stay-multiday", "2026-11-03T09:00", { end: "2026-11-05T16:00" }),
+    JSON.parse(read("data/events.json")).find(e => e.id === "shonai-kagura-matsuri-2026"),
+  ];
+  writeFileSync(F, JSON.stringify(stayCases));
+  const stayBuild = build(F, D, { TEST_AFF_TRAVEL: "1" });
+  ok(stayBuild.status === 0, "宿泊広告有効で昼/夜/不明/日またぎ/実庄内をビルド", stayBuild.stderr);
+  if (stayBuild.status === 0) for (const e of stayCases) {
+    const $ = page(`events/${e.id}.html`, D), stay = $(".stay");
+    ok(stay.length === 1 && stay.find("h2").text() === "会場周辺の宿" && !/夜の公演|夜の観覧後|終演後の帰り道/.test(stay.text() + $(".page-notes").text()), `${e.id}: 宿泊枠に時間帯の断定をしない`);
+    ok(stay.find(".stay-cond").text().includes("11/3泊大人2名") && $(".page-notes").text().includes("人数・宿泊日はリンク先で変更できます。"), `${e.id}: 表示する宿泊日・人数の検索条件を維持`);
+    const anchors = stay.find("a.stay-btn");
+    ok(anchors.length === 2 && anchors.toArray().every(a => $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank"), `${e.id}: 既存広告リンク属性を維持`);
+    const jalan = new URL(anchors.eq(0).attr("href")), dest = new URL(jalan.searchParams.get("vc_url"));
+    const rakuten = new URL(anchors.eq(1).attr("href")), hotel = new URL(rakuten.searchParams.get("pc"));
+    ok(jalan.searchParams.get("sid") === "1234567" && jalan.searchParams.get("pid") === "7654321" && dest.searchParams.get("stayDay") === "3" && dest.searchParams.get("adultNum") === "2" && hotel.searchParams.get("f_hi1") === "3" && hotel.searchParams.get("f_hi2") === "4" && hotel.searchParams.get("f_query") === e.city.replace(/^.*郡/, ""), `${e.id}: 既存ID・開催初日の1泊・人数・市町村を維持`);
+  }
+  rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
+
   const hamada = { weekdays: [6], extra: [{ weekdays: [5], months: [9, 10, 11] }, { dates: ["05-03", "05-04", "05-05"] }], closedDates: ["10-30"] };
   ok(regularOn(hamada, "2026-10-16") && !regularOn(hamada, "2026-12-18") && regularOn(hamada, "2026-12-19") && regularOn(hamada, "2027-05-04") && !regularOn(hamada, "2026-10-30"), "季節だけの公演日(9〜11月の金曜・5月3〜5日)を数える。休演日は除く");
   const real = JSON.parse(read("data/regular.json")).find((x) => x.id === "hamada-yokagura-shusai");

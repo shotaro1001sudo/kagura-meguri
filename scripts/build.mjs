@@ -177,13 +177,13 @@ function stayBlock(e) {
   if (!rakutenOn && !jalanOn) return "";
   const day = e.start.slice(0, 10), place = stayPlace(e);
   const on = rakutenOn || jalanOn;
-  const evening = !e.timeUnknown && (+e.start.slice(11,13)>=17 || (e.end && (+e.end.slice(11,13)>=17 || e.end.slice(0,10)>day)));
+  // 時刻や日またぎだけでは夜公演と断定できないため、宿の案内は時間帯に依存しない。
   // 文字のボタン(日付・人数つきの検索)があるときだけ、検索の条件を示す。バナーは、条件を引き継がないため、条件を書かない
   const links = stayLinks(e, day, place), [, mo, d] = day.split("-").map(Number);
-  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${evening ? "夜の観覧後の宿" : "会場周辺の宿"}</h2>
-<p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span>${evening ? "<span>夜の公演</span>" : ""}</p>
+  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場周辺の宿</h2>
+<p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span></p>
 ${links}
-<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${evening ? "夜の公演です。終演後の帰り道が気になる方は、宿泊も選択肢です。" : ""}${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
+<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }
 
