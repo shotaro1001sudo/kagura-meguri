@@ -94,6 +94,11 @@ export async function uxTests({ ok, section, OUT }) {
   const descFirst = (p) => { const h = p("main").html(); return p(".d-top .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
   ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点のすぐあと(スマホでは広告の列より前)に出る");
   { const h = reg("main").html(); ok(h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("mapbox"), "定期公演ページも、共有のボタンは、説明・地図などの本文のあと"); }
+  { // 見出しの下の「明日開催」などは、並ぶタグと文字の大きさ・そろえ方が違うと、スマホで高さと位置がずれる
+    const rule = (sel) => (css.match(new RegExp(`(?:^|[}\\s/])${sel.replace(/\./g, "\\.")}\\{([^}]*)\\}`)) ?? [])[1] ?? "";
+    const fs = (r) => (r.match(/font-size:([^;}]+)/) ?? [])[1];
+    ok(full(".hero .until").length === 1 && !!fs(rule(".until")) && fs(rule(".until")) === fs(rule(".hero .tag")) && !/vertical-align:(?!baseline)/.test(rule(".until")),
+      "見出しの下の開催までの日数は、並ぶタグと同じ文字の大きさ・そろえ方(高さと位置がずれない)", `${rule(".until")} / ${rule(".hero .tag")}`); }
 
   section("UI: 検索・ガイド・フォーム・主催者の方へ");
   const cal = page("calendar.html");
