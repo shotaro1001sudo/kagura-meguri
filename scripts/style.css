@@ -844,3 +844,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .cookie-settings button[aria-disabled="true"]{cursor:default}
 .cookie-settings button:focus-visible{outline:2px solid var(--ac);outline-offset:4px}
 .cookie-settings [role="status"]:not(:empty){display:block;margin-top:4px}
+
+/* Keep the directory understandable without loading an advertising resource. */
+.experience-unavailable{display:flex;flex-direction:column;gap:4px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card)}
+.experience-areas>.vc-ad:not([hidden])+.experience-unavailable{display:none}

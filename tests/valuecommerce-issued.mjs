@@ -6,6 +6,27 @@ import {experienceDirectory,experienceRegions} from '../scripts/lib/visitor-plan
 import {cspFor} from '../scripts/lib/csp.mjs';
 export function valuecommerceIssuedTests({ok,section}) {
   section('VC: issued tag fidelity, inert resources, explicit marketing consent');
+  // CSS fallback is present even when the CMP or our controller never loads.
+  const emptyDirectory=experienceDirectory({sid:VC.sid,pid:VC.activity,allowed:true});
+  const fallbackDom=new JSDOM('<style>'+readFileSync('scripts/style.css','utf8')+'</style>'+emptyDirectory,{runScripts:'outside-only'});
+  const fw=fallbackDom.window,fd=fw.document;
+  const fallbackCount=()=>[...fd.querySelectorAll('.experience-unavailable')].filter(n=>fw.getComputedStyle(n).display!=='none').length;
+  const activeLinks=()=>fd.querySelectorAll('[data-vc-ad] > a').length;
+  ok(fallbackCount()===47&&activeLinks()===0&&fd.querySelectorAll('img').length===0,'広告/CMPスクリプト停止時も47県の非広告案内があり外部画像なし');
+  ok(fd.querySelectorAll('.experience-unavailable a').length===0&&fd.querySelector('.experience-display-help a').getAttribute('href')==='#cookie-controls','未承認の通常検索URLへ代替せず設定入口を案内');
+  fw.eval(readFileSync('scripts/client/valuecommerce-consent.js','utf8'));
+  ok(fallbackCount()===47&&activeLinks()===0,'CMP未準備は広告を出さず空欄案内を維持');
+  fw.Cookiebot={hasResponse:false,consent:{marketing:false,method:null}};
+  fw.dispatchEvent(new fw.Event('CookiebotOnDialogDisplay'));
+  ok(fallbackCount()===0&&activeLinks()===47,'確認済み未選択では元の正式47広告だけ表示');
+  fw.Cookiebot={hasResponse:true,consent:{marketing:true,method:'explicit'}};
+  fw.dispatchEvent(new fw.Event('CookiebotOnConsentReady'));
+  fw.dispatchEvent(new fw.Event('CookiebotOnConsentReady'));
+  ok(fallbackCount()===0&&activeLinks()===47,'明示許可・重複通知でも広告/案内を二重表示しない');
+  fw.Cookiebot.consent.marketing=false;
+  fw.dispatchEvent(new fw.Event('CookiebotOnDecline'));
+  ok(fallbackCount()===47&&activeLinks()===0&&fd.querySelectorAll('img').length===0,'明示拒否・撤回後は広告を除去し47県の案内を戻す');
+  fw.close();
   const evidence=JSON.parse(readFileSync('tests/fixtures/valuecommerce-issued.json','utf8'));
   const ads=[];
   for(const example of evidence.examples) {
