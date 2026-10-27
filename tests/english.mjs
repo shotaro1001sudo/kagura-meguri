@@ -38,6 +38,7 @@ export function englishTests({ ok, section, OUT }) {
   const enKinds = rowsK.map((_, r) => decodeURIComponent(kag(r).find("a").attr("href"))).get();
   ok(kag("section.gcard").length === 0 && rowsK.length > 0 && JSON.stringify(enKinds) === JSON.stringify(jaKinds.filter((h) => enKinds.includes(h))) && enKinds.length === jaKinds.filter((h) => existsSync(toFile(OUT, h))).length, "神楽の種類のページ: 紹介文なしで、日本語の「種類で探す」と同じ順番に、すべての種類を並べる", `${rowsK.length}件`);
   ok(rowsK.get().every((r) => kag(r).find("th").text().trim().length > 0 && kag(r).find("a[hreflang='ja']").length === 1), "神楽の種類のページ: 各行に、名前と日本語ページへのリンクがある");
+  ok(idx('td[data-k="Where"]').length > 0 && idx('td[data-k="Where"]').toArray().every((td) => /^[A-Za-z -]+$/.test(idx(td).text())), "英語トップの一覧の Where は県名の英語だけ(日本語の市町村名を混ぜない)");
   const where = idx("h2").filter((_, h) => idx(h).text() === "Where to see kagura").nextUntil("h2").text();
   ok(where.length > 0 && !/(Iwami|Takachiho|Bitchu|Hiroshima|Hanamatsuri|Ondake|Korakuen|Kiyokawa|Shimane|Okayama|Oita|Aichi|Miyazaki)/.test(where), "英語トップの「Where to see kagura」は、特定の神楽・会場を挙げない");
   for (const p of ["/en/guide.html", "/en/kagura.html", "/en/history.html", "/en/"]) {

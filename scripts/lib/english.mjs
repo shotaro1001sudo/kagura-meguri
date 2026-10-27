@@ -107,7 +107,7 @@ export function englishPages({ esc, upcoming, kaguraHref, styles: styleList = []
 <h2>Upcoming performances</h2>
 <p class="meta">A selection of upcoming performances, one for each style. Event names and details are in Japanese.</p>
 <div class="tblwrap" role="region" aria-label="Upcoming performances" tabindex="0"><table class="tbl cmp"><thead><tr><th scope="col">Date</th><th scope="col">Style</th><th scope="col">Event</th><th scope="col">Where</th></tr></thead><tbody>
-${picks.map((e) => `<tr><th scope="row">${fmtDate(e.start)}</th><td data-k="Style">${esc(kName(e.kagura) ?? "Kagura")}</td><td data-k="Event"><a href="/events/${e.id}.html" hreflang="ja" lang="ja" translate="no">${esc(e.name)}</a></td><td data-k="Where">${esc(PREF_EN[e.prefecture] ?? "")}, <span lang="ja" translate="no">${esc(e.city)}</span></td></tr>`).join("")}
+${picks.map((e) => `<tr><th scope="row">${fmtDate(e.start)}</th><td data-k="Style">${esc(kName(e.kagura) ?? "Kagura")}</td><td data-k="Event"><a href="/events/${e.id}.html" hreflang="ja" lang="ja" translate="no">${esc(e.name)}</a></td><td data-k="Where">${esc(PREF_EN[e.prefecture] ?? "")}</td></tr>`).join("")}
 </tbody></table></div>
 <p><a class="btn" href="/calendar.html" hreflang="ja">All performances (Japanese)</a> <a class="btn ghost" href="/map.html" hreflang="ja">Map (Japanese)</a> <a class="btn ghost" href="/weekend.html" hreflang="ja">This weekend (Japanese)</a></p>
 
