@@ -820,7 +820,11 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .vc-ad.stay-btn,.vc-ad.vc-experience{padding:0;border:0;background:transparent}
 .vc-ad.stay-btn>a,.vc-ad.vc-experience>a,.vc-ad.vc-stay>a{padding:12px 16px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
 .experience-areas>.vc-ad:not([hidden]){display:block}
-.vc-disclosure{font-size:var(--fs-s);border-bottom:1px solid var(--line);padding:12px 0}
+/* 広告の注記: 最初の広告の枠のすぐ上に、小さく控えめに(「広告」の文字は、地の文と区別できるように) */
+.vc-disclosure{font-size:var(--fs-xs);line-height:1.7;color:var(--mut);margin:0 0 8px}
+.vc-disclosure strong{font-weight:500;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-right:4px}
+/* 注記と広告の枠を、ひと続きに見せる(枠の上の余白で、注記だけが離れて見えないように) */
+.vc-disclosure+*{margin-top:0}
 
 /* Quiet footer entry; native Cookiebot owns the popup and all consent choices. */
 .cookie-settings{margin:4px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}

@@ -6,6 +6,7 @@ import { reservationLabel } from './lib/reservation.mjs';
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
 // 2026-10-21: event-handoff smoke marker (comment only; no functional or output change).
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
+import * as cheerio from "cheerio";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, privacyUpdated, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
@@ -288,6 +289,19 @@ const EN_FOOTER = `<footer>Event listings are in Japanese, but your browser can 
 // 出典・注釈・広告の説明(.meta.annotation)は、本文の途中から抜き出し、ページの下部に小さくまとめる。
 // 広告そのものの印(リンクの「（広告）」・バッジの「PR」)は、広告の場所に残す。スクリプトの中と、id のある注釈(入力欄の説明)は動かさない
 const NOTE_RE = /<p class="meta annotation"(?![^>]*\bid=)[^>]*>([\s\S]*?)<\/p>/g;
+// 広告の注記: ページの先頭ではなく、最初の広告の枠(宿・本・体験など)のすぐ上に置く。先頭に置くと、本文より前に毎回大きく出て、雰囲気を壊すため。
+// 広告の原本(発行タグ)を1文字も変えないよう、HTMLを作り直さず、元の文字列の位置に差し込む
+const VC_DISCLOSURE = '<p class="vc-disclosure"><strong>広告</strong> このページにはアフィリエイト広告が含まれます。じゃらんの広告表示時には外部への通信が発生します。</p>';
+const withAdDisclosure = (html) => {
+  if (!html.includes("data-vc-ad=")) return html;
+  const $ = cheerio.load(html, { sourceCodeLocationInfo: true }, false);
+  let el = $('a[rel~="sponsored"], [data-vc-ad], .vc-ad, .pr').first();
+  if (!el.length) return VC_DISCLOSURE + html;
+  // 本文・右の列の直下(なければページの直下)にある、広告の枠そのものまでさかのぼる
+  while (el.parent()[0]?.type === "tag" && !el.parent().is(".d-top, .d-side, .d-rest")) el = el.parent();
+  const at = el[0].sourceCodeLocation.startOffset;
+  return html.slice(0, at) + VC_DISCLOSURE + html.slice(at);
+};
 const collectNotes = (body) => {
   const notes = [];
   const out = body.split(/(<script[\s\S]*?<\/script>)/).map((part, i) => (i % 2 ? part : part.replace(NOTE_RE, (_, inner) => {
@@ -323,7 +337,7 @@ ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
-<div class="wrap${wide ? " wide" : ""}"><main id="main">${body.includes('data-vc-ad=')?'<p class="vc-disclosure"><strong>広告</strong> このページにはアフィリエイト広告が含まれます。じゃらんの広告表示時には外部への通信が発生します。</p>':''}${en ? body : collectNotes(body)}</main>
+<div class="wrap${wide ? " wide" : ""}"><main id="main">${withAdDisclosure(en ? body : collectNotes(body))}</main>
 ${en ? EN_FOOTER : `<footer><a href="/organizers.html">主催者の方へ(掲載は無料)</a> ・ <a href="/guide.html">はじめての神楽ガイド</a> ・ <a href="/history/">神楽の歴史</a> ・ <a href="/quiz.html">神楽の好み診断</a> ・ <a href="/en/" hreflang="en" lang="en">English</a><br>
 <a href="/about.html">運営者情報</a> ・ <a href="/contact.html">お問い合わせ</a> ・ <a href="/terms.html">利用規約</a> ・ <a href="/privacy.html">プライバシーポリシー</a> ・ <a href="/disclaimer.html">免責事項</a><br>© ${esc(cfg.siteName)}</footer>`}${cfg.cookiebotId ? cookieControls(en)+clientJs("cookie-controls") : ""}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
