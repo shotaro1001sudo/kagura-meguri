@@ -187,6 +187,10 @@ export async function collectTests({ ok, section }) {
   ok(!existsSync(`${T}/site/events/${byName("遠い神楽")[0].id}.html`), "保留のものは、ページが作られない");
   // 再取得(変更なし)
   x = await run(week(0)); ok(sum().published === 0 && evs().length === 7 - 1 + 0 || evs().length >= 6, "同じページを再取得しても、増えない");
+  // 前回の保留は、確認するまで毎回レポートに残る(新しい保留だけを載せると、翌週から見落とされる)
+  s = sum(); rep = read(files.REPORT_FILE);
+  ok(s.held === 0 && s.stillPending === 2 && s.needsAttention === true && s.items.stillPending.every((e) => e.reason), "新しい保留がなくても、前回からの保留が残っていれば、件数と理由が結果に出て、要確認になる", JSON.stringify(s));
+  ok(/## 前回から続く保留\(まだ確認していないもの 2件\)/.test(rep) && rep.includes("遠い神楽") && /から保留\)/.test(rep), "レポートに、前回から続く保留と、保留にした日が載る");
 
   // 2週目: B の日程が変わり、C が消え、G が増える
   site.page = [li("神楽A", "2026年11月23日 19:00"), li("神楽B", "2026年12月1日 18:00"), li("神楽G", "2026年12月10日 18:00"), li("遠い神楽", "2030年1月1日 19:00"), li("もっと見る", "2026年11月24日 10:00")].join("");
