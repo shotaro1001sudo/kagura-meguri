@@ -35,7 +35,13 @@ export function editorialTests({ ok, section, OUT, build }) {
 
   section("編集: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
-  ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,所在地,料金,予約要否", "開催ページの欄名は「日時・会場・所在地・料金・予約要否」(「場所」と「会場」の紛れをなくす)");
+  ok(full("table.info th").map((_, x) => full(x).text()).get().join() === "日時,会場,料金,予約要否", "開催ページの欄名は「日時・会場・料金・予約要否」(所在地は、会場の欄にまとめる)");
+  { // 所在地と地図(旧「会場の場所」)は、会場の欄にまとめる。地図の欄は見出しを持たず、表の「地図・経路を見る」から飛ぶ
+    const cell = full("table.info th").filter((_, x) => full(x).text() === "会場").next();
+    ok(cell.find(".addr").text().startsWith(full(".hero a.tag[href^='/pref/']").text()) && cell.find("a.tomap[href='#venue-map']").length === 1 && full("#venue-map #map").length === 1 && full("#venue-map .routebtn a").length === 1,
+      "会場の欄に、所在地(都道府県から)と「地図・経路を見る」があり、地図・経路の欄へ飛べる");
+    ok(!full("main").text().includes("会場の場所") && full("h2.maph").length === 0, "「会場の場所」の見出しは出さない(会場の欄と重ねない)");
+  }
   ok(full(".stay").length===0,"未設定では宿条件の案内も省略");
   ok(!full("main").text().includes("夜の公演です。"),"未設定の宿泊誘導文を省略");
   const src = full("main").text();
