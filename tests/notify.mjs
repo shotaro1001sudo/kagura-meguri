@@ -49,6 +49,8 @@ export async function notifyTests({ ok, section }) {
   r = buildMessage({ summary: { ...summary, published: 0, held: 0, withdrawn: 0, inactive: 2, items: {} }, changed: false });
   ok(r.text.includes("新規掲載・取り下げ・保留は、ありませんでした") && r.text.includes("規約の確認待ちで、止まっている収集元が 2 つ"), "何もないとき・規約確認待ちの収集元があるとき");
   ok(buildMessage({ summary: { ...summary, autoPublish: false } }).text.includes("自動掲載: オフ"), "自動掲載がオフのとき");
+  r = buildMessage({ summary: { ...summary, published: 0, held: 0, withdrawn: 0, stillPending: 1, items: { stillPending: [ev("千代田まつり", "2026-11-01T00:00", { reason: "場所(市区町村・会場)が不明" })] } }, changed: false });
+  ok(r.subject.includes("・前回から続く保留1)") && r.text.includes("■ 前回から続く保留(まだ確認していません) 1件") && r.text.includes("理由: 場所(市区町村・会場)が不明") && r.text.includes("Issue") && !r.text.includes("新規掲載・取り下げ・保留は、ありませんでした"), "前回から続く保留は、新しい保留がなくても、件名と本文に出る(翌週から見落とされない)", r.subject);
   const many = Array.from({ length: 40 }, (_, i) => ev(`大量の神楽${i}`, "2026-12-20T19:00"));
   r = buildMessage({ summary: { ...summary, published: 40, items: { ...summary.items, published: many } }, changed: true, deployResult: "success" });
   ok(r.text.includes(`・ほか ${40 - MAX_ITEMS} 件`) && r.text.includes(`大量の神楽${MAX_ITEMS - 1}`) && !r.text.includes(`大量の神楽${MAX_ITEMS})`), `件数が多いときは、${MAX_ITEMS}件まで並べ、残りは「ほか N 件」`);

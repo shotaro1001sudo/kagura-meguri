@@ -88,7 +88,10 @@ const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.ci
 // 新しく掲載した開催に、宿・体験・移動のアフィリエイトが紐づくか(リンクは公開時のビルドが自動で作る)
 const cov = affiliateCoverage({ events: published, affiliate: cfg.affiliate ?? {}, planning: readJson(PLANNING_FILE, {}), more: readJson(process.env.MORE_OFFERS_FILE ?? "data/more-offers.json", {}), today: today(now) });
 const covReport = coverageReport(cov);
-const attention = held.length > 0 || errors > 0 || notes > 0 || covReport.attention;
+// 前回までに保留にし、まだ確認していないもの(開催前だけ)。今回の新しい保留だけを報告すると、2回目以降のレポートから消えて、見落とされるため
+const heldIds = new Set(held.map((e) => e.id));
+const stillPending = events.filter((e) => e.status === "pending" && !heldIds.has(e.id) && e.start.slice(0, 10) >= today(now));
+const attention = held.length > 0 || stillPending.length > 0 || errors > 0 || notes > 0 || covReport.attention;
 const text = `# 週次の自動収集レポート ${today(now)}
 
 ${attention ? "**⚠ 確認が必要な項目があります。**" : "確認が必要な項目は、ありません。"}${inactive ? `(ただし、規約の確認待ちで、止まっている収集元が ${inactive} つあります)` : ""}  自動掲載: ${ccfg.autoPublish ? "オン" : "オフ(すべて保留)"}
@@ -101,6 +104,10 @@ ${published.map(li).join("\n") || "- なし"}
 
 ## 保留(掲載していないもの。要確認 ${held.length}件)
 ${held.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}`).join("\n") || "- なし"}
+
+## 前回から続く保留(まだ確認していないもの ${stillPending.length}件)
+${stillPending.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}(${e.firstSeen ?? "日付不明"} から保留)`).join("\n") || "- なし"}
+
 掲載してよければ \`node scripts/review.mjs approve <id>\`、不要なら \`reject <id>\` を実行してください。
 
 ## 取り下げたもの(${withdrawn.length}件)
@@ -113,8 +120,8 @@ writeFileSync(REPORT_FILE, text);
 // 通知(LINE)用の明細。公開してよい事実(名称・日付・場所・URL・理由)だけ
 const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
 writeFileSync(SUMMARY_FILE, JSON.stringify({
-  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
+  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, stillPending: stillPending.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
   affiliate: { missingIds: cov.missingIds, expiring: cov.expiring.slice(0,50), counts: cov.counts, unlinkedTotal: cov.rows.filter(r=>r.missing.length).length, unlinked: cov.rows.filter((r) => r.missing.length).slice(0,50).map((r) => ({ id: r.id, missing: r.missing })) },
-  items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
+  items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), stillPending: stillPending.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
 }, null, 2));
 console.log(text);

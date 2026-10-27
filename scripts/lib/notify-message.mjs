@@ -31,7 +31,7 @@ export function buildMessage({ summary, jobStatus = "success", dryRun = false, c
   const s = summary ?? null;
   const day = s?.date ?? date;
   const h = headline({ jobStatus, dryRun, changed, deployResult });
-  const counts = s ? `新規${s.published}・保留${s.held}・取り下げ${s.withdrawn}` : "結果なし";
+  const counts = s ? `新規${s.published}・保留${s.held}・取り下げ${s.withdrawn}${s.stillPending ? `・前回から続く保留${s.stillPending}` : ""}` : "結果なし";
   const subject = `【${siteName}】週次の自動更新 ${shortDate(day).replace(/\(.\)$/, "")}: ${h.mark} ${h.short}(${counts})`;
 
   const L = [`${siteName} 週次の自動更新(${day})`, "", `${h.mark} ${h.long}`];
@@ -53,10 +53,12 @@ export function buildMessage({ summary, jobStatus = "success", dryRun = false, c
     list(dryRun ? "新規掲載(試運転なので、まだ掲載していません)" : "新規掲載", it.published, s.published);
     list("取り下げ", it.withdrawn, s.withdrawn, true);
     list("保留・要確認(掲載していません)", it.held, s.held, true);
-    if (!s.published && !s.withdrawn && !s.held) L.push("", "新規掲載・取り下げ・保留は、ありませんでした");
+    // 前回までの保留のうち、まだ確認していないもの(新しい保留だけを知らせると、翌週から見落とされるため)
+    list("前回から続く保留(まだ確認していません)", it.stillPending, s.stillPending ?? 0, true);
+    if (!s.published && !s.withdrawn && !s.held && !s.stillPending) L.push("", "新規掲載・取り下げ・保留は、ありませんでした");
     if (s.errors) L.push("", `⚠ 取得できなかった収集元が ${s.errors} つあります`);
     if (s.inactive) L.push("", `ℹ 規約の確認待ちで、止まっている収集元が ${s.inactive} つあります(data/sources.json の termsChecked)`);
-    if (s.held && !dryRun) L.push("", "保留の確認方法は、GitHub の Issue を見てください");
+    if ((s.held || s.stillPending) && !dryRun) L.push("", "保留の確認方法は、GitHub の Issue を見てください");
     if (s.autoPublish === false) L.push("", "自動掲載: オフ(すべて保留にしています)");
   }
   L.push("");
