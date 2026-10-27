@@ -655,8 +655,8 @@ main>p:not([class]){max-width:42em}
 /* 会場の欄: 会場名の下に所在地と、地図への案内 */
 .info .addr{display:block;margin-top:2px;font-size:var(--fs-s);color:var(--mut)}
 .info .tomap,.info .tocal{display:block;width:fit-content;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);color:var(--ac2)}
-/* カレンダーの仮の終了時刻などの注意書き: 日時の欄の中に、小さい文字で(大きな日時の文字を引き継がない) */
-.info .calendar-notice{display:block;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);line-height:1.7;color:var(--mut)}
+/* カレンダーの仮の終了時刻などの注意書き: 日時の欄の中に、サイトでいちばん小さい文字で(大きな日時の文字を引き継がない) */
+.info .calendar-notice{display:block;margin-top:4px;font-family:var(--sans);font-size:var(--fs-2xs);line-height:1.6;letter-spacing:.02em;color:var(--mut)}
 /* 右の列の「車で行くなら」: 宿・本の箱と同じ見た目にそろえる */
 .d-side .planning-section{margin:0 0 16px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 .d-side .planning-section h2{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.d-side .planning-section h2:after{display:none}
