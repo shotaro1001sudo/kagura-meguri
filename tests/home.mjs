@@ -50,7 +50,7 @@ export async function homeTests({ ok, section, OUT, build }) {
     const all = JSON.parse(evJson).filter((x) => x.up);
     const exp = all.filter((x) => x.prefecture === "広島県" && (x.end || x.start).slice(0, 10) >= "2026-10-01" && x.start.slice(0, 10) <= "2026-11-30").length;
     ok(!D.getElementById("finder").hidden && D.getElementById("range").hidden === false && D.getElementById("region").value === "中国" && items().length === exp && exp > 0 && items().every((t) => t.includes("広島県")) && D.getElementById("count").textContent === `当てはまる開催 ${exp}件`, "URL の条件(期間・県)を戻し、当てはまる開催と件数を出す。県を選ぶと地方も合わせる", `${items().length}/${exp}`);
-    ok([...D.querySelectorAll('#results li')].every(li=>li.querySelectorAll('.comparison-facts>span').length===3), '検索結果も会場・料金・予約の3項目を表示');
+    ok([...D.querySelectorAll('#results li')].every(li=>{const f=[...li.querySelectorAll('.comparison-facts>span')].map(x=>x.textContent);return f.length>=1&&f.length<=3&&f[0].startsWith('会場:')&&!f.join('').includes('要確認')}), '検索結果は会場を必ず出し、料金・予約は分かっているときだけ出す(「要確認」を並べない)');
     const rg = D.getElementById("region"); rg.value = "九州・沖縄"; rg.dispatchEvent(new fd.window.Event("change"));
     ok(D.getElementById("pref").value === "" && [...D.querySelectorAll("#pref option[data-r]")].every((o) => o.hidden === (o.dataset.r !== "九州・沖縄")) && items().every((t) => !t.includes("広島県")) && /region=/.test(fd.window.location.search) && !/pref=/.test(fd.window.location.search), "地方を変えると、都道府県の選択肢をその地方だけにし、条件を URL に残す", fd.window.location.search);
     [...D.querySelectorAll("[data-w]")].find((b) => b.dataset.w === "all").click(); rg.value = ""; rg.dispatchEvent(new fd.window.Event("change"));

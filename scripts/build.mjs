@@ -368,16 +368,11 @@ const sameSeries = (e) => events.filter((x) => x.id !== e.id && seriesKey(x) ===
 // 時刻の表記: 「13:00〜」。1日に複数回あれば「11:00〜・13:00〜」。時間未定は、決まった言い方にそろえる
 const TIME_UNKNOWN = "時刻未確認";
 const startTimes = (e) => hm(e.sessions?.length ? e.sessions.map((x) => x.slice(0, 5) + "〜").join("・") : `${e.start.slice(11, 16)}〜`);
-// 公演の比較用一覧。取得日を編集部の確認日として扱わない。
+// 一覧カードの会場・料金・予約: 分かっている項目だけを出す(会場は常に。分からなければ「未確認」)。出典・確認日は開催ページで見せる
 const cardFacts = (e) => {
-  const sourceUrl = [e.sourceUrl, e.url].find((url) => HTTP_URL.test(url ?? ""));
-  const sourceName = esc(e.source || "掲載情報");
-  const source = sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noopener noreferrer">${sourceName}</a>` : sourceName;
-  const checked = e.checked ? `確認日: ${esc(jpDate(e.checked))}`
-    : e.auto && e.lastSeen ? `取得日: ${esc(jpDate(e.lastSeen))}` : "確認日: 未登録";
-  // 見出し(会場など)と値を分けて、値を読みやすくする。未定の値は「要確認」を薄く出す
-  const fact = (k, v) => `<div><span class="k">${k}:</span> ${v ? esc(v) : '<span class="tbd">要確認</span>'}</div>`;
-  return `<div class="meta event-facts">${fact("会場", e.venue)}${fact("料金", e.fee)}${fact("予約要否", reservationLabel(e))}<div class="src"><span class="k">出典:</span> ${source}</div><div class="src">${checked}</div></div>`;
+  const fact = (k, v) => `<div><span class="k">${k}:</span><span>${v ? esc(v) : '<span class="tbd">未確認</span>'}</span></div>`;
+  const reservation = reservationLabel(e);
+  return `<div class="meta event-facts">${fact("会場", e.venue)}${e.fee ? fact("料金", e.fee) : ""}${reservation !== "要確認" ? fact("予約要否", reservation) : ""}</div>`;
 };
 // 地名と、名前の最後の「(会場名)」は、まとまりの途中で改行しない(.ph)。Safari など文節で折り返せないブラウザ向け
 const ph = (s) => `<span class="ph">${esc(s)}</span>`;
@@ -660,7 +655,7 @@ function draw(){
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
   out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+byM[m].map(row).join('')+'</ol></details>'}).join('');
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+x.start.slice(11,16).replace(/^0/,'')+'〜</span></span>')+'</span></span></span><span class="meta comparison-facts"><span>会場: '+esc(x.venue||'要確認')+'</span><span>料金: '+esc(x.fee||'要確認')+'</span><span>予約要否: '+esc(x.reservation||'要確認')+'</span></span></span></li>'}
+    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+x.start.slice(11,16).replace(/^0/,'')+'〜</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'当てはまる開催は、いまのところありません。キーワードを短くするか、期間・地域を広げて探してみてください。';
   var q=new URLSearchParams();if(tab==='kw'){if(kw.value.trim())q.set('q',kw.value.trim())}else{if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value)}
   var s=q.toString();try{history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}
@@ -876,7 +871,7 @@ ${regular.length ? `<h2>毎週・毎晩の定期公演</h2>${regular.map(regCard
 // ---------- 今週末の神楽・今月の神楽(「神楽 今週末」「今月 神楽」のような検索と、ブックマークに当てる。URLは固定で、中身が日付で変わる) ----------
 const occCard = (r, d) => {
   const p = parts(`${d}T00:00`);
-  return `<div class="card reg"><div class="date"><small>${p.mo}月 ${WD[p.wd]}</small><b>${p.d}</b></div><div>
+  return `<div class="card reg occ"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <h3><a href="/regular/${r.id}.html">${esc(r.name)}</a></h3>
 <div class="meta">${sepList(["定期公演", nobr(esc(r.schedule)), placePh(r.prefecture, r.city)])}</div>
 ${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
