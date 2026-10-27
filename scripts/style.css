@@ -288,7 +288,8 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 @media(min-width:960px){
   .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
   .d-top{grid-area:top}.d-rest{grid-area:rest}
-  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:thin}
+  /* 右の列は固定せず、ページと一緒に流す(画面より長いと、固定した列の下が切れて中だけスクロールする箱になるため) */
+  .d-side{grid-area:side;align-self:start;margin-top:16px}
   .side-summary.on{display:block}.side-summary{margin:0 0 14px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
   .side-summary p{margin:0}.ss-when{font-family:var(--serif);font-size:var(--fs-l);line-height:1.6}.ss-place{margin-top:6px!important;font-size:var(--fs-s)}.ss-fee{font-size:var(--fs-s);color:var(--mut)}
   .side-summary .btn{display:flex;width:100%;margin-top:12px}
@@ -381,6 +382,11 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 
 footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 48px;color:var(--mut);font-size:var(--fs-s);text-align:center;letter-spacing:.12em;line-height:2.4}
 footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2px;line-height:2.4}
+/* フッターのリンクは、区切りの文字を使わず余白で並べる(行末に「・」がぶら下がらない) */
+footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:center;column-gap:1.4em}footer .copy{margin-top:6px}footer .fnote{line-height:1.9;margin-bottom:6px}
+/* 「・」区切りの並び(sepList): 各項目の前の「・」は、行の頭に来たときだけ枠の外に隠れる */
+.sl{display:block;overflow:hidden}.sl-in{display:flex;flex-wrap:wrap;margin-left:-1.2em}
+.sl-in>span{position:relative;min-width:0;padding-left:1.2em}.sl-in>span::before{content:"・";position:absolute;left:0;width:1.2em;text-align:center}
 
 /* ゆっくり現れる */
 /* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
@@ -662,6 +668,8 @@ footer{margin-top:96px;padding-top:36px}
 @media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
 main>p:not([class]){max-width:42em}
 /* 会場の欄: 会場名の下に所在地と、地図への案内 */
+.nw{white-space:nowrap}
+.info .sched-main{display:block}.info .sched-more{display:block;margin-top:4px;font-size:var(--fs-s);color:var(--mut)}
 .info .addr{display:block;margin-top:2px;font-size:var(--fs-s);color:var(--mut)}
 .info .tomap,.info .tocal{display:block;width:fit-content;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);color:var(--ac2)}
 /* カレンダーの仮の終了時刻などの注意書き: 日時の欄の中に、サイトでいちばん小さい文字で(大きな日時の文字を引き継がない) */
@@ -850,7 +858,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .vc-disclosure+*{margin-top:0}
 
 /* Quiet footer entry; native Cookiebot owns the popup and all consent choices. */
-.cookie-settings{margin:4px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}
+.cookie-settings{text-align:center;margin:-36px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}
 .cookie-settings button{font:inherit;color:inherit;background:none;border:0;padding:10px 0;min-height:44px;text-decoration:underline;text-underline-offset:.25em;cursor:pointer}
 .cookie-settings button[aria-disabled="true"]{cursor:default}
 .cookie-settings button:focus-visible{outline:2px solid var(--ac);outline-offset:4px}

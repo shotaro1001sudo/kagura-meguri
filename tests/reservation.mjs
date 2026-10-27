@@ -10,7 +10,7 @@ export function reservationTests({ok, section}) {
     [{reservationStatus:'required'},'事前予約が必要'],
     [{reservationStatus:'recommended'},'事前予約を推奨'],
     [{reservationStatus:'not_required'},'事前申込不要'],
-    [{reservationStatus:'recommended',reservationSameDay:true},'事前予約を推奨（当日受付あり・定員に注意）'],
+    [{reservationStatus:'recommended',reservationSameDay:true},'事前予約を推奨(当日受付あり・定員に注意)'],
     [{reservationStatus:'required',reservationSameDay:true},'要確認'],
     [{reservationStatus:'invalid'},'要確認'],
     [{reservation:'不要（当日会場へ）'},'不要（当日会場へ）'],

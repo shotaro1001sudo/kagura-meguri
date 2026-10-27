@@ -23,9 +23,9 @@ export function upcomingSummaryTests({ok,section}) {
     ok(page('.upcoming-summary li').length===count,`JST ${label} の掲載数`);
     if(count){
       const summary=page('.upcoming-summary'),detail='/events/shonai-kagura-matsuri-2026.html';
-      ok(summary.find('a').attr('href')===detail&&summary.text().includes('2026年11月3日')&&summary.text().includes('08:45')&&summary.text().includes('17:00')&&summary.text().includes('由布市庄内総合運動公園'),'掲載データの日時・会場と詳細リンク');
+      ok(summary.find('a').attr('href')===detail&&summary.text().includes('2026年11月3日')&&summary.text().includes('8:45〜')&&!summary.text().includes('08:45')&&summary.text().includes('17:00')&&summary.text().includes('由布市庄内総合運動公園'),'掲載データの日時・会場と詳細リンク');
       const description=page('meta[name=description]').attr('content');
-      ok(description.includes('2026年11月3日')&&description.includes('08:45')&&description.includes('由布市庄内総合運動公園')&&!description.includes('11月〜'),'descriptionも同じ掲載日時・会場を使用');
+      ok(description.includes('2026年11月3日')&&description.includes('8:45〜')&&!description.includes('08:45')&&description.includes('由布市庄内総合運動公園')&&!description.includes('11月〜'),'descriptionも同じ掲載日時・会場を使用');
       const ad=page('main a[rel~="sponsored"]').first()[0];
       ok(!!ad&&page('main *').toArray().indexOf(summary[0])<page('main *').toArray().indexOf(ad),'要約が最初の広告リンクより前');
       ok(readFileSync(out+detail,'utf8').includes('庄内神楽祭り'),'詳細リンク先存在');

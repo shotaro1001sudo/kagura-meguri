@@ -94,7 +94,7 @@ export function editorialTests({ ok, section, OUT, build }) {
     const s1 = page("events/s-1.html", D), o1 = page("events/o-1.html", D), idx = page("index.html", D), o2 = page("events/o-2.html", D);
     ok(s1("table.info td .when").first().text() === "2026年11月8日(日) 11:00〜12:00、13:00〜14:00(1日2回)", "1日2回の公演は、2つの時間を書く", s1("table.info td .when").first().text());
     ok(idx(".card").filter((_, c) => idx(c).text().includes("後楽園")).first().find(".meta").text().includes("11:00〜・13:00〜"), "一覧でも、2つの開始時刻を出す");
-    ok(o1("table.info td .when").first().text() === "2026年12月20日(日) 19:00〜12月21日(月) 08:00", "日をまたぐ公演は、終わりの日付も曜日つきで(同じ年なら年は省く)", o1("table.info td .when").first().text());
+    ok(o1("table.info td .when").first().text() === "2026年12月20日(日) 19:00〜12月21日(月) 8:00", "日をまたぐ公演は、終わりの日付も曜日つきで(同じ年なら年は省く)。時刻の先頭の0は付けない", o1("table.info td .when").first().text());
     ok(s1(".dates .chip").map((_, a) => s1(a).text()).get().join() === "12月13日(日),1月10日(日)", "くり返しの公演は、開催ページに、ほかの日程を丸いボタンで出す", s1(".dates").text());
     const kr2 = idx(".card").filter((_, c) => idx(c).text().includes("後楽園"));
     ok(kr2.length >= 2 && kr2.find(".rep").length === kr2.length && idx(".card").filter((_, c) => idx(c).text().includes("倉敷")).find(".rep").length === 0, "くり返しの公演には「定例開催」の印。1回だけの開催には付けない");

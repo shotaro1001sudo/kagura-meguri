@@ -143,7 +143,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     missing(".event-facts").text().includes("確認日: 未登録"),
     "未登録を無料・予約不要・今日確認済みに置き換えない");
   const automatic = cheerio.load(facts({ auto: true, lastSeen: "2026-10-19", source: "取得元", sourceUrl: "https://example.org/source", url: "https://example.org/event" }));
-  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日（内容の確認日は未登録）") &&
+  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日(内容の確認日は未登録)") &&
     automatic("a").attr("href") === "https://example.org/source",
     "自動取得日は取得日と明記し、取得元のURLを優先する");
   const known = cheerio.load(facts({ venue: "<会場>", fee: "無料（条件あり）", reservation: "事前予約制", checked: "2026-10-10", source: "観光情報誌", sourceUrl: "javascript:alert(1)", url: "https://example.org/event" }));

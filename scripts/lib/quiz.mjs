@@ -11,9 +11,9 @@ export const questions = [
   preference('detail','じっくり見聞きしたいのは？',[choice('mask','面の表情や造形',['mask']),choice('costume','衣装の細工',['costume']),choice('gesture','舞い手の所作',['gesture']),choice('music','囃子や楽器',['music'])]),
   {...preference('help','初めて観るとき、あるとうれしい案内は？',[choice('highlights','見どころの案内'),choice('synopsis','あらすじ'),choice('history','地域の歴史'),choice('watch','まずはそのまま観たい')]), explanationOnly:true},
   preference('feeling','観終わったあとに味わいたいのは？',[choice('excited','胸が高鳴る気持ち',['movement']),choice('beauty','姿の美しさの余韻',['mask','costume']),choice('story','誰かに物語を話したい気持ち',['story']),choice('culture','地域の文化に触れた実感',['ritual'])]),
-  {id:'region',type:'region',text:'探したい地域は？（任意）',choices:[choice('unknown','まだ決めていない'),choice('all','全国から探す')]},
-  {id:'date',type:'date',text:'いつ観に行きたい？（任意）',choices:[choice('unknown','まだ決めていない'),choice('specified','日付を指定する'),choice('month','今月'),choice('next','来月')]},
-  {id:'budget',type:'condition',text:'観覧に使いたい時間は？（任意）',choices:[choice('unknown','まだ決めていない'),choice('short','短時間（2時間以内を目安）'),choice('half','半日ほど（4時間以内を目安）'),choice('long','長時間も検討できる')]}
+  {id:'region',type:'region',text:'探したい地域は？(任意)',choices:[choice('unknown','まだ決めていない'),choice('all','全国から探す')]},
+  {id:'date',type:'date',text:'いつ観に行きたい？(任意)',choices:[choice('unknown','まだ決めていない'),choice('specified','日付を指定する'),choice('month','今月'),choice('next','来月')]},
+  {id:'budget',type:'condition',text:'観覧に使いたい時間は？(任意)',choices:[choice('unknown','まだ決めていない'),choice('short','短時間(2時間以内を目安)'),choice('half','半日ほど(4時間以内を目安)'),choice('long','長時間も検討できる')]}
 ];
 export const features = {movement:'大きな動き',slow:'ゆったりした舞',mask:'面',costume:'衣装',story:'物語',ritual:'祭り・奉納',battle:'対決',change:'姿の変化',gesture:'所作',music:'囃子'};
 // [特徴, kagura-info.json 内の根拠フィールド]。複数特徴を持てるが根拠のない特徴は加えない。
@@ -62,8 +62,8 @@ export function quizEngine(questions, traditions) {
     if(e.timeUnknown||!e.end||e.sessions?.length||e.start.slice(0,10)!==e.end.slice(0,10))return '所要時間は要確認';
     const minutes=(stamp(e.end)-stamp(e.start))/60000;
     if(minutes<=0)return '所要時間は要確認';
-    if(budget==='short'||budget==='half')return minutes<=(budget==='short'?120:240)?`掲載時間枠は${minutes}分（観覧方法は要確認）`:'希望より長い開催時間枠です。途中観覧の可否は要確認';
-    return `掲載時間枠は${minutes}分（必要な観覧時間とは限りません）`;
+    if(budget==='short'||budget==='half')return minutes<=(budget==='short'?120:240)?`掲載時間枠は${minutes}分(観覧方法は要確認)`:'希望より長い開催時間枠です。途中観覧の可否は要確認';
+    return `掲載時間枠は${minutes}分(必要な観覧時間とは限りません)`;
   }
   function selectEvents(events,kinds,conditions,now) {
     const dates=range(conditions.date,conditions.day,now),seen=new Set();
