@@ -90,6 +90,10 @@ export async function uxTests({ ok, section, OUT }) {
   ok(/#map\.dmap\{height:200px\}/.test(css) && /@media\(max-width:560px\)\{#map\.dmap\{height:160px\}\}/.test(css), "開催ページの地図の高さは、地図ページの指定(#map)に負けない");
   const reg = page("regular/r-weekly.html");
   ok(reg(".keyinfo").length === 1 && reg(".share").length === 1, "定期公演ページも、要点の帯と共有");
+  // スマホでは、右の列(宿・本などの広告)が、要点と本文のあいだに入る。説明文は要点の帯の中に置き、広告より先に読めるようにする
+  const descFirst = (p) => { const h = p("main").html(); return p(".d-top .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
+  ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点のすぐあと(スマホでは広告の列より前)に出る");
+  { const h = reg("main").html(); ok(h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("mapbox"), "定期公演ページも、共有のボタンは、説明・地図などの本文のあと"); }
 
   section("UI: 検索・ガイド・フォーム・主催者の方へ");
   const cal = page("calendar.html");
