@@ -43,7 +43,8 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today,{sid:'3784232',pid:'892732911',allowed:true}));
     const expected=experienceRegions.find(x=>x.prefecture===prefecture);
     ok(new URL(page('#nearby-experiences a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
-    ok(planningLinks({prefecture},today).includes('href="#nearby-experiences"'),`${prefecture}: 公演から当該県の案内へ進める`);
+    const card=cheerio.load(planningLinks({prefecture},today,{sid:'3784232',pid:'892732911',allowed:true}));
+    ok(card('.planning-links>a').length===2&&card('.planning-links>#nearby-experiences').length===1&&new URL(card('#nearby-experiences a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&!card.html().includes('href="#nearby-experiences"'),`${prefecture}: 公演の「周辺体験」のカードの中で、当該県の体験を探せる`);
   }
   const aff={sid:'3784232',pid:'892732911',allowed:true},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
   ok(affLink.attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
@@ -51,10 +52,15 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=892732911')),'全国一覧の47都道府県すべてに体験用pidが付く');
   ok(!experienceSection({prefecture:"高知県"},today,{sid:"1111111",pid:""}).includes("www.jalan.net"),"pid未設定なら通常の体験検索を出さない");
   ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
+  const kochiSection=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),takachihoCard=cheerio.load(planningLinks(context,today,aff));
+  ok(kochiSection('.planning-eyebrow').text()==='周辺体験'&&![experienceSection({prefecture:'高知県'},today,aff),planningLinks(context,today,aff)].some(h=>h.includes('公演の前後も楽しむ')),'「公演の前後も楽しむ」の呼び方をやめ、都道府県のページの欄も「周辺体験」とよぶ');
+  ok(takachihoCard('#nearby-experiences details summary').filter((i,x)=>takachihoCard(x).text()==='開催地域での施設紹介例').next('.planning-grid').find('.planning-card').length===2&&takachihoCard('#nearby-experiences h2,#nearby-experiences h3:not(.planning-card h3)').length===0,'施設紹介例は、周辺体験のカードの中で折りたたむ(カードの中に見出しの欄を作らない)');
   ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
   ok(experienceDirectory() === "", "未設定の体験ディレクトリは通常検索で代替しない");
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
+  const fullEvent=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),weekly=cheerio.load(readFileSync(join(OUT,'regular/r-weekly.html'),'utf8'));
+  ok([fullEvent,weekly].every(p=>p('.d-rest .planning-links>#nearby-experiences').length===1&&p('#nearby-experiences').length===1&&p('.planning-links>a[href="#nearby-experiences"]').length===0&&!p.html().includes('公演の前後も楽しむ')),'開催・定期公演のページでは、周辺体験の欄をカードに集約し、別の欄を作らない');
   ok(guide('#packing .planning-card').length===4&&guide('#transport .planning-steps li').length===3,'持ち物4種類と公共交通→貸出返却→会場経路の順で案内');
   ok(guide('.planning-ads').length===0,'本番の新規3カテゴリは未承認なので広告を出さない');
 
