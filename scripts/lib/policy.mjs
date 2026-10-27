@@ -21,13 +21,13 @@ export function externalServices(ctx) {
     { name: "当サイトの配信サーバー(ホスティング事業者)", purpose: "当サイトの配信", sent: "IPアドレス、ブラウザの種類、閲覧するページのURL、日時", when: "すべてのページ" },
     { name: "Google Fonts(Google LLC)", purpose: "Webフォントの表示", sent: "IPアドレス、ブラウザの種類、参照元のサイト名", when: "すべてのページ" },
     { name: "unpkg(地図ライブラリの配信)", purpose: "地図の表示に使うプログラム(Leaflet)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名", when: "地図を表示するページ(地図・開催の詳細)" },
-    { name: "OpenStreetMap(OpenStreetMap Foundation)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
+    { name: "地理院タイル(国土地理院)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
   ];
   // サービス提供会社と画像ホストを示す。CDNの運営主体や個々の要求のCookie処理は推測しない。
   const aff = ctx.cfg.affiliate ?? {};
-  const imageInfo = "通信時の接続元IPアドレス、要求する画像のURL、ブラウザが送るヘッダー情報（ブラウザの種類、設定に応じた参照元情報など）";
-  if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天アフィリエイト（サービス提供: 楽天グループ株式会社／画像配信先: hbb.afl.rakuten.co.jp、ba.afl.rakuten.co.jp）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
-  if (vcActive(ctx.cfg)) rows.push({ name: "バリューコマース アフィリエイト（サービス提供: バリューコマース株式会社／画像配信先: ad.jp.ap.valuecommerce.com）", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき（リンクを押す前にも発生します）" });
+  const imageInfo = "通信時の接続元IPアドレス、要求する画像のURL、ブラウザが送るヘッダー情報(ブラウザの種類、設定に応じた参照元情報など)";
+  if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天アフィリエイト(サービス提供: 楽天グループ株式会社／画像配信先: hbb.afl.rakuten.co.jp、ba.afl.rakuten.co.jp)", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき(リンクを押す前にも発生します)" });
+  if (vcActive(ctx.cfg)) rows.push({ name: "バリューコマース アフィリエイト(サービス提供: バリューコマース株式会社／画像配信先: ad.jp.ap.valuecommerce.com)", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき(リンクを押す前にも発生します)" });
   if (ctx.hasAds) rows.push({ name: "Google AdSense(Google LLC)", purpose: "広告の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、閲覧履歴に基づく情報", when: "広告を表示するページ" });
   if (ctx.hasGC) rows.push({ name: "GoatCounter(アクセス解析)", purpose: "アクセス状況の把握(集計した件数だけ)", sent: "閲覧したページのURL、参照元、ブラウザとOSの種類、画面の幅、言語、IPアドレス(国の推定と、再訪問の判定に一時的に使い、保存されない)", when: "すべてのページ" });
   if (ctx.hasGA) rows.push({ name: "Googleアナリティクス(Google LLC)", purpose: "アクセス状況の分析", sent: "IPアドレス(匿名化の設定による)、Cookie等の識別子、閲覧したページ、ブラウザの種類、おおよその地域", when: "すべてのページ" });
@@ -104,7 +104,7 @@ ${form.ready ? `<p><strong>外国にある事業者への提供について</str
 
 ${h("保存期間")}
 <p>フォームなどでお預かりした個人情報は、${retention}保管し、その後削除します。お預かりした情報は、上の利用目的に必要な範囲でのみ取り扱います。</p>
-${form.ready ? `<p>上記の保管期間は運営者が受け取ったメール等の方針であり、フォーム送信サービス側での保持期間とは異なります。${/web3forms/i.test(form.providerName || "") ? "Web3Formsでは送信日から最大3年間（プランや設定により短縮される場合あり）です。" : "委託先による保持期間は当該サービスのプライバシーポリシーをご確認ください。"}</p>` : ""}
+${form.ready ? `<p>上記の保管期間は運営者が受け取ったメール等の方針であり、フォーム送信サービス側での保持期間とは異なります。${/web3forms/i.test(form.providerName || "") ? "Web3Formsでは送信日から最大3年間(プランや設定により短縮される場合あり)です。" : "委託先による保持期間は当該サービスのプライバシーポリシーをご確認ください。"}</p>` : ""}
 
 ${h("安全管理のために講じている措置")}
 <ul>

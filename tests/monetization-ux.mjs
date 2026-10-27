@@ -79,10 +79,9 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(h(".pref-month .event-facts").length === h(".pref-month .card").length &&
     h(".event-facts").toArray().every((node) => {
       const rows = h(node).children("div").map((_, row) => h(row).text()).get();
-      return rows.length === 5 && rows[0].startsWith("会場:") && rows[1].startsWith("料金:") &&
-        rows[2].startsWith("予約要否:") && rows[3].startsWith("出典:") &&
-        /^(確認日|取得日):/.test(rows[4]);
-    }), "広島のカードを会場・料金・予約・出典・確認日の順で比較できる");
+      return rows.length >= 1 && rows.length <= 3 && rows[0].startsWith("会場:") && rows.every((r) => /^(会場|料金|予約要否):/.test(r)) &&
+        !rows.join("").includes("要確認") && !/出典|確認日|取得日/.test(rows.join(""));
+    }), "一覧カードは会場を必ず出し、料金・予約要否は分かっているときだけ出す(出典・確認日は開催ページで)");
   ok(h(".event-facts a").toArray().every((node) =>
     /^https?:\/\//.test(h(node).attr("href")) && h(node).attr("rel").includes("noopener")),
     "出典には安全な外部リンクを使用する");
@@ -138,21 +137,18 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const factsCode = source.slice(source.indexOf("const cardFacts ="), source.indexOf('const card ='));
   const facts = (event) => runInNewContext(`${declarations}\n${factsCode}\ncardFacts(event)`, { event, reservationLabel });
   const missing = cheerio.load(facts({}));
-  ok(missing(".event-facts").text().includes("料金: 要確認") &&
-    missing(".event-facts").text().includes("予約要否: 要確認") &&
-    missing(".event-facts").text().includes("確認日: 未登録"),
-    "未登録を無料・予約不要・今日確認済みに置き換えない");
+  ok(missing(".event-facts").text() === "会場:未確認" && !/無料|不要|確認日/.test(missing(".event-facts").text()),
+    "未登録を無料・予約不要・確認済みに置き換えず、分からない料金・予約は出さない");
   const automatic = cheerio.load(facts({ auto: true, lastSeen: "2026-10-19", source: "取得元", sourceUrl: "https://example.org/source", url: "https://example.org/event" }));
-  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日（内容の確認日は未登録）") &&
-    automatic("a").attr("href") === "https://example.org/source",
-    "自動取得日は取得日と明記し、取得元のURLを優先する");
+  ok(!/取得日|出典|未登録/.test(automatic(".event-facts").text()) && automatic("a").length === 0,
+    "一覧カードには出典・取得日を出さない(開催ページの出典で見せる)");
   const known = cheerio.load(facts({ venue: "<会場>", fee: "無料（条件あり）", reservation: "事前予約制", checked: "2026-10-10", source: "観光情報誌", sourceUrl: "javascript:alert(1)", url: "https://example.org/event" }));
-  ok(known(".event-facts").text().includes("会場: <会場>") && known("会場").length === 0 &&
-    known(".event-facts").text().includes("予約要否: 事前予約制") &&
-    known(".event-facts").text().includes("確認日: 2026年10月10日") &&
-    known("a").attr("href") === "https://example.org/event" &&
+  ok(known(".event-facts").text().includes("会場:<会場>") && known("会場").length === 0 &&
+    known(".event-facts").text().includes("料金:無料（条件あり）") &&
+    known(".event-facts").text().includes("予約要否:事前予約制") &&
+    known("a").length === 0 &&
     !known(".event-facts").text().includes("公式"),
-    "登録値をエスケープし、危険な出典URLや公式情報との誤表示を避ける");
+    "登録値をエスケープし、分かっている会場・料金・予約要否を出す");
 
   const built = build("tests/fixtures/events.test.json", "dist-test-revenue-ux", {
     TEST_AFF_TRAVEL: "1", TEST_GA: "G-TEST123456", TEST_CB: "test-consent-id"
@@ -253,8 +249,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
       'カレンダーの注意書きは、日時の欄の中(カレンダーへのリンクの下)に小さい文字で出す');
 
     ok(oa.startDate==='2026-11-07T13:00+09:00' && !oa.endDate && oasa('main').text().includes('開場12:00、開会式12:30、開演13:00'), '大朝: 開演を13時とし、開場/式と区別・閉会式を終了時刻にしない');
-    ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否要確認'), '大朝: 個別公式リンク・住所・予約不明を維持');
-    ok(ho.startDate==='2026-11-07' && ho.endDate==='2026-11-08' && horo('main').text().includes('時間は公式情報をご確認ください'), '保呂羽山: schemaの日付範囲と時刻未確認を維持');
+    ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否未確認') && oasa('.keyinfo .unknown-note').length===1, '大朝: 個別公式リンク・住所・予約不明を維持');
+    ok(ho.startDate==='2026-11-07' && ho.endDate==='2026-11-08' && horo('main').text().includes('時刻未確認'), '保呂羽山: schemaの日付範囲と時刻未確認を維持');
     const gc=new URL(horo('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href'));
     ok(gc.searchParams.get('dates')==='20261107/20261109' && gc.searchParams.get('location').includes('木ノ根坂200'), '保呂羽山: Google予定の終日は8日を含み排他的終了9日・里宮住所');
     const ics=read('dist-test-verified-hiroshima/events.ics').split('BEGIN:VEVENT').find(v=>v.includes('UID:horowasan-shimotsuki-kagura-2026@'));
@@ -262,9 +258,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     ok(horo('main').text().includes('2026年の確定時刻としては掲載していません') && horo('a[href="https://rurubu.jp/andmore/spot/20000345"]').length>0, '保呂羽山: 年次時刻と2026日程の根拠を区別し補足出典を保持');
     const pref = cheerio.load(read("dist-test-verified-hiroshima/pref/広島県.html"));
     const facts = pref(`.card h3 a[href='/events/${eventId}.html']`).closest(".card").find(".event-facts");
-    ok(facts.text().includes("料金: 参加無料") && facts.text().includes("予約要否: 不要（当日会場へ）") &&
-      facts.find("a").attr("href") === forest.sourceUrl,
-      "広島県一覧に料金・予約要否・市公式の出典リンクが反映される");
+    ok(facts.text().includes("料金:参加無料") && facts.text().includes("予約要否:不要（当日会場へ）"),
+      "広島県一覧に、確認済みの料金・予約要否が反映される(出典は開催ページで)");
     const detail = cheerio.load(read(`dist-test-verified-hiroshima/events/${eventId}.html`));
     ok(detail(".actions a").first().attr("href") === forest.url &&
       detail("main").text().includes("事前申込不要") &&

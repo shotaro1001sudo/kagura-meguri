@@ -83,6 +83,32 @@ export async function uxTests({ ok, section, OUT }) {
   section("UI: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   ok(full(".keyinfo table.info").length === 1 && full(".keyinfo").next(".desc-lead").next(".actions").length === 1 && page("regular/r-weekly.html")(".keyinfo").next(".desc-lead").next(".actions").length === 1, "要点(日時・会場・料金)の帯 → 説明 → 「公式情報を見る」のボタンの順(開催・定期公演とも)");
+  // 違和感の点検(PR 1): 右の列の固定・区切りの「・」・日付と時刻の割れ・終了済みのカレンダー・カッコと時刻の書き方
+  ok(!/\.d-side\{[^}]*(position:sticky|max-height|overflow-y)/.test(css), "PCの右の列は固定せず、高さの上限も付けない(画面より長いと下が切れて中だけスクロールするため)");
+  const textSep = ($, sel) => $(sel).toArray().some((x) => /・/.test($(x).clone().children(".sl").remove().end().text()));
+  ok(home("main .card .meta .sl-in>span").length > 0 && !textSep(home, "main .card .meta") && !/・/.test(home("footer").text()) && home("footer .flinks a").length >= 10 && page("events/t-long.html")(".monthlist .meta .sl-in>span").length > 0 && !textSep(page("events/t-long.html"), ".monthlist .meta"), "一覧・関連公演・フッターの区切りは文字の「・」を使わない(行頭・行末に「・」だけが残らない)");
+  ok(/^\d{4}年\d+月\d+日\(.\)$/.test(full(".when .nw").first().text()) && page("regular/r-nightly.html")(".info .sched-main .nw").text() === "20:00〜21:00", "日付と曜日・時刻の範囲は、途中で改行しない組にする");
+  ok(full(".tocal").length === 1 && page("events/t-past.html")(".tocal, .calendar-notice").length === 0, "終了した公演には、カレンダー登録のリンクと注意書きを出さない");
+  ok(!/（|）/.test(full(".tocal").text()) && !home("main .card .meta").toArray().some((x) => /(^|[^\d])0\d:\d\d/.test(home(x).text())), "サイトの文言のカッコは半角、時刻は先頭の0を付けない(8:45〜)");
+  // 違和感の点検(PR 2): 確認のお願いは表の下に1回だけ・運営側の事情を見せない・導入文で日付をくり返さない
+  const tu = page("events/t-timeunknown.html");
+  ok(!/公式情報をご確認ください/.test(tu(".keyinfo table").text()) && /時刻未確認/.test(tu(".keyinfo .when").text()) && tu(".keyinfo .unknown-note").length === 1 && /未確認の項目は/.test(tu(".keyinfo .unknown-note").text()), "要点の表の不明な欄は「未確認」と短く書き、確認のお願いは表の下に1回だけ");
+  ok(!/内容の確認日は未登録/.test(home("main").text()), "一覧に運営側の事情(内容の確認日は未登録)を出さない");
+  ok(!/\d+月\d+日\(.\)〜/.test(page("weekend.html")(".lead").text()) && !/今日\(/.test(page("this-month.html")(".lead").text()), "今週末・今月の導入文で、見出しの下と同じ日付をくり返さない");
+  // 違和感の点検(PR 3): 日付のある定期公演のカードも、開催のカードと同じ日付の形(月・日・曜日)
+  const occSrc = read("scripts/build.mjs").match(/const occCard = [\s\S]*?\n\};/)?.[0] ?? "";
+  ok(occSrc.includes('<div class="card reg occ"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div>') && /\.reg\.occ \.date b\{font-size:var\(--fs-2xl\)/.test(css), "日付のある定期公演のカードも、開催と同じ「月・日・曜日」の形にそろえる");
+  // 違和感の点検(PR 4): 押せない宿の条件は丸い枠にしない・バナー画像が出ないときは空の枠を残さない
+  ok(!/\.stay-cond span\{[^}]*border-radius/.test(css) && /\.stay-cond span\+span::before\{content:"・"/.test(css), "宿の検索条件(泊まる日・人数・場所)は、押せるボタンと同じ丸い枠にしない");
+  {
+    const dom = new JSDOM(`<aside class="aff trip-band"><h2>今月の旅の宿を探す</h2><div class="stay-banners"><a class="stay-banner" href="#"><img src="x.png"></a><span class="vc-ad stay-banner" hidden></span></div><span class="pr">PR</span></aside><aside class="aff other"><a class="stay-banner" href="#"><img src="y.png"></a><a class="stay-banner" href="#"><img src="z.png"></a></aside>`, { runScripts: "outside-only" });
+    const w = dom.window, d = w.document;
+    w.eval(read("scripts/client/ad-fallback.js"));
+    d.querySelector(".trip-band img").dispatchEvent(new w.Event("error"));
+    d.querySelector(".other img").dispatchEvent(new w.Event("error"));
+    ok(d.querySelector(".trip-band").hidden === true && d.querySelector(".other").hidden === false && d.querySelectorAll(".other .stay-banner[hidden]").length === 1, "宿のバナー画像が出ないときはそのバナーを隠し、見えるバナーが残らなければ枠ごと隠す");
+    dom.window.close();
+  }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-top .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");
   ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
@@ -117,4 +143,6 @@ export async function uxTests({ ok, section, OUT }) {
   ok(org(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");
   ok(org(".opoints li").length === 3 && org(".ocards li").length === 5 && org(".oways .oway").length === 3 && org("ol.steps li").length === 3 && org(".faq details summary").length === 3, "主催者の方へ: 要点のカード3つ・載る場所5つ・送り方3つ・番号つきの手順・開閉式のよくあるご質問");
   ok(page("kagura/石見神楽.html")("main h2").first().text() !== "石見神楽とは", "種類のページ: 開催予定を先に、説明は後ろに");
+  { const iw = page("kagura/石見神楽.html"), html = iw("main").html();
+    ok(iw("main .kagura-lead").length === 1 && html.indexOf("kagura-lead") < html.indexOf("<h2>開催予定</h2>") && (!iw("main .aff").length || html.indexOf("<h2>開催予定</h2>") < html.indexOf('class="aff')), "種類のページ: 見出しのすぐ下に一言の紹介、宿の枠は開催予定のあと"); }
 }

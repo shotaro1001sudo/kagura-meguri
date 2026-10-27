@@ -38,7 +38,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(experienceSection(context,today).includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止と移動の未確認を明示し、間に合うと断言しない');
   const national=cheerio.load(experienceDirectory({sid:'3784232',pid:'892732911',allowed:true}));
   ok(experienceRegions.length===47&&new Set(experienceRegions.map(x=>x.url)).size===47&&PREFECTURES.every(p=>experienceRegions.some(x=>x.prefecture===p)),'全国47都道府県の実際の検索先が揃い、県とURLの重複がない');
-  ok(national('.experience-areas a').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
+  ok(national('.experience-areas a:not(.experience-unavailable)').length===47&&national('.experience-areas a.experience-unavailable').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
   for(const prefecture of PREFECTURES){
     const page=cheerio.load(experienceSection({prefecture,city:'未登録の開催市'},today,{sid:'3784232',pid:'892732911',allowed:true}));
     const expected=experienceRegions.find(x=>x.prefecture===prefecture);
@@ -49,7 +49,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const aff={sid:'3784232',pid:'892732911',allowed:true},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
   ok(affLink.attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
   const affNational=cheerio.load(experienceDirectory(aff));
-  ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a').toArray().every(x=>affNational(x).attr('href').includes('pid=892732911')),'全国一覧の47都道府県すべてに体験用pidが付く');
+  ok(affNational('.experience-areas a[rel~=sponsored]').length===47&&affNational('.experience-areas a:not(.experience-unavailable)').toArray().every(x=>affNational(x).attr('href').includes('pid=892732911')),'全国一覧の47都道府県すべてに体験用pidが付く');
   ok(!experienceSection({prefecture:"高知県"},today,{sid:"1111111",pid:""}).includes("www.jalan.net"),"pid未設定なら通常の体験検索を出さない");
   ok(experienceSection({prefecture:'未確認県'},today)===''&&planningLinks({},today).includes('href="/experiences.html"'),'地域不明は他県を推測せず全国入口へ案内');
   const kochiSection=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),takachihoCard=cheerio.load(planningLinks(context,today,aff));

@@ -145,19 +145,14 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .pref-month h2,.pref-stay{scroll-margin-top:94px}
 /* カード全体の詳細リンクより、出典リンクを手前に置く。 */
 .event-facts a{position:relative;z-index:1}
-.comparison-facts,.comparison-facts>span{display:block}
-/* 一覧の会場・料金・予約: 見出しは薄く、値は本文の色で。出典と確認日は1行にまとめて小さく */
+.comparison-facts{display:block}.comparison-facts .k,.comparison-facts .tbd{color:var(--mut)}
+/* 一覧の会場・料金・予約: 分かっている項目だけを出す(出典と確認日は開催ページで)。見出しは薄く、値は本文の色で。
+   長い値は見出しの下に落とさず、見出しの右の列で折り返す */
 .event-facts{margin:4px 0 6px;line-height:1.8}
 .event-facts .k{color:var(--mut)}
-.event-facts>div:not(.src){color:var(--fg)}
+.event-facts>div{color:var(--fg)}
 .event-facts .tbd{color:var(--mut)}
-.event-facts>.src{display:inline;font-size:var(--fs-xs)}
-.event-facts>.src:nth-child(4):before{content:"";display:block;margin-top:2px}
-/* 折り返すときは「・」を行末に残し、次の行を「確認日」から始める(行頭に「・」を置かない) */
-.event-facts>.src+.src{white-space:nowrap}.event-facts>.src:has(+.src):after{content:"\a0・ "}
-/* 1件の高さを詰める: 料金と予約要否は同じ行に並べる。広い画面では会場も同じ行に続ける(長い会場名は、そのまま折り返す) */
-.event-facts>div:nth-child(2),.event-facts>div:nth-child(3){display:inline-block;margin-right:1.4em}
-@media(min-width:561px){.event-facts>div:first-child{display:inline;margin-right:1.4em}}
+.event-facts>div,.comparison-facts>span{display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:.4em}
 /* カード全体が詳細へのリンク: 乗せたとき・キーボードで選んだときに、題を朱にして、選んでいる場所を示す */
 @media(hover:hover){.card:hover :is(h3,h4) a{color:var(--ac)}}
 .card :is(h3,h4) a{transition:color var(--t-s) var(--ease)}
@@ -288,7 +283,8 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 @media(min-width:960px){
   .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
   .d-top{grid-area:top}.d-rest{grid-area:rest}
-  .d-side{grid-area:side;position:sticky;top:96px;align-self:start;margin-top:16px;max-height:calc(100vh - 112px);overflow-y:auto;scrollbar-width:thin}
+  /* 右の列は固定せず、ページと一緒に流す(画面より長いと、固定した列の下が切れて中だけスクロールする箱になるため) */
+  .d-side{grid-area:side;align-self:start;margin-top:16px}
   .side-summary.on{display:block}.side-summary{margin:0 0 14px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-left:2px solid var(--ac);border-radius:4px}
   .side-summary p{margin:0}.ss-when{font-family:var(--serif);font-size:var(--fs-l);line-height:1.6}.ss-place{margin-top:6px!important;font-size:var(--fs-s)}.ss-fee{font-size:var(--fs-s);color:var(--mut)}
   .side-summary .btn{display:flex;width:100%;margin-top:12px}
@@ -381,6 +377,11 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 
 footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 48px;color:var(--mut);font-size:var(--fs-s);text-align:center;letter-spacing:.12em;line-height:2.4}
 footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2px;line-height:2.4}
+/* フッターのリンクは、区切りの文字を使わず余白で並べる(行末に「・」がぶら下がらない) */
+footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:center;column-gap:1.4em}footer .copy{margin-top:6px}footer .fnote{line-height:1.9;margin-bottom:6px}
+/* 「・」区切りの並び(sepList): 各項目の前の「・」は、行の頭に来たときだけ枠の外に隠れる */
+.sl{display:block;overflow:hidden}.sl-in{display:flex;flex-wrap:wrap;margin-left:-1.2em}
+.sl-in>span{position:relative;min-width:0;padding-left:1.2em}.sl-in>span::before{content:"・";position:absolute;left:0;width:1.2em;text-align:center}
 
 /* ゆっくり現れる */
 /* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
@@ -444,6 +445,8 @@ footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2p
 .reg .date b{font-size:var(--fs-l);letter-spacing:.05em;padding-top:.3em}
 .card.reg{background:color-mix(in srgb,var(--ac2) 7%,transparent);padding-left:12px;padding-right:12px;border-left:2px solid var(--ac2)}
 .reg .date b{color:var(--ac2)}
+/* 日付のある定期公演(今週末・今月): 開催のカードと同じ日付の形にそろえる(色だけ定期公演の色) */
+.reg.occ .date b{font-size:var(--fs-2xl);letter-spacing:0;padding-top:0}
 .reglist .card:first-child{border-top:1px solid var(--line)}
 
 /* パンくず・導入文・一覧 */
@@ -510,7 +513,6 @@ body{line-break:strict;text-wrap:pretty}
 :is(h1,h2,h3,h4,a,button,label,summary,figcaption,td,th,dt,dd,li,small,.meta,.tagline,.d,.hero p){word-break:auto-phrase}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
 /* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
-.event-facts>.src:not(.src+.src){word-break:keep-all}
 /* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。
    行の頭のかぎ括弧は半角ぶん詰めて、左の線をそろえる。どちらも対応していないブラウザでは、今までどおりの表示になる */
 @supports (text-autospace:normal){body{text-autospace:normal}:is(.date,.monthlist .md){text-autospace:no-autospace}}
@@ -594,7 +596,9 @@ html[lang=en] .hero h1{line-height:1.3}
 html[lang=en] .home-hero .copy{writing-mode:horizontal-tb;max-width:min(26em,62%)}
 html[lang=en] .home-hero h1{font-size:var(--fs-h1);line-height:1.35;letter-spacing:.02em;white-space:normal;margin:0 0 10px}
 html[lang=en] .home-hero p{color:var(--fg)}
-@media(max-width:640px){html[lang=en] .home-hero .copy{max-width:100%}}
+@media(max-width:640px){html[lang=en] .home-hero .copy{max-width:100%}
+  /* 英語版のスマホ: 横書きの見出しと説明が絵に重なって読みにくいので、絵は見出しの下に置く */
+  html[lang=en] main .home-hero{flex-direction:column;gap:0;min-height:0}html[lang=en] .hero-art{order:1;position:relative;inset:auto;width:72%;margin:8px 0 0 auto}html[lang=en] .hero-art img{position:static;height:auto}}
 
 /* 余白: 塊と塊の間に、ひと呼吸おく(文字の大きさ・色は変えない) */
 h2{margin:64px 0 20px}
@@ -644,15 +648,9 @@ footer{margin-top:96px;padding-top:36px}
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
   .discovery-prefs::-webkit-scrollbar{display:none}
   .discovery-prefs a{flex:none}
-  /* 公演カード: 出典の名前は1行に収め、はみ出す分は「…」で省く(全文は開催ページと、リンク先で読める)。確認日は次の行 */
   .event-facts{line-height:1.7}
-  .event-facts>.src:nth-child(4){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .event-facts>.src:nth-child(4) a:focus-visible{outline-offset:-2px}
-  .event-facts>.src:nth-child(4):before{display:none}.event-facts>.src:has(+.src):after{content:none}
   .card .tag{padding-top:4px}
   .card>div:last-child{min-width:0}
-  /* 確認日の行は、出典と別の行になるので折り返してよい(「取得日: …(内容の確認日は未登録)」が画面からはみ出していた) */
-  .event-facts>.src+.src{white-space:normal}
 }
 
 /* 開催ページ・定期公演ページ: 題のすぐ下に要点の帯を寄せる。日時は一番大きく。本文は1行を短くして読みやすく。
@@ -662,6 +660,9 @@ footer{margin-top:96px;padding-top:36px}
 @media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
 main>p:not([class]){max-width:42em}
 /* 会場の欄: 会場名の下に所在地と、地図への案内 */
+.nw{white-space:nowrap}
+.keyinfo .unknown-note{margin:10px 2px 0;font-size:var(--fs-xs);color:var(--mut)}
+.info .sched-main{display:block}.info .sched-more{display:block;margin-top:4px;font-size:var(--fs-s);color:var(--mut)}
 .info .addr{display:block;margin-top:2px;font-size:var(--fs-s);color:var(--mut)}
 .info .tomap,.info .tocal{display:block;width:fit-content;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);color:var(--ac2)}
 /* カレンダーの仮の終了時刻などの注意書き: 日時の欄の中に、サイトでいちばん小さい文字で(大きな日時の文字を引き継がない) */
@@ -683,8 +684,6 @@ main>p:not([class]){max-width:42em}
 .finder{padding:20px 22px 22px;background:var(--card);border:1px solid var(--line);border-radius:4px;max-width:44em}
 .finder input,.finder select{background:var(--bg)}
 .count{font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em;margin-top:36px}
-.comparison-facts>span:nth-child(2),.comparison-facts>span:nth-child(3){display:inline-block;margin-right:1.4em}
-@media(min-width:561px){.comparison-facts>span:first-child{display:inline;margin-right:1.4em}}
 /* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
    結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
 @media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
@@ -720,8 +719,9 @@ main>p:not([class]){max-width:42em}
 .btn.ghost{border-color:var(--line)}.btn.ghost:hover{border-color:var(--ac);color:var(--ac);opacity:1}
 /* 宿のカード: 見出し → 条件のチップ → バナー → 注意(たたむ) */
 .stay h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin:0 0 10px}
-.stay-cond{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px!important}
-.stay-cond span{padding:2px 10px;font-size:var(--fs-2xs);letter-spacing:.06em;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:999px}
+/* 宿の検索条件(泊まる日・人数・場所)は押せないので、ボタンと同じ丸い枠にせず、文字だけで「・」区切りにする */
+.stay-cond{display:flex;flex-wrap:wrap;margin:0 0 12px!important;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--mut)}
+.stay-cond span+span::before{content:"・";margin:0 .2em}
 .stay-banner{border-radius:8px;border-color:transparent;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
@@ -769,8 +769,6 @@ main>p:not([class]){max-width:42em}
 .about{padding:4px 0}
 input,select,textarea,button{border-radius:var(--radius-s)}
 .pref-month-nav+.viewing-preparation .tag{margin:0 8px 8px 0;padding:6px 14px;font-size:var(--fs-xs)}
-/* 一覧のカード: 長い料金・会場は2行までにして、詳しくは開催ページで(カードの高さをそろえる) */
-@media(max-width:560px){.card .event-facts>div:is(:nth-child(1),:nth-child(2)){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}}
 /* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */
 .planning-card:has(.pick){display:flex;flex-direction:column}
 .pick{margin:auto 0 0!important;padding:10px 12px;background:var(--bg);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.6}
@@ -850,7 +848,7 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .vc-disclosure+*{margin-top:0}
 
 /* Quiet footer entry; native Cookiebot owns the popup and all consent choices. */
-.cookie-settings{margin:4px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}
+.cookie-settings{text-align:center;margin:-36px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}
 .cookie-settings button{font:inherit;color:inherit;background:none;border:0;padding:10px 0;min-height:44px;text-decoration:underline;text-underline-offset:.25em;cursor:pointer}
 .cookie-settings button[aria-disabled="true"]{cursor:default}
 .cookie-settings button:focus-visible{outline:2px solid var(--ac);outline-offset:4px}
