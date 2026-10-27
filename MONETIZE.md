@@ -6,7 +6,7 @@ ID や承認済み広告が未設定の場合、おすすめ枠のリンクは�
 | 仕組み | 場所 | 有効にする設定(`config.json`) |
 |---|---|---|
 | 会場近くの宿(じゃらん) | これからの開催のページ(開催日の1泊・大人2名で検索) / 種類・都道府県・定期公演のページの「旅支度」 | `affiliate.valueCommerceSid` と `affiliate.jalanPid` |
-| 公演前後の体験(じゃらん遊び・体験) | 開催・定期公演・都道府県のページの「公演の前後も楽しむ」 / 周辺体験のページの47都道府県 | `affiliate.valueCommerceSid` と `affiliate.jalanActivityPid`(宿のpidとは別) |
+| 公演前後の体験(じゃらん遊び・体験) | 開催・定期公演のページの「周辺体験」のカード / 都道府県のページの「周辺体験」の欄 / 周辺体験のページの47都道府県 | `affiliate.valueCommerceSid` と `affiliate.jalanActivityPid`(宿のpidとは別) |
 | 会場近くの宿(楽天トラベル) | 同上 | `affiliate.rakutenAffiliateId` |
 | 神楽の本・グッズ(Amazon) | 「旅支度」(設定したときだけ表示) | `affiliate.amazonTag` |
 | ディスプレイ広告(AdSense) | 一覧・開催ページなどの決めた場所(手動)+ 画面下の固定広告(自動広告のアンカー) | `adsense.client`、`adsense.slotList`、`adsense.slotDetail` |

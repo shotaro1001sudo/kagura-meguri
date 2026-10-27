@@ -167,10 +167,19 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .planning-eyebrow{margin:0 0 6px;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.12em}
 .planning-section>h2{margin-top:0}
 .planning-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
-.planning-links>a{display:flex;flex-direction:column;gap:5px;padding:18px;min-height:44px;border:1px solid var(--line);border-top:2px solid var(--ac2);border-radius:4px;color:var(--fg);text-decoration:none;background:var(--card)}
+.planning-links>a,.planning-links>.planning-nearby{display:flex;flex-direction:column;gap:5px;padding:18px;min-height:44px;border:1px solid var(--line);border-top:2px solid var(--ac2);border-radius:4px;color:var(--fg);text-decoration:none;background:var(--card)}
 .planning-links b{font-family:var(--serif);font-size:var(--fs-m);font-weight:500}
 .planning-links>a>span:last-child{color:var(--mut);font-size:var(--fs-xs)}
 .planning-links>a:hover{border-color:var(--ac)}
+/* 周辺体験のカード: 開催県の体験検索と、ほかの都道府県への入口をまとめる */
+.planning-nearby>p{margin:6px 0 0}
+.planning-nearby .vc-ad.vc-experience>a{display:block;width:fit-content;padding:9px 14px;font-size:var(--fs-s);letter-spacing:.02em;line-height:1.6}
+.planning-nearby .nearby-more{width:fit-content;font-size:var(--fs-xs);letter-spacing:.02em}
+.planning-nearby .pc-more{margin:2px 0 0}
+/* 施設紹介例があるカード(高千穂など)は、紹介例を読める幅にするため、持ち物・行き帰りの下に全幅で置く */
+.planning-links:has(>.planning-nearby .planning-grid){grid-template-columns:repeat(2,minmax(0,1fr))}
+.planning-nearby:has(.planning-grid){grid-column:1/-1}
+.planning-nearby .planning-grid{gap:10px;margin:8px 0 0}
 .planning-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
 .planning-card{min-width:0;padding:22px;background:var(--card);border:1px solid var(--line);border-radius:4px}
 .planning-card :is(h3,h4){margin:0 0 12px;font-family:var(--serif);font-size:var(--fs-l);font-weight:500}
@@ -184,7 +193,7 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .experience-areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .experience-areas>a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card);text-decoration:none;scroll-margin-top:100px}
 .experience-areas>a:target{outline:2px solid var(--ac);outline-offset:2px}
-@media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a{padding:14px 18px}.planning-card{padding:18px}}
+@media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a,.planning-links>.planning-nearby{padding:14px 18px}.planning-card{padding:18px}}
 /* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
 .quiz-offer[hidden]{display:none}
 body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
@@ -725,7 +734,7 @@ main>p:not([class]){max-width:42em}
 .side-summary{padding:18px 20px}
 /* 交通・体験・準備のカード */
 .planning-lead{font-size:var(--fs-m);margin:0 0 6px}
-.planning-links>a{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;transition:border-color var(--t-s) var(--ease)}
+.planning-links>a,.planning-links>.planning-nearby{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;transition:border-color var(--t-s) var(--ease)}
 @media(hover:hover){.planning-links>a:hover{border-color:var(--ac)}}
 .planning-card{padding:18px 20px}
 /* 観覧前のチップ・開催までの日数 */

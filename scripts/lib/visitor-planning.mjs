@@ -103,14 +103,25 @@ export function experiencesFor(context,today) {
   if(!date(today)||today<CHECKED||Date.parse(today)-Date.parse(CHECKED)>90*864e5)return [];
   return experiences.filter(x=>context.guide||(context.prefecture===x.prefecture&&(!context.city||cityOf(context.city)===x.city)));
 }
+// 体験の注意書きと、開催地域の施設紹介例。周辺体験のカードの中(compact)では、紹介例を折りたたむ。
+const experienceNotes=(items,aff,compact)=>{
+  const grid=`<div class="planning-grid">${items.map(x=>`<article class="planning-card"><p class="meta">${esc(x.prefecture)} ${esc(x.city)}・${esc(x.place)}</p><h3>${esc(x.name)}</h3><p>${esc(x.reason)}</p><p>${esc(x.detail)}</p>${x.notice?`<p class="planning-notice">${esc(x.notice)}</p>`:''}<a class="btn ghost sm" href="${x.source}" target="_blank" rel="noopener noreferrer">公式で営業・利用方法を確認</a><p class="meta annotation">公式案内: ${esc(x.by)} ／ 確認日: ${CHECKED}</p></article>`).join('')}</div>`;
+  return `<details class="pc-more"><summary>ご注意</summary><p class="meta annotation">県内全域の一覧です。会場からの距離・市町村・日付・所要時間はリンク先で確認してください。公演会場からの移動時間は未確認です。${adNote(aff)}公演の受付・移動・食事の時間を先に確保して、訪問先の体験を選びましょう。</p></details>${items.length?(compact?`<details class="pc-more"><summary>開催地域での施設紹介例</summary>${grid}</details>`:`<h3>開催地域での施設紹介例</h3>${grid}`):''}<p class="meta annotation">営業状況・空き・価格はリアルタイム表示ではありません。公演前に利用できることを保証するものではありません。</p>`;
+};
+// 都道府県のページの欄。
 export function experienceSection(context,today,aff) {
   const area=experienceArea(context.prefecture);if(!area)return '';
-  const items=experiencesFor(context,today);
-  return `<section id="nearby-experiences" class="planning-section" aria-labelledby="nearby-experiences-h"><p class="planning-eyebrow">公演の前後も楽しむ</p><h2 id="nearby-experiences-h">${esc(context.prefecture)}で立ち寄れる体験を探す</h2>${affOn(aff)?`<p>${areaTag(area,'nearby_experiences','vc-experience')} <a href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a></p>`:""}<details class="pc-more"><summary>ご注意</summary><p class="meta annotation">県内全域の一覧です。会場からの距離・市町村・日付・所要時間はリンク先で確認してください。公演会場からの移動時間は未確認です。${adNote(aff)}公演の受付・移動・食事の時間を先に確保して、訪問先の体験を選びましょう。</p></details>${items.length?`<h3>開催地域での施設紹介例</h3><div class="planning-grid">${items.map(x=>`<article class="planning-card"><p class="meta">${esc(x.prefecture)} ${esc(x.city)}・${esc(x.place)}</p><h3>${esc(x.name)}</h3><p>${esc(x.reason)}</p><p>${esc(x.detail)}</p>${x.notice?`<p class="planning-notice">${esc(x.notice)}</p>`:''}<a class="btn ghost sm" href="${x.source}" target="_blank" rel="noopener noreferrer">公式で営業・利用方法を確認</a><p class="meta annotation">公式案内: ${esc(x.by)} ／ 確認日: ${CHECKED}</p></article>`).join('')}</div>`:''}<p class="meta annotation">営業状況・空き・価格はリアルタイム表示ではありません。公演前に利用できることを保証するものではありません。</p></section>`;
+  return `<section id="nearby-experiences" class="planning-section" aria-labelledby="nearby-experiences-h"><p class="planning-eyebrow">周辺体験</p><h2 id="nearby-experiences-h">${esc(context.prefecture)}で立ち寄れる体験を探す</h2>${affOn(aff)?`<p>${areaTag(area,'nearby_experiences','vc-experience')} <a href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a></p>`:""}${experienceNotes(experiencesFor(context,today),aff,false)}</section>`;
 }
-export function planningLinks(context={},today=CHECKED) {
-  const nearby=!!experienceArea(context.prefecture);
-  return `<nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a><a href="${nearby?'#nearby-experiences':'/experiences.html'}"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a></nav>`;
+// 公演のページでは、周辺体験のカードの中に開催県の体験検索をまとめる。
+export function experienceCard(context,today,aff) {
+  const area=experienceArea(context.prefecture);if(!area)return '';
+  return `<section id="nearby-experiences" class="planning-nearby" aria-labelledby="nearby-experiences-h"><span class="meta">周辺体験</span><b id="nearby-experiences-h">神楽までの半日、何する？</b>${affOn(aff)?`<p>${areaTag(area,'nearby_experiences','vc-experience')}</p><a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a>`:""}${experienceNotes(experiencesFor(context,today),aff,true)}</section>`;
+}
+// 開催県がわかる公演では周辺体験をカードにまとめ、わからなければ全国の入口へのリンクにする。
+export function planningLinks(context={},today=CHECKED,aff) {
+  const nearby=experienceCard(context,today,aff);
+  return `<nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a>${nearby||'<a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a>'}</nav>`;
 }
 export function rentalSearch(settings,context,today,placement) {
   const ads=offerCards(settings,'rental',context,today,placement);
