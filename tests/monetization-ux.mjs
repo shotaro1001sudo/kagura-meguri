@@ -117,14 +117,14 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const mapped = cheerio.load(read(join(OUT, "events/t-timeunknown.html")));
   ok(mapped(".actions").next().hasClass("viewing-preparation") &&
     mapped(".viewing-preparation").length === 1 &&
-    mapped(".viewing-preparation a[href='#venue-access']").length === 1 &&
-    mapped("#venue-access #map").length === 1 && mapped("#venue-access .routebtn a").length === 1,
-    "広島の公演詳細では要点のすぐ下から既存の会場地図・経路に移動できる");
+    mapped(".viewing-preparation a").length === 2 && mapped("a[href='#venue-access'],#venue-access").length === 0 &&
+    mapped(".keyinfo a.tomap[href*='google.com/maps']").length === 1,
+    "広島の公演詳細では、地図・経路は要点の会場の欄から(観覧準備の案内と重ねない)");
   ok(mapped("main a[href='/guide.html']").length === 0 &&
     mapped("main a[href='/guide.html#prepare']").length === 1,
     "広島の詳細にあった下部の一般ガイド案内を近接案内に置き換え、重複しない");
   const noMap = cheerio.load(read(join(OUT, "events/t-minimal.html")));
-  ok(noMap(".viewing-preparation a").length === 2 && noMap("a[href='#venue-access'],#venue-access").length === 0,
+  ok(noMap(".viewing-preparation a").length === 2 && noMap("a[href='#venue-access'],#venue-access,.keyinfo a.tomap").length === 0,
     "地図データがない公演には空の地図リンクを出さない");
   const outside = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(outside(".viewing-preparation,#venue-access").length === 0 &&
@@ -203,7 +203,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(/^開催まで あと\d+日$|^(本日|明日)開催$/.test(off(".hero .until").text()), "見出しの下に、開催までの日数を出す", off(".hero .until").text());
   const ss = off(".d-side .side-summary");
   ok(ss.length === 1 && ss.find("a[data-official-side]").attr("href") === off("[data-official-link]").attr("href") && off("[data-official-link]").length === 1, "右の列に、日時・会場と公式情報のボタン(計測は別の印)を置く");
-  { const h = off("main").html(); ok(h.indexOf('class="share"') > h.indexOf('id="map"') && h.indexOf('id="map"') > 0 && h.indexOf('class="share"') > h.indexOf("desc-lead"), "共有のボタンは、説明・地図などの本文の後に置く"); }
+  { const h = off("main").html(); ok(off(".d-rest .share").length === 1 && h.indexOf('class="share"') > h.indexOf("desc-lead"), "共有のボタンは、説明などの本文の後に置く"); }
   ok(off(".d-top .share").length === 0 && off(".desc-lead").length === 1, "要点の直後は、説明文(共有ボタンは置かない)");
   const ended = cheerio.load(read(join(OUT, "events/t-past.html")));
   ok(ended(".until,.side-summary").length === 0, "終了した開催には、日数と右の列を出さない");

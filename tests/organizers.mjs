@@ -19,7 +19,7 @@ export function organizersTests({ ok, section, OUT, build }) {
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
   const evLd = ev('script[type="application/ld+json"]').map((_, s) => JSON.parse(ev(s).text())).get().flat();
   ok(text.includes("カレンダーへの登録") && ev('main a[href^="https://calendar.google.com/calendar/render?action=TEMPLATE"]').length === 1, "「カレンダーへの登録」: 開催ページに、Googleカレンダーに追加するボタンがある");
-  ok(text.includes("経路の検索") && ev('a[href*="google.com/maps"]').length > 0 && ev("#map").length > 0, "「地図・経路の検索」: 開催ページに、地図と経路のリンクがある");
+  ok(text.includes("経路の検索") && ev('.keyinfo a[href*="google.com/maps"]').length === 1, "「地図・経路の検索」: 開催ページの会場の欄に、Googleマップへのリンクがある");
   ok(text.includes("構造化データ") && evLd.some((x) => x["@type"] === "Event" && x.startDate && x.location), "「構造化データ」: 開催ページに、Event の構造化データ(日時・会場)がある");
   ok(text.includes("フィード") && existsSync(join(OUT, "feed.xml")) && existsSync(join(OUT, "events.ics")), "「新着の配信」: フィードと、購読用の日程ファイルがある");
   ok(["/map.html", "/calendar.html", "/weekend.html", "/this-month.html", "/kagura/"].every((h) => internal.includes(h)), "地図・カレンダー・今週末・今月・神楽の種類へ、リンクしている");

@@ -26,17 +26,17 @@ export function consistencyTests({ ok, section, OUT }) {
   ok(/^(開催予定|定期公演)/.test(pf(".hero p").text()), "県のページの見出しの下も、件数の文", pf(".hero p").text());
 
   section("そろい方: 開催ページ・定期公演ページの並び");
-  // 並びの目印: 地図・経路のボタン・ガイドへの案内(出典の文のすぐ下。出典のないデータもあるため)・宿の案内・あわせて観たい神楽
+  // 並びの目印: 会場の欄の地図への案内(要点の表)・ガイドへの案内(出典の文のすぐ下。出典のないデータもあるため)・宿の案内・あわせて観たい神楽
   const orderOf = (p) => {
     const h = read(join(OUT, p));
     const at = (re) => { const m = h.search(re); return m < 0 ? null : m; };
-    return { map: at(/id="map"/), route: at(/class="routebtn"/), source: at(/見どころ・マナー・服装のガイド/), stay: at(/class="(aff )?stay|class="aff"|class="afflist/), related: at(/<h2>あわせて観たい神楽<\/h2>/) };
+    return { map: at(/class="tomap"/), source: at(/見どころ・マナー・服装のガイド/), stay: at(/class="(aff )?stay|class="aff"|class="afflist/), related: at(/<h2>あわせて観たい神楽<\/h2>/) };
   };
   const ev = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.lat != null && e.start >= "2026-10-10");
   const o = orderOf(`events/${ev.id}.html`);
-  ok(o.map != null && o.map < o.route && o.route < o.source && (o.stay == null || o.stay < o.map) && (o.related == null || o.source < o.related), "開催ページ: 宿の案内(要点の直下・右のカード) → 地図 → 経路 → 出典・ガイドの案内 → あわせて観たい神楽 の順", JSON.stringify(o));
+  ok(o.map != null && o.map < o.source && (o.stay == null || (o.map < o.stay && o.stay < o.source)) && (o.related == null || o.source < o.related), "開催ページ: 要点(会場の欄の地図・経路) → 宿の案内(右のカード) → 出典・ガイドの案内 → あわせて観たい神楽 の順", JSON.stringify(o));
   const r = orderOf("regular/r-weekly.html");
-  ok(r.map != null && r.map < r.route && r.route < r.source && (r.stay == null || r.stay < r.map) && r.related != null && r.source < r.related, "定期公演ページも、宿の案内が先頭に近く、「あわせて観たい神楽」が最後にある", JSON.stringify(r));
+  ok(r.map != null && r.map < r.source && (r.stay == null || (r.map < r.stay && r.stay < r.source)) && r.related != null && r.source < r.related, "定期公演ページも、要点のあとに宿の案内、「あわせて観たい神楽」が最後にある", JSON.stringify(r));
 
   section("そろい方: 見出しの階層・押しやすさ・古い CSS");
   ok(home(".mgroup .card h4").length > 0 && home(".mgroup .card h3").length === 0 && page("month/2026-11.html")(".card h3").length > 0, "トップの月の見出し(h3)の下の開催名は h4。ほかのページの一覧は h3 のまま");

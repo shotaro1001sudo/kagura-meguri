@@ -142,7 +142,7 @@ const past = cheerio.load(read(join(OUT, "events/t-past.html")));
 ok(past("body").text().includes("終了しました"), "終了したイベントの詳細ページに「終了しました」");
 const tu = cheerio.load(read(join(OUT, "events/t-timeunknown.html")));
 ok(!/00:00/.test(tu("table.info").text()), "時間未定の詳細に 00:00 が出ない");
-ok(tu("body").text().includes("おおよその位置"), "市区町村の位置のピンには注意書きが出る");
+ok(tu("#map").length === 0 && !tu("body").text().includes("地図のピン"), "開催ページには地図(とピンの注記)を置かない");
 const min = cheerio.load(read(join(OUT, "events/t-minimal.html")));
 ok(!min("a[href='/kagura/.html']").length && !/\/kagura\/\.html/.test(read(join(OUT, "events/t-minimal.html"))), "神楽の種類が空でも壊れたリンクを作らない");
 ok(!existsSync(join(OUT, "kagura/.html")), "神楽の種類が空のファイルを作らない");
@@ -242,7 +242,8 @@ ok(robotsMeta("404.html") === "noindex,follow", "404 は noindex");
 ok(/^index,follow/.test(robotsMeta("pref/島根県.html")), "開催予定のある県ページは index される");
 ok(!locs.some((u) => u.includes("t-past")), "終了したイベントはサイトマップに入れない");
 ok(locs.some((u) => u.includes("t-full")), "開催前のイベントはサイトマップに入れる");
-for (const f of ["map.html", "events/t-full.html"]) {
+ok(cheerio.load(read(join(OUT, "events/t-full.html")))("script[src^='https://unpkg.com'], link[href^='https://unpkg.com']").length === 0, "開催ページは、地図の外部ライブラリを読み込まない");
+for (const f of ["map.html"]) {
   const $ = cheerio.load(read(join(OUT, f)));
   const ext = $("script[src^='https://unpkg.com'], link[href^='https://unpkg.com']");
   ok(ext.length === 2, `${f}: 外部ライブラリは地図の2ファイルだけ`);
