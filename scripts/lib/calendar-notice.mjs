@@ -2,7 +2,7 @@
 export function calendarNotice(event) {
   if (event.timeUnknown) return {
     suffix: '(時刻未確認・日付のみ)',
-    text: '開始・終了時刻は未確認です。日付のみの予定であり、終日開催や終日の観覧を意味しません。時刻は公式情報をご確認ください。'
+    text: '開始・終了時刻は未確認です。日付のみの予定であり、終日開催や終日の観覧を意味しません。'
   };
   if (!event.end) return {
     suffix: '(終了未確認・仮2時間)',

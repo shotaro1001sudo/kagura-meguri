@@ -669,6 +669,7 @@ footer{margin-top:96px;padding-top:36px}
 main>p:not([class]){max-width:42em}
 /* 会場の欄: 会場名の下に所在地と、地図への案内 */
 .nw{white-space:nowrap}
+.keyinfo .unknown-note{margin:10px 2px 0;font-size:var(--fs-xs);color:var(--mut)}
 .info .sched-main{display:block}.info .sched-more{display:block;margin-top:4px;font-size:var(--fs-s);color:var(--mut)}
 .info .addr{display:block;margin-top:2px;font-size:var(--fs-s);color:var(--mut)}
 .info .tomap,.info .tocal{display:block;width:fit-content;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);color:var(--ac2)}

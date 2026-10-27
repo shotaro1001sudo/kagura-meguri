@@ -31,9 +31,7 @@ export function reservationTests({ok, section}) {
   ok(event('table.info').text().includes('事前申込不要') && page('pref/高知県.html')('.event-facts').text().includes('事前申込不要'),'永渕の詳細・県一覧で申込不要を表示');
   ok(tak.checked==='2026-10-09' && nag.checked==='2026-10-12' && tak.reservationChecked==='2026-10-25' && nag.reservationChecked==='2026-10-25','既存確認日と予約再確認日を区別');
   const h=page('pref/広島県.html'), intro=h('.pref-upcoming');
-  ok(intro.length===1 && intro.find('li').length===3,'広島だけ直近3公演を表示');
-  const ids=intro.find('li a').map((_,a)=>h(a).attr('href')).get();
-  ok(new Set(ids).size===3 && ids.every(url=>h(`.pref-month a[href='${url}']`).length===1),'直近リンクは掲載日程の詳細へ、重複なし');
+  ok(intro.length===1 && intro.find('li').length===0 && intro.text().includes('県内のすべての公演ではありません') && h('.pref-month .card').length>=3,'広島の冒頭は、すぐ下のカードと同じ公演を箇条書きで重ねない(掲載範囲の注意だけ)');
   ok(h('main').html().indexOf('pref-upcoming')<h('main').html().indexOf('pref-month-nav'),'直近日程を月別導線より先に表示');
   ok(h('#hiroshima-regular').length===1 && intro.find('[href="#hiroshima-regular"]').length===1,'定期公演へのページ内リンクが解決');
   ok(page('pref/高知県.html')('.pref-upcoming').length===0,'他県の冒頭構成は変更しない');

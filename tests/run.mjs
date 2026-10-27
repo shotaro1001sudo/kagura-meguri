@@ -136,7 +136,7 @@ ok(!listText.includes("承認前のため出てはいけない"), "承認前(pen
 ok(!existsSync(join(OUT, "events/t-pending.html")), "承認前のデータは詳細ページも作られない");
 ok(!listText.includes("終了した神楽"), "終了したイベントは一覧に出ない");
 ok(listText.includes("開催中のテスト"), "開催中(終了時刻なし・3時間以内)は一覧に出る");
-ok(listText.includes("時間は公式情報をご確認ください"), "時間未定のイベントは「時間は公式情報をご確認ください」と出る(一覧と開催ページで同じ言い方)");
+ok(listText.includes("時刻未確認") && !listText.includes("時間は公式情報をご確認ください"), "時間未定のイベントは「時刻未確認」と短く出る(一覧と開催ページで同じ言い方。確認のお願いは表の下に1回)");
 ok(index("#list > div").first().text().includes("開催中のテスト"), "一覧は日付順(いちばん早い開催中が先頭)");
 const past = cheerio.load(read(join(OUT, "events/t-past.html")));
 ok(past("body").text().includes("終了しました"), "終了したイベントの詳細ページに「終了しました」");

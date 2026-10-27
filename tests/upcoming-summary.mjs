@@ -14,7 +14,7 @@ export function upcomingSummaryTests({ok,section}) {
   const unsafe=cheerio.load(upcomingSummary([{id:'safe',name:'<script>危険</script>',venue:'<会場>'}],{formatWhen:()=>'<時刻>'}));
   ok(unsafe('script').length===0&&unsafe('li').text().includes('<会場>'),'データ値をHTMLエスケープ');
   const missing=cheerio.load(upcomingSummary([{id:'unknown',name:'公演'}],{formatWhen:()=> '2026年11月3日（時間は公式情報をご確認ください）'}));
-  ok(missing('li').text().includes('時間は公式情報をご確認ください')&&missing('li').text().includes('会場：公式情報をご確認ください'),'時間/会場未確定を捏造しない');
+  ok(missing('li').text().includes('時間は公式情報をご確認ください')&&missing('li').text().includes('会場：未確認'),'時間/会場未確定を捏造しない');
   for(const [label,now,count] of [['before','2026-11-02T23:59',1],['during','2026-11-03T16:59',1],['expired','2026-11-04T00:00',0]]) {
     const out='dist-test-shonai-'+label;
     const r=spawnSync('node',['scripts/build.mjs'],{encoding:'utf8',env:{...process.env,BUILD_NOW:now,OUT_DIR:out}});

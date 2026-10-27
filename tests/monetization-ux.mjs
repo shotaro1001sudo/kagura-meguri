@@ -143,7 +143,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     missing(".event-facts").text().includes("確認日: 未登録"),
     "未登録を無料・予約不要・今日確認済みに置き換えない");
   const automatic = cheerio.load(facts({ auto: true, lastSeen: "2026-10-19", source: "取得元", sourceUrl: "https://example.org/source", url: "https://example.org/event" }));
-  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日(内容の確認日は未登録)") &&
+  ok(automatic(".event-facts").text().includes("取得日: 2026年10月19日") && !automatic(".event-facts").text().includes("未登録") &&
     automatic("a").attr("href") === "https://example.org/source",
     "自動取得日は取得日と明記し、取得元のURLを優先する");
   const known = cheerio.load(facts({ venue: "<会場>", fee: "無料（条件あり）", reservation: "事前予約制", checked: "2026-10-10", source: "観光情報誌", sourceUrl: "javascript:alert(1)", url: "https://example.org/event" }));
@@ -253,8 +253,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
       'カレンダーの注意書きは、日時の欄の中(カレンダーへのリンクの下)に小さい文字で出す');
 
     ok(oa.startDate==='2026-11-07T13:00+09:00' && !oa.endDate && oasa('main').text().includes('開場12:00、開会式12:30、開演13:00'), '大朝: 開演を13時とし、開場/式と区別・閉会式を終了時刻にしない');
-    ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否要確認'), '大朝: 個別公式リンク・住所・予約不明を維持');
-    ok(ho.startDate==='2026-11-07' && ho.endDate==='2026-11-08' && horo('main').text().includes('時間は公式情報をご確認ください'), '保呂羽山: schemaの日付範囲と時刻未確認を維持');
+    ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否未確認') && oasa('.keyinfo .unknown-note').length===1, '大朝: 個別公式リンク・住所・予約不明を維持');
+    ok(ho.startDate==='2026-11-07' && ho.endDate==='2026-11-08' && horo('main').text().includes('時刻未確認'), '保呂羽山: schemaの日付範囲と時刻未確認を維持');
     const gc=new URL(horo('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href'));
     ok(gc.searchParams.get('dates')==='20261107/20261109' && gc.searchParams.get('location').includes('木ノ根坂200'), '保呂羽山: Google予定の終日は8日を含み排他的終了9日・里宮住所');
     const ics=read('dist-test-verified-hiroshima/events.ics').split('BEGIN:VEVENT').find(v=>v.includes('UID:horowasan-shimotsuki-kagura-2026@'));
