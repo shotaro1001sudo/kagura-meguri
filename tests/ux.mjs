@@ -143,4 +143,6 @@ export async function uxTests({ ok, section, OUT }) {
   ok(org(".cta-end a[href='/submit.html']").length === 1, "主催者の方へ: ページの最後にも「掲載を依頼する」");
   ok(org(".opoints li").length === 3 && org(".ocards li").length === 5 && org(".oways .oway").length === 3 && org("ol.steps li").length === 3 && org(".faq details summary").length === 3, "主催者の方へ: 要点のカード3つ・載る場所5つ・送り方3つ・番号つきの手順・開閉式のよくあるご質問");
   ok(page("kagura/石見神楽.html")("main h2").first().text() !== "石見神楽とは", "種類のページ: 開催予定を先に、説明は後ろに");
+  { const iw = page("kagura/石見神楽.html"), html = iw("main").html();
+    ok(iw("main .kagura-lead").length === 1 && html.indexOf("kagura-lead") < html.indexOf("<h2>開催予定</h2>") && (!iw("main .aff").length || html.indexOf("<h2>開催予定</h2>") < html.indexOf('class="aff')), "種類のページ: 見出しのすぐ下に一言の紹介、宿の枠は開催予定のあと"); }
 }
