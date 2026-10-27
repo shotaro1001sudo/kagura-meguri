@@ -116,6 +116,14 @@ export async function policyTests({ ok, section, OUT, build }) {
     const stays = $(".d-side .staylinks a").map((_, x) => $(x).attr("href")).get();
     ok(stays.length === 2 && stays[0].startsWith(`//ck.jp.ap.valuecommerce.com/servlet/referral?sid=${prodCfg.affiliate.valueCommerceSid}&pid=${prodCfg.affiliate.jalanPid}&vc_url=${encodeURIComponent("https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=")}`) && stays[1].startsWith(`https://hb.afl.rakuten.co.jp/hgc/${prodCfg.affiliate.rakutenAffiliateId}/?pc=${encodeURIComponent("https://kw.travel.rakuten.co.jp/keyword/Search.do?")}`) && $(".d-side .staylinks a").toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").length === 1, "本番: 宿は、じゃらん(バリューコマース)・楽天トラベル(楽天アフィリエイト)経由で、会場の市区町村・開催日の検索へ直接つなぐ(sponsored・PR表記つき)");
     ok($(".d-side .stay-banner").length === 0, "本番: 開催ページの宿は、宿のトップへ飛ぶだけのバナーを使わない");
+    { // 広告の注記: ページの先頭ではなく、最初の広告の枠のすぐ上に1回だけ。どの広告よりも前に出る
+      const html = $("main").html(), at = html.indexOf('class="vc-disclosure"');
+      const firstAd = Math.min(...['sponsored', 'data-vc-ad=', 'class="vc-ad', 'class="pr"'].map((k) => html.indexOf(k)).filter((i) => i >= 0));
+      ok($("main .vc-disclosure").length === 1 && !$("main").children().first().is(".vc-disclosure") && $(".vc-disclosure").next().is(".d-side .stay") && at >= 0 && at < firstAd,
+        "本番: 広告の注記は、ページの先頭ではなく、最初の広告の枠(宿)のすぐ上に1回だけ出る");
+      const reg = cheerio.load(read(join(d, "regular/r-weekly.html")));
+      ok(reg(".vc-disclosure").length === 1 && reg(".vc-disclosure").next().find('[data-vc-ad], a[rel~="sponsored"], .pr').length > 0, "本番: 定期公演ページも、注記の直後が広告の枠");
+    }
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','ad.jp.ap.valuecommerce.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');
     ok(p.includes('サービス提供会社と画像配信先のホスト名を区別') && !p.includes('これらの事業者へ次の情報が直接送られます'), '外部送信: 提供会社を画像ホストの運営主体と同一視しない');
