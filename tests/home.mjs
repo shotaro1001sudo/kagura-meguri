@@ -109,7 +109,7 @@ export async function homeTests({ ok, section, OUT, build }) {
   const withMap = evs.find((e) => e.lat != null), noMap = evs.find((e) => e.lat == null);
   const pg = (e) => cheerio.load(read(join(OUT, `events/${e.id}.html`)));
   const wm = pg(withMap), route = wm('a[href*="google.com/maps"]');
-  ok(route.length === 1 && route.text() === "経路を調べる" && route.closest(".routebtn").prevAll(".mapbox").find("#map").length === 1, "「経路を調べる」は、地図の下に1つだけ");
+  ok(route.length === 1 && route.text() === "地図・経路を見る" && route.closest(".keyinfo").length === 1 && route.attr("target") === "_blank" && wm("#map").length === 0, "地図・経路は、要点の会場の欄から Google マップで見る(ページ内に地図は置かない)");
   ok(!noMap || pg(noMap)('a[href*="google.com/maps"]').length === 0, "地図のない開催では、経路のボタンを出さない", noMap?.id);
   const rel = wm("h2").filter((_, h) => wm(h).text() === "あわせて観たい神楽");
   ok(!wm("h2").text().includes("ほかの") && (rel.length === 0 || /・/.test(rel.next(".monthlist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));

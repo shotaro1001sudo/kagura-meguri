@@ -254,7 +254,10 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .dpage{display:grid;grid-template-columns:minmax(0,1fr)}
 .d-side .stay,.d-side .aff{margin:4px 0 16px}
 /* 開催までの日数(見出しの下のタグの並び)。1週間以内は朱で強める */
-.until{display:inline-block;margin:6px 0 0;padding:3px 12px;font-size:var(--fs-s);letter-spacing:.06em;color:var(--ac2);border:1px solid var(--ac2);border-radius:999px;vertical-align:middle}
+/* ガイドへの案内: リンクの語句を、途中の「・」で2行に割らない */
+.guide-link a{white-space:nowrap}
+/* 開催までの日数: 見出しの下のタグ(.hero .tag)と同じ文字の大きさ・そろえ方にして、高さと位置をそろえる */
+.until{display:inline-block;margin:6px 0 0;padding:3px 12px;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--ac2);border:1px solid var(--ac2);border-radius:999px}
 .until.soon{color:var(--onac);background:var(--ac);border-color:var(--ac)}
 /* 右の列の要点(PCだけ。スマホでは、すぐ上の要点の表と重なるため出さない) */
 .side-summary{display:none}
@@ -644,12 +647,21 @@ footer{margin-top:96px;padding-top:36px}
 }
 
 /* 開催ページ・定期公演ページ: 題のすぐ下に要点の帯を寄せる。日時は一番大きく。本文は1行を短くして読みやすく。
-   地図には「会場の場所」の見出しを付け、説明文と区切る。スマホでは「公式情報を見る」を画面の幅いっぱいにする */
+   所在地・地図(Googleマップ)とカレンダーへの登録は、要点の表の「会場」「日時」の欄にまとめる。スマホでは「公式情報を見る」を画面の幅いっぱいにする */
 .hero:has(+.keyinfo){padding-bottom:4px}
 .keyinfo{margin-top:16px}
 @media(min-width:561px){.keyinfo tr:first-child td{font-size:var(--fs-xl)}}
 main>p:not([class]){max-width:42em}
-.maph+.mapbox{margin-top:0}
+/* 会場の欄: 会場名の下に所在地と、地図への案内 */
+.info .addr{display:block;margin-top:2px;font-size:var(--fs-s);color:var(--mut)}
+.info .tomap,.info .tocal{display:block;width:fit-content;margin-top:6px;font-family:var(--sans);font-size:var(--fs-xs);color:var(--ac2)}
+/* 右の列の「車で行くなら」: 宿・本の箱と同じ見た目にそろえる */
+.d-side .planning-section{margin:0 0 16px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.d-side .planning-section h2{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.d-side .planning-section h2:after{display:none}
+.d-side .planning-section .planning-lead{font-size:var(--fs-xs);color:var(--mut);margin:0 0 10px}
+.d-side .planning-grid{grid-template-columns:minmax(0,1fr);gap:10px;margin:10px 0 0}
+.d-side .planning-card{padding:12px 14px;box-shadow:none}.d-side .planning-card :is(h3,h4){margin:0 0 6px;font-size:var(--fs-s)}
+.d-side .planning-card .planning-banner{font-size:var(--fs-xs)}
 @media(max-width:560px){
   .actions .btn:not(.ghost){display:flex;width:100%;min-height:48px;margin-right:0}
   .share{margin-bottom:24px}

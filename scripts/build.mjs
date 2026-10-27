@@ -407,12 +407,14 @@ const sourceNote = (x) => {
 };
 // Googleカレンダーで、全開催の日程(events.ics)を購読する画面を開くリンク(URLで追加 = 新しい開催も、自動で反映される)
 const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${cfg.domain}/events.ics`)}`;
-const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
+// リンクの語句(見どころ・マナー・服装のガイド)は、途中の「・」で改行させず、リンクの前で改行する
+const GUIDE_LINK ='<p class="meta guide-link">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 // 新しい解説を作らず、既存ガイドの該当章と、その公演の地図へ案内する。
-const preparationLinks = (withMap = false) => `<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a>${withMap ? '<a class="tag" href="#venue-access">会場地図・経路</a>' : ""}</nav>`;
-const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta annotation">地図のピンは市区町村のおおよその位置です。</p>' : x.geoPrecision === "area" ? '<p class="meta annotation">地図のピンは町名ごとのおおよその位置です。</p>' : "");
-const zoomOf = (x) => (x.geoPrecision === "city" ? 11 : x.geoPrecision === "area" ? 13 : 15);
-const mapBlock = (x) => (x.lat != null ? `<h2 class="maph">会場の場所</h2><div class="mapbox"><div id="map" class="dmap" role="region" aria-label="会場周辺の地図" data-lat="${x.lat}" data-lng="${x.lng}" data-zoom="${zoomOf(x)}"></div><button type="button" class="maplock" id="mapbig" aria-expanded="false">地図を大きく見る</button></div>${clientJs("detailmap")}${geoNote(x)}<p class="routebtn"><a class="btn ghost sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}" target="_blank" rel="noopener">経路を調べる</a></p>` : "");
+const preparationLinks = () => `<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a></nav>`;
+// 会場の欄: 会場名の下に、所在地(都道府県・市区町村・番地)と地図への案内をまとめる(「所在地」の行と「会場の場所」の見出しを統合)
+// Google マップで、会場の場所と経路を探す(公演ページには地図を置かず、ここへ案内する)
+const mapsUrl = (x) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}`;
+const venueCell = (x, fallback = "公式情報をご確認ください") => `${x.venue ? esc(x.venue) : fallback}<span class="addr">${esc([x.prefecture, x.city, x.address].filter(Boolean).join(" "))}</span>${x.lat != null ? `<a class="tomap" href="${mapsUrl(x)}" target="_blank" rel="noopener">地図・経路を見る</a>` : ""}`;
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
 const moreOffers = createMoreOfferIndex(moreOffersData, today);
@@ -801,20 +803,18 @@ for (const e of events) {
     title: `${e.name.length > 36 ? e.name.slice(0, 35) + "…" : e.name}(${jpDate(e.start.slice(0, 10))}) | ${e.prefecture} | ${cfg.siteName}`,
     desc: padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
-    head: e.lat != null ? LEAFLET : "",
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
-<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td>${when}</td></tr><tr><th>会場</th><td>${e.venue ? esc(e.venue) : "公式情報をご確認ください"}</td></tr>
-<tr><th>所在地</th><td>${esc(e.prefecture)} ${esc(e.city)}</td></tr><tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr><tr><th>予約要否</th><td>${esc(reservationLabel(e))}</td></tr></table></div>
+<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td><span class="when">${when}</span><a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録（終了未確認）" : "追加"}</a></td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
+<tr><th>料金</th><td>${e.fee ? esc(e.fee) : "公式情報をご確認ください"}</td></tr><tr><th>予約要否</th><td>${esc(reservationLabel(e))}</td></tr></table></div>
 ${calendarNotice(e).text ? `<p class="calendar-notice">${esc(calendarNotice(e).text)}</p>` : ""}
-<p class="actions">${e.url ? `<a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a> ` : ""}<a class="btn ghost sm" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録（終了未確認）" : "追加"}</a></p>
-${showPreparation ? preparationLinks(e.lat != null) : ""}
+${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
+${showPreparation ? preparationLinks() : ""}
 <p class="desc-lead">${esc(e.description)}</p></div>
-${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
-${showPreparation && e.lat != null ? `<section id="venue-access" aria-label="会場の地図・経路">${mapBlock(e)}</section>` : mapBlock(e)}
 ${sourceNote(e)}${showPreparation ? "" : GUIDE_LINK}
-${isUpcoming(e)?`${transportSection(visitorPlanning,e,today,'event_rental')}${planningLinks(e,today)}${experienceSection(e,today,experienceAff)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
+${isUpcoming(e)?`${planningLinks(e,today)}${experienceSection(e,today,experienceAff)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
@@ -828,15 +828,13 @@ for (const r of regular) {
     title: `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
     desc: padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
-    head: r.lat != null ? LEAFLET : "",
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
-<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}${row("会場", r.venue)}${row("所在地", `${r.prefecture} ${r.city ?? ""}`.trim())}${row("料金", r.fee || "公式情報をご確認ください")}${row("予約要否", reservationLabel(r))}${row("予約・受付方法", r.booking)}</table></div>
+<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${row("公演日時", r.schedule)}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "公式情報をご確認ください")}${row("予約要否", reservationLabel(r))}${row("予約・受付方法", r.booking)}</table></div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 <p class="desc-lead">${esc(r.description)}</p></div>
-<div class="d-side">${affiliateBlock(r, { banners: false })}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
-${mapBlock(r)}
+<div class="d-side">${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}${GUIDE_LINK}
-${planningLinks(r,today)}${experienceSection(r,today,experienceAff)}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${transportSection(visitorPlanning,r,today,'regular_rental')}
+${planningLinks(r,today)}${experienceSection(r,today,experienceAff)}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 ${related(r)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>`,
