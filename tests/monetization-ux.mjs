@@ -249,6 +249,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     const oics=read('dist-test-verified-hiroshima/events.ics').split('BEGIN:VEVENT').find(v=>v.includes('UID:oasa-kagura-kyoen-2026@'));
     ok(oics.includes('終了未確認・仮2時間') && oics.includes('DESCRIPTION:終了時刻は未確認'), '大朝: 購読ICSも仮の長さを明示');
     ok(horo('.calendar-notice').text().includes('終日開催や終日の観覧を意味しません'), '保呂羽山: 日付のみ予定は終日観覧を意味しない');
+    ok([oasa, horo].every(($) => $('.calendar-notice').length === 1 && $('.calendar-notice').is('small') && $('.calendar-notice').closest('tr').find('th').text() === '日時' && $('.calendar-notice').prevAll('a.tocal').length === 1),
+      'カレンダーの注意書きは、日時の欄の中(カレンダーへのリンクの下)に小さい文字で出す');
 
     ok(oa.startDate==='2026-11-07T13:00+09:00' && !oa.endDate && oasa('main').text().includes('開場12:00、開会式12:30、開演13:00'), '大朝: 開演を13時とし、開場/式と区別・閉会式を終了時刻にしない');
     ok(oasa('main a[href="https://kitahiro.rgr.jp/pkobo_news/news-detail.php?id=547"]').length>0 && new URL(oasa('a[href^="https://calendar.google.com/calendar/render"]').first().attr('href')).searchParams.get('location').includes('大朝4436') && oasa('main').text().includes('予約要否要確認'), '大朝: 個別公式リンク・住所・予約不明を維持');
