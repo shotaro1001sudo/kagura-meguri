@@ -254,6 +254,8 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .dpage{display:grid;grid-template-columns:minmax(0,1fr)}
 .d-side .stay,.d-side .aff{margin:4px 0 16px}
 /* 開催までの日数(見出しの下のタグの並び)。1週間以内は朱で強める */
+/* ガイドへの案内: リンクの語句を、途中の「・」で2行に割らない */
+.guide-link a{white-space:nowrap}
 /* 開催までの日数: 見出しの下のタグ(.hero .tag)と同じ文字の大きさ・そろえ方にして、高さと位置をそろえる */
 .until{display:inline-block;margin:6px 0 0;padding:3px 12px;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--ac2);border:1px solid var(--ac2);border-radius:999px}
 .until.soon{color:var(--onac);background:var(--ac);border-color:var(--ac)}

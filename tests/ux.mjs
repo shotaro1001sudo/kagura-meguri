@@ -98,7 +98,8 @@ export async function uxTests({ ok, section, OUT }) {
     const rule = (sel) => (css.match(new RegExp(`(?:^|[}\\s/])${sel.replace(/\./g, "\\.")}\\{([^}]*)\\}`)) ?? [])[1] ?? "";
     const fs = (r) => (r.match(/font-size:([^;}]+)/) ?? [])[1];
     ok(full(".hero .until").length === 1 && !!fs(rule(".until")) && fs(rule(".until")) === fs(rule(".hero .tag")) && !/vertical-align:(?!baseline)/.test(rule(".until")),
-      "見出しの下の開催までの日数は、並ぶタグと同じ文字の大きさ・そろえ方(高さと位置がずれない)", `${rule(".until")} / ${rule(".hero .tag")}`); }
+      "見出しの下の開催までの日数は、並ぶタグと同じ文字の大きさ・そろえ方(高さと位置がずれない)", `${rule(".until")} / ${rule(".hero .tag")}`);
+    ok(reg(".guide-link a[href='/guide.html']").text() === "見どころ・マナー・服装のガイド" && /white-space:nowrap/.test(rule(".guide-link a")), "ガイドへの案内のリンクは、途中の「・」で2行に割れない"); }
 
   section("UI: 検索・ガイド・フォーム・主催者の方へ");
   const cal = page("calendar.html");

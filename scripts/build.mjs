@@ -407,7 +407,8 @@ const sourceNote = (x) => {
 };
 // Googleカレンダーで、全開催の日程(events.ics)を購読する画面を開くリンク(URLで追加 = 新しい開催も、自動で反映される)
 const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${cfg.domain}/events.ics`)}`;
-const GUIDE_LINK ='<p class="meta">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
+// リンクの語句(見どころ・マナー・服装のガイド)は、途中の「・」で改行させず、リンクの前で改行する
+const GUIDE_LINK ='<p class="meta guide-link">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 // 新しい解説を作らず、既存ガイドの該当章と、その公演の地図へ案内する。
 const preparationLinks = (withMap = false) => `<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a>${withMap ? '<a class="tag" href="#venue-access">会場地図・経路</a>' : ""}</nav>`;
 const geoNote = (x) => (x.geoPrecision === "city" ? '<p class="meta annotation">地図のピンは市区町村のおおよその位置です。</p>' : x.geoPrecision === "area" ? '<p class="meta annotation">地図のピンは町名ごとのおおよその位置です。</p>' : "");
