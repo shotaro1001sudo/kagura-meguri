@@ -552,7 +552,7 @@ write('dist/quiz.html',layout({
 <script id="quiz-data" type="application/json">${quizData}</script><script>${quizJs}</script>`
 }));
 
-// ---------- 地図 (Leaflet + OpenStreetMap) ----------
+// ---------- 地図 (Leaflet + 国土地理院の淡色地図) ----------
 // 会場の一覧: 会場ごとにまとめ、その下に、開催(日付つき)と定期公演を並べる。会場の並びは、北の県から
 const venueList = () => {
   const groups = new Map();
@@ -580,7 +580,7 @@ write("dist/map.html", layout({
   body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を地図で探せます。")}<div class="mapbox"><div id="map" role="region" aria-label="開催場所の地図"></div><button type="button" class="maplock" id="maplock" aria-pressed="false" hidden>地図を動かす</button></div>
 <p class="legend meta"><span><span class="pin ev"></span>日付のある開催</span><span><span class="pin reg"></span>定期公演</span><span><span class="pin mix"></span>両方</span><span>数字は、同じ場所での件数です。</span></p>
 <p class="meta" id="mapmsg" aria-live="polite"></p>
-<p class="meta">地図データ © OpenStreetMap contributors</p>${adSlot(cfg.adsense.slotList)}
+<p class="meta">地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院(淡色地図)</a></p>${adSlot(cfg.adsense.slotList)}
 ${venueList()}
 ${clientJs("map")}`,
 }));

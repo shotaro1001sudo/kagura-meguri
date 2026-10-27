@@ -1,6 +1,6 @@
 // セキュリティヘッダ相当の設定を、<meta> で配る(GitHub Pages は任意のHTTPヘッダを付けられないため)。
 // - インラインの <script>/<style> は、中身のハッシュで許可する(= 'unsafe-inline' を使わない)
-// - 許可する外部は、地図(unpkg: SRI付き)・地図タイル(OpenStreetMap)・Webフォント・フォーム送信先だけ
+// - 許可する外部は、地図(unpkg: SRI付き)・地図タイル(国土地理院)・Webフォント・フォーム送信先だけ
 // - AdSense / アナリティクス / 同意管理を設定したときだけ、必要な許可を追加する(AdSense は HTTPS なら許可。理由は SECURITY.md)
 import { createHash } from "node:crypto";
 import { BANNER_IMG_HOSTS } from "./stay-banners.mjs";
@@ -20,7 +20,7 @@ export function cspFor(html, cfg) {
     "script-src": ["'self'", ...scripts, "https://unpkg.com"],
     "style-src": ["'self'", ...styles, "https://fonts.googleapis.com", "https://unpkg.com"],
     "style-src-attr": ["'unsafe-inline'"], // style="" 属性(地図の高さなど)。スクリプトの実行には影響しない
-    "img-src": ["'self'", "data:", "https://tile.openstreetmap.org", "https://unpkg.com"],
+    "img-src": ["'self'", "data:", "https://cyberjapandata.gsi.go.jp", "https://unpkg.com"],
     "font-src": ["https://fonts.gstatic.com"],
     "connect-src": ["'self'", ...(form ? [form] : [])],
     "frame-src": ["'none'"],

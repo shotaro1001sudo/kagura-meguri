@@ -21,7 +21,7 @@ export function externalServices(ctx) {
     { name: "当サイトの配信サーバー(ホスティング事業者)", purpose: "当サイトの配信", sent: "IPアドレス、ブラウザの種類、閲覧するページのURL、日時", when: "すべてのページ" },
     { name: "Google Fonts(Google LLC)", purpose: "Webフォントの表示", sent: "IPアドレス、ブラウザの種類、参照元のサイト名", when: "すべてのページ" },
     { name: "unpkg(地図ライブラリの配信)", purpose: "地図の表示に使うプログラム(Leaflet)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名", when: "地図を表示するページ(地図・開催の詳細)" },
-    { name: "OpenStreetMap(OpenStreetMap Foundation)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
+    { name: "地理院タイル(国土地理院)", purpose: "地図の画像(タイル)の配信", sent: "IPアドレス、ブラウザの種類、参照元のサイト名、表示している地図の範囲", when: "地図を表示するページ" },
   ];
   // サービス提供会社と画像ホストを示す。CDNの運営主体や個々の要求のCookie処理は推測しない。
   const aff = ctx.cfg.affiliate ?? {};
