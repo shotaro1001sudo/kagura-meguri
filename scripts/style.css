@@ -717,8 +717,9 @@ main>p:not([class]){max-width:42em}
 .btn.ghost{border-color:var(--line)}.btn.ghost:hover{border-color:var(--ac);color:var(--ac);opacity:1}
 /* 宿のカード: 見出し → 条件のチップ → バナー → 注意(たたむ) */
 .stay h2{font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin:0 0 10px}
-.stay-cond{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px!important}
-.stay-cond span{padding:2px 10px;font-size:var(--fs-2xs);letter-spacing:.06em;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:999px}
+/* 宿の検索条件(泊まる日・人数・場所)は押せないので、ボタンと同じ丸い枠にせず、文字だけで「・」区切りにする */
+.stay-cond{display:flex;flex-wrap:wrap;margin:0 0 12px!important;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--mut)}
+.stay-cond span+span::before{content:"・";margin:0 .2em}
 .stay-banner{border-radius:8px;border-color:transparent;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}

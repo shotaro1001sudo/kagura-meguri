@@ -98,6 +98,17 @@ export async function uxTests({ ok, section, OUT }) {
   // 違和感の点検(PR 3): 日付のある定期公演のカードも、開催のカードと同じ日付の形(月・日・曜日)
   const occSrc = read("scripts/build.mjs").match(/const occCard = [\s\S]*?\n\};/)?.[0] ?? "";
   ok(occSrc.includes('<div class="card reg occ"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div>') && /\.reg\.occ \.date b\{font-size:var\(--fs-2xl\)/.test(css), "日付のある定期公演のカードも、開催と同じ「月・日・曜日」の形にそろえる");
+  // 違和感の点検(PR 4): 押せない宿の条件は丸い枠にしない・バナー画像が出ないときは空の枠を残さない
+  ok(!/\.stay-cond span\{[^}]*border-radius/.test(css) && /\.stay-cond span\+span::before\{content:"・"/.test(css), "宿の検索条件(泊まる日・人数・場所)は、押せるボタンと同じ丸い枠にしない");
+  {
+    const dom = new JSDOM(`<aside class="aff trip-band"><h2>今月の旅の宿を探す</h2><div class="stay-banners"><a class="stay-banner" href="#"><img src="x.png"></a><span class="vc-ad stay-banner" hidden></span></div><span class="pr">PR</span></aside><aside class="aff other"><a class="stay-banner" href="#"><img src="y.png"></a><a class="stay-banner" href="#"><img src="z.png"></a></aside>`, { runScripts: "outside-only" });
+    const w = dom.window, d = w.document;
+    w.eval(read("scripts/client/ad-fallback.js"));
+    d.querySelector(".trip-band img").dispatchEvent(new w.Event("error"));
+    d.querySelector(".other img").dispatchEvent(new w.Event("error"));
+    ok(d.querySelector(".trip-band").hidden === true && d.querySelector(".other").hidden === false && d.querySelectorAll(".other .stay-banner[hidden]").length === 1, "宿のバナー画像が出ないときはそのバナーを隠し、見えるバナーが残らなければ枠ごと隠す");
+    dom.window.close();
+  }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-top .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");
   ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
