@@ -46,6 +46,7 @@ export async function homeTests({ ok, section, OUT, build }) {
     const evJson = read(join(OUT, "events.json"));
     const fd = new JSDOM(read(join(OUT, "calendar.html")), { runScripts: "dangerously", url: "https://kagurameguri.jp/calendar.html?when=range&from=2026-10-01&to=2026-11-30&pref=%E5%BA%83%E5%B3%B6%E7%9C%8C", beforeParse(w) { w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(evJson)) }); } });
     await new Promise((r) => setTimeout(r, 30));
+    ok(fd.window.document.getElementById("weekend-empty").hidden, "検索結果がある場合は空結果専用の週末案内を出さない");
     const D = fd.window.document, items = () => [...D.querySelectorAll("#results li")].map((li) => li.querySelector(".meta").textContent);
     const all = JSON.parse(evJson).filter((x) => x.up);
     const exp = all.filter((x) => x.prefecture === "広島県" && (x.end || x.start).slice(0, 10) >= "2026-10-01" && x.start.slice(0, 10) <= "2026-11-30").length;
@@ -93,6 +94,27 @@ export async function homeTests({ ok, section, OUT, build }) {
     NK.dispatchEvent(new normalized.window.CompositionEvent('compositionend'));
     ok(ND.querySelectorAll('#results li').length === 0, '日本語IMEの入力確定時に結果を更新');
     normalized.window.close();
+    // Empty dated-event results must not imply there are no recurring performances.
+    let finishEmpty;
+    const emptyDom = new JSDOM(read(join(OUT, 'calendar.html')), {runScripts:'dangerously',url:'https://kagurameguri.jp/calendar.html?when=weekend&region='+encodeURIComponent('中国')+'&pref='+encodeURIComponent('島根県'),beforeParse(w){w.fetch=()=>new Promise(resolve=>{finishEmpty=resolve;});}});
+    const E=emptyDom.window.document, hint=E.getElementById('weekend-empty');
+    ok(hint.hidden, '週末案内: 読込中を空結果として扱わない');
+    finishEmpty({ok:true,json:()=>Promise.resolve([])});
+    await new Promise(r=>setTimeout(r,30));
+    ok(!hint.hidden && E.getElementById('count').textContent.includes('日付付きの公演情報') && hint.textContent.includes('主催者の最新案内'), '週末の空結果: 掲載範囲を明示し定期公演を確定開催と扱わない');
+    const next=hint.querySelector('a'); next.focus();
+    ok(next.getAttribute('href')==='/weekend.html' && E.activeElement===next && E.getElementById('pref').value==='島根県' && emptyDom.window.location.search.includes('when=weekend'), '週末の案内リンクはキーボード操作可能で検索条件を変更しない');
+    E.querySelector('[data-w="month"]').click();
+    ok(hint.hidden,'今月の空結果では週末専用の案内を表示しない');
+    E.querySelector('[data-w="weekend"]').click(); E.getElementById('tab-kw').click();
+    ok(hint.hidden,'週末選択後もキーワード検索では週末専用案内を表示しない');
+    E.getElementById('tab-dp').click(); E.getElementById('reset').click();
+    ok(hint.hidden && emptyDom.window.location.search==='', 'リセットで週末案内も解除される');
+    emptyDom.window.close();
+    const failedDom=new JSDOM(read(join(OUT,'calendar.html')),{runScripts:'dangerously',url:'https://kagurameguri.jp/calendar.html?when=weekend',beforeParse(w){w.fetch=()=>Promise.reject(new Error('offline'));}});
+    await new Promise(r=>setTimeout(r,30));
+    ok(failedDom.window.document.getElementById('weekend-empty').hidden && failedDom.window.document.getElementById('count').textContent.includes('読み込めません'), '取得失敗は0件と区別し週末空結果案内を表示しない');
+    failedDom.window.close();
     fd.window.close();
   }
   ok($("#menubtn").attr("hidden") !== undefined && $("#menubtn").attr("aria-controls") === "gnav" && $("#gnav").length === 1, "スマホのメニューのボタン: JS が動くときだけ出す(JS がなければ、メニューは常に見える)");
