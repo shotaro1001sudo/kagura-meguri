@@ -1,4 +1,5 @@
 /* 地図で探す: 同じ場所の開催は1本のピンにまとめる(数字は件数。吹き出しに、日付順の一覧)。
+   地図は国土地理院の淡色地図(日本語の表記で、外国の地名が外国語の文字で出ない。色も静かで画面になじむ)。
    ピンの色: 朱=日付のある開催 / 金=定期公演 / 半分ずつ=両方。
    ページのスクロールとぶつからないように、マウスはクリックしてからホイールで拡大、指で触る端末は「地図を動かす」を押してから動かす。
    下の会場の一覧の会場名を押すと、地図がその場所に移り、吹き出しが開く */
@@ -7,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof L === 'undefined') { box.hidden = true; if (lock) lock.hidden = true; msg.textContent = '地図を読み込めませんでした。通信状況をご確認のうえ、ページを再読み込みしてください。一覧・日付と場所の検索からも開催情報をご覧いただけます。'; return; }
   var touch = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
   var map = L.map('map', { scrollWheelZoom: false, dragging: !touch, tap: false }).setView([34.5, 133.5], 6);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
+  L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(map);
   function live(on) {
     if (on) { map.scrollWheelZoom.enable(); map.dragging.enable(); } else { map.scrollWheelZoom.disable(); if (touch) map.dragging.disable(); }
     if (lock) { lock.setAttribute('aria-pressed', String(on)); lock.textContent = on ? '地図の操作を終える' : '地図を動かす'; }

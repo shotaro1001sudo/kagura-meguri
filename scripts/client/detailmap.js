@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof L === 'undefined') { el.parentNode.hidden = true; return; }
   var at = [+el.dataset.lat, +el.dataset.lng];
   var m = L.map('map', { scrollWheelZoom: false, dragging: false, tap: false, zoomControl: false }).setView(at, +el.dataset.zoom || 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(m);
+  L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(m);
   L.marker(at, { icon: L.divIcon({ className: 'pin ev', iconSize: [24, 24], iconAnchor: [12, 12] }), title: el.getAttribute('aria-label') }).addTo(m);
   var zc = L.control.zoom();
   if (btn) btn.addEventListener('click', function () {

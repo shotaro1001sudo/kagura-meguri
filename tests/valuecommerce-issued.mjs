@@ -13,7 +13,7 @@ export function valuecommerceIssuedTests({ok,section}) {
   const fallbackCount=()=>[...fd.querySelectorAll('.experience-unavailable')].filter(n=>fw.getComputedStyle(n).display!=='none').length;
   const activeLinks=()=>fd.querySelectorAll('[data-vc-ad] > a').length;
   ok(fallbackCount()===47&&activeLinks()===0&&fd.querySelectorAll('img').length===0,'広告/CMPスクリプト停止時も47県の非広告案内があり外部画像なし');
-  ok(fd.querySelectorAll('.experience-unavailable a').length===0&&fd.querySelector('.experience-display-help a').getAttribute('href')==='#cookie-controls','未承認の通常検索URLへ代替せず設定入口を案内');
+  ok([...fd.querySelectorAll('a.experience-unavailable')].length===47&&[...fd.querySelectorAll('a.experience-unavailable')].every(a=>/^https:\/\/www\.jalan\.net\/activity\/\d{6}\/\?fromPage=search-area$/.test(a.getAttribute('href'))&&!/sponsored/.test(a.getAttribute('rel'))&&!a.hasAttribute('data-affiliate-category'))&&!fd.querySelector('.experience-display-help'),'広告を読み込めないときは、同じ県の体験一覧へ広告ではない普通のリンクで案内する(技術的な説明文は出さない)');
   fw.eval(readFileSync('scripts/client/valuecommerce-consent.js','utf8'));
   ok(fallbackCount()===47&&activeLinks()===0,'CMP未準備は広告を出さず空欄案内を維持');
   fw.Cookiebot={hasResponse:false,consent:{marketing:false,method:null}};

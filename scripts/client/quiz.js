@@ -18,7 +18,7 @@
         radio.addEventListener('change',()=>{answers[index]=c.id;error.textContent='';next.disabled=false;const date=document.getElementById('quiz-day');if(date)date.hidden=c.id!=='specified';});label.append(radio,el('span',c.label));field.append(label);});
     }
     if(q.type==='date'){
-      const label=el('label','希望日（日本時間）','quiz-date-label');label.id='quiz-day';label.hidden=answers[index]!=='specified';const input=el('input');input.type='date';input.value=day;input.addEventListener('input',()=>{day=input.value});label.append(input);field.append(label);
+      const label=el('label','希望日(日本時間)','quiz-date-label');label.id='quiz-day';label.hidden=answers[index]!=='specified';const input=el('input');input.type='date';input.value=day;input.addEventListener('input',()=>{day=input.value});label.append(input);field.append(label);
     }
     if(q.id==='budget')field.append(el('p','時間は比較の目安です。途中観覧の可否や所要時間が不明な公演を、希望に合うと断定しません。','meta'));
     back.disabled=index===0;next.disabled=!answers[index];next.textContent=index===count-1?'結果を見る':'次へ';legend.focus();
@@ -45,7 +45,7 @@
     if(help[byId.help])result.append(el('p',help[byId.help]+' この回答は推薦順位には使っていません。'));
     const now=new Date(Date.now()+9*3600e3).toISOString().slice(0,16),dates=engine.range(conditions.date,day,now),kinds=scored.ranked.length?scored.ranked.map(t=>t.kind):data.traditions.map(t=>t.kind);
     result.append(el('h3','条件から探す開催情報'),el('p',`推薦対象は現在${data.traditions.length}種類です。掲載のない神楽や公演もあります。`,'meta'));
-    result.append(el('p',`地域：${['unknown','all'].includes(conditions.region)?'全国':conditions.region} ／ 日程：${dates?dates.join('〜'):'未指定'}（日本時間）。時間の希望は候補を除外せず、各公演に確認事項を示します。`,'quiz-conditions'));
+    result.append(el('p',`地域：${['unknown','all'].includes(conditions.region)?'全国':conditions.region} ／ 日程：${dates?dates.join('〜'):'未指定'}(日本時間)。時間の希望は候補を除外せず、各公演に確認事項を示します。`,'quiz-conditions'));
     const matches=engine.selectEvents(data.events,kinds,conditions,now);
     if(!matches.length)result.append(el('p','現在掲載中の公演には、該当するものがありません。条件を変えるか、ほかの公演を探せます。'));
     matches.slice(0,6).forEach(e=>{const line=el('div',null,'quiz-event'),a=el('a',e.name);a.href=`/events/${e.id}.html`;a.addEventListener('click',()=>event('quiz_event_click'));line.append(a,el('p',e.when||e.start.slice(0,10)),el('p',[e.kind,e.place].filter(Boolean).join(' ・ '),'meta'),el('p',engine.duration(e,conditions.budget),'meta'));result.append(line)});

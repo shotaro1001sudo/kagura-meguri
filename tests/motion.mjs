@@ -43,6 +43,7 @@ export async function motionTests({ ok, section, OUT }) {
   ok(spl.length === 1 && spl.attr("aria-hidden") === "true" && spl.parents("main").length === 0 && spl.find("a,button,input").length === 0 && spl.text().trim() === "神楽めぐり", "オープニング: トップに1つ・装飾(aria-hidden)・main の外(fixed の基準を画面にする)・操作できる要素を含まない");
   ok(/\.splash\{display:none\}/.test(css) && /\.intro \.splash\{display:flex/.test(css) && /\.intro\.unsplash \.splash\{/.test(css), "オープニング: intro のときだけ出し、押すとすぐ消える(普段・2回目・動きを減らす設定では出さない)");
   ok(!/class="splash"/.test(read(join(OUT, "calendar.html"))), "オープニング: トップ以外のページには置かない");
+  ok(/\.intro\{--sd:2\.3s\}/.test(css) && /\.intro \.splash\{[^}]*animation:splashout \.8s 2\.3s/.test(css), "オープニング: ロゴの演出は約2.3秒(運営者の指定)。見出しはそのあと間をおいて1文字ずつ");
   ok(read(join(OUT, "index.html")) === home && !/class="js/.test(home.slice(0, 200)), "HTMLの時点では、js / intro クラスが付いていない(スクリプトが付ける)");
 
   section("動き: JS(視差・導入・動かさないページ)を jsdom で動かす");

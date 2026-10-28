@@ -6,7 +6,7 @@ export function reservationLabel(event = {}) {
     if (!Object.hasOwn(LABELS, status) || status === 'unknown') return LABELS.unknown;
     // Conflicting required + walk-in data must not promise admission.
     if (status === 'required' && event.reservationSameDay === true) return LABELS.unknown;
-    return LABELS[status] + (event.reservationSameDay === true ? '（当日受付あり・定員に注意）' : '');
+    return LABELS[status] + (event.reservationSameDay === true ? '(当日受付あり・定員に注意)' : '');
   }
   return typeof event.reservation === 'string' && event.reservation.trim() ? event.reservation.trim() : LABELS.unknown;
 }
