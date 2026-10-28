@@ -1,3 +1,4 @@
+import { adFallbackTests } from './ad-fallback.mjs';
 import './cookie-controls-test.mjs';
 import './cmp-request-policy-test.mjs';
 import './cookie-metadata-test.mjs';
@@ -57,6 +58,7 @@ const ok = (cond, name, detail = "") => {
 };
 const section = (s) => console.log(`\n■ ${s}`);
 valuecommerceIssuedTests({ok,section});
+adFallbackTests({ok,section});
 
 const walk = (dir) => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const read = (p) => readFileSync(p, "utf8");
