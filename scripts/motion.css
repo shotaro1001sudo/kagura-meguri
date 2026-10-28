@@ -44,7 +44,7 @@
 @keyframes moonrise{from{transform:translateY(38px);opacity:0}to{transform:none;opacity:1}}
 @keyframes kasumiin{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 /* オープニングのあとに始まるよう、--sd(オープニングの長さ)だけ遅らせる。押して飛ばしたら(.unsplash)、すぐ始める */
-.intro{--sd:1.2s}.intro.unsplash{--sd:0s}
+.intro{--sd:2.3s}.intro.unsplash{--sd:0s}
 .intro .ms-land{animation:fadein var(--t-l) var(--sd) var(--ease) both}
 .intro .ms-sky{animation:moonrise var(--t-l) calc(var(--sd) + .2s) var(--ease) both}
 .intro .ms-kasumi{animation:kasumiin var(--t-l) calc(var(--sd) + .8s) var(--ease) both}
@@ -56,16 +56,16 @@
 .intro[lang=en] .ph{animation:fadein var(--t-l) calc(var(--sd) + .5s) var(--ease) both}
 .intro[lang=en] .ph:nth-of-type(2){animation-delay:calc(var(--sd) + 1.1s)}
 .intro[lang=en] .ph:nth-of-type(3),.intro[lang=en] .ph3{animation-delay:calc(var(--sd) + 1.7s)}
-/* オープニング: 地色の中から、ロゴがぼかしの奥からふわっと現れ、少し置いてから、まずロゴが消え、そのあと地色の画面が消えてトップが現れる(約1.8秒。待たせすぎないよう短く。ロゴとトップは重ならない)。
+/* オープニング: 地色の中から、ロゴがぼかしの奥からふわっと現れ、少し置いてから、まずロゴが消え、そのあと地色の画面が消えてトップが現れる(約3.1秒。ロゴは約2.3秒。ロゴとトップは重ならない)。
    押す・キーを押すと、すぐ消える(scripts/motion.js)。intro がないとき(2回目以降・動きを減らす設定・JSなし)は出さない */
 @keyframes splashin{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:none}}
 @keyframes splashout{to{opacity:0;visibility:hidden}}
 @keyframes logoout{to{opacity:0}}
 .splash{display:none}
 .intro .splash{display:flex;position:fixed;inset:0;z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--bg) var(--paper);cursor:pointer;
-  animation:splashout .6s 1.2s ease-in-out forwards}
-.intro .splash>*{animation:splashin .8s .1s var(--ease) both,logoout .4s .8s ease-in-out forwards}
-.intro .splash b{animation-delay:.3s,.8s}
+  animation:splashout .8s 2.3s ease-in-out forwards}
+.intro .splash>*{animation:splashin 1.3s .2s var(--ease) both,logoout .6s 1.6s ease-in-out forwards}
+.intro .splash b{animation-delay:.5s,1.6s}
 .intro.unsplash .splash{animation:splashout var(--t-s) var(--ease) forwards}
 .splash img{width:96px;height:96px}
 .splash b{font-family:var(--serif);font-weight:500;font-size:var(--fs-2xl);letter-spacing:.4em;margin-right:-.4em;color:var(--fg)}
