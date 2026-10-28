@@ -13,6 +13,16 @@ export function historyTests({ ok, section, OUT }) {
   const pages = Object.fromEntries(files.map((f) => [f, cheerio.load(read(join(OUT, f)))]));
 
   const idx = pages["history/index.html"];
+  const headline = "神楽の歴史・起源とは？神話から現代までを年表で解説";
+  const title = `${headline} | 神楽めぐり`;
+  const description = idx('meta[name="description"]').attr("content");
+  ok(idx("title").length === 1 && idx("title").text() === title &&
+    ['meta[property="og:title"]', 'meta[name="twitter:title"]'].every((selector) => idx(selector).length === 1 && idx(selector).attr("content") === title), "歴史総論: title・OG・Twitterの題名が一意で一致する");
+  ok(['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]'].every((selector) => idx(selector).length === 1 && idx(selector).attr("content") === description) && description.includes("起源や年代の諸説"), "歴史総論: 説明文が重複せず共有メタと一致し、諸説を明示する");
+  const indexLd = idx('script[type="application/ld+json"]').map((_, s) => JSON.parse(idx(s).text())).get().flat();
+  ok(indexLd.find((x) => x["@type"] === "Article")?.headline === headline, "歴史総論: Article headlineとページ題名が一致する");
+  ok(idx('link[rel="canonical"]').length === 1 && idx('link[rel="canonical"]').attr("href") === "https://kagurameguri.jp/history/" && /(?:^|,)\s*index(?:,|$)/.test(idx('meta[name="robots"]').attr("content") ?? ""), "歴史総論: 正規URLが一意でインデックス対象を維持する");
+  ok(new Set(files.map((f) => pages[f]("title").text())).size === files.length && new Set(files.map((f) => pages[f]('meta[name="description"]').attr("content"))).size === files.length, "歴史: 総論と各時代で題名・説明文が重複しない");
   const tl = idx(".tl");
   ok(tl.length === 1 && tl.attr("tabindex") === "0" && tl.attr("role") === "region" && !!tl.attr("aria-label") && idx(".tl-item").length === TIMELINE.length, "年表は、キーボードでも横にスクロールでき、名前(aria-label)があり、全件が載る", `${idx(".tl-item").length}件`);
   ok(/overflow-x:auto/.test(read("scripts/style.css")) && /scroll-snap-type:x/.test(read("scripts/style.css")), "年表は、横にスクロールし、止まる位置がそろう(CSS)");
