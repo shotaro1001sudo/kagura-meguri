@@ -5,7 +5,7 @@ export function asakitaFactsTests({ok,section,build}) {
   section('安佐北11/15: 公式確認した開演・会場と未確認終了');
   const e=JSON.parse(readFileSync('data/events.json','utf8')).find(e=>e.id==='npo-hiroshima-0cf097bb64');
   ok(e.start==='2026-11-15T14:00'&&!e.timeUnknown&&!e.end,'14時開演・終了は未確認のまま');
-  ok(e.venue==='安佐北区民文化センター ホール'&&e.description.includes('開場13:00、開演14:00')&&e.checked==='2026-10-27','開場と開演を分離し会場/確認日を保持');
+  ok(e.venue==='安佐北区民文化センター ホール'&&e.description.includes('開場13:00、開演14:00')&&e.checked==='2026-10-28','開場と開演を分離し会場/確認日を保持');
   const r=reconcile({events:[e],candidates:[{...e,start:'2026-11-15T00:00',timeUnknown:true,venue:'',description:''}],source:{id:'npo-hiroshima',name:e.source},now:new Date('2026-10-28T12:00+09:00'),cfg:{autoPublish:true}});
   ok(r.events.length===1&&r.events[0].start===e.start&&r.events[0].venue===e.venue&&r.events[0].description===e.description,'元の時刻未確認候補の再収集で補完内容が消えず重複しない');
   const fixture='tests/fixtures/asakita-facts.tmp.json',out='dist-test-asakita-facts';
