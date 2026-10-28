@@ -1,3 +1,4 @@
+import { asakitaFactsTests } from './asakita-facts.mjs';
 import { adFallbackTests } from './ad-fallback.mjs';
 import './cookie-controls-test.mjs';
 import './cmp-request-policy-test.mjs';
@@ -329,6 +330,7 @@ identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });
 consistencyTests({ ok, section, OUT });
+asakitaFactsTests({ ok, section, build });
 editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });
 affiliateTests({ ok, section, OUT, build });
