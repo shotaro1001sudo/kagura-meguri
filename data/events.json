@@ -1694,11 +1694,10 @@
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "神楽門前湯治村・神楽ドーム前",
-    "start": "2026-11-07T00:00",
-    "timeUnknown": true,
+    "start": "2026-11-07T20:30",
     "fee": "",
     "url": "https://akitakata-kankou.jp/event/22533/",
-    "description": "",
+    "description": "11月7日の夜神楽は20:30開始、出演は神幸神楽団。催し全体の点灯は17時頃、ライブは19時からです。夜神楽の終了時刻・料金・予約条件は公式案内でご確認ください。",
     "auto": true,
     "sourceId": "akitakata",
     "source": "安芸高田市観光ナビ(安芸高田市観光協会)",
@@ -1709,6 +1708,7 @@
     "status": "published",
     "lat": 34.66639,
     "lng": 132.70389,
-    "geoPrecision": "city"
+    "geoPrecision": "city",
+    "checked": "2026-10-29"
   }
 ]
