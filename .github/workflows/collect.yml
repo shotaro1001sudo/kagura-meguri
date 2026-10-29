@@ -41,7 +41,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/events.json data/regular.json data/geocache.json data/collect-report.md data/collect-summary.json
+          git add data/events.json data/regular.json data/geocache.json data/collect-report.md data/collect-summary.json data/source-watch.json
           if git diff --cached --quiet; then echo "変更なし"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           git commit -m "chore(auto): 週次の自動収集 $(date -u +%F) — 掲載 ${{ steps.summary.outputs.published }} / 保留 ${{ steps.summary.outputs.held }} / 取り下げ ${{ steps.summary.outputs.withdrawn }}"
           git pull --rebase --autostash

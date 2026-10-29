@@ -1,0 +1,25 @@
+name: Source validation (read only)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - data/sources.json
+      - scripts/adapters/national-official.mjs
+      - scripts/adapters/official-watch.mjs
+      - scripts/check-national-sources.mjs
+      - scripts/lib/strict-robots.mjs
+      - scripts/lib/source-watch.mjs
+      - .github/workflows/source-validation.yml
+permissions:
+  contents: read
+jobs:
+  live-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+      - run: node tests/national-sources.mjs
+      - run: node scripts/check-national-sources.mjs
