@@ -1,3 +1,4 @@
+import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
@@ -168,10 +169,12 @@ const jalanStay = (x, day) => {
   if (day) q.push(`stayYear=${+day.slice(0, 4)}`, `stayMonth=${+day.slice(5, 7)}`, `stayDay=${+day.slice(8, 10)}`, "stayCount=1", "roomCount=1", "adultNum=2");
   return `https://www.jalan.net/uw/uwp2011/uww2011init.do?${q.join("&")}`;
 };
+const issuedRakutenStays = createRakutenStayResolver(JSON.parse(readFileSync("data/rakuten-stay-issued.json", "utf8")));
 const rakutenStay = (x, day) => {
   const q = ["charset=utf-8", `f_query=${encodeURIComponent(stayPlace(x))}`];
   if (day) { const n = addDays(day, 1); q.push(`f_nen1=${day.slice(0, 4)}`, `f_tuki1=${+day.slice(5, 7)}`, `f_hi1=${+day.slice(8, 10)}`, `f_nen2=${n.slice(0, 4)}`, `f_tuki2=${+n.slice(5, 7)}`, `f_hi2=${+n.slice(8, 10)}`, "f_otona_su=2", "f_heya_su=1"); }
-  return rakuten(`https://kw.travel.rakuten.co.jp/keyword/Search.do?${q.join("&")}`);
+  const destination = `https://kw.travel.rakuten.co.jp/keyword/Search.do?${q.join("&")}`;
+  return rakutenOn ? issuedRakutenStays.resolve(destination, rakuten) : destination;
 };
 // 外部リンク(アフィリエイト)の属性。報酬の出るリンクは sponsored。クリック数は、アクセス解析(GoatCounter)で数える
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
@@ -1100,3 +1103,7 @@ write("dist/security.txt", securityTxt);
 // GitHub Pages は無視するが、Cloudflare Pages / Netlify へ移したときに、本物のHTTPヘッダになる設定
 write("dist/_headers", `/*\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()\n  Cross-Origin-Opener-Policy: same-origin\n`);
 console.log(`built: ${events.length} events (${upcoming.length} upcoming), ${regular.length} regular, ${urls.length} pages`);
+
+const stayAudit = issuedRakutenStays.audit();
+console.log(`Rakuten stay issued coverage: ${stayAudit.verified.length} verified / ${stayAudit.unverified.length} unverified unique destinations`);
+if (stayAudit.unverified.length) console.warn("RAKUTEN_STAY_ISSUANCE_UNVERIFIED: existing links retained; obtain exact issued URLs", JSON.stringify(stayAudit.unverified));
