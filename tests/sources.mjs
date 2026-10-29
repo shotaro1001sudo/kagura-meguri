@@ -23,7 +23,7 @@ export function sourcesTests({ ok, section }) {
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
   ok(staged.filter((s) => s.id !== "kagura-kaikan-oita").every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り5候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false).length === 4, "既存3情報源と、実HTML検証済の神楽会館だけを有効化する");
+  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 4, "既存3情報源と、実HTML検証済の神楽会館だけを有効化する");
 
   section("大分・神楽会館: 記事投稿日や予約開始日を開催日と誤認しない");
   const oita = allSources.find((s) => s.id === "kagura-kaikan-oita");

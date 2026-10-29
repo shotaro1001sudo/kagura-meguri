@@ -12,6 +12,8 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { robotsAllows, sleep } from "./lib/util.mjs";
 import { reconcile, DEFAULTS, today } from "./lib/collect-core.mjs";
+import { fingerprint, recordWatch } from "./lib/source-watch.mjs";
+import { strictRobotsAllows } from "./lib/strict-robots.mjs";
 import { affiliateCoverage, coverageReport } from "./lib/affiliate-coverage.mjs";
 
 const readJson = (p, d) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : d);
@@ -20,6 +22,9 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const REJECTED_FILE = process.env.REJECTED_FILE ?? "data/rejected.json";
 const REPORT_FILE = process.env.REPORT_FILE ?? "data/collect-report.md";
 const SUMMARY_FILE = process.env.SUMMARY_FILE ?? "data/collect-summary.json";
+const WATCH_FILE = process.env.SOURCE_WATCH_FILE ?? "data/source-watch.json";
+const watches = readJson(WATCH_FILE, {});
+const reviewSources = [];
 const PLANNING_FILE = process.env.VISITOR_PLANNING_FILE ?? "data/visitor-planning.json";
 
 const cfg = readJson("config.json", {});
@@ -44,18 +49,28 @@ for (const s of sources) {
   if (s.enabled === false) { lines.push(`- ⏸ ${s.id}: 停止中(enabled: false)`); continue; }
   if (!s.termsChecked) { lines.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のため、取得していません`); inactive++; continue; }
   try {
-    const robots = await robotsAllows(s.url, UA);
+    const checkRobots = s.nationalExpansion ? strictRobotsAllows : robotsAllows;
+    const delay = Math.max(DELAY_MS, s.requestDelayMs ?? 0);
+    const robots = await checkRobots(s.url, UA);
     if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; continue; }
     const adapter = await import(pathToFileURL(`${process.cwd()}/scripts/adapters/${s.adapter}.mjs`).href);
     // 読むページ: アダプタが月ごとなどの複数のページを示せば、それをすべて(間隔をあけて)読む。1つでも失敗したら、この収集元は変更しない
     const pages = adapter.urls ? adapter.urls(s, now) : [s.url];
-    const items = [];
+    const items = [], snapshots = [];
     for (let i = 0; i < pages.length; i++) {
       const pageUrl = pages[i];
-      if (i) await sleep(DELAY_MS);
+      if (i || s.nationalExpansion) await sleep(delay);
+      if (s.nationalExpansion && i) {
+        if (new URL(pageUrl).origin !== new URL(s.url).origin) throw Error("監視URLは同一オリジンのみ");
+        const allow = await checkRobots(pageUrl, UA);
+        if (!allow.ok) throw Error(allow.reason);
+        await sleep(delay);
+      }
       const res = await fetch(pageUrl, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}(${pageUrl})`);
+      if (s.nationalExpansion && res.url && new URL(res.url).origin !== new URL(pageUrl).origin) throw Error("別サイトへの転送は確認が必要です");
       const body = adapter.decode ? adapter.decode(new Uint8Array(await res.arrayBuffer())) : await res.text();
+      if (s.nationalExpansion) snapshots.push(fingerprint(body, pageUrl));
       // 詳細記事が別URLの収集元だけ: 一覧に出た同一サイトの記事を、件数制限付きで追加取得する。
       // robots.txt は各URLごとに確認。途中で失敗したら、この収集元の掲載状態は一切変更しない。
       if (adapter.discover && i === 0) {
@@ -72,6 +87,18 @@ for (const s of sources) {
       items.push(...got);
       if (got.skippedPeriod) items.skippedPeriod = (items.skippedPeriod ?? 0) + got.skippedPeriod;
     }
+    if (s.nationalExpansion) {
+      watches[s.id] = recordWatch(watches[s.id], snapshots, s, today(now));
+      if (watches[s.id].pending) {
+        notes++;
+        reviewSources.push({id:s.id, url:s.url, reason:watches[s.id].reason, digest:watches[s.id].digest});
+        lines.push(`- 🔎 ${s.id}: 取得内容の確認待ち（${s.collectionMode === "review" ? "自動掲載なし" : "構造化できる公演のみ掲載"}）。${watches[s.id].reason} [原典](${s.url})`);
+      }
+      if (s.collectionMode === "review") {
+        if (!watches[s.id].pending) lines.push(`- ✅ ${s.id}: 更新監視 ${snapshots.length} ページ、確認済み内容から変更なし`);
+        continue; // Never reconcile a review-only source against public events.
+      }
+    }
     const r = reconcile({ events, candidates: items, source: s, now, rejectedIds, cfg: ccfg });
     events = r.events;
     published.push(...r.summary.published); held.push(...r.summary.held); withdrawn.push(...r.summary.withdrawn);
@@ -84,6 +111,7 @@ for (const s of sources) {
 }
 
 writeFileSync(EVENTS_FILE, JSON.stringify(events, null, 2));
+if (sources.some(s=>s.nationalExpansion && s.enabled)) writeFileSync(WATCH_FILE, JSON.stringify(watches, null, 2)+"\n");
 const li = (e) => `- **${e.name}**(${e.start.slice(0, 10)} ${e.prefecture}${e.city ?? ""} ${e.venue ?? ""})[公式](${e.url})${e.note ? ` — ${e.note}` : ""}`;
 // 新しく掲載した開催に、宿・体験・移動のアフィリエイトが紐づくか(リンクは公開時のビルドが自動で作る)
 const cov = affiliateCoverage({ events: published, affiliate: cfg.affiliate ?? {}, planning: readJson(PLANNING_FILE, {}), more: readJson(process.env.MORE_OFFERS_FILE ?? "data/more-offers.json", {}), today: today(now) });
@@ -120,7 +148,7 @@ writeFileSync(REPORT_FILE, text);
 // 通知(LINE)用の明細。公開してよい事実(名称・日付・場所・URL・理由)だけ
 const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
 writeFileSync(SUMMARY_FILE, JSON.stringify({
-  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, stillPending: stillPending.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention,
+  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, stillPending: stillPending.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention, sourceReviews: reviewSources,
   affiliate: { missingIds: cov.missingIds, expiring: cov.expiring.slice(0,50), counts: cov.counts, unlinkedTotal: cov.rows.filter(r=>r.missing.length).length, unlinked: cov.rows.filter((r) => r.missing.length).slice(0,50).map((r) => ({ id: r.id, missing: r.missing })) },
   items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), stillPending: stillPending.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
 }, null, 2));
