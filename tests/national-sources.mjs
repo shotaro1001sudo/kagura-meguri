@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {parse} from '../scripts/adapters/national-official.mjs';
 import {reconcile} from '../scripts/lib/collect-core.mjs';
 import {fingerprint,recordWatch} from '../scripts/lib/source-watch.mjs';
@@ -50,4 +53,26 @@ for(const status of [403,429,500]) assert.equal((await strictRobotsAllows('https
 assert.equal((await strictRobotsAllows('https://example.org/a','KaguraMeguriBot/1.0',async()=>new Response('',{status:404}))).ok,true);
 assert.equal((await strictRobotsAllows('https://example.org/a','KaguraMeguriBot/1.0',async()=>{throw Error('offline')})).ok,false);
 assert.equal((await strictRobotsAllows('https://example.org/a','KaguraMeguriBot/1.0',async()=>new Response('User-agent: *\nDisallow: /'))).ok,false);
-console.log('全国収集: 日時・公開範囲・重複・変更監視・robots検査 passed');
+const dir=mkdtempSync(join(tmpdir(),'kagura-national-'));
+try {
+  const files=Object.fromEntries(['events','sources','watch','report','summary','rejected'].map(k=>[k,join(dir,k+'.json')]));
+  const existing={...first.events[0],sourceId:'watch-test',misses:1};
+  writeFileSync(files.events,JSON.stringify([existing]));
+  writeFileSync(files.sources,JSON.stringify([{id:'watch-test',name:'test',url:'https://example.org/',enabled:true,termsChecked:'2026-10-30',nationalExpansion:true,collectionMode:'review',adapter:'official-watch'}]));
+  const mock=join(dir,'mock.mjs');
+  writeFileSync(mock,`globalThis.fetch=async (url)=>new Response(String(url).endsWith('/robots.txt')?'User-agent: *\\nAllow: /':${JSON.stringify(h)});`);
+  const env={...process.env,EVENTS_FILE:files.events,SOURCES_FILE:files.sources,SOURCE_WATCH_FILE:files.watch,REPORT_FILE:files.report,SUMMARY_FILE:files.summary,REJECTED_FILE:files.rejected,COLLECT_DELAY_MS:'0',COLLECT_NOW:'2026-10-30T00:00:00+09:00'};
+  const run=()=>spawnSync(process.execPath,['--import',mock,'scripts/collect.mjs'],{env,encoding:'utf8'});
+  let r=run();assert.equal(r.status,0,r.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(files.events)),[existing]); // review never withdraws a public event
+  assert.equal(JSON.parse(readFileSync(files.summary)).sourceReviews.length,1);
+  assert.equal(JSON.parse(readFileSync(files.summary)).needsAttention,true);
+  r=run();assert.equal(r.status,0,r.stderr);
+  assert.equal(JSON.parse(readFileSync(files.summary)).sourceReviews.length,1); // unresolved review persists
+  const state=readFileSync(files.watch,'utf8');
+  writeFileSync(mock,`globalThis.fetch=async()=>new Response('',{status:403});`);
+  r=run();assert.equal(r.status,0,r.stderr);
+  assert.equal(readFileSync(files.watch,'utf8'),state);assert.deepEqual(JSON.parse(readFileSync(files.events)),[existing]);
+  assert.equal(JSON.parse(readFileSync(files.summary)).errors,1);
+} finally {rmSync(dir,{recursive:true,force:true});}
+console.log('全国収集: 日時・公開範囲・重複・変更監視・robots・CLI統合検査 passed');
