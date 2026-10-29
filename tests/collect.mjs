@@ -1,3 +1,4 @@
+import { collectionIdentityTests } from "./collect-identity.mjs";
 // 週次の自動収集・自動掲載のテスト
 //  1) 判断の部品(検査・掲載/保留/取り下げ)の単体テスト
 //  2) 小さなWebサーバーを立て、取得元のページが週ごとに変わる様子を再現して、collect.mjs を実際に動かす
@@ -16,6 +17,7 @@ const read = (p) => readFileSync(p, "utf8");
 const J = (p) => JSON.parse(read(p).replace(/^﻿/, ""));
 
 export async function collectTests({ ok, section }) {
+  collectionIdentityTests({ ok, section });
   // ISS-005 / #62: 12月公演への手動補完を、公式の料金抽出が空の次回収集でも維持する。
   section("神楽会館12月公演: 料金・予約案内の収集後の保持");
   const liveEvents = J("data/events.json");
@@ -221,6 +223,21 @@ export async function collectTests({ ok, section }) {
   // 却下したものは、戻ってこない
   put(files.REJECTED_FILE, [{ id: byName("神楽H")[0].id }]); put(files.EVENTS_FILE, evs().filter((e) => e.name !== "神楽H")); x = await run(week(7));
   ok(byName("神楽H").length === 0, "却下(rejected)したものは、再び取得されても、追加されない");
+  // 時刻補完によるID変更を、実HTML取得・ファイル保存・週次レポートまで通して検証。
+  put(files.EVENTS_FILE, [manualEv]); put(files.REJECTED_FILE, []);
+  site.page = li("時刻補完神楽", "2026年11月23日");
+  x = await run(NOW);
+  const identityId = byName("時刻補完神楽")[0].id;
+  site.page = li("時刻補完神楽", "2026年11月23日 20:30");
+  await run(week(1)); x = await run(week(2));
+  const identityEvent = byName("時刻補完神楽")[0];
+  ok(x.code === 0 && byName("時刻補完神楽").length === 1 && identityEvent.id === identityId && identityEvent.status === "published" && identityEvent.misses === 0 && identityEvent.lastSeen === "2026-10-26", "実HTMLの時刻補完を2回取得しても、既存公演は公開のままで重複・誤取り下げがない");
+  ok(identityEvent.timeUnknown === true && /公式候補と掲載時刻/.test(read(files.REPORT_FILE)) && /20:30/.test(read(files.REPORT_FILE)) && sum().needsAttention === true && sum().held === 0 && sum().errors === 0, "時刻差は自動上書きせず、週次レポートと既存の要確認判定に届く");
+  put(files.EVENTS_FILE, evs().map(e => e.id === identityId ? { ...e, start: "2026-11-23T20:30", timeUnknown: undefined, checked: "2026-10-26" } : e));
+  x = await run(week(2));
+  ok(byName("時刻補完神楽")[0].start.endsWith("20:30") && !/公式候補と掲載時刻/.test(read(files.REPORT_FILE)), "公式確認後に時刻を補完すれば、次回収集で時刻差の警告が解消する");
+  b = buildWith();
+  ok(b.status === 0 && cheerio.load(read(`${T}/site/events/${identityId}.html`))("body").text().includes("20:30"), "収集を経た補完済み公演を、同じURLで20:30表示としてビルドできる");
   server.close(); rmSync(T, { recursive: true, force: true });
 
   // ---------- 5. 週次ワークフローの安全装置 ----------

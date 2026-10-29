@@ -94,6 +94,17 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
     candIds.add(ev.id);
     cands.push(ev);
   }
+  // IDには名称と開始日時が入るため、表記ゆれ・時刻補完でIDだけが変わることがある。
+  // 意味上の一致も生存確認へ反映し、曖昧な一致は取り下げを保留する。
+  const uncertainIds = new Set(), timeNoted = new Set();
+  const noteTimeDifference = (existing, candidate) => {
+    if (candidate.timeUnknown || timeNoted.has(existing.id)) return;
+    if (existing.timeUnknown || existing.start !== candidate.start ||
+        (existing.end && candidate.end && existing.end !== candidate.end)) {
+      timeNoted.add(existing.id);
+      sum.notes.push(`「${existing.name}」の公式候補と掲載時刻が異なります(掲載: ${existing.timeUnknown ? "時刻未確認" : existing.start}${existing.end ? "〜" + existing.end : ""} / 候補: ${candidate.start}${candidate.end ? "〜" + candidate.end : ""})。既存内容を保持しています。公式情報で確認してください: ${candidate.url}`);
+    }
+  };
   const fresh = [];
   for (const ev of cands) {
     if (rejectedIds.has(ev.id)) { sum.rejected++; continue; }
@@ -101,6 +112,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
     if (existing) {
       if (existing.auto) {
         existing.lastSeen = stamp; existing.misses = 0;
+        noteTimeDifference(existing, ev);
         // 一度、取り下げたものが、取得元に戻ってきたら、検査し直して、再掲載する
         if (existing.status === "withdrawn") {
           const why = guardEvent({ ...existing }, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
@@ -111,7 +123,24 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
       continue;
     }
     // 同じ開催(名称のゆれ・時刻の有無を除いて)が、すでにあれば、重複。運営者の登録を、優先する
-    if (out.some((e) => e.status !== "withdrawn" && (key(e) === key(ev) || sameEvent(e, ev))) || fresh.some((f) => sameEvent(f.ev, ev))) { sum.duplicates++; continue; }
+    const matches = out.filter((e) => e.status !== "withdrawn" && (key(e) === key(ev) || sameEvent(e, ev)));
+    if (matches.length || fresh.some((f) => sameEvent(f.ev, ev))) {
+      const own = matches.filter((e) => e.auto && e.sourceId === source.id);
+      if (own.length) {
+        const why = guardEvent(ev, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
+        if (own.length === 1 && !why.length) {
+          const existing = own[0];
+          candIds.add(existing.id); // 重複判定と消失判定で、同じ公演の同じIDを使う
+          existing.lastSeen = stamp; existing.misses = 0;
+          noteTimeDifference(existing, ev);
+        } else {
+          const unseen = own.filter((e) => !uncertainIds.has(e.id));
+          for (const e of own) uncertainIds.add(e.id);
+          if (unseen.length) sum.notes.push(`「${ev.name}」の同一公演判定は要確認(${own.length > 1 ? "複数の既存公演に一致" : why.join(" / ")})。対象の掲載内容・最終取得日を変更せず、取り下げを保留しました: ${ev.url}`);
+        }
+      }
+      sum.duplicates++; continue;
+    }
     const why = guardEvent({ ...ev, kagura: ev.kagura }, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
     if (why.length === 1 && why[0] === "すでに終わった日付") { sum.past++; continue; }
     fresh.push({ ev, why });
@@ -139,6 +168,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
   const healthy = candidates.length > 0 && (futureKnown.length <= 2 || stillSeen >= futureKnown.length * c.minHealthyRatio);
   if (missing.length && !healthy) sum.notes.push(`取得元から ${missing.length}/${futureKnown.length} 件が消えました。ページの構造が変わった可能性があるため、取り下げはしていません`);
   else for (const e of missing) {
+    if (uncertainIds.has(e.id)) continue;
     e.misses = (e.misses ?? 0) + 1;
     if (e.misses >= c.withdrawAfterMisses) { e.status = "withdrawn"; e.withdrawnReason = `取得元のページから、${e.misses}回続けて消えたため`; sum.withdrawn.push({ ...e }); }
     else sum.notes.push(`「${e.name}」(${e.start.slice(0, 10)})が、取得元から消えました(${e.misses}/${c.withdrawAfterMisses}回目。次も消えたら、取り下げます)`);
