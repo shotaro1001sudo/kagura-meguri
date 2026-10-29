@@ -1731,7 +1731,11 @@
     "lastSeen": "2026-10-30",
     "misses": 0,
     "status": "published",
-    "checked": "2026-10-30"
+    "checked": "2026-10-30",
+    "lat": 35.074905,
+    "lng": 137.783417,
+    "address": "佐久間町川合833-2-2",
+    "geoPrecision": "area"
   },
   {
     "id": "iinan-kaguradan-e3e9e6d35b",
@@ -1740,7 +1744,7 @@
     "prefecture": "島根県",
     "city": "飯南町",
     "venue": "武内神社",
-    "address": "島根県飯石郡飯南町花栗1014",
+    "address": "花栗1014",
     "start": "2026-10-30T19:30",
     "fee": "",
     "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
@@ -1753,7 +1757,10 @@
     "lastSeen": "2026-10-30",
     "misses": 0,
     "status": "published",
-    "checked": "2026-10-30"
+    "checked": "2026-10-30",
+    "lat": 35.098194,
+    "lng": 132.778641,
+    "geoPrecision": "area"
   },
   {
     "id": "iinan-kaguradan-30d6928eca",
@@ -1762,7 +1769,7 @@
     "prefecture": "島根県",
     "city": "雲南市",
     "venue": "出雲井神社",
-    "address": "雲南市三刀屋町殿河内309",
+    "address": "三刀屋町殿河内309",
     "start": "2026-11-03T14:15",
     "fee": "",
     "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
@@ -1775,7 +1782,10 @@
     "lastSeen": "2026-10-30",
     "misses": 0,
     "status": "published",
-    "checked": "2026-10-30"
+    "checked": "2026-10-30",
+    "lat": 35.271645,
+    "lng": 132.851303,
+    "geoPrecision": "area"
   },
   {
     "id": "iinan-kaguradan-5e79a14e61",
@@ -1796,7 +1806,11 @@
     "lastSeen": "2026-10-30",
     "misses": 0,
     "status": "published",
-    "checked": "2026-10-30"
+    "checked": "2026-10-30",
+    "lat": 35.011414,
+    "lng": 132.716614,
+    "address": "下赤名862",
+    "geoPrecision": "area"
   },
   {
     "id": "saeki-kagurasai-34-2026",
@@ -1812,6 +1826,9 @@
     "description": "佐伯区の神楽団などが出演する公演です。飯南神楽団は16時40分頃に出演予定。未就学児の膝上観覧は無料です。",
     "source": "広島市文化財団（カルチャーひろしま）／飯南神楽団",
     "checked": "2026-10-30",
-    "status": "published"
+    "status": "published",
+    "lat": 34.3795917,
+    "lng": 132.3595013,
+    "address": "五日市中央6-1-10"
   }
 ]
