@@ -1,5 +1,7 @@
 # Performance title fade: rendered QA
 
+Historical evidence from the completed title-fade change. Screenshots and raw results are retained at the immutable commit linked below, rather than duplicated in the current working tree. The validation results on this page describe that change, not the latest production state.
+
 Base: `56b6f4f` (includes PR #114 / `b2f276c`). Chromium 154.0.8037.57, Linux, 1280×900 / 390×900 / 320×900, device scale 1.
 
 ## Cause and scope
@@ -14,11 +16,11 @@ These are real, unmodified browser screenshots, taken about 220ms after link nav
 
 | Variant | Before | After |
 |---|---|---|
-| Event, desktop 1280 | [before](before-event-1280-during.png) | [after](after-event-1280-during.png) |
-| Event, mobile 390 | [before](before-event-390-during.png) | [after](after-event-390-during.png) |
-| Event, narrow 320 | [before](before-event-320-during.png) | [after](after-event-320-during.png) |
-| Regular performance, 390 | [before](before-regular-390-during.png) | [after](after-regular-390-during.png) |
-| Long Japanese title, 320 | — | [settled title](after-long-320.png) |
+| Event, desktop 1280 | [before](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/before-event-1280-during.png) | [after](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/after-event-1280-during.png) |
+| Event, mobile 390 | [before](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/before-event-390-during.png) | [after](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/after-event-390-during.png) |
+| Event, narrow 320 | [before](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/before-event-320-during.png) | [after](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/after-event-320-during.png) |
+| Regular performance, 390 | [before](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/before-regular-390-during.png) | [after](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/after-regular-390-during.png) |
+| Long Japanese title, 320 | — | [settled title](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/after-long-320.png) |
 
 The event is 庄内神楽祭り(由布市庄内町ふるさと祭り), reached from its November month-list card. The regular performance is 高千穂神楽(高千穂神社 神楽殿), also reached from that list. The long-title case is 相模里神楽 垣澤社中 プラネタリウム公演「星降る神楽～道開き之章～」.
 
@@ -26,7 +28,7 @@ The event is 庄内神楽祭り(由布市庄内町ふるさと祭り), reached f
 
 - `npm test`: **10,204 passed, 0 failed**. Motion regression checks include direct/unsupported navigation, transition suppression, repeat reveal/back restoration, and both detail URL families (with and without `.html`). Existing reduced-motion, no-IntersectionObserver, print, and JS-free CSS checks pass.
 - `npm run build`: **73 events, 6 regular performances, 142 reported pages**. All 146 emitted HTML files have identical markup after removing scripts, styles, and the generated CSP hash meta.
-- Playwright with installed system Chromium: **37 rendered scenarios**; details in [results.json](results.json). Six before cases and 31 after cases.
+- Playwright with installed system Chromium: **37 rendered scenarios**; details in [results.json](https://github.com/shotaro1001sudo/kagura-meguri/blob/2918b1a45189fc49f33456eed19dbf51f285f380/docs/qa/performance-title-fade/results.json). Six before cases and 31 after cases.
 - Both detail families: card entry, back/forward, 1280/390/320. Long Japanese title: direct entry and ordinary text-link entry at all three widths. Ordinary link was inserted into the local calendar page to isolate non-card behavior.
 - Upcoming Hiroshima and past event pages: direct entry at all three widths. Release review corrected the originally expired/404 past-event URL to `/events/npo-hiroshima-474b6fadef.html` (呉の神楽 小坪神楽), and reran all seven additional scenarios with a non-404 heading assertion.
 - Reduced motion, JavaScript disabled, and IntersectionObserver unavailable: event and regular detail at 320. Additional simulated failure of the `pagereveal` handler after head JS runs: content still settles visibly.
