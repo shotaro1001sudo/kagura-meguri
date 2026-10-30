@@ -90,6 +90,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   const fullEvent=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),weekly=cheerio.load(readFileSync(join(OUT,'regular/r-weekly.html'),'utf8'));
+  ok([fullEvent,weekly].every(p=>p('.planning-links.solo>a').length===0&&p('.planning-links.solo').children().length===1)&&home('.planning-links.solo').length===0,'開催・定期公演のページは持ち物・行き帰りのカードを置かず周辺体験だけ。トップは3つのまま(2026-10-30 運営者の判断)');
   ok([fullEvent,weekly].every(p=>p('.d-rest .planning-links>#nearby-experiences').length===1&&p('#nearby-experiences').length===1&&p('.planning-links>a[href="#nearby-experiences"]').length===0&&!p.html().includes('公演の前後も楽しむ')),'開催・定期公演のページでは、周辺体験の欄をカードに集約し、別の欄を作らない');
   ok(guide('#packing .planning-card').length===4&&guide('#transport .planning-steps li').length===3,'持ち物4種類と公共交通→貸出返却→会場経路の順で案内');
   ok(guide('.planning-ads').length===0,'本番の新規3カテゴリは未承認なので広告を出さない');

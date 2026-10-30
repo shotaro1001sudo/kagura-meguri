@@ -123,9 +123,10 @@ export function experienceCard(context,today,aff) {
   return `<section id="nearby-experiences" class="planning-nearby" aria-labelledby="nearby-experiences-h"><span class="meta">周辺体験</span><b id="nearby-experiences-h">神楽までの半日、何する？</b>${affOn(aff)?`<div class="nearby-main">${areaTag(area,'nearby_experiences','vc-experience')}</div>`:""}<div class="nearby-sub">${affOn(aff)?`<a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a>`:""}${experienceNotes(experiencesFor(context,today),aff,true)}</div></section>`;
 }
 // 開催県がわかる公演では周辺体験をカードにまとめ、わからなければ全国の入口へのリンクにする。
-export function planningLinks(context={},today=CHECKED,aff) {
+// 開催・定期公演のページ(prep:false)は周辺体験だけにし、持ち物・行き帰りのカードは置かない(2026-10-30 運営者の判断)。
+export function planningLinks(context={},today=CHECKED,aff,{prep=true}={}) {
   const nearby=experienceCard(context,today,aff);
-  return `<nav class="planning-links" aria-label="神楽旅の準備"><a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a>${nearby||'<a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a>'}</nav>`;
+  return `<nav class="planning-links${prep?'':' solo'}" aria-label="神楽旅の準備">${prep?'<a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a>':''}${nearby||'<a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a>'}</nav>`;
 }
 export function rentalSearch(settings,context,today,placement) {
   const ads=offerCards(settings,'rental',context,today,placement);
