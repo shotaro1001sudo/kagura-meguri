@@ -1,4 +1,5 @@
 import { rakutenStayIssuedTests } from "./rakuten-stay-issued.mjs";
+import { stayPlanningTests } from './stay-planning.mjs';
 import { asakitaFactsTests } from './asakita-facts.mjs';
 import { adFallbackTests } from './ad-fallback.mjs';
 import './cookie-controls-test.mjs';
@@ -335,6 +336,7 @@ asakitaFactsTests({ ok, section, build });
 editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });
 affiliateTests({ ok, section, OUT, build });
+stayPlanningTests({ ok, section });
 rakutenStayIssuedTests({ok,section});
 monetizationUxTests({ ok, section, OUT, build });
 reservationTests({ ok, section });
