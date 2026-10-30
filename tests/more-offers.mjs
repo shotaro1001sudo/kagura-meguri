@@ -51,6 +51,7 @@ export function moreOffersTests({ ok, section }) {
   }
   // 本・DVD(learn)は運営者の判断で止めている(2026-10-30)。照合の決まりは、カテゴリを有効にした写しで確かめる
   ok(data.categories.learn.enabled === false && !moreOffersFor(data, "learn", { kagura: "石見神楽" }, today).length, "本番データ: 本・DVDの広告は止めている(運営者の判断)");
+  ok(data.categories.furusato.enabled === false && !moreOffersFor(data, "furusato", { prefecture: "広島県", city: "山県郡北広島町" }, today).length, "本番データ: ふるさと納税の広告は止めている(運営者の判断)");
   const learnOn = { ...data, categories: { ...data.categories, learn: { enabled: true } } };
   for (const kagura of ["石見神楽", "出雲神楽", "隠岐神楽", "伯耆神楽"]) {
     ok(moreOffersFor(learnOn, "learn", { kagura }, today).some(o => o.id === "sanin-kagura-photobook"), `山陰写真集を掲載対象の種類に出す(有効にしたとき): ${kagura}`);
@@ -87,9 +88,7 @@ export function moreOffersTests({ ok, section }) {
     if(build.status===0) {
       const page=cheerio.load(readFileSync(join(temp,"out/events",auto.events[0].id+".html"),"utf8"));
       const indexed=createMoreOfferIndex(data,today);
-      const expected=indexed.select("furusato",auto.events[0]).map(o=>o.url);
-      ok(expected.length>0 && page(`a[data-affiliate-category="furusato"]`).toArray().map(a=>page(a).attr("href")).join()===expected.join(),"自動取得→掲載→buildは同じfurusato照合と発行URLを使用");
-      ok(indexed.select("learn",auto.events[0]).length===0 && page(`a[data-affiliate-category="learn"]`).length===0,"止めている本・DVDは、自動掲載の公演にも出さない");
+      ok(["learn","furusato"].every(c=>indexed.select(c,auto.events[0]).length===0 && page(`a[data-affiliate-category="${c}"]`).length===0),"止めている本・DVD・ふるさと納税は、自動掲載の公演にも出さない");
       ok(page("[data-official-link]").length>0 && page("a.search-link").length===0,"公式公演導線は残し通常検索fallbackは出さない");
     }
   } finally { rmSync(temp,{recursive:true,force:true}); }
