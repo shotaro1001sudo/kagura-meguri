@@ -1,4 +1,5 @@
 import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
+import { stayPlanningContext } from "./lib/stay-planning.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
@@ -199,6 +200,7 @@ function stayBlock(e) {
   // 文字のボタン(日付・人数つきの検索)があるときだけ、検索の条件を示す。バナーは、条件を引き継がないため、条件を書かない
   const links = stayLinks(e, day, place), [, mo, d] = day.split("-").map(Number);
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場周辺の宿</h2>
+${stayPlanningContext(e, { when: whenOf(e), dated: true, esc })}
 <p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span></p>
 ${links}
 <details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
@@ -206,7 +208,7 @@ ${prNote(on)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
-function affiliateBlock(e, { banners = true } = {}) {
+function affiliateBlock(e, { banners = true, performance = false } = {}) {
   if (!rakutenOn && !jalanOn && !amazonOn) return "";
   const bn = banners ? stayBanners(e.prefecture) : "";
   const links = [
@@ -214,7 +216,7 @@ function affiliateBlock(e, { banners = true } = {}) {
     ...(!rakutenOn || banners ? [] : [[`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"]]),
     ...(amazonOn ? [["神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
   ];
-  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${links.length ? `<div class="afflist">${links
+  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${performance ? stayPlanningContext(e, { when: e.schedule, esc }) : ''}${links.length ? `<div class="afflist">${links
     .map(([t, s, u, on, k]) => k==="jalan" ? vcTag({kind:"stay",destination:u,text:`${stayPlace(e)}の宿をじゃらんで探す`,className:"vc-stay",meta:{"data-goatcounter-click":`aff-jalan/${e.prefecture}`}}) : `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
     .join("")}</div>` : ""}${bn}${prNote(!!bn || links.some((l) => l[3]))}</aside>`;
 }
@@ -822,7 +824,7 @@ for (const e of events) {
     desc: padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
-<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
+<div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
 <tr><th>料金</th><td>${e.fee ? esc(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}</div>
 <p class="desc-lead">${esc(e.description)}</p>
 ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
@@ -846,10 +848,10 @@ for (const r of regular) {
     desc: padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
-<div class="dpage"><div class="d-top"><div class="keyinfo"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}</div>
+<div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}</div>
 <p class="desc-lead">${esc(r.description)}</p>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
+<div class="d-side">${affiliateBlock(r, { banners: false, performance: true })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}${GUIDE_LINK}
 ${planningLinks(r,today,experienceAff)}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
