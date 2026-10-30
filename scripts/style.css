@@ -267,6 +267,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .side-summary{display:none}
 /* 説明文: 本文より少し大きく、要点のすぐ後の「何の公演か」を読みやすく */
 .desc-lead{font-size:var(--fs-l);line-height:1.9;margin:8px 0 24px}
+.desc-lead p{margin:0 0 .9em}.desc-lead p:last-child{margin-bottom:0}
 /* 観覧前の確認: 小さな文字のリンクから、押しやすいチップに */
 .d-top .viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 20px}
 .d-top .viewing-preparation .meta{flex-basis:100%;font-size:var(--fs-xs)}
@@ -458,7 +459,7 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .routebtn{margin:12px 0 0}
 .lead{max-width:680px;color:var(--fg);margin:8px 0 4px}
 .about{max-width:680px;margin:8px 0 4px}.about h2{margin-top:36px}
-.detail{max-width:680px;margin:8px 0 4px}.detail h2{margin-top:36px}.detail dt{font-weight:500;margin-top:12px}.detail dd{margin:2px 0 0}.detail ul{padding-left:1.4em}
+.detail{max-width:680px;margin:8px 0 4px}.detail h2{margin-top:36px}.detail dt{font-weight:500;margin-top:12px}.detail dd{margin:2px 0 0}.detail ul{padding-left:1.4em}.detail li{margin-bottom:.6em}
 .venuelist{list-style:none;margin:0;padding:0}.venuelist li{padding:10px 0;border-top:1px solid var(--line)}.venuelist li:last-child{border-bottom:1px solid var(--line)}
 .venuelist a{color:var(--fg)}.venuelist b{font-weight:500}
 .vitems{list-style:none;margin:4px 0 0;padding:0 0 0 1em}.vitems li{padding:2px 0;border:0!important}.vitems .md{color:var(--ac);font-family:var(--serif);margin-right:8px}
@@ -788,9 +789,9 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .rgroup>summary .meta{margin-left:8px;font-family:inherit;font-size:var(--fs-xs)}
 .rgroup>.monthlist,.rgroup>.venuelist{margin-top:0}
 /* ページ下部にまとめた出典・注記・広告の説明 */
-.page-notes{margin:40px 0 0;padding:14px 0 0;border-top:1px solid var(--line);color:var(--mut);font-size:var(--fs-2xs);line-height:1.7}
+.page-notes{margin:40px 0 0;padding:14px 0 0;border-top:1px solid var(--line);color:var(--mut);font-size:var(--fs-xs);line-height:1.85}
 .page-notes h2{margin:0 0 6px;font-size:var(--fs-2xs);font-family:inherit;font-weight:500;letter-spacing:.04em}
-.page-notes p{margin:0 0 4px;max-width:none}
+.page-notes p{margin:0 0 .8em;max-width:none}
 .page-notes .pr{font-size:var(--fs-2xs);border:0;padding:0}
 
 /* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
