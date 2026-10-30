@@ -26,11 +26,11 @@ export function consistencyTests({ ok, section, OUT }) {
   ok(/^(開催予定|定期公演)/.test(pf(".hero p").text()), "県のページの見出しの下も、件数の文", pf(".hero p").text());
 
   section("そろい方: 開催ページ・定期公演ページの並び");
-  // 並びの目印: 会場の欄の地図への案内(要点の表)・ガイドへの案内(出典の文のすぐ下。出典のないデータもあるため)・宿の案内・あわせて観たい神楽
+  // 並びの目印: 会場の欄の地図への案内(要点の表)・宿の案内・本文の列(d-rest)・あわせて観たい神楽
   const orderOf = (p) => {
     const h = read(join(OUT, p));
     const at = (re) => { const m = h.search(re); return m < 0 ? null : m; };
-    return { map: at(/class="tomap"/), source: at(/見どころ・マナー・服装のガイド/), stay: at(/class="(aff )?stay|class="aff"|class="afflist/), related: at(/<h2>あわせて観たい神楽<\/h2>/) };
+    return { map: at(/class="tomap"/), source: at(/class="d-rest"/), stay: at(/class="(aff )?stay|class="aff"|class="afflist/), related: at(/<h2>あわせて観たい神楽<\/h2>/) };
   };
   const ev = JSON.parse(read("tests/fixtures/events.test.json")).find((e) => e.status === "published" && e.lat != null && e.start >= "2026-10-10");
   const o = orderOf(`events/${ev.id}.html`);

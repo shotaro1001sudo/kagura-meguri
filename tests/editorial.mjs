@@ -124,7 +124,7 @@ export function editorialTests({ ok, section, OUT, build }) {
   if (stayBuild.status === 0) for (const e of stayCases) {
     const $ = page(`events/${e.id}.html`, D), stay = $(".stay");
     ok(stay.length === 1 && stay.find("h2").text() === "会場周辺の宿" && !/夜の公演|夜の観覧後|終演後の帰り道/.test(stay.text() + $(".page-notes").text()), `${e.id}: 宿泊枠に時間帯の断定をしない`);
-    ok(stay.find(".stay-cond").text().includes("11/3泊大人2名") && !$(".page-notes").text().includes("泊・大人2名で検索します"), `${e.id}: 宿泊日・人数の検索条件は宿の枠に出し、ページ下の注記でくり返さない`);
+    ok(stay.find(".stay-cond").length === 0 && !/大人2名/.test(stay.text()) && !$(".page-notes").text().includes("泊・大人2名で検索します"), `${e.id}: 宿の枠は見出しと宿のボタンだけ(宿泊日・人数の検索条件は出さない。2026-10-30 運営者の判断)`);
     const anchors = stay.find("a.stay-btn,.stay-btn>a");
     ok(anchors.length === 2 && anchors.toArray().every(a => $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank"), `${e.id}: 既存広告リンク属性を維持`);
     const jalan = new URL(anchors.eq(0).attr("href"), "https://kagurameguri.jp"), dest = new URL(jalan.searchParams.get("vc_url"));

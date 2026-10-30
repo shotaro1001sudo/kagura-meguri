@@ -123,13 +123,13 @@ export async function uxTests({ ok, section, OUT }) {
   // スマホでは、右の列(宿・本などの広告)が、要点と本文のあいだに入る。説明文は要点の帯の中に置き、広告より先に読めるようにする
   const descFirst = (p) => { const h = p("main").html(); return p(".d-top .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
   ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点のすぐあと(スマホでは広告の列より前)に出る");
-  { const h = reg("main").html(); ok(reg(".d-rest .share").length === 1 && h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("guide-link"), "定期公演ページも、共有のボタンは、説明・案内などの本文のあと"); }
+  { const h = reg("main").html(); ok(reg(".d-rest .share").length === 1 && h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("planning-links"), "定期公演ページも、共有のボタンは、説明・周辺体験などの本文のあと"); }
   { // 見出しの下の「明日開催」などは、並ぶタグと文字の大きさ・そろえ方が違うと、スマホで高さと位置がずれる
     const rule = (sel) => (css.match(new RegExp(`(?:^|[}\\s/])${sel.replace(/\./g, "\\.")}\\{([^}]*)\\}`)) ?? [])[1] ?? "";
     const fs = (r) => (r.match(/font-size:([^;}]+)/) ?? [])[1];
     ok(full(".hero .until").length === 1 && !!fs(rule(".until")) && fs(rule(".until")) === fs(rule(".hero .tag")) && !/vertical-align:(?!baseline)/.test(rule(".until")),
       "見出しの下の開催までの日数は、並ぶタグと同じ文字の大きさ・そろえ方(高さと位置がずれない)", `${rule(".until")} / ${rule(".hero .tag")}`);
-    ok(reg(".guide-link a[href='/guide.html']").text() === "見どころ・マナー・服装のガイド" && /white-space:nowrap/.test(rule(".guide-link a")), "ガイドへの案内のリンクは、途中の「・」で2行に割れない"); }
+    ok([full, reg].every((p) => p(".guide-link").length === 0 && !p("main").text().includes("ガイドもどうぞ")) && !rule(".guide-link a"), "開催・定期公演のページには、ガイドへの案内の一文を置かない(2026-10-30 運営者の判断)"); }
 
   section("UI: 検索・ガイド・フォーム・主催者の方へ");
   const cal = page("calendar.html");

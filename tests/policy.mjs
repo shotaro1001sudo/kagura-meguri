@@ -145,7 +145,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const jl0=new URL(jlRaw,"https://kagurameguri.jp").searchParams.get("vc_url"),rk0=new URL(rkRaw).searchParams.get("pc");
   ok(jl0 === "https://www.jalan.net/uw/uwp2011/uww2011init.do?keyword=%8D%82%90%E7%95%E4%92%AC&stayYear=2026&stayMonth=11&stayDay=20&stayCount=1&roomCount=1&adultNum=2", "じゃらん: 「高千穂町」(Shift_JIS)・開催日の1泊・大人2名で検索する", jl0);
   ok(rk0 === "https://kw.travel.rakuten.co.jp/keyword/Search.do?charset=utf-8&f_query=%E9%AB%98%E5%8D%83%E7%A9%82%E7%94%BA&f_nen1=2026&f_tuki1=11&f_hi1=20&f_nen2=2026&f_tuki2=11&f_hi2=21&f_otona_su=2&f_heya_su=1", "楽天トラベル: 「高千穂町」・開催日から翌日まで・大人2名で検索する", rk0);
-  ok($(".stay-cond").text().includes("11/20泊") && $(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test(($(x).attr("data-goatcounter-click") || $(x).closest("[data-vc-ad]").attr("data-goatcounter-click")))), "日付を示し、リンクの押された数を、開催ごとに数えられる");
+  ok($(".stay-cond").length === 0 && $(".staylinks a").get().every((x) => /^stay-(jalan|rakuten)\/t-full$/.test(($(x).attr("data-goatcounter-click") || $(x).closest("[data-vc-ad]").attr("data-goatcounter-click")))), "宿の枠に検索の条件は出さず(運営者の判断)、リンクの押された数を、開催ごとに数えられる");
     ok(bn.length === 2 && bn.toArray().every((x) => /sponsored/.test($(x).attr("rel"))) && $(".stay .pr").text() === "PR" && $(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、宿のリンクに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
     { // IDが未設定のとき: 文字のボタン(報酬なしの、ふつうの検索リンク)で案内する
       const q = cheerio.load(read(join(sub("plainstay", {}), "events/t-full.html")));

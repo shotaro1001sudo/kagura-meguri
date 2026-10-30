@@ -1,5 +1,4 @@
 import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
-import { stayPlanningContext } from "./lib/stay-planning.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
@@ -187,7 +186,7 @@ const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotatio
 // 開催ページの宿: 会場の市区町村・開催日の1泊・大人2名の検索結果へ直接つなぐ(バナーは宿のトップへ飛ぶだけなので使わない)。
 // 提携IDがあれば、楽天は楽天アフィリエイト(hgc)、じゃらんはバリューコマース(じゃらんnet・MyLink)を経由する。リダイレクト先が同じ検索になることを確認済み(2026-10-25)
 const stayLinks = (e, day, place) => {
-  const btn = (k, url, name, on) => !on ? "" : k==="jalan" ? vcTag({kind:"stay",destination:url,text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`stay-jalan/${e.id}`}}) : `<a class="btn stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}><span>${name}で宿を探す</span><small>${esc(place)}の空室・料金を見る</small></a>`;
+  const btn = (k, url, name, on) => !on ? "" : k==="jalan" ? vcTag({kind:"stay",destination:url,text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`stay-jalan/${e.id}`}}) : `<a class="stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}>${esc(place)}の宿を${name}で探す</a>`;
   const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
   return btns ? `<p class="staylinks">${btns}</p>` : "";
 };
@@ -197,28 +196,26 @@ function stayBlock(e) {
   const day = e.start.slice(0, 10), place = stayPlace(e);
   const on = rakutenOn || jalanOn;
   // 時刻や日またぎだけでは夜公演と断定できないため、宿の案内は時間帯に依存しない。
-  // 文字のボタン(日付・人数つきの検索)があるときだけ、検索の条件を示す。バナーは、条件を引き継がないため、条件を書かない
-  const links = stayLinks(e, day, place), [, mo, d] = day.split("-").map(Number);
+  // 枠の中は見出しと宿のボタンだけにする(公演・会場・検索の条件の説明は置かない。2026-10-30 運営者の判断)
+  const links = stayLinks(e, day, place);
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">会場周辺の宿</h2>
-${stayPlanningContext(e, { when: whenOf(e), dated: true, esc })}
-<p class="stay-cond">${links ? `<span>${mo}/${d}泊</span><span>大人2名</span>` : ""}<span>${esc(place)}</span></p>
 ${links}
 <details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
-function affiliateBlock(e, { banners = true, performance = false } = {}) {
+function affiliateBlock(e, { banners = true } = {}) {
   if (!rakutenOn && !jalanOn && !amazonOn) return "";
   const bn = banners ? stayBanners(e.prefecture) : "";
-  const links = [
-    ...(!jalanOn || banners ? [] : [[`${stayPlace(e)}の宿を探す`, "じゃらん", jalanStay(e), jalanOn, "jalan"]]),
-    ...(!rakutenOn || banners ? [] : [[`${stayPlace(e)}の宿を探す`, "楽天トラベル", rakutenStay(e), rakutenOn, "rakuten"]]),
-    ...(amazonOn ? [["神楽の本・グッズ", "Amazon", amazon(e.kagura || "神楽"), true, "amazon"]] : []),
-  ];
-  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${performance ? stayPlanningContext(e, { when: e.schedule, esc }) : ''}${links.length ? `<div class="afflist">${links
-    .map(([t, s, u, on, k]) => k==="jalan" ? vcTag({kind:"stay",destination:u,text:`${stayPlace(e)}の宿をじゃらんで探す`,className:"vc-stay",meta:{"data-goatcounter-click":`aff-jalan/${e.prefecture}`}}) : `<a href="${esc(u)}" ${affAttrs(on, `aff-${k}/${e.prefecture}`)}><b>${esc(t)}</b><small>${s}</small></a>`)
-    .join("")}</div>` : ""}${bn}${prNote(!!bn || links.some((l) => l[3]))}</aside>`;
+  // 定期公演(バナーなし): じゃらんと楽天トラベルは、開催ページの宿と同じ書き方・同じ枠線のボタンにそろえる
+  const place = stayPlace(e);
+  const stay = banners ? "" : [
+    jalanOn ? vcTag({kind:"stay",destination:jalanStay(e),text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`aff-jalan/${e.prefecture}`}}) : "",
+    rakutenOn ? `<a class="stay-btn" href="${esc(rakutenStay(e))}" ${affAttrs(true, `aff-rakuten/${e.prefecture}`)}>${esc(place)}の宿を楽天トラベルで探す</a>` : "",
+  ].join("");
+  const goods = amazonOn ? `<div class="afflist"><a href="${esc(amazon(e.kagura || "神楽"))}" ${affAttrs(true, `aff-amazon/${e.prefecture}`)}><b>神楽の本・グッズ</b><small>Amazon</small></a></div>` : "";
+  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${stay ? `<p class="staylinks">${stay}</p>` : ""}${goods}${bn}${prNote(!!bn || !!stay || amazonOn)}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -443,8 +440,6 @@ const sourceNote = (x) => {
 };
 // Googleカレンダーで、全開催の日程(events.ics)を購読する画面を開くリンク(URLで追加 = 新しい開催も、自動で反映される)
 const GCAL_SUBSCRIBE = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${cfg.domain}/events.ics`)}`;
-// リンクの語句(見どころ・マナー・服装のガイド)は、途中の「・」で改行させず、リンクの前で改行する
-const GUIDE_LINK ='<p class="meta guide-link">はじめて神楽を観る方は、<a href="/guide.html">見どころ・マナー・服装のガイド</a>もどうぞ。</p>';
 // 新しい解説を作らず、既存ガイドの該当章と、その公演の地図へ案内する。
 const preparationLinks = () => `<nav class="viewing-preparation" aria-label="観覧前の準備"><span class="meta">観覧前に確認: </span><a class="tag" href="/guide.html#prepare">服装・持ち物・交通</a><a class="tag" href="/guide.html#check">日程・予約の確認</a></nav>`;
 // 会場の欄: 会場名の下に、所在地(都道府県・市区町村・番地)と地図への案内をまとめる(「所在地」の行と「会場の場所」の見出しを統合)
@@ -841,7 +836,6 @@ for (const e of events) {
   if (e.lat != null) ld.location.geo = { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng };
   const when = whenOf(e);
   const others = sameSeries(e).filter(isUpcoming);
-  const showPreparation = e.prefecture === "広島県" && isUpcoming(e);
   write(`dist/events/${e.id}.html`, layout({
     // 検索結果で切れないよう、長い名称はタイトルでは短くする(ページの見出しは、名称のまま)
     title: `${e.name.length > 36 ? e.name.slice(0, 35) + "…" : e.name}(${jpDate(e.start.slice(0, 10))}) | ${e.prefecture} | ${cfg.siteName}`,
@@ -851,13 +845,12 @@ for (const e of events) {
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
 <tr><th>料金</th><td>${e.fee ? esc(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}</div>
 <div class="desc-lead">${descParas(e.description)}</div>
-${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
-${showPreparation ? preparationLinks() : ""}</div>
+${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
 ${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
-${sourceNote(e)}${showPreparation ? "" : GUIDE_LINK}
-${isUpcoming(e)?`${planningLinks(e,today,experienceAff)}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
+${sourceNote(e)}
+${isUpcoming(e)?`${planningLinks(e,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
@@ -875,9 +868,9 @@ for (const r of regular) {
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}</div>
 <div class="desc-lead">${descParas(r.description)}</div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r, { banners: false, performance: true })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
-${sourceNote(r)}${GUIDE_LINK}
-${planningLinks(r,today,experienceAff)}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
+<div class="d-side">${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
+${sourceNote(r)}
+${planningLinks(r,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
 ${related(r)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>`,

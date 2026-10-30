@@ -113,22 +113,20 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   }), "案内先は既存ガイドの実在する章で、リンク切れがない");
   ok(other(".viewing-preparation").length === 0 && home(".viewing-preparation").length === 0,
     "他県一覧とトップには観覧準備リンクを追加しない");
+  // 公演のページには、観覧前に確認・ガイドへの案内を置かない(2026-10-30 運営者の判断。広島県の一覧の案内は残す)
   const mapped = cheerio.load(read(join(OUT, "events/t-timeunknown.html")));
-  ok(mapped(".actions").next().hasClass("viewing-preparation") &&
-    mapped(".viewing-preparation").length === 1 &&
-    mapped(".viewing-preparation a").length === 2 && mapped("a[href='#venue-access'],#venue-access").length === 0 &&
+  ok(mapped(".viewing-preparation").length === 0 && mapped("a[href='#venue-access'],#venue-access").length === 0 &&
     mapped(".keyinfo a.tomap[href*='google.com/maps']").length === 1,
-    "広島の公演詳細では、地図・経路は要点の会場の欄から(観覧準備の案内と重ねない)");
-  ok(mapped("main a[href='/guide.html']").length === 0 &&
-    mapped("main a[href='/guide.html#prepare']").length === 1,
-    "広島の詳細にあった下部の一般ガイド案内を近接案内に置き換え、重複しない");
+    "広島の公演詳細では、地図・経路は要点の会場の欄から(観覧前に確認は置かない)");
+  ok(mapped("main a[href^='/guide.html']").length === 0,
+    "広島の公演詳細に、ガイドへの案内を置かない");
   const noMap = cheerio.load(read(join(OUT, "events/t-minimal.html")));
-  ok(noMap(".viewing-preparation a").length === 2 && noMap("a[href='#venue-access'],#venue-access,.keyinfo a.tomap").length === 0,
+  ok(noMap(".viewing-preparation").length === 0 && noMap("a[href='#venue-access'],#venue-access,.keyinfo a.tomap").length === 0,
     "地図データがない公演には空の地図リンクを出さない");
   const outside = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(outside(".viewing-preparation,#venue-access").length === 0 &&
-    outside("main a[href='/guide.html']").length === 1,
-    "広島以外の公演詳細のガイド・地図配置を維持する");
+    outside("main a[href^='/guide.html']").length === 0,
+    "広島以外の公演詳細も、ガイドへの案内を置かず、地図配置を維持する");
 
   // ビルドと同じ関数を単独で検証。公演データや外部サイトには書き込まない。
   const source = read("scripts/build.mjs");
@@ -179,7 +177,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 0, "開催ページ: サイドの宿カードは、バナーではなく、日付・地域つきの2つの検索リンクにする");
     const [jl, rk] = links.map((_, x) => ev(x).attr("href")).get();
     ok(jl.startsWith("//ck.jp.ap.valuecommerce.com/servlet/referral?") && (new URL(jl,"https://kagurameguri.jp").searchParams.get("vc_url") ?? "").includes("stayYear=2026&stayMonth=11&stayDay=20") && rk.startsWith("https://hb.afl.rakuten.co.jp/hgc/") && new URL(rk).searchParams.get("pc").includes("f_nen1=2026&f_tuki1=11&f_hi1=20"), "じゃらんはバリューコマース、楽天トラベルは楽天アフィリエイトを経由し、開催日の検索をそのまま開く");
-    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && /宿を(?:じゃらんで)?探す/.test(ev(x).text())), "広告リンクの属性(sponsored・noopener)と、分かる文言がある");
+    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && /^高千穂町の宿を(?:じゃらん|楽天トラベル)で探す$/.test(ev(x).text())), "広告リンクの属性(sponsored・noopener)と、分かる文言がある(じゃらんと楽天トラベルは同じ書き方)");
     ok(links.map((_, x) => (ev(x).attr("data-goatcounter-click") || ev(x).closest("[data-vc-ad]").attr("data-goatcounter-click"))).get().join() === "stay-jalan/t-full,stay-rakuten/t-full", "GoatCounterのクリック名は stay-◯◯/開催ID");
     const csp = cheerio.load(read("dist-test-revenue-ux/weekend.html"))('meta[http-equiv="Content-Security-Policy"]').attr("content");
     const imageSources=csp.split(";").find(d=>d.trim().startsWith("img-src ")).trim().split(/\s+/).slice(1);
