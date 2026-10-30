@@ -3,7 +3,7 @@
 // 出典は、文末の小さな番号([1] など)で示し、ページの最後にまとめる。番号は、本文に初めて出てくる順。
 // 出典の文章は、そのまま写さず、要約して書く。内容を変えたら CHECKED(確認日)を更新する。
 
-import { figure, flow, table, icon, stageDiagram } from "./figures.mjs";
+import { figure, flow, icon, stageDiagram } from "./figures.mjs";
 
 export const CHECKED = "2026-10-25";
 
@@ -52,15 +52,15 @@ export function guideHtml({ esc, kaguraLink, supplies = [], rentalHtml = '' }) {
     if (first) { order.push(id); n = order.length; }
     return `<sup class="cite"><a href="#src-${n}"${first ? ` id="ref-${n}"` : ""} aria-label="出典${n}">[${n}]</a></sup>`;
   }).join("");
-  const toToc = '<p class="totoc"><a href="#toc">↑ 目次へ戻る</a></p>';
-  const chapter = (i) => { const [id, title] = CHAPTERS[i]; return `${i ? toToc : ""}<h2 id="${id}" class="gsec"><span class="no">${String(i + 1).padStart(2, "0")}</span>${title}</h2>`; };
+  const no = (i) => String(i + 1).padStart(2, "0");
+  const chapter = (i) => { const [id, title] = CHAPTERS[i]; return `<h2 id="${id}" class="gsec"><span class="no">${no(i)}</span>${title}</h2>`; };
+  // 持ち物は1つのチェックリストにまとめる(場面は小さく添える)。チェックは保存しない(ページを開いている間だけ)
+  const item = (value, name, when, note = "", extra = "") => `<li><label><input type="checkbox" name="packing" value="${value}"><span><b>${name}</b><small>${when}</small></span></label>${note ? `<p class="ck-note">${note}</p>` : ""}${extra}</li>`;
   const card = (title, inner, sub = "") => `<section class="gcard"><h3>${title}${sub ? `<small>${sub}</small>` : ""}</h3>${inner}</section>`;
   const cards = (...xs) => `<div class="gcards">${xs.join("")}</div>`;
 
   const body = `
 <p>神楽(かぐら)は、神社の祭りなどで神様に奉納される歌と舞です。囃子(はやし)の速さも衣装も演目も、地域によって大きく違います。はじめて観る方に向けて、観られる場所・見どころ・マナー・持ち物を、各地の公式情報をもとにまとめました。成り立ちは<a href="/history/">神楽の歴史</a>へ。</p>
-<nav class="planning-links" aria-label="観覧準備をすぐ読む"><a href="#packing"><span class="meta">持ち物</span><b>初めての夜神楽、持ち物これだけ</b></a><a href="#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a><a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a></nav>
-<nav class="toc" id="toc" aria-label="このページの目次"><ol>${CHAPTERS.map(([id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol></nav>
 
 ${chapter(0)}
 ${cards(
@@ -114,18 +114,18 @@ ${cards(
 
 ${chapter(3)}
 <section id="packing" class="planning-section" aria-labelledby="packing-h"><h3 id="packing-h">初めての夜神楽、持ち物これだけ</h3><p>神社の神楽は夜が多く、冬は毛布やカイロ、夏は虫よけとタオルがあると便利です。${cite("iwamiqa")} 夜通しなら、防寒具と飲み物・軽食も。${cite("takachiho")} 買いそろえる必要はなく、手持ちのもので足ります。</p>
-<div class="planning-grid">
-<article class="planning-card"><p class="meta">冷える夜・屋外に</p><h4>羽織りもの・ひざ掛け</h4><p>脱ぎ着で調整できるものを。</p>${pick(0)}</article>
-<article class="planning-card"><p class="meta">座って長く観るなら</p><h4>小さな携帯クッション</h4><p>席に収まり、後ろの人の視界を遮らないものを。</p>${pick(1)}</article>
-<article class="planning-card"><p class="meta">地図や連絡を使う日に</p><h4>モバイルバッテリー</h4><p>端子が合う、軽いものを。高温の車内に置きっぱなしにしないこと。${cite('battery')}</p>${pick(2)}</article>
-<article class="planning-card"><p class="meta">物語を楽しむ準備に</p><h4>神楽の入門書・演目の解説</h4><p>まずは公式の解説や図書館、このガイドで十分です。</p></article>
+<div class="checklist">
+<ul>
+${item("haori", "羽織りもの・ひざ掛け", "冷える夜・屋外・夜通しの神楽に", "脱ぎ着で調整できるものを。", pick(0))}
+${item("warm", "毛布・カイロ", "冬の夜に")}
+${item("bug", "虫よけ・タオル", "夏の夜に")}
+${item("cushion", "小さな携帯クッション", "座って長く観るなら", "席に収まり、後ろの人の視界を遮らないものを。", pick(1))}
+${item("food", "飲み物・軽食", "夜通しの神楽・長時間の観覧に", "会場のルールに合うものを。")}
+${item("battery", "モバイルバッテリー", "地図や連絡を使う日に", `端子が合う、軽いものを。高温の車内に置きっぱなしにしないこと。${cite('battery')}`, pick(2))}
+${item("book", "神楽の入門書・演目の解説", "物語を楽しむ準備に", "まずは公式の解説や図書館、このガイドで十分です。")}
+</ul>
+<p class="checklist-foot" hidden><span class="checklist-count" aria-live="polite"></span><button type="button" class="linkbtn checklist-reset" hidden>チェックを外す</button></p>
 </div>${rest}<p class="meta annotation">${picked ? '<span class="pr">PR</span> 「たとえば」の商品は広告(アフィリエイトリンク)です。購入で当サイトに報酬が入ることがあります。' : ""}会場の持ち込みルールを優先してください。火気用品は勧めません。</p></section>
-${table(["場面", "あると便利なもの"], [
-  ["冬の夜", "毛布・カイロ"],
-  ["夏の夜", "虫よけ・タオル"],
-  ["夜通しの神楽", "防寒具・飲み物・軽食"],
-  ["長時間の観覧", "飲み物・携帯クッションなど(会場ルールに合うもの)"],
-], "持ち物チェック表", "chk")}
 <section id="transport" class="planning-section" aria-labelledby="transport-h"><h3 id="transport-h">車で行く神楽旅</h3><p>神社の神楽は夜が多く、タクシーや車が勧められています。市街地の神社には駐車場がほとんどないことも。${cite("iwamiqa")} 先に「帰れる時間」を決めておくと安心です。</p><ol class="planning-steps"><li><b>公共交通と帰りの便</b><br>終演後の最終便に間に合うか。</li><li><b>貸出・返却できる店舗</b><br>営業時間・返却時刻・乗り捨て条件。</li><li><b>会場への経路と駐車場</b><br>主催者の案内を優先して確認。</li></ol>${rentalHtml}</section>
 <p><a class="btn ghost" href="/experiences.html">神楽の前後に楽しむ周辺体験を見る</a></p>
 
@@ -143,7 +143,6 @@ ${cards(
   card("集落の神楽は、早めに問い合わせを", `<p>集落ごとに行われる神楽は、会場や日程が年によって変わることがあります。2週間ほど前に観光協会などへ問い合わせておくと確実です。${cite("takachiho")}</p>`),
   card("予約が必要な公演も", `<p>公演によっては事前予約が必要だったり、当日受付の人数が決まっていたりします。各公演のページで確かめてください。</p>`))}
 
-${toToc}
 <h2>神楽を探す</h2>
 <p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・場所で探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a> <a class="btn ghost" href="/history/">神楽の歴史</a></p>`;
 
@@ -154,9 +153,11 @@ ${toToc}
     const s = SOURCES.find((x) => x.id === id);
     return `<li id="src-${i + 1}"><a href="${s.url}" rel="noopener" target="_blank">${esc(s.name)}</a>(${esc(s.by)}) <a class="back" href="#ref-${i + 1}" aria-label="本文の出典${i + 1}へ戻る">↩</a></li>`;
   }).join("");
-  return `${body}
+  // 章ナビ(目次): スマホ・タブレットはヘッダーの下に横一列で固定し、PCは本文の左に固定する。今読んでいる章は guide.js が示す
+  const nav = `<nav class="toc gnav" id="toc" aria-label="このページの目次"><p class="gnav-h">このページの目次</p><ol>${CHAPTERS.map(([id, t], i) => `<li><a href="#${id}"><span class="no">${no(i)}</span>${t}</a></li>`).join("")}</ol></nav>`;
+  return `<div class="guide-layout">${nav}<div class="guide-body">${body}
 
 <h2 id="sources">出典</h2>
 <ol class="sources">${list}</ol>
-<p class="meta">確認日: ${CHECKED.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日")}。上の公式・公的な情報をもとに要約しています。作法や決まりは地域や公演によって違うので、現地の案内を優先してください。誤りに気づいたら、<a href="/contact.html">お問い合わせ</a>からお知らせください。</p>`;
+<p class="meta">確認日: ${CHECKED.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日")}。上の公式・公的な情報をもとに要約しています。作法や決まりは地域や公演によって違うので、現地の案内を優先してください。誤りに気づいたら、<a href="/contact.html">お問い合わせ</a>からお知らせください。</p></div></div>`;
 }

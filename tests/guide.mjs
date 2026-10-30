@@ -2,6 +2,7 @@
 import { readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
 import { SOURCES, CHECKED } from "../scripts/lib/guide.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
@@ -54,5 +55,41 @@ export function guideTests({ ok, section, OUT, build }) {
   g("ol.sources").remove();
   const general = g("main .guide").text().match(/.{0,12}(石見|広島|高千穂|御嶽|備中|安芸高田|島根|宮崎|大分|岡山).{0,12}/g) ?? [];
   ok(general.length === 0, "本文に、特定の神楽・地域の名前を出さない(一般的な内容)", general.join(" / "));
+  // 見せ方(2026-10-30 運営者の判断): 章ナビ(目次)を本文の横・上に固定し、持ち物は1つのチェックリストにまとめる
+  section("はじめての神楽ガイド: 章ナビと持ち物チェックリスト");
+  const layout = $(".guide .guide-layout");
+  ok(layout.length === 1 && layout.children().first().is("nav.toc.gnav#toc") && layout.children().eq(1).is(".guide-body") && $(".gnav a .no").map((_, n) => $(n).text()).get().join() === "01,02,03,04,05", "章ナビ(番号つきの5章)を本文の前に置く");
+  ok($(".totoc,.guide .planning-links,table.chk").length === 0, "「目次へ戻る」、冒頭の3つの入口のカード、持ち物の表は置かない(章ナビ・チェックリストと重なるため)");
+  const boxes = $("#packing .checklist li");
+  ok(boxes.length === 7 && boxes.get().every((li) => $(li).find("label > input[type=checkbox][name=packing]").length === 1 && $(li).find("label b").text() && $(li).find("label small").text()), "持ち物は、1行に1つのチェックボックスと、場面の添え書き");
+  const names = boxes.find("label b").map((_, b) => $(b).text()).get().join("/");
+  ok(["羽織りもの", "毛布・カイロ", "虫よけ・タオル", "携帯クッション", "飲み物・軽食", "モバイルバッテリー", "入門書"].every((w) => names.includes(w)), "これまでのカードと表の持ち物を、すべて残す", names);
+  ok($("#packing .checklist-foot[hidden] .checklist-count[aria-live=polite]").length === 1, "数の表示は、スクリプトが動くときだけ出す(読み上げにも伝える)");
+  const script = read("scripts/client/guide.js");
+  ok(!/localStorage|sessionStorage|document\.cookie/.test(script) && $("script").filter((_, x) => $(x).html().includes("持ち物チェックリスト")).length === 1, "チェックは保存しない(端末に残さない。プライバシーポリシーを変えない)");
+  {
+    const dom = new JSDOM(read(join(D, "guide.html")).replace(/<script[\s\S]*?<\/script>/g, ""), { runScripts: "outside-only", pretendToBeVisual: true });
+    const w = dom.window, d = w.document;
+    if (!d.querySelector(".gnav") || !d.querySelector(".checklist") || !d.getElementById("where")) { ok(false, "章ナビと持ち物チェックリストが動く"); w.close(); }
+    else {
+    const tops = { where: -400, charm: 120, manners: 900, prepare: 1600, check: 2400 };
+    for (const id of Object.keys(tops)) d.getElementById(id).getBoundingClientRect = () => ({ top: tops[id], bottom: tops[id] + 40, left: 0, right: 0, width: 0, height: 40 });
+    w.eval(script);
+    const current = () => [...d.querySelectorAll(".gnav a")].map((a) => a.hasAttribute("aria-current"));
+    ok(current().join() === "false,true,false,false,false", "章ナビは、今読んでいる章(画面の上のほうを過ぎた最後の章)だけを示す", current().join());
+    tops.manners = 100; tops.charm = -300;
+    w.dispatchEvent(new w.Event("resize"));
+    ok(current().join() === "false,false,true,false,false", "読み進めると、示す章が次へ移る", current().join());
+    const inputs = [...d.querySelectorAll(".checklist input")], count = d.querySelector(".checklist-count"), reset = d.querySelector(".checklist-reset");
+    ok(!d.querySelector(".checklist-foot").hidden && count.textContent === "0 / 7 用意した" && reset.hidden, "スクリプトが動くと、用意できた数を出す(はじめは0)");
+    inputs[0].checked = true; inputs[3].checked = true; inputs[0].dispatchEvent(new w.Event("change", { bubbles: true }));
+    ok(count.textContent === "2 / 7 用意した" && !reset.hidden, "チェックすると数が増え、まとめて外すボタンが出る");
+    inputs.forEach((x) => { x.checked = true; }); inputs[0].dispatchEvent(new w.Event("change", { bubbles: true }));
+    ok(count.textContent === "ぜんぶ用意できました" && d.querySelector(".checklist").classList.contains("done"), "すべてそろうと、そろったことを伝える");
+    reset.click();
+    ok(inputs.every((x) => !x.checked) && count.textContent === "0 / 7 用意した" && reset.hidden, "「チェックを外す」で、すべて外せる");
+    w.close();
+    }
+  }
   rmSync(D, { recursive: true, force: true });
 }

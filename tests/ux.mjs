@@ -136,8 +136,9 @@ export async function uxTests({ ok, section, OUT }) {
   ok(cal("#reset").length === 1 && cal("#reset").parent().attr("hidden") !== undefined, "検索: 「条件をリセット」(条件を変えたときだけ出す)");
   ok(/\.finder \.where\{display:grid;grid-template-columns:1fr 1fr/.test(css), "検索: 地方と県の選択欄を横に並べる");
   const g = page("guide.html");
-  ok(g("#toc").length === 1 && g(".totoc a[href='#toc']").length >= 5, "ガイド: 章ごとに「目次へ戻る」");
-  ok(/@media\(min-width:1320px\)\{\.guide \.toc\{position:fixed/.test(css), "ガイド: 広い画面では、目次を横に固定");
+  // 章の移動: 固定した章ナビで行う(「目次へ戻る」は置かない。2026-10-30 運営者の判断)
+  ok(g("#toc.gnav").length === 1 && g(".totoc").length === 0 && /\.guide \.gnav\{position:sticky;top:var\(--guide-top/.test(css), "ガイド: 章ナビはヘッダーのすぐ下に固定し、「目次へ戻る」は置かない");
+  ok(/@media\(min-width:1100px\)\{\s*\.guide \.guide-layout\{display:grid;grid-template-columns:212px/.test(css), "ガイド: 広い画面では、章ナビを本文の左に置く");
   const sub = page("submit.html");
   ok(sub("details.more-fields #address").length === 1 && sub("details.more-fields #description").length === 1 && sub("details.more-fields #date").length === 0 && sub("legend").first().text() === "1. 開催の情報", "掲載の依頼: 任意の項目は「くわしく書く」で開く。段階に番号");
   const ph = sub("[placeholder^='例']").map((_, x) => sub(x).attr("placeholder")).get();
