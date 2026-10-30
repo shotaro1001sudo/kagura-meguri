@@ -3,9 +3,9 @@ import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
-import {JSDOM} from 'jsdom';
-import {CARSHARE_BANNER,RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
-import {PREFECTURES} from '../scripts/lib/util.mjs';
+import {JSDOM,VirtualConsole} from 'jsdom';
+import {CARSHARE_BANNER,RENTAL_BANNER,rentalSearch,validOffer,offersFor,offerCards,experiences,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
+import {PREFECTURES,REGIONS} from '../scripts/lib/util.mjs';
 
 export function visitorPlanningTests({ok,section,OUT,build}) {
   section('観覧準備3企画: 広告の個別承認・期限・対象地域・安全なURL');
@@ -35,7 +35,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(escaped('a[rel~=sponsored][rel~=noopener][target=_blank]').length===1&&escaped('a').text().includes('楽天市場')&&escaped('a').text().includes('広告'),'リンク先名と広告を明示し安全な外部リンクにする');
   ok(experiencesFor(context,today).length===2&&experiencesFor({prefecture:'大分県',city:'高千穂町'},today).length===0,'公式確認済みの2体験を当該地域だけへ接続');
   ok(experiencesFor(context,'2027-02-01').length===0,'90日を超えた未再確認の体験を出し続けない');
-  ok(experienceSection(context,today).includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止と移動の未確認を明示し、間に合うと断言しない');
+  // 休止の案内は、公式で確認できた時点のものだけを出す。10/25・26の台風による休止は、10/30に公式の営業カレンダーで終了を確認した
+  const boat=experiences.find(x=>x.id==='takachiho-boat'),boatNotice=boat.notice;
+  boat.notice='確認時点で、営業休止が案内されています。';
+  const noticed=cheerio.load(experienceSection(context,today));
+  boat.notice=boatNotice;
+  ok(noticed('.planning-notice').text().includes('営業休止')&&experienceSection(context,today).includes('移動時間は未確認'),'確認時点の休止があれば明示し、移動の未確認も明示して、間に合うと断言しない');
+  ok(!experienceSection(context,today).includes('10月25・26日'),'終わった休止(10月25・26日)の案内を出し続けない');
   const national=cheerio.load(experienceDirectory({sid:'3784232',pid:'892732911',allowed:true}));
   ok(experienceRegions.length===47&&new Set(experienceRegions.map(x=>x.url)).size===47&&PREFECTURES.every(p=>experienceRegions.some(x=>x.prefecture===p)),'全国47都道府県の実際の検索先が揃い、県とURLの重複がない');
   ok(national('.experience-areas a:not(.experience-unavailable)').length===47&&national('.experience-areas a.experience-unavailable').length===47&&!national.root().text().includes('高千穂'),'全国向けの入口を特定の神楽や施設の紹介に限定しない');
@@ -57,6 +63,30 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(takachihoCard('#nearby-experiences details summary').filter((i,x)=>takachihoCard(x).text()==='開催地域での施設紹介例').next('.planning-grid').find('.planning-card').length===2&&takachihoCard('#nearby-experiences h2,#nearby-experiences h3:not(.planning-card h3)').length===0,'施設紹介例は、周辺体験のカードの中で折りたたむ(カードの中に見出しの欄を作らない)');
   ok(experienceRegions.find(x=>x.prefecture==='静岡県').url.includes('/210000/')&&experienceRegions.find(x=>x.prefecture==='岐阜県').url.includes('/220000/'),'地域コードをJISコードから推測せず公式のリンク対応を保持');
   ok(experienceDirectory() === "", "未設定の体験ディレクトリは通常検索で代替しない");
+  // 体験の全国一覧: 同じ文の広告リンクが47個並ぶと県名を探しにくいので、地方ごとに折りたたむ(運営者の判断 2026-10-30)
+  const regions=affNational('details.experience-region');
+  ok(regions.length===REGIONS.length&&regions.toArray().every(d=>!affNational(d).attr('open'))&&affNational('.taglist').length===0,'47都道府県は地方ごとの折りたたみにし、最初はすべて閉じる(地方へのページ内リンクの列は置かない)');
+  ok(REGIONS.every(([name,prefs],i)=>{const d=affNational(`#experience-region-${i}`),label=d.children('summary').text();return label.startsWith(name)&&prefs.every(p=>label.includes(p==='北海道'?p:p.replace(/[都府県]$/,'')))&&d.find('.experience-area').length===prefs.length;}),'地方の見出しに、含まれる県の名前を添え、その地方の県だけを中に並べる');
+  const areaBoxes=affNational('.experience-area').toArray();
+  ok(areaBoxes.length===47&&areaBoxes.every(x=>/^experience-pref-\d{6}$/.test(affNational(x).attr('id'))&&affNational(x).find('[data-vc-ad]').length===1&&affNational(x).find('a.experience-unavailable').length===1)&&affNational('[data-vc-ad][id]').length===0,'県ごとの枠に移動先のIDを置き、広告の枠にはIDを付けない(IDの重複なし)');
+  const pageTargets=[...new Set(PREFECTURES.flatMap(prefecture=>[experienceSection({prefecture},today,aff),planningLinks({prefecture},today,aff)]).flatMap(h=>[...h.matchAll(/href="\/experiences\.html#([^"]+)"/g)].map(m=>m[1])))];
+  ok(pageTargets.length===47&&pageTargets.every(id=>affNational(`#${id}`).closest('details.experience-region').length===1),'県のページ・公演のページの「ほかの都道府県から探す」は、全国一覧の中の当該県へつながる');
+  const openerErrors=[],openerConsole=new VirtualConsole();openerConsole.on('jsdomError',e=>openerErrors.push(e));
+  const opener=new JSDOM(experienceDirectory(aff),{url:'https://kagurameguri.jp/experiences.html#experience-pref-340000',runScripts:'outside-only',virtualConsole:openerConsole}),ow=opener.window;
+  ow.Element.prototype.scrollIntoView=function(){ow.scrolled=this.id;};
+  ow.eval(readFileSync('scripts/client/details-target.js','utf8'));
+  const chugoku=ow.document.querySelector('#experience-pref-340000')?.closest('details');
+  ok(chugoku?.open&&ow.scrolled===chugoku.id&&[...ow.document.querySelectorAll('details.experience-region')].filter(d=>d.open).length===1,'リンクで来たときは、その県の地方だけを開き、地方の見出しから表示する');
+  ow.location.hash='#experience-pref-470000';ow.dispatchEvent(new ow.HashChangeEvent('hashchange'));
+  ok(ow.document.querySelector('#experience-pref-470000')?.closest('details')?.open&&chugoku?.open,'ページ内で別の県へ移ったときも、その地方を開く(開いている地方は閉じない)');
+  for(const hash of ['#%E0%A4%A','#missing','#experience-area-h'])ow.location.hash=hash,ow.dispatchEvent(new ow.HashChangeEvent('hashchange'));
+  ok(openerErrors.length===0&&[...ow.document.querySelectorAll('details.experience-region')].filter(d=>d.open).length===2,'壊れたリンク・存在しない行き先・折りたたみの外の行き先では何もしない');ow.close();
+  // 都道府県のページ: 体験検索のボタンを1行に置き、その下に「ほかの都道府県から探す」
+  const prefActions=cheerio.load(experienceSection({prefecture:'広島県'},today,aff))('.nearby-actions');
+  ok(prefActions.children().length===2&&prefActions.children().first().is('[data-vc-ad]')&&prefActions.children().last().is('a.nearby-more[href="/experiences.html#experience-pref-340000"]'),'都道府県のページの周辺体験: 体験検索のボタンと、その下のほかの都道府県への入口');
+  // 公演のページのカード: 主ボタン(体験検索)と、区切りの下の小さな入口(ほかの都道府県・施設紹介例)
+  const nearbyCard=cheerio.load(planningLinks(context,today,aff))('#nearby-experiences'),nearbySub=nearbyCard.children('.nearby-sub');
+  ok(nearbyCard.children('.nearby-main').children('[data-vc-ad]').length===1&&nearbySub.children('a.nearby-more').length===1&&nearbySub.children('details.pc-more').children('summary').toArray().some(x=>x.children.map(c=>c.data).join('')==='開催地域での施設紹介例')&&nearbyCard.children('p').length===0,'公演のページの周辺体験: 体験検索を主ボタンにし、ほかの都道府県と施設紹介例を区切りの下にそろえる');
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   const fullEvent=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),weekly=cheerio.load(readFileSync(join(OUT,'regular/r-weekly.html'),'utf8'));

@@ -166,11 +166,22 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .planning-links b{font-family:var(--serif);font-size:var(--fs-m);font-weight:500}
 .planning-links>a>span:last-child{color:var(--mut);font-size:var(--fs-xs)}
 .planning-links>a:hover{border-color:var(--ac)}
-/* 周辺体験のカード: 開催県の体験検索と、ほかの都道府県への入口をまとめる */
-.planning-nearby>p{margin:6px 0 0}
-.planning-nearby .vc-ad.vc-experience>a{display:block;width:fit-content;padding:9px 14px;font-size:var(--fs-s);letter-spacing:.02em;line-height:1.6}
-.planning-nearby .nearby-more{width:fit-content;font-size:var(--fs-xs);letter-spacing:.02em}
-.planning-nearby .pc-more{margin:2px 0 0}
+/* 周辺体験のカード: 開催県の体験検索を幅いっぱいの主ボタンにし、
+   ほかの都道府県への入口と施設紹介例は、区切り線の下に同じ見た目の小さなリンクでそろえる */
+.planning-nearby .nearby-main{margin:10px 0 0}
+.planning-nearby .nearby-main>.vc-ad:not([hidden]){display:block}
+.planning-nearby .nearby-main:not(:has(>.vc-ad:not([hidden]))){display:none}
+.planning-nearby .nearby-main .vc-ad.vc-experience>a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 16px;border:1px solid var(--ac);border-radius:var(--radius-s,8px);background:var(--ac);color:var(--onac);font-size:var(--fs-s);letter-spacing:.04em;line-height:1.6;text-align:center}
+.planning-nearby .nearby-main .vc-ad.vc-experience>a:hover{opacity:.85}
+.planning-nearby .nearby-sub{display:flex;flex-direction:column;align-items:flex-start;margin:12px 0 0;padding:6px 0 0;border-top:1px solid var(--line)}
+.planning-nearby .nearby-sub:empty{display:none}
+.planning-nearby .nearby-sub>.nearby-more,.planning-nearby .nearby-sub>.pc-more>summary{display:flex;align-items:center;gap:8px;width:fit-content;min-height:40px;padding:4px 0;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;list-style:none;cursor:pointer}
+.planning-nearby .nearby-sub>.pc-more>summary::-webkit-details-marker{display:none}
+.planning-nearby .nearby-sub>.nearby-more::before{content:"›";font-size:var(--fs-m);line-height:1}
+.planning-nearby .nearby-sub>.pc-more>summary::before{content:"+";width:.9em;text-align:center;font-size:var(--fs-s);line-height:1}
+.planning-nearby .nearby-sub>.pc-more[open]>summary::before{content:"−"}
+.planning-nearby .nearby-sub>.nearby-more:hover,.planning-nearby .nearby-sub>.pc-more>summary:hover{color:var(--ac);text-decoration:underline;text-underline-offset:.25em}
+.planning-nearby .nearby-sub>.pc-more{align-self:stretch;margin:0}
 /* 施設紹介例があるカード(高千穂など)は、紹介例を読める幅にするため、持ち物・行き帰りの下に全幅で置く */
 .planning-links:has(>.planning-nearby .planning-grid){grid-template-columns:repeat(2,minmax(0,1fr))}
 .planning-nearby:has(.planning-grid){grid-column:1/-1}
@@ -185,10 +196,43 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .planning-notice{padding-left:12px;border-left:2px solid var(--ac);font-size:var(--fs-s)}
 .planning-steps{padding-left:1.5em}.planning-steps li{margin-bottom:14px}
 .planning-ads{margin:24px 0}
-.experience-areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.experience-areas>a{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card);text-decoration:none;scroll-margin-top:100px}
-.experience-areas>a:target{outline:2px solid var(--ac);outline-offset:2px}
-@media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a,.planning-links>.planning-nearby{padding:14px 18px}.planning-card{padding:18px}}
+/* 都道府県のページの周辺体験: 体験検索のボタンを1行に置き、ほかの都道府県への入口はその下に小さく */
+.nearby-actions{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:14px 0 28px}
+.nearby-actions .vc-ad.vc-experience>a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 20px;border-radius:var(--radius-s,8px);font-size:var(--fs-s);letter-spacing:.04em;line-height:1.6;text-align:center}
+.nearby-actions .vc-ad.vc-experience>a:hover{border-color:var(--ac)}
+.nearby-actions>.nearby-more{display:inline-flex;align-items:center;gap:8px;min-height:40px;font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none}
+.nearby-actions>.nearby-more:hover{text-decoration:underline;text-underline-offset:.25em}
+.nearby-actions>.nearby-more::before{content:"›";font-size:var(--fs-m);line-height:1}
+/* 施設紹介例: 文はすべて見せたまま、場所→名前→おすすめ→利用の注意の順に読めるよう、大きさと間隔に差をつける */
+#nearby-experiences .planning-grid{gap:14px}
+#nearby-experiences .planning-card{display:flex;flex-direction:column}
+#nearby-experiences .planning-card>.meta{margin:0 0 4px;font-size:var(--fs-xs);color:var(--mut);letter-spacing:.04em}
+#nearby-experiences .planning-card>h3{margin:0 0 10px}
+#nearby-experiences .planning-card>p:not(.meta){margin:0 0 12px;line-height:1.85}
+#nearby-experiences .planning-card>h3+p+p:not(.planning-notice){font-size:var(--fs-s);color:var(--mut)}
+#nearby-experiences .planning-card>.btn{align-self:flex-start;margin:auto 0 0}
+/* 体験の全国一覧: 地方ごとに折りたたみ、開いた地方の県だけをボタンで並べる */
+.experience-regions{display:grid;gap:10px;margin:22px 0}
+.experience-region{scroll-margin-top:90px;border:1px solid var(--line);border-radius:var(--radius,6px);background:var(--card)}
+.experience-region>summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 14px;min-height:60px;padding:12px 18px;cursor:pointer;list-style:none}
+.experience-region>summary::-webkit-details-marker{display:none}
+.experience-region>summary b{font-family:var(--serif);font-size:var(--fs-m);font-weight:500}
+.experience-region>summary span{grid-column:1;color:var(--mut);font-size:var(--fs-xs);line-height:1.7}
+.experience-region>summary::after{content:"";grid-column:2;grid-row:1/3;width:8px;height:8px;margin:0 4px 4px 0;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform var(--t-s) var(--ease)}
+.experience-region[open]>summary::after{margin:4px 4px 0 0;transform:rotate(-135deg)}
+.experience-region>summary:hover b{color:var(--ac)}
+.experience-region>summary:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:var(--radius,6px)}
+.experience-region>.experience-areas{padding:2px 18px 18px}
+.experience-areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.experience-area{display:flex;min-width:0;scroll-margin-top:170px}
+.experience-area>.vc-ad:not([hidden]){display:flex;width:100%}
+.experience-area :is(.vc-ad>a,.experience-unavailable){display:flex;align-items:center;width:100%;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-s,8px);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.6;text-decoration:none}
+.experience-area :is(.vc-ad>a,.experience-unavailable):hover{border-color:var(--ac);color:var(--ac)}
+.experience-area:target :is(.vc-ad>a,.experience-unavailable){outline:2px solid var(--ac);outline-offset:2px}
+@media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}.planning-links>a,.planning-links>.planning-nearby{padding:14px 18px}.planning-card{padding:18px}
+  .planning-links:has(>.planning-nearby .planning-grid){grid-template-columns:minmax(0,1fr)}
+  .nearby-actions{align-items:stretch}.nearby-actions>.vc-ad:not([hidden]){display:block}.nearby-actions>.nearby-more{align-self:flex-start}
+  #nearby-experiences .planning-card{padding:16px 18px}.experience-region>summary{padding:12px 16px}.experience-region>.experience-areas{padding:2px 14px 16px}}
 /* 好み診断と、小さな離脱意向の案内。ページや戻る操作をロックしない。 */
 .quiz-offer[hidden]{display:none}
 body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
@@ -841,7 +885,6 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .vc-ad>a{display:block}
 .vc-ad.stay-btn,.vc-ad.vc-experience{padding:0;border:0;background:transparent}
 .vc-ad.stay-btn>a,.vc-ad.vc-experience>a,.vc-ad.vc-stay>a{padding:12px 16px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
-.experience-areas>.vc-ad:not([hidden]){display:block}
 /* 広告の注記: 最初の広告の枠のすぐ上に、小さく控えめに(「広告」の文字は、地の文と区別できるように) */
 .vc-disclosure{font-size:var(--fs-xs);line-height:1.7;color:var(--mut);margin:0 0 8px}
 .vc-disclosure strong{font-weight:500;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-right:4px}
@@ -856,5 +899,4 @@ input,select,textarea,button{border-radius:var(--radius-s)}
 .cookie-settings [role="status"]:not(:empty){display:block;margin-top:4px}
 
 /* Keep the directory understandable without loading an advertising resource. */
-.experience-unavailable{display:flex;flex-direction:column;gap:4px;padding:10px 16px;border:1px solid var(--line);border-radius:4px;background:var(--card)}
-.experience-areas>.vc-ad:not([hidden])+.experience-unavailable{display:none}
+.experience-area>.vc-ad:not([hidden])+.experience-unavailable{display:none}
