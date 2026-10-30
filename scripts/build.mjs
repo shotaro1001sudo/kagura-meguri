@@ -317,6 +317,29 @@ const withAdDisclosure = (html) => {
   const at = el[0].sourceCodeLocation.startOffset;
   return html.slice(0, at) + VC_DISCLOSURE + html.slice(at);
 };
+// 公演の説明: 長い文は、スマホで1つの塊にならないよう、2文ずつの段落に分ける(文は変えない)
+const descParas = (s = "") => {
+  const sentences = String(s).match(/[^。]+。?/g)?.map((x) => x.trim()).filter(Boolean) ?? [];
+  if (String(s).length <= 90 || sentences.length < 3) return `<p>${esc(s)}</p>`;
+  const out = [];
+  for (let i = 0; i < sentences.length; i += 2) out.push(sentences.slice(i, i + 2).join(""));
+  return out.map((t) => `<p>${esc(t)}</p>`).join("");
+};
+// ページ下の注記: ほかの場所(宿の枠の条件、各広告の「PR」「(広告)」の印、免責事項のページ)で伝わっている注意はくり返さない。
+// 広告の注記は、ページごとに1行へまとめる(各広告の印と、ページ上の「広告」の注記はそのまま残る)
+const NOTE_DROP = [/^営業状況・空き・価格はリアルタイム表示ではありません/, /^会場の公式アクセスと公共交通を先に確認し/, /泊・大人2名で検索します。/, /^掲載情報確認: /, /^県内全域の一覧です。/];
+const NOTE_AD = [/^PR: 宿の案内は広告/, /^<span class="pr">広告<\/span>\s*外部サービスの広告です/, /^<span class="pr">PR<\/span>\s*紹介している商品・返礼品のリンクは広告/];
+const AD_NOTE = '<span class="pr">広告</span> 宿・交通・体験・商品などのリンクは広告(アフィリエイトリンク)を含みます。予約・購入・寄付で当サイトに報酬が入ることがあります。';
+const tidyNotes = (notes) => {
+  const plain = (n) => n.replace(/<[^>]+>/g, "");
+  let ad = false;
+  const kept = notes.filter((n) => {
+    if (NOTE_AD.some((re) => re.test(n))) { ad = true; return false; }
+    if (NOTE_DROP.some((re) => re.test(plain(n)))) { if (/広告|アフィリエイト/.test(n)) ad = true; return false; }
+    return true;
+  });
+  return ad ? [...kept, AD_NOTE] : kept;
+};
 const collectNotes = (body) => {
   const notes = [];
   const out = body.split(/(<script[\s\S]*?<\/script>)/).map((part, i) => (i % 2 ? part : part.replace(NOTE_RE, (_, inner) => {
@@ -324,7 +347,8 @@ const collectNotes = (body) => {
     if (t && !notes.includes(t)) notes.push(t);
     return "";
   }).replace(/<details[^>]*><summary>[^<]*<\/summary>\s*<\/details>/g, ""))).join("");
-  return notes.length ? `${out}<section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2>${notes.map((n) => `<p>${n}</p>`).join("")}</section>` : out;
+  const shown = tidyNotes(notes);
+  return shown.length ? `${out}<section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2>${shown.map((n) => `<p>${n}</p>`).join("")}</section>` : out;
 };
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
   const en = lang === "en";
@@ -826,7 +850,7 @@ for (const e of events) {
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
 <tr><th>料金</th><td>${e.fee ? esc(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}</div>
-<p class="desc-lead">${esc(e.description)}</p>
+<div class="desc-lead">${descParas(e.description)}</div>
 ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 ${showPreparation ? preparationLinks() : ""}</div>
 ${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
@@ -849,7 +873,7 @@ for (const r of regular) {
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}</div>
-<p class="desc-lead">${esc(r.description)}</p>
+<div class="desc-lead">${descParas(r.description)}</div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
 <div class="d-side">${affiliateBlock(r, { banners: false, performance: true })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}${GUIDE_LINK}

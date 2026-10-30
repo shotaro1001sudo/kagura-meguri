@@ -109,6 +109,10 @@ export async function uxTests({ ok, section, OUT }) {
     ok(d.querySelector(".trip-band").hidden === true && d.querySelector(".other").hidden === false && d.querySelectorAll(".other .stay-banner[hidden]").length === 1, "宿のバナー画像が出ないときはそのバナーを隠し、見えるバナーが残らなければ枠ごと隠す");
     dom.window.close();
   }
+  // 読みやすさ: 説明は段落(p)で組み、ページ下の注記は同じ注意をくり返さず、広告の注記は1行にまとめる
+  { const pages = ["events/t-full.html", "events/t-long.html", "regular/r-weekly.html", "weekend.html"].map(page);
+    ok(pages.slice(0, 3).every((p) => p(".desc-lead > p").length >= 1), "公演の説明は段落(p)で組む(長い説明は2文ずつに分ける)");
+    ok(pages.every((p) => { const t = p(".page-notes").text(); return !/リアルタイム表示ではありません|会場の公式アクセスと公共交通を先に|泊・大人2名で検索します|掲載情報確認:/.test(t) && (t.match(/アフィリエイトリンク/g) || []).length <= 1; }), "ページ下の注記は、ほかで伝わる注意をくり返さず、広告の注記は1行にまとめる"); }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-top .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");
   ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
