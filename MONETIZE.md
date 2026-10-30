@@ -69,6 +69,8 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
 
 `data/more-offers.json` に、本人が楽天アフィリエイトで発行したリンクを登録すると表示されます。
 
+**2026-10-30 運営者の判断で停止中:** 本・DVD(`more-offers.json` の `categories.learn.enabled: false`)と、観覧用品(`visitor-planning.json` の `categories.supplies.enabled: false`)は表示していません。来訪者の目的(公演を調べる)とずれ、購入が見込みにくいため。商品データは残してあるので、`enabled` を `true` に戻せば再開できます。ふるさと納税・宿・レンタカー・体験は続けています。
+
 | カテゴリ | 表示する場所 | provider |
 |---|---|---|
 | `learn`(本・映像・グッズ) | 神楽の種類のページ(`kagura` に種類名)、神楽の歴史のトップ(`kagura: "*"` の全般向け) | `rakuten-books` / `rakuten-ichiba` |

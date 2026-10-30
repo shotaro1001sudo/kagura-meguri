@@ -1,7 +1,7 @@
 {
   "categories": {
     "supplies": {
-      "enabled": true
+      "enabled": false
     },
     "experiences": {
       "enabled": false

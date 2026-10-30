@@ -65,12 +65,15 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(guide('.planning-ads').length===0,'本番の新規3カテゴリは未承認なので広告を出さない');
 
   const supplied=JSON.parse(readFileSync('data/visitor-planning.json','utf8'));
-  const selected=offersFor(supplied,'supplies',{},today);
-  const published=cheerio.load(offerCards(supplied,'supplies',{},today,'guide_supplies'));
+  // 観覧用品は運営者の判断で止めている(2026-10-30)。商品の決まりは、カテゴリを有効にした写しで確かめる
+  ok(supplied.categories.supplies.enabled===false&&offersFor(supplied,'supplies',{},today).length===0,'本番データ: 観覧用品の広告は止めている(運営者の判断)');
+  const suppliesOn={...supplied,categories:{...supplied.categories,supplies:{enabled:true}}};
+  const selected=offersFor(suppliesOn,'supplies',{},today);
+  const published=cheerio.load(offerCards(suppliesOn,'supplies',{},today,'guide_supplies'));
   ok(selected.length===3&&published('a[data-affiliate-category=supplies]').length===3,'本人提供の3商品だけを用品広告として表示');
   ok(published('a[data-affiliate-category=supplies]').toArray().every((a,i)=>published(a).attr('href')===selected[i].url&&new URL(selected[i].url).searchParams.get('pc')===selected[i].destinationUrl),'発行URLの全パラメーターを保持し、選定商品と遷移先が一致');
   ok(!supplied.categories.experiences.enabled&&supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験は無効、レンタカーのみ追加有効、期限付きの価格・ポイントを固定表示しない');
-  ok(offersFor(supplied,'supplies',{},'2026-11-24').length===3&&offersFor(supplied,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
+  ok(offersFor(suppliesOn,'supplies',{},'2026-11-24').length===3&&offersFor(suppliesOn,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
 
   const ownerRental=supplied.offers.find(o=>o.provider==='rakuten-rental');
   ok(validOffer(ownerRental,today),'本人発行のhsc画像バナーを承認条件つきで扱える');
@@ -113,7 +116,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     if(issued.status===0){
       const actual=cheerio.load(readFileSync(join(issuedOutput,'guide.html'),'utf8'));
       const csp=actual('meta[http-equiv="Content-Security-Policy"]').attr('content')||'';
-      ok(actual('[data-affiliate-category=supplies]').length===3&&actual('[data-affiliate-category=rental]').length===2&&actual('.planning-banner img').attr('src')===RENTAL_BANNER.imageUrl,'実ビルドで用品3商品と車移動のバナー2件を併載');
+      ok(actual('[data-affiliate-category=supplies]').length===0&&actual('.pick').length===0&&actual('[data-affiliate-category=rental]').length===2&&actual('.planning-banner img').attr('src')===RENTAL_BANNER.imageUrl,'実ビルドでは観覧用品を出さず、車移動のバナー2件は残す');
       ok(/img-src[^;]*https:\/\/hbb\.afl\.rakuten\.co\.jp/.test(csp)&&!/script-src[^;]*hbb\.afl/.test(csp),'画像配信元だけCSPで許可し、スクリプトには許可しない');
     }
     const partial={...settings,categories:{supplies:{enabled:true},experiences:{enabled:false},rental:{enabled:false}}};writeFileSync(file,JSON.stringify(partial));
