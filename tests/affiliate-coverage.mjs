@@ -20,7 +20,8 @@ export function affiliateCoverageTests({ ok, section }) {
   const unknownPref = affiliateCoverage({ events: [{ ...auto, prefecture: "未確認県" }], affiliate, planning, today });
   ok(!unknownPref.rows[0].experience && unknownPref.rows[0].missing.includes("体験"), "47都道府県にない県名は、体験を推測で紐づけない");
   const more=JSON.parse(readFileSync("data/more-offers.json","utf8"));
-  const bookCov=affiliateCoverage({events:[{...auto,prefecture:"島根県",city:"浜田市",kagura:"石見神楽"},{...auto,id:"unknown",prefecture:"不明",kagura:"未確認"}],affiliate,planning,more,today});
+  const moreOn={...more,categories:{...more.categories,learn:{enabled:true}}}; // 本・DVDは本番では止めている。監査の決まりは有効にした写しで確かめる
+  const bookCov=affiliateCoverage({events:[{...auto,prefecture:"島根県",city:"浜田市",kagura:"石見神楽"},{...auto,id:"unknown",prefecture:"不明",kagura:"未確認"}],affiliate,planning,more:moreOn,today});
   ok(bookCov.rows[0].learn.length>0&&bookCov.rows[0].furusato.length>0&&bookCov.counts.furusato_unmatched===1,"公開済み商品と自動公演の地域/typeを同じ索引で監査");
   const expiredBooks=affiliateCoverage({events:[],affiliate,planning,more,today:"2026-12-01"});
   ok(expiredBooks.expiring.some(o=>o.source==="data/more-offers.json")&&expiredBooks.counts.expired>0,"本・返礼品の期限を共通監査へ含める");

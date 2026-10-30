@@ -1,7 +1,7 @@
 {
   "categories": {
     "learn": {
-      "enabled": true
+      "enabled": false
     },
     "furusato": {
       "enabled": true
