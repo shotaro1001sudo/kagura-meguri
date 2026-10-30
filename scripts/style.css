@@ -518,8 +518,7 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .prose h3{font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin:28px 0 8px}
 /* 読み物(ガイド)の目次と出典 */
 .toc{margin:20px 0 8px;padding:14px 18px;border-left:2px solid var(--ac2);background:var(--card)}
-.totoc{margin:18px 0 0;font-size:var(--fs-s)}.totoc a{color:var(--mut);text-decoration:none;display:inline-block;padding:8px 0}.totoc a:hover{color:var(--ac)}
-@media(min-width:1320px){.guide .toc{position:fixed;top:96px;left:calc(50% - 430px - 236px);width:212px;max-height:calc(100vh - 120px);overflow:auto;margin:0;z-index:5}.totoc{display:none}}.toc ol{margin:0;padding-left:1.3em}.toc li{margin:6px 0}
+.toc ol{margin:0;padding-left:1.3em}.toc li{margin:6px 0}
 .prose li strong{font-weight:500}.prose ul.sources{font-size:var(--fs-s)}
 /* トップの「これからの神楽」: 地方のボタン、月の見出し、この先の月 */
 [hidden]{display:none!important}
@@ -533,7 +532,6 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .regions.prefs{margin-top:0}.regions.prefs button{font-size:var(--fs-xs);min-height:36px}
 .later .tag span{color:var(--mut);font-size:var(--fs-xs);margin-left:2px}
 /* ガイド: 章(番号つき)と、項目ごとのカード(広い画面では2列)。出典は文末の小さな番号で、最後にまとめる */
-.prose.guide{max-width:880px}.guide>p,.guide>.toc{max-width:680px}
 .gsec{display:flex;align-items:baseline;gap:12px;margin:56px 0 14px!important;padding-top:20px;border-top:1px solid var(--line);font-family:var(--serif);font-weight:500;font-size:var(--fs-l)!important;scroll-margin-top:16px}
 .gsec .no{color:var(--ac);font-family:var(--sans);font-size:var(--fs-xs);letter-spacing:.18em}
 .gcards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));margin:14px 0 18px}
@@ -548,6 +546,59 @@ sup.cite{font-size:.68em;line-height:0;margin-left:2px;white-space:nowrap}sup.ci
 ol.sources{font-size:var(--fs-s);padding-left:1.8em}ol.sources li{scroll-margin-top:16px}ol.sources li:target{background:var(--card)}
 ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 .prose h2[id]{scroll-margin-top:16px}
+/* ---------- はじめての神楽ガイド: 章ナビ(目次)と本文の2列 ----------
+   スマホ・タブレットは、章ナビをヘッダーのすぐ下に横一列で固定し、PC(1100px〜)は本文の左に縦に固定する。
+   --guide-top は、guide.js がヘッダーの高さを入れる(ヘッダーは画面幅で高さが変わる)。今読んでいる章は aria-current */
+.prose.guide{max-width:none}
+.guide .guide-body{min-width:0}
+.guide .guide-body>p{max-width:680px}
+.guide .gnav{position:sticky;top:var(--guide-top,72px);z-index:20;margin:0 0 8px;padding:10px 0;border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.guide .gnav-h{display:none}
+.guide .gnav ol{display:flex;gap:6px;margin:0;padding:0 28px 0 0;list-style:none;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+.guide .gnav ol::-webkit-scrollbar{display:none}
+.guide .gnav li{flex:none;margin:0}
+.guide .gnav a{display:flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;white-space:nowrap;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+.guide .gnav a:hover{border-color:var(--ac)}
+.guide .gnav .no{flex:none;color:var(--ac);font-size:var(--fs-2xs);letter-spacing:.12em}
+.guide .gnav a[aria-current]{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.guide .gnav a[aria-current] .no{color:inherit}
+.guide .guide-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--guide-top,72px) + 72px)}
+.guide sup.cite a,.guide ol.sources li{scroll-margin-top:calc(var(--guide-top,72px) + 84px)}
+@media(prefers-reduced-motion:no-preference){html:has(.gnav){scroll-behavior:smooth}}
+/* 章の見出し: 番号を朱の丸で示す */
+.guide .gsec{align-items:center;gap:14px;margin:72px 0 18px!important;padding-top:24px}
+.guide .gsec .no{display:grid;place-items:center;flex:none;width:40px;height:40px;border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);border-radius:50%;font-family:var(--serif);font-size:var(--fs-s);letter-spacing:.04em}
+/* 項目のカード・図: ほかのページのカードと同じ角の丸みと影 */
+.guide :is(.gcard,.fig){border-color:color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);box-shadow:var(--shadow)}
+.guide .gcard h3:has(.ic){flex-wrap:nowrap;align-items:flex-start}
+.guide .gcard h3 .ic{flex:none;width:34px;height:34px;padding:8px;margin:-4px 2px 0 0;border-radius:50%;background:color-mix(in srgb,var(--ac) 9%,transparent)}
+/* 持ち物チェックリスト: 1行に1つ。場面は小さく添える。チェックは保存しない */
+.guide .checklist{margin:18px 0 10px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+.guide .checklist ul{list-style:none;margin:0;padding:0}
+.guide .checklist li{margin:0;padding:14px 18px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.guide .checklist li:first-child{border-top:0}
+.guide .checklist label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;align-items:start;cursor:pointer}
+.guide .checklist input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--ac);cursor:pointer}
+.guide .checklist b{display:block;font-weight:500}
+.guide .checklist small{display:block;margin-top:1px;color:var(--mut);font-size:var(--fs-xs);letter-spacing:.04em}
+.guide .checklist input:checked+span b{color:var(--mut);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ac) 60%,transparent)}
+.guide .checklist .ck-note{margin:6px 0 0 34px;color:var(--mut);font-size:var(--fs-s);line-height:1.8}
+.guide .checklist .pick{margin:10px 0 0 34px!important}
+.guide .checklist-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:4px 18px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);background:color-mix(in srgb,var(--bg) 55%,var(--card));color:var(--mut);font-size:var(--fs-xs);min-height:48px}
+.guide .checklist.done .checklist-count{color:var(--ac)}
+.guide .checklist-reset{min-height:40px;font-size:var(--fs-xs)}
+@media(min-width:1100px){
+  .guide .guide-layout{display:grid;grid-template-columns:212px minmax(0,1fr);gap:48px;align-items:start}
+  .guide .gnav{top:calc(var(--guide-top,72px) + 28px);max-height:calc(100vh - var(--guide-top,72px) - 56px);overflow:auto;margin:28px 0 0;padding:4px 0;border:0;border-left:1px solid var(--line);background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  .guide .gnav-h{display:block;margin:0 0 8px 16px;color:var(--mut);font-size:var(--fs-2xs);letter-spacing:.16em}
+  .guide .gnav ol{flex-direction:column;gap:0;padding:0;overflow:visible;-webkit-mask-image:none;mask-image:none}
+  .guide .gnav a{align-items:baseline;gap:10px;min-height:0;margin-left:-1px;padding:9px 12px 9px 16px;border:0;border-left:2px solid transparent;border-radius:0;background:none;font-size:var(--fs-s);line-height:1.6;white-space:normal}
+  .guide .gnav a:hover{color:var(--ac)}
+  .guide .gnav a[aria-current]{background:none;border-left-color:var(--ac);color:var(--ac)}
+  .guide .gnav a[aria-current] .no{color:var(--ac)}
+  .guide .guide-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--guide-top,72px) + 24px)}
+  .guide sup.cite a,.guide ol.sources li{scroll-margin-top:calc(var(--guide-top,72px) + 24px)}
+}
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
 /* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
