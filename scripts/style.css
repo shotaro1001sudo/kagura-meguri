@@ -429,29 +429,56 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 /* ゆっくり現れる */
 /* 動き(出現・視差・ホバー・導入演出)は scripts/motion.css にまとめている */
 
-/* 主催者の方へ: 要点のカード・載る場所・送り方・番号つきの手順・開閉式のよくあるご質問 */
+/* 主催者の方へ: 要点のカード・載る場所・送り方・番号つきの手順・開閉式のよくあるご質問。
+   カードは、ほかのページと同じ角の丸みと影。アイコンは朱の丸の中。送り方ごとに行き先のボタンを置く */
 .olead{line-height:2.05}
-.opoints,.ocards,.steps{list-style:none;padding:0!important;display:grid;gap:10px}
-.opoints{margin:18px 0 12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.opoints,.ocards,.steps{list-style:none;padding:0!important;display:grid;gap:12px}
+.opoints{margin:20px 0 16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .opoints li,.ocards li,.steps li{margin:0!important}
-.opoints li{padding:14px 16px;background:var(--card);border:1px solid var(--line);border-top:2px solid var(--ac);border-radius:4px}
-.opoints b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin-bottom:4px}
+:is(.opoints,.ocards,.oways)>*,.ofix,.faq details{border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.opoints li{padding:18px 18px 16px}
+.ocards li{position:relative;padding:16px 18px 16px 66px}
+:is(.opoints,.ocards) .ic{width:34px;height:34px;margin:0;padding:8px;border-radius:50%;background:color-mix(in srgb,var(--ac) 9%,transparent)}
+.opoints .ic{display:block;margin:0 0 8px}
+.ocards .ic{position:absolute;left:18px;top:16px}
+.opoints b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-l);margin:2px 0 4px}
 .opoints span{display:block;font-size:var(--fs-s);color:var(--mut);line-height:1.8}
 .octa{margin:4px 0 0}
 .ocards{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
-.ocards li{padding:14px 16px;border:1px solid var(--line);border-radius:4px;font-size:var(--fs-s);line-height:1.85}
-.ocards b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin-bottom:4px}
-.oways{display:grid;gap:12px}
-.oway{padding:2px 18px 14px;background:var(--card);border:1px solid var(--line);border-radius:4px}
-.oway h3{margin-top:14px!important}.oway table.info{margin:8px 0 0}.oway table.info tr:last-child :is(th,td){border-bottom:0}
+.ocards li{font-size:var(--fs-s);line-height:1.85}
+.ocards b{display:block;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin:4px 0 6px}
+.oways{display:grid;gap:14px}
+.oway{padding:4px 20px 18px}
+.oway h3{margin-top:16px!important}.oway table.info{margin:8px 0 0}.oway table.info tr:last-child :is(th,td){border-bottom:0}
+.oway-go{margin:14px 0 0!important}.oway-go .btn{margin:0}
+.ofix{padding:4px 20px 18px}
 .steps{counter-reset:st;gap:14px}
 .steps li{counter-increment:st;display:grid;grid-template-columns:44px 1fr;gap:0 14px;align-items:start}
 .steps li:before{content:counter(st);grid-row:span 2;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--ac);color:var(--onac);font-family:var(--serif);font-size:var(--fs-l)}
 .steps b{font-family:var(--serif);font-weight:500;padding-top:8px}.steps span{font-size:var(--fs-s);line-height:1.85}
-.rules li{margin:8px 0!important}
-.faq details{border-top:1px solid var(--line)}.faq details:last-child{border-bottom:1px solid var(--line)}
-.faq summary{cursor:pointer;padding:12px 4px;min-height:44px;font-weight:500}
-.faq details p{margin:0 4px 14px;font-size:var(--fs-s);line-height:1.9}
+@media(min-width:761px){
+  .steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}
+  .steps li{position:relative;grid-template-columns:1fr;gap:10px;padding:18px 18px 20px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+  .steps li:before{grid-row:auto}
+  .steps b{padding-top:0}
+  .steps li:not(:last-child):after{content:"›";position:absolute;right:-20px;top:50%;transform:translateY(-50%);color:var(--ac);font-size:var(--fs-xl);line-height:1}
+}
+.prose .rules{list-style:none;padding:0}
+.rules li{position:relative;margin:10px 0!important;padding-left:30px}
+.rules li:before{content:"";position:absolute;left:6px;top:.5em;width:12px;height:7px;border-left:2px solid var(--ac);border-bottom:2px solid var(--ac);transform:rotate(-45deg)}
+.faq{display:grid;gap:10px}
+.faq details{padding:0 18px}
+.faq summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;padding:14px 0;min-height:52px;font-weight:500;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:after{content:"+";flex:none;color:var(--ac);font-size:var(--fs-l);line-height:1}
+.faq details[open] summary:after{content:"−"}
+.faq summary:hover{color:var(--ac)}
+.faq details p{margin:0 0 16px;font-size:var(--fs-s);line-height:1.9}
+/* スマホ: 読み進めている間だけ、画面の下に申し込みボタン(organizers.js が出し入れする)。PCでは出さない */
+.octa-bar{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--bg) 92%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.octa-bar .btn{display:flex;width:100%;min-height:48px;margin:0}
+@media(min-width:641px){.octa-bar{display:none!important}}
+@media(max-width:640px){.oway-go .btn{display:flex;width:100%}}
 
 /* 固定ページ */
 .prose{max-width:680px}.prose h2{font-size:var(--fs-l);margin:40px 0 10px}.prose ul{padding-left:1.4em}.prose li{margin:4px 0}
@@ -483,6 +510,19 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .hp{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
 .status{margin-top:14px;min-height:1.6em}.status.ok{color:var(--fg);border-left:3px solid var(--ac2);padding-left:10px}.status.bad{color:var(--ac);border-left:3px solid var(--ac);padding-left:10px}
 .form .btn[disabled]{opacity:.5;cursor:wait}
+/* 掲載の依頼・お問い合わせのフォーム: 入力のまとまりをカードにし、PCでは短い欄を2列に並べる。送信ボタンは大きく。
+   誤りは欄を離れたときに出し、直すとすぐに消える(formScript) */
+.form fieldset{margin:20px 0 0;padding:0 20px 8px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.form legend{float:left;width:100%;padding:18px 0 0;font-size:var(--fs-m)}
+.form legend+*{clear:both}
+.form fieldset :is(input,select,textarea){background:var(--bg)}
+.f-row{display:grid;gap:0 16px}
+.f-row>.f{min-width:0}
+@media(min-width:561px){.f-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.form>.consent{margin:22px 0 0;padding:14px 16px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius-s);background:var(--card)}
+.form #send{display:flex;width:100%;min-height:52px;margin:20px 0 0;font-size:var(--fs-m)}
+@media(min-width:561px){.form #send{width:auto;min-width:260px}}
+.err:not(:empty):before{content:"!";display:inline-grid;place-items:center;width:16px;height:16px;margin-right:6px;border-radius:50%;background:var(--ac);color:var(--onac);font-size:var(--fs-2xs);font-weight:700;vertical-align:1px}
 
 /* 定期公演 */
 .reg .date b{font-size:var(--fs-l);letter-spacing:.05em;padding-top:.3em}

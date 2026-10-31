@@ -35,11 +35,11 @@ export function submitForm(cfg) {
 <fieldset><legend>1. 開催の情報</legend>
 ${field("name", "神楽・イベントの名称", { required: true, max: 80, placeholder: "例: 第〇回 〇〇神楽まつり" })}
 ${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 〇〇神楽" })}
-${select("prefecture", "都道府県", PREFECTURES, { required: true })}
-${field("city", "市区町村", { required: true, max: 40, placeholder: "例: 〇〇市、〇〇町" })}
+<div class="f-row">${select("prefecture", "都道府県", PREFECTURES, { required: true })}
+${field("city", "市区町村", { required: true, max: 40, placeholder: "例: 〇〇市、〇〇町" })}</div>
 ${field("venue", "会場名", { required: true, max: 80, placeholder: "例: 〇〇神社 神楽殿" })}
-${field("date", "開催日", { type: "date", required: true, max: 10 })}
-${field("time_start", "開始時刻", { type: "time", max: 5 })}
+<div class="f-row">${field("date", "開催日", { type: "date", required: true, max: 10 })}
+${field("time_start", "開始時刻", { type: "time", max: 5 })}</div>
 ${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者の公式ページ、または自治体・観光協会のページ。https:// で始まるものに限ります。" })}
 <details class="more-fields"><summary>くわしく書く <small>(任意: 住所・終了時刻・料金・ひとこと説明)</small></summary>
 ${field("address", "番地までの住所", { max: 100, hint: "地図に正しく表示するために使います。分かる範囲で結構です。" })}
@@ -93,19 +93,27 @@ var t0=Date.now();form.querySelector('input[name=_t]').value=String(t0);
 var $=function(id){return document.getElementById(id)};
 var val=function(id){var e=$(id);return e?e.value.trim():''};
 function err(id,m){var e=$(id+'-e');if(e)e.textContent=m||'';var i=$(id);if(i)i.setAttribute('aria-invalid',m?'true':'false')}
-function check(){
-  var ok=true;
-  form.querySelectorAll('[required]').forEach(function(el){
-    var m='';
-    if(el.type==='checkbox'){if(!el.checked)m='同意が必要です'}
-    else if(!el.value.trim())m='入力してください';
-    err(el.id,m);if(m&&ok){ok=false;var dt=el.closest('details');if(dt)dt.open=true;el.focus()}else if(m)ok=false;
-  });
-  var em=$('email');if(em&&em.value&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(em.value.trim())){err('email','メールアドレスの形式を確認してください');ok=false}
-  ['url','target'].forEach(function(id){var u=$(id);if(u&&u.value.trim()&&!/^https:\\/\\/[^\\s]+$/.test(u.value.trim())){err(id,'https:// で始まるURLを入力してください');ok=false}});
-  var tm=$('time_start'),te=$('time_end');if(tm&&te&&tm.value&&te.value&&te.value<tm.value){err('time_end','終了時刻は、開始時刻より後にしてください');ok=false}
-  return ok;
+// 1つの欄を確かめて、誤りがあればその欄の下に出す(なければ消す)。誤りの文を返す
+function one(el){
+  var m='',v=el.value.trim();
+  if(el.required){if(el.type==='checkbox'){if(!el.checked)m='同意が必要です'}else if(!v)m='入力してください'}
+  if(!m&&el.id==='email'&&v&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v))m='メールアドレスの形式を確認してください';
+  if(!m&&(el.id==='url'||el.id==='target')&&v&&!/^https:\\/\\/[^\\s]+$/.test(v))m='https:// で始まるURLを入力してください';
+  if(!m&&el.id==='time_end'){var tm=$('time_start');if(tm&&tm.value&&el.value&&el.value<tm.value)m='終了時刻は、開始時刻より後にしてください'}
+  err(el.id,m);return m;
 }
+var fields=function(){return [].slice.call(form.querySelectorAll('input[id],select[id],textarea[id]')).filter(function(el){return el.type!=='hidden'})};
+// 送信時: すべての欄を確かめ、最初の誤りの欄へ移る(閉じた「くわしく書く」の中なら開く)
+function check(){
+  var first=null;
+  fields().forEach(function(el){if(one(el)&&!first)first=el});
+  if(first){var dt=first.closest('details');if(dt)dt.open=true;first.focus()}
+  return !first;
+}
+// 入力中: 欄を離れたときに確かめ、誤りを直したら、すぐに消す
+form.addEventListener('focusout',function(e){var el=e.target;if(el.id&&el.closest('.f')&&el.type!=='checkbox')one(el)});
+form.addEventListener('input',function(e){var el=e.target;if(el.getAttribute('aria-invalid')==='true')one(el)});
+form.addEventListener('change',function(e){var el=e.target;if(!el.id||!el.closest('.f'))return;if(el.type==='checkbox'||el.tagName==='SELECT'||el.getAttribute('aria-invalid')==='true')one(el);var te=$('time_end');if(el.id==='time_start'&&te&&te.value)one(te)});
 function lines(){
   var L=[];
   form.querySelectorAll('input,select,textarea').forEach(function(el){

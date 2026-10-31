@@ -327,7 +327,7 @@ moreOffersTests({ ok, section });
 guideTests({ ok, section, OUT, build });
 historyTests({ ok, section, OUT });
 englishTests({ ok, section, OUT });
-organizersTests({ ok, section, OUT, build });
+await organizersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });
