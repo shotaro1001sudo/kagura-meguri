@@ -79,8 +79,22 @@ export function timelineHtml({ esc }) {
     const era = ERAS.find((e) => e.slug === t.era);
     return `<li class="tl-item"><span class="tl-year">${esc(t.year)}</span><p>${esc(t.text)}</p><a href="/history/${t.era}.html#${t.anchor}">${esc(era.title)}で、くわしく<span aria-hidden="true"> ›</span></a></li>`;
   }).join("");
-  return `<div class="tl" role="region" aria-label="神楽の年表(横にスクロールできます)" tabindex="0"><ol class="tl-list">${items}</ol></div>
+  return `<div class="tl" role="region" aria-label="神楽の年表" tabindex="0"><ol class="tl-list">${items}</ol></div>
 <p class="meta tl-hint"><span aria-hidden="true">← </span>横にスクロールして、神話の時代から現代まで、たどれます<span aria-hidden="true"> →</span></p>`;
+}
+
+/**
+ * 時代タブ(総論と4つの時代のページ)と、今のページの見出しの一覧を、本文の横(スマホ・タブレットは上)に置く。
+ * スマホ・タブレットでは時代タブだけを横一列に固定し、PCでは今のページの下に見出しを並べる。今読んでいる見出しは reader.js が示す
+ * @param {string} key "index" または時代の slug
+ * @param {string} html そのページの本文
+ */
+export function historyReader(key, html) {
+  const pages = [{ slug: "index", title: "総論・年表", href: "/history/" }, ...ERAS.map((e) => ({ slug: e.slug, title: e.title, href: `/history/${e.slug}.html` }))];
+  const heads = [...html.matchAll(/<h2 id="([^"]+)">([^<]+)<\/h2>/g)].filter(([, id]) => id !== "sources");
+  const sub = heads.length ? `<ol class="gnav-sub">${heads.map(([, id, t]) => `<li><a href="#${id}">${t}</a></li>`).join("")}</ol>` : "";
+  const nav = `<nav class="toc gnav" id="toc" aria-label="神楽の歴史の目次"><p class="gnav-h">神楽の歴史</p><ol>${pages.map((p, i) => `<li><a href="${p.href}"${p.slug === key ? ' aria-current="page"' : ""}>${i ? `<span class="no">${String(i).padStart(2, "0")}</span>` : ""}${p.title}</a>${p.slug === key ? sub : ""}</li>`).join("")}</ol></nav>`;
+  return `<div class="read-layout">${nav}<div class="read-body">${html}</div></div>`;
 }
 
 /**
@@ -111,21 +125,17 @@ ${timelineHtml({ esc })}
 <div class="era-grid">${ERAS.map((e, i) => `<a class="era" href="/history/${e.slug}.html"><span class="no">${String(i + 1).padStart(2, "0")}</span><b>${esc(e.title)}</b><small>${esc(e.span)}</small><span>${esc(e.lead)}</span></a>`).join("")}</div>
 
 <h2 id="types">神楽の大きな分け方</h2>
+<p>神楽は、まず宮中で行われる「御神楽(みかぐら)」と、各地の神社や民間で行われる「里神楽(さとかぐら)」に分けられます。${cite("kotobank")}里神楽は、さらに次の4つに分けるのが一般的です。${cite("kotobank")}</p>
 ${figure(tree("神楽", [
   { t: "御神楽(みかぐら)", d: "宮中の神楽。毎年12月に賢所で行われる" },
   { t: "里神楽(さとかぐら)", d: "各地の神社や民間で行われる神楽", children: [
-    { t: "巫女神楽", d: "巫女の神がかりによる託宣や鎮魂" },
-    { t: "出雲流", d: "島根県の佐太神社が典型" },
-    { t: "伊勢流", d: "釜の湯を使う湯立神楽。霜月神楽など" },
-    { t: "獅子神楽", d: "獅子頭で悪魔払い。山伏神楽・番楽など" },
+    { t: "巫女神楽", d: "神官や巫女の神がかりによる鎮魂や託宣を、もとにした神楽です。" },
+    { t: "出雲流", d: "島根県の佐太神社の七座神事と神能が、典型とされます。" },
+    { t: "伊勢流", d: "伊勢神宮の湯立神楽に由来します。釜の湯を使う霜月神楽などに、その姿が残っています。" },
+    { t: "獅子神楽", d: "獅子頭の力で悪魔払いや火伏せを行い、息災を祈ります。東北の山伏神楽や番楽などがあります。" },
   ] },
 ], "神楽の分類"), "神楽の大きな分け方を図にしました。分け方や呼び名は、辞典や研究者によって異なります。")}
-<p>神楽は、まず宮中で行われる「御神楽(みかぐら)」と、各地の神社や民間で行われる「里神楽(さとかぐら)」に分けられます。${cite("kotobank")}里神楽は、さらに次の4つに分けるのが一般的です。${cite("kotobank")}</p>
-<table class="info"><tr><th>巫女神楽</th><td>神官や巫女の神がかりによる鎮魂や託宣を、もとにした神楽です。</td></tr>
-<tr><th>出雲流</th><td>島根県の佐太神社の七座神事と神能が、典型とされます。</td></tr>
-<tr><th>伊勢流</th><td>伊勢神宮の湯立神楽に由来します。釜の湯を使う霜月神楽などに、その姿が残っています。</td></tr>
-<tr><th>獅子神楽</th><td>獅子頭の力で悪魔払いや火伏せを行い、息災を祈ります。東北の山伏神楽や番楽などがあります。</td></tr></table>
-<p class="meta">分け方や呼び名は、辞典や研究者によって異なります。また「里神楽」は、東京を中心とする関東の出雲流の神楽を指す言葉としても使われます。${cite("kotobank")}</p>
+<p class="meta">「里神楽」は、東京を中心とする関東の出雲流の神楽を指す言葉としても使われます。${cite("kotobank")}</p>
 
 <h2>時代ごとに読む</h2>
 <p><a class="btn" href="/history/kodai.html">古代から読む</a> <a class="btn ghost" href="/guide.html">はじめての神楽ガイド</a> <a class="btn ghost" href="/kagura/">神楽の種類で探す</a></p>

@@ -13,7 +13,7 @@ import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, privacyUpdated, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
-import { historyPages, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
+import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
@@ -377,7 +377,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cfg.cookiebotId ? cookieControls(en)+clientJs("cookie-controls") : ""}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
-${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="guide-layout"') ? clientJs("guide") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
+${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -987,12 +987,12 @@ write('dist/experiences.html',layout({
     const era = HISTORY_ERAS.find((e) => e.slug === key);
     const crumbs = key === "index" ? [["ホーム", "/"], ["神楽の歴史"]] : [["ホーム", "/"], ["神楽の歴史", "/history/"], [era.title]];
     write(`dist${key === "index" ? "/history/index.html" : path}`, layout({
-      title: `${pg.title} | ${cfg.siteName}`, desc: clip(pg.desc, 160), path, active: "/history/", alts: key === "index" ? [["en", "/en/history.html"]] : [],
+      title: `${pg.title} | ${cfg.siteName}`, desc: clip(pg.desc, 160), path, active: "/history/", alts: key === "index" ? [["en", "/en/history.html"]] : [], wide: true,
       ld: [crumbsLd(crumbs.map(([t, h]) => [t, h])), {
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
-      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${pg.body()}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
+      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${historyReader(key, pg.body())}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
     }));
   }
 }

@@ -2,6 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
 import { SOURCES, ERAS, TIMELINE, CHECKED } from "../scripts/lib/history.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
@@ -53,6 +54,39 @@ export function historyTests({ ok, section, OUT }) {
   const order = ["kodai", "chusei", "kinsei", "kindai"];
   ok(order.every((s, i) => { const $ = pages[`history/${s}.html`]; return (i === 0 || $(".hnav .prev").attr("href") === `/history/${order[i - 1]}.html`) && (i === order.length - 1 ? $(".hnav .next").attr("href") === "/history/" : $(".hnav .next").attr("href") === `/history/${order[i + 1]}.html`); }), "時代のページに、前後(古代→中世→近世→近代)への案内がある");
   ok(cheerio.load(read(join(OUT, "index.html")))('footer a[href="/history/"]').length === 1, "フッターから、神楽の歴史へ行ける");
+
+  // 見せ方(2026-10-30 運営者の判断): 時代タブ(総論と4つの時代)と、今のページの見出しを固定する
+  section("神楽の歴史: 時代タブと見出しのナビ・分け方の図・スマホの年表");
+  const pageHrefs = ["/history/", ...ERAS.map((e) => `/history/${e.slug}.html`)];
+  for (const f of files) {
+    const $ = pages[f], here = "/" + f.replace(/index\.html$/, "");
+    const layout = $(".prose.history > .read-layout");
+    const tabs = layout.find("> nav.gnav > ol > li > a");
+    ok(layout.length === 1 && layout.children().first().is("nav.toc.gnav#toc") && layout.children().eq(1).is(".read-body") && tabs.map((_, a) => $(a).attr("href")).get().join() === pageHrefs.join(), `${f}: 時代タブ(総論と4つの時代)を本文の前に置く`);
+    ok(tabs.filter("[aria-current=page]").length === 1 && tabs.filter("[aria-current=page]").attr("href") === here, `${f}: 今のページのタブだけを示す`);
+    const heads = $(".read-body h2[id]").map((_, h) => $(h).attr("id")).get().filter((id) => id !== "sources");
+    const sub = $("nav.gnav a[aria-current=page] + ol.gnav-sub a").map((_, a) => $(a).attr("href")).get();
+    ok(sub.join() === heads.map((id) => `#${id}`).join() && $("nav.gnav .gnav-sub").length === 1, `${f}: 今のページの下に、そのページの見出し(出典を除く)を順に並べる`, sub.join());
+  }
+  const css = read("scripts/style.css");
+  ok(/\.history \.gnav \.gnav-sub\{display:none\}/.test(css) && /@media\(min-width:1100px\)\{[^@]*\.history \.gnav \.gnav-sub\{display:block/.test(css), "見出しの一覧は、PC(本文の左に縦に並ぶとき)だけ出す(スマホ・タブレットは時代タブだけ)");
+  ok(/@media\(max-width:640px\)\{\s*\.history \.tl\{overflow:visible/.test(css) && /\.history \.tl-list\{flex-direction:column/.test(css) && /\.history \.tl-hint\{display:none\}/.test(css) && !/横にスクロール/.test(idx(".tl").attr("aria-label")), "スマホでは年表を縦に読む(横にスクロールの案内は出さない)。PCは横の年表のまま");
+  const kinds = idx(".tree .tr-l2 .tr-n").map((_, n) => idx(n).text()).get().join("/");
+  ok(["神官や巫女の神がかりによる鎮魂や託宣を、もとにした神楽です。", "島根県の佐太神社の七座神事と神能が、典型とされます。", "伊勢神宮の湯立神楽に由来します。", "東北の山伏神楽や番楽などがあります。"].every((t) => kinds.includes(t)) && idx("main table.info").length === 0, "分け方は、図にまとめる(表にあった説明を図に移し、表は置かない)", kinds);
+  ok((idx("main").text().match(/分け方や呼び名は、辞典や研究者によって異なります/g) ?? []).length === 1 && idx("main").text().includes("「里神楽」は、東京を中心とする関東の出雲流"), "同じ注意書き(分け方や呼び名は…)は、1回だけ");
+  {
+    const dom = new JSDOM(read(join(OUT, "history/kodai.html")).replace(/<script[\s\S]*?<\/script>/g, ""), { runScripts: "outside-only", pretendToBeVisual: true });
+    const w = dom.window, d = w.document;
+    const ids = [...d.querySelectorAll(".gnav-sub a")].map((a) => a.getAttribute("href").slice(1));
+    if (!ids.length || !existsSync("scripts/client/reader.js")) { ok(false, "歴史: 読んでいる見出しを示し、今のページのタブはそのまま"); w.close(); } else {
+    const tops = Object.fromEntries(ids.map((id, i) => [id, i < 2 ? -200 + i * 100 : 1000 + i * 300]));
+    ids.forEach((id) => { const h = d.getElementById(id); if (h) h.getBoundingClientRect = () => ({ top: tops[id], bottom: tops[id] + 40, left: 0, right: 0, width: 0, height: 40 }); });
+    w.eval(read("scripts/client/reader.js"));
+    const cur = () => [...d.querySelectorAll(".gnav-sub a")].map((a) => a.hasAttribute("aria-current")).join();
+    ok(ids.length >= 3 && cur() === ids.map((_, i) => i === 1).join() && d.querySelector('.gnav a[aria-current="page"]')?.getAttribute("href") === "/history/kodai.html", "歴史: 読んでいる見出しを示し、今のページのタブはそのまま", cur());
+    w.close();
+    }
+  }
 
   section("図と表(ガイド・歴史)");
   const guide = cheerio.load(read(join(OUT, "guide.html")));

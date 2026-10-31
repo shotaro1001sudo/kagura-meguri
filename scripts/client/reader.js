@@ -1,10 +1,10 @@
-// はじめての神楽ガイド: 章ナビで「今読んでいる章」を示し、持ち物チェックリストの数を数える。
+// 読み物(はじめての神楽ガイド・神楽の歴史): 章ナビで「今読んでいる見出し」を示し、ガイドでは持ち物チェックリストの数を数える。
 // スクリプトがなくても、章ナビのリンクとチェックボックスはそのまま使える。チェックは保存しない。
 (function () {
   var root = document.documentElement;
   var header = document.querySelector('.top');
   // 章ナビは、ヘッダーのすぐ下に固定する(ヘッダーの高さは画面幅で変わる)
-  function setTop() { if (header) root.style.setProperty('--guide-top', header.offsetHeight + 'px'); }
+  function setTop() { if (header) root.style.setProperty('--read-top', header.offsetHeight + 'px'); }
   setTop();
   if (header && window.ResizeObserver) new ResizeObserver(setTop).observe(header);
 
@@ -13,15 +13,18 @@
   var list = nav && nav.querySelector('ol');
   var links = nav ? [].slice.call(nav.querySelectorAll('a[href^="#"]')) : [];
   var heads = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  var page = nav && nav.querySelector('a[aria-current="page"]');
   var last = -2, waiting = false;
+  // 横に並ぶ章ナビ(スマホ・タブレット)では、今の見出し(歴史では今のページ)が見える位置まで横に送る
+  function center(a) {
+    if (!a || a.offsetParent === null) a = page;
+    if (!a || !list || list.scrollWidth <= list.clientWidth + 1) return;
+    var left = a.offsetLeft - (list.clientWidth - a.offsetWidth) / 2;
+    if (list.scrollTo) list.scrollTo({ left: left, behavior: reduce ? 'auto' : 'smooth' }); else list.scrollLeft = left;
+  }
   function mark(i) {
     links.forEach(function (a, k) { if (k === i) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
-    // 横に並ぶ章ナビ(スマホ・タブレット)では、今の章が見える位置まで横に送る
-    var a = links[i];
-    if (a && list && list.scrollWidth > list.clientWidth + 1) {
-      var left = a.offsetLeft - (list.clientWidth - a.offsetWidth) / 2;
-      if (list.scrollTo) list.scrollTo({ left: left, behavior: reduce ? 'auto' : 'smooth' }); else list.scrollLeft = left;
-    }
+    center(links[i]);
   }
   function update() {
     waiting = false;
@@ -33,9 +36,9 @@
     window.addEventListener('scroll', function () { if (!waiting) { waiting = true; requestAnimationFrame(update); } }, { passive: true });
     window.addEventListener('resize', update);
     update();
-  }
+  } else center(page);
 
-  // 持ち物チェックリスト: 用意できた数と、まとめて外すボタン
+  // 持ち物チェックリスト(ガイド): 用意できた数と、まとめて外すボタン
   var box = document.querySelector('.checklist');
   if (!box) return;
   var inputs = [].slice.call(box.querySelectorAll('input[type="checkbox"]'));

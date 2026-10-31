@@ -153,9 +153,9 @@ ${cards(
     const s = SOURCES.find((x) => x.id === id);
     return `<li id="src-${i + 1}"><a href="${s.url}" rel="noopener" target="_blank">${esc(s.name)}</a>(${esc(s.by)}) <a class="back" href="#ref-${i + 1}" aria-label="本文の出典${i + 1}へ戻る">↩</a></li>`;
   }).join("");
-  // 章ナビ(目次): スマホ・タブレットはヘッダーの下に横一列で固定し、PCは本文の左に固定する。今読んでいる章は guide.js が示す
+  // 章ナビ(目次): スマホ・タブレットはヘッダーの下に横一列で固定し、PCは本文の左に固定する。今読んでいる章は reader.js が示す
   const nav = `<nav class="toc gnav" id="toc" aria-label="このページの目次"><p class="gnav-h">このページの目次</p><ol>${CHAPTERS.map(([id, t], i) => `<li><a href="#${id}"><span class="no">${no(i)}</span>${t}</a></li>`).join("")}</ol></nav>`;
-  return `<div class="guide-layout">${nav}<div class="guide-body">${body}
+  return `<div class="read-layout">${nav}<div class="read-body">${body}
 
 <h2 id="sources">出典</h2>
 <ol class="sources">${list}</ol>

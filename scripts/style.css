@@ -546,24 +546,24 @@ sup.cite{font-size:.68em;line-height:0;margin-left:2px;white-space:nowrap}sup.ci
 ol.sources{font-size:var(--fs-s);padding-left:1.8em}ol.sources li{scroll-margin-top:16px}ol.sources li:target{background:var(--card)}
 ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 .prose h2[id]{scroll-margin-top:16px}
-/* ---------- はじめての神楽ガイド: 章ナビ(目次)と本文の2列 ----------
+/* ---------- 読み物(はじめての神楽ガイド・神楽の歴史): 章ナビ(目次)と本文の2列 ----------
    スマホ・タブレットは、章ナビをヘッダーのすぐ下に横一列で固定し、PC(1100px〜)は本文の左に縦に固定する。
-   --guide-top は、guide.js がヘッダーの高さを入れる(ヘッダーは画面幅で高さが変わる)。今読んでいる章は aria-current */
-.prose.guide{max-width:none}
-.guide .guide-body{min-width:0}
-.guide .guide-body>p{max-width:680px}
-.guide .gnav{position:sticky;top:var(--guide-top,72px);z-index:20;margin:0 0 8px;padding:10px 0;border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.guide .gnav-h{display:none}
-.guide .gnav ol{display:flex;gap:6px;margin:0;padding:0 28px 0 0;list-style:none;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
-.guide .gnav ol::-webkit-scrollbar{display:none}
-.guide .gnav li{flex:none;margin:0}
-.guide .gnav a{display:flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;white-space:nowrap;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
-.guide .gnav a:hover{border-color:var(--ac)}
-.guide .gnav .no{flex:none;color:var(--ac);font-size:var(--fs-2xs);letter-spacing:.12em}
-.guide .gnav a[aria-current]{background:var(--ac);border-color:var(--ac);color:var(--onac)}
-.guide .gnav a[aria-current] .no{color:inherit}
-.guide .guide-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--guide-top,72px) + 72px)}
-.guide sup.cite a,.guide ol.sources li{scroll-margin-top:calc(var(--guide-top,72px) + 84px)}
+   --read-top は、reader.js がヘッダーの高さを入れる(ヘッダーは画面幅で高さが変わる)。今読んでいる章は aria-current */
+.prose:is(.guide,.history){max-width:none}
+:is(.guide,.history) .read-body{min-width:0}
+:is(.guide,.history) .read-body>p{max-width:680px}
+:is(.guide,.history) .gnav{position:sticky;top:var(--read-top,72px);z-index:20;margin:0 0 8px;padding:10px 0;border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent);background:color-mix(in srgb,var(--bg) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+:is(.guide,.history) .gnav-h{display:none}
+:is(.guide,.history) .gnav ol{display:flex;gap:6px;margin:0;padding:0 28px 0 0;list-style:none;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+:is(.guide,.history) .gnav ol::-webkit-scrollbar{display:none}
+:is(.guide,.history) .gnav li{flex:none;margin:0}
+:is(.guide,.history) .gnav a{display:flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;white-space:nowrap;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+:is(.guide,.history) .gnav a:hover{border-color:var(--ac)}
+:is(.guide,.history) .gnav .no{flex:none;color:var(--ac);font-size:var(--fs-2xs);letter-spacing:.12em}
+:is(.guide,.history) .gnav a[aria-current]{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+:is(.guide,.history) .gnav a[aria-current] .no{color:inherit}
+:is(.guide,.history) .read-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--read-top,72px) + 72px)}
+:is(.guide,.history) sup.cite a,:is(.guide,.history) ol.sources li{scroll-margin-top:calc(var(--read-top,72px) + 84px)}
 @media(prefers-reduced-motion:no-preference){html:has(.gnav){scroll-behavior:smooth}}
 /* 章の見出し: 番号を朱の丸で示す */
 .guide .gsec{align-items:center;gap:14px;margin:72px 0 18px!important;padding-top:24px}
@@ -588,16 +588,36 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 .guide .checklist.done .checklist-count{color:var(--ac)}
 .guide .checklist-reset{min-height:40px;font-size:var(--fs-xs)}
 @media(min-width:1100px){
-  .guide .guide-layout{display:grid;grid-template-columns:212px minmax(0,1fr);gap:48px;align-items:start}
-  .guide .gnav{top:calc(var(--guide-top,72px) + 28px);max-height:calc(100vh - var(--guide-top,72px) - 56px);overflow:auto;margin:28px 0 0;padding:4px 0;border:0;border-left:1px solid var(--line);background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-  .guide .gnav-h{display:block;margin:0 0 8px 16px;color:var(--mut);font-size:var(--fs-2xs);letter-spacing:.16em}
-  .guide .gnav ol{flex-direction:column;gap:0;padding:0;overflow:visible;-webkit-mask-image:none;mask-image:none}
-  .guide .gnav a{align-items:baseline;gap:10px;min-height:0;margin-left:-1px;padding:9px 12px 9px 16px;border:0;border-left:2px solid transparent;border-radius:0;background:none;font-size:var(--fs-s);line-height:1.6;white-space:normal}
-  .guide .gnav a:hover{color:var(--ac)}
-  .guide .gnav a[aria-current]{background:none;border-left-color:var(--ac);color:var(--ac)}
-  .guide .gnav a[aria-current] .no{color:var(--ac)}
-  .guide .guide-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--guide-top,72px) + 24px)}
-  .guide sup.cite a,.guide ol.sources li{scroll-margin-top:calc(var(--guide-top,72px) + 24px)}
+  :is(.guide,.history) .read-layout{display:grid;grid-template-columns:212px minmax(0,1fr);gap:48px;align-items:start}
+  :is(.guide,.history) .gnav{top:calc(var(--read-top,72px) + 28px);max-height:calc(100vh - var(--read-top,72px) - 56px);overflow:auto;margin:28px 0 0;padding:4px 0;border:0;border-left:1px solid var(--line);background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  :is(.guide,.history) .gnav-h{display:block;margin:0 0 8px 16px;color:var(--mut);font-size:var(--fs-2xs);letter-spacing:.16em}
+  :is(.guide,.history) .gnav ol{flex-direction:column;gap:0;padding:0;overflow:visible;-webkit-mask-image:none;mask-image:none}
+  :is(.guide,.history) .gnav a{align-items:baseline;gap:10px;min-height:0;margin-left:-1px;padding:9px 12px 9px 16px;border:0;border-left:2px solid transparent;border-radius:0;background:none;font-size:var(--fs-s);line-height:1.6;white-space:normal}
+  :is(.guide,.history) .gnav a:hover{color:var(--ac)}
+  :is(.guide,.history) .gnav a[aria-current]{background:none;border-left-color:var(--ac);color:var(--ac)}
+  :is(.guide,.history) .gnav a[aria-current] .no{color:var(--ac)}
+  :is(.guide,.history) .read-body :is(.gsec,h2[id],section[id]){scroll-margin-top:calc(var(--read-top,72px) + 24px)}
+  :is(.guide,.history) sup.cite a,:is(.guide,.history) ol.sources li{scroll-margin-top:calc(var(--read-top,72px) + 24px)}
+}
+/* 神楽の歴史: 時代タブ(総論と4つの時代)。スマホ・タブレットは時代だけを横に並べ、今のページを朱で示す。
+   PCは今のページの下に見出しを並べ、今読んでいる見出しに朱の線(そのときはページ名は朱にしない) */
+.history .gnav .gnav-sub{display:none}
+.history .read-body>p{max-width:680px}
+@media(min-width:1100px){
+  .history .gnav .gnav-sub{display:block;list-style:none;margin:0 0 6px;padding:0}
+  .history .gnav .gnav-sub li{margin:0}
+  .history .gnav .gnav-sub a{padding:6px 12px 6px 30px;color:var(--mut);font-size:var(--fs-xs);line-height:1.6}
+  .history .gnav a[aria-current=page]{font-weight:500}
+  .history .gnav li:has(.gnav-sub a[aria-current])>a[aria-current=page]{border-left-color:transparent;color:var(--fg)}
+}
+/* 年表: スマホは縦に読む(横にスクロールしない)。PCは横の年表のまま */
+@media(max-width:640px){
+  .history .tl{overflow:visible;margin:8px 0 0;padding:0}
+  .history .tl-list{flex-direction:column;width:auto;padding:4px 0 0 26px}
+  .history .tl-list:before{left:5px;right:auto;top:10px;bottom:10px;width:1px;height:auto}
+  .history .tl-item{width:auto;padding:0 0 20px}
+  .history .tl-item:before{left:-26px;top:9px}
+  .history .tl-hint{display:none}
 }
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}

@@ -57,15 +57,15 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(general.length === 0, "本文に、特定の神楽・地域の名前を出さない(一般的な内容)", general.join(" / "));
   // 見せ方(2026-10-30 運営者の判断): 章ナビ(目次)を本文の横・上に固定し、持ち物は1つのチェックリストにまとめる
   section("はじめての神楽ガイド: 章ナビと持ち物チェックリスト");
-  const layout = $(".guide .guide-layout");
-  ok(layout.length === 1 && layout.children().first().is("nav.toc.gnav#toc") && layout.children().eq(1).is(".guide-body") && $(".gnav a .no").map((_, n) => $(n).text()).get().join() === "01,02,03,04,05", "章ナビ(番号つきの5章)を本文の前に置く");
+  const layout = $(".guide .read-layout");
+  ok(layout.length === 1 && layout.children().first().is("nav.toc.gnav#toc") && layout.children().eq(1).is(".read-body") && $(".gnav a .no").map((_, n) => $(n).text()).get().join() === "01,02,03,04,05", "章ナビ(番号つきの5章)を本文の前に置く");
   ok($(".totoc,.guide .planning-links,table.chk").length === 0, "「目次へ戻る」、冒頭の3つの入口のカード、持ち物の表は置かない(章ナビ・チェックリストと重なるため)");
   const boxes = $("#packing .checklist li");
   ok(boxes.length === 7 && boxes.get().every((li) => $(li).find("label > input[type=checkbox][name=packing]").length === 1 && $(li).find("label b").text() && $(li).find("label small").text()), "持ち物は、1行に1つのチェックボックスと、場面の添え書き");
   const names = boxes.find("label b").map((_, b) => $(b).text()).get().join("/");
   ok(["羽織りもの", "毛布・カイロ", "虫よけ・タオル", "携帯クッション", "飲み物・軽食", "モバイルバッテリー", "入門書"].every((w) => names.includes(w)), "これまでのカードと表の持ち物を、すべて残す", names);
   ok($("#packing .checklist-foot[hidden] .checklist-count[aria-live=polite]").length === 1, "数の表示は、スクリプトが動くときだけ出す(読み上げにも伝える)");
-  const script = read("scripts/client/guide.js");
+  const script = existsSync("scripts/client/reader.js") ? read("scripts/client/reader.js") : "";
   ok(!/localStorage|sessionStorage|document\.cookie/.test(script) && $("script").filter((_, x) => $(x).html().includes("持ち物チェックリスト")).length === 1, "チェックは保存しない(端末に残さない。プライバシーポリシーを変えない)");
   {
     const dom = new JSDOM(read(join(D, "guide.html")).replace(/<script[\s\S]*?<\/script>/g, ""), { runScripts: "outside-only", pretendToBeVisual: true });
