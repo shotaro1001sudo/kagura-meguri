@@ -13,7 +13,9 @@
 
 /* ---------- 2. 視差(パララックス): 背景の層は、ゆっくり。手前は、普通に ---------- */
 .home-hero:before{content:"";position:absolute;inset:-40px -12% auto;height:380px;pointer-events:none;
-  background:radial-gradient(ellipse at 72% 38%,color-mix(in srgb,var(--ac) 9%,transparent),transparent 62%)}
+  background:radial-gradient(ellipse at 72% 38%,color-mix(in srgb,var(--ac) 9%,transparent),transparent 62%);
+  /* 光は、見出しの枠の上端(上から40px)では消えているようにする(枠で切れて、上に段差の線が出ないように) */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 40px,#000 60%);mask-image:linear-gradient(180deg,transparent 0,transparent 40px,#000 60%)}
 .js .home-hero:before{translate:0 calc(var(--py,0px)*.5)}
 /* 月と社: 空(月)は、ゆっくり。霞、地(鳥居)の順に、手前ほど速く動かして、奥行きを出す */
 .js .ms-sky{translate:0 calc(var(--py,0px)*.42)}.js .ms-kasumi{translate:0 calc(var(--py,0px)*.3)}.js .ms-land{translate:0 calc(var(--py,0px)*.18)}
