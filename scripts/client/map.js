@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var get = function (u) { return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.json(); }); };
   Promise.all([get('/events.json'), get('/regular.json')]).then(function (res) {
     var items = res[0].filter(function (x) { return x.up && x.lat && x.lng; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; })
-      .map(function (x) { return { x: x, ev: true, html: '<span class="pd">' + md(x.start) + '</span><a href="/events/' + esc(x.id) + '.html">' + esc(x.name) + '</a>' }; })
+      .map(function (x) { return { x: x, ev: true, html: '<span class="pd">' + md(x.start) + '</span><a href="/events/' + esc(x.id) + '.html">' + esc(x.name) + '</a><span class="meta">' + (x.timeUnknown ? '時間は公式情報をご確認ください' : esc(x.sessions && x.sessions.length ? x.sessions.join('・') : x.start.slice(11, 16) + '〜' + (x.end && x.end.slice(0, 10) === x.start.slice(0, 10) ? x.end.slice(11, 16) : ''))) + '</span>' }; })
       .concat(res[1].filter(function (x) { return x.lat && x.lng; })
         .map(function (x) { return { x: x, ev: false, html: '<span class="pd">定期公演</span><a href="/regular/' + esc(x.id) + '.html">' + esc(x.name) + '</a> <small>' + esc(String(x.schedule).replace(/[(。].*$/, '')) + '</small>' }; }));
     // 同じ場所(緯度・経度がほぼ同じ)ごとにまとめる。その中を、会場ごとに分ける

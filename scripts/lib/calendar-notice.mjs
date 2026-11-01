@@ -6,7 +6,7 @@ export function calendarNotice(event) {
   };
   if (!event.end) return {
     suffix: '(終了未確認・仮2時間)',
-    text: '終了時刻は未確認です。カレンダーの終了は入力用に開始の2時間後を仮設定しており、公演の終了時刻ではありません。公式情報を確認し、必要に応じて予定を編集してください。'
+    text: (event.sessions?.length ? `開始は${event.sessions.join('・')}の${event.sessions.length}回です。この予定は初回の開始を仮登録します。` : '') + '終了時刻は未確認です。カレンダーの終了は入力用に開始の2時間後を仮設定しており、公演の終了時刻ではありません。公式情報を確認し、必要に応じて予定を編集してください。'
   };
   return {suffix:'',text:''};
 }
