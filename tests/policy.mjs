@@ -134,7 +134,7 @@ export async function policyTests({ ok, section, OUT, build }) {
 
     ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
     const pub = prodCfg.adsense.client;
-    ok(/^ca-pub-\d{16}$/.test(pub) && read(join(d, "index.html")).includes(`adsbygoogle.js?client=${pub}`) && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense のコード・ads.txt・ポリシーの広告の項目がそろう(審査の準備)");
+    ok(/^ca-pub-\d{16}$/.test(pub) && !read(join(d, "index.html")).includes("adsbygoogle.js") && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense ローダーは停止し、発行者ID・ads.txt・ポリシーを維持");
   }
   { // 宿のアフィリエイト(楽天・バリューコマース)
     const d = sub("travel", { TEST_AFF_TRAVEL: "1" }); const p = text(join(d, "privacy.html"));

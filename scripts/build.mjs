@@ -352,6 +352,8 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   const quizOffer = !en && !noindex && !withForm && (path === '/' || /^\/(calendar|map|weekend|this-month)\.html$/.test(path) || /^\/(events|regular|pref|month|kagura)\//.test(path));
   // A resource-free VC readiness listener precedes CMP only on VC pages.
   // Cookiebot remains the first external script, synchronous; all rendering/analytics follow it.
+  // AdSense external loader temporarily omitted while CMP availability is uncertain.
+  // Keep publisher configuration, ads.txt and consent controls; restore only after verification.
   const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
   // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
@@ -368,7 +370,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="gf" rel="stylesheet" href="${FONT_URL}" media="print"><script>${FONT_SCRIPT}</script><noscript><link rel="stylesheet" href="${FONT_URL}"></noscript>
-${ga4Bootstrap}<style>${css}</style>${head}${cfg.adsense.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cfg.adsense.client}" crossorigin="anonymous"></script>` : ""}
+${ga4Bootstrap}<style>${css}</style>${head}
 ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>

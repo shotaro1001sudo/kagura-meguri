@@ -1,3 +1,4 @@
+import { adsensePauseTests } from "./adsense-pause.mjs";
 import { rakutenStayIssuedTests } from "./rakuten-stay-issued.mjs";
 import { stayPlanningTests } from './stay-planning.mjs';
 import { asakitaFactsTests } from './asakita-facts.mjs';
@@ -342,6 +343,7 @@ monetizationUxTests({ ok, section, OUT, build });
 reservationTests({ ok, section });
 upcomingSummaryTests({ ok, section });
 ga4ConsentTests({ ok, section, build });
+adsensePauseTests({ ok, section, build });
 analyticsEventTests({ ok, section });
 analyticsSyncTests({ ok, section });
 await adminTests({ ok, section });
