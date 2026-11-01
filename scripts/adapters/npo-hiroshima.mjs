@@ -43,22 +43,23 @@ export function parse(html, source, pageUrl = source.url) {
     if (!name || (exclude && exclude.test(name))) return;
     const body = table.find("tr").eq(1);
     const text = nfkc(body.text());
-    const field = (label) => (text.match(new RegExp(`■${label}[^/／]*[/／]\\s*([^■※▼]*)`)) ?? [])[1]?.trim() ?? "";
-    const venue = field("会場").slice(0, 80);
-    const t = text.match(/開演\s*[/／:]?\s*(\d{1,2}):(\d{2})/);
-    const fee = field("(?:入場料|料金|観覧料)").slice(0, 80);
-    // 会場・名称・本文に含まれる語から、市区町村を推定する(分からなければ空。地図には、ピンを置かない)
-    // まず名称と会場から探し、なければ本文から(本文には、チケットの販売所など、別の町の名前が出ることがあるため)
+    // A field ends at the next section (or note), never at a later URL's slash.
+    const field = (label) => (text.match(new RegExp(`■(?:${label})\\s*[/／:：]?\\s*([^■※▼]*)`)) ?? [])[1]?.trim() ?? "";
+    const venue = field("会場").split(/開場|開演/)[0].trim().slice(0, 80);
+    const address = field("住所|所在地");
+    const t = text.match(/開演\s*[/／:]?\s*(\d{1,2})(?::(\d{2})|時(?:(\d{1,2})分)?)/);
+    const fee = field("入場料|料金|観覧料").slice(0, 80);
+    // Only venue/address and then title supply location hints; ticket vendors do not.
     const findCity = (s) => hints.find(([k]) => s.includes(k))?.[1] ?? "";
-    const city = findCity(`${title} ${venue}`) || findCity(text);
+    const city = findCity(`${venue} ${address}`) || findCity(title);
     // 公式情報: 本文の中の、主催者などのページへのリンク(なければ、日程表のその行)
     const link = body.find('a[href^="http"]').map((_, x) => $(x).attr("href")).get().find((h) => !/\.(jpe?g|png|gif|pdf)$/i.test(h));
     const pad = (n) => String(n).padStart(2, "0");
     const day = `${d[1]}-${pad(d[2])}-${pad(d[3])}`;
     out.push({
-      name, prefecture, city, venue,
+      name, prefecture, city, venue, ...(address ? { address } : {}),
       kagura: source.kaguraByPrefecture?.[prefecture] || source.kagura || "",
-      start: `${day}T${t ? `${pad(t[1])}:${t[2]}` : "00:00"}`,
+      start: `${day}T${t ? `${pad(t[1])}:${pad(t[2] ?? t[3] ?? 0)}` : "00:00"}`,
       timeUnknown: t ? undefined : true,
       fee,
       url: link || `${pageUrl.split("#")[0]}#${id}`,

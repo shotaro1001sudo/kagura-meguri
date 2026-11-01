@@ -27,6 +27,8 @@ jobs:
       - run: node scripts/collect.mjs
       # 2. 住所から、緯度経度を付ける
       - run: node scripts/geocode.mjs
+      # 位置を確認できない自動候補は保留にし、掲載データの検査は維持する
+      - run: node scripts/quarantine-collected.mjs
       # 3. テスト(不正なデータ・表示の崩れ・文面と動作のずれがあれば、ここで止まり、何も公開されない)
       - run: npm test
       - id: summary

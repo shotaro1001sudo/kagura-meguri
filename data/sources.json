@@ -43,6 +43,18 @@
         "id": "npo-hiroshima",
         "name": "NPO広島神楽芸術研究所(神楽日程表)",
         "adapter": "npo-hiroshima",
+        "reviewHolds": [
+            {
+                "name": "深野神楽復活40周年記念共演会",
+                "date": "2026-11-22",
+                "reason": "開演時刻が10:30と18:00で不一致。雲南市立田井小学校体育館(島根県雲南市吉田町深野90-1)の正確な座標も未確認。時刻と会場位置の公式確認が完了するまで保留。",
+                "evidence": [
+                    "https://www.npo-kagura.jp/2017-01-_news/news-detail.php?id=360",
+                    "https://www.izumo-zaidan.jp/bigheart/bh_ticket/",
+                    "https://www.unnan-kankou.jp/news/kaguraschedule/"
+                ]
+            }
+        ],
         "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
         "kagura": "広島神楽",
         "prefecture": "広島県",
@@ -52,6 +64,7 @@
         "nameHint": "神楽|舞|神能|かぐら|大蛇",
         "cityHints": {
             "美都町": "益田市",
+            "雲南市": "雲南市",
             "神楽門前湯治村": "安芸高田市",
             "かむくら座": "安芸高田市",
             "神楽ドーム": "安芸高田市",

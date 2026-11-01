@@ -76,6 +76,10 @@ const nameHint = (s) => { try { return s.nameHint ? new RegExp(s.nameHint) : nul
 /** 候補(取得したもの)から、掲載・保留・取り下げを決める。events は、変更しない(新しい配列を返す) */
 export function reconcile({ events, candidates, source, now, rejectedIds = new Set(), cfg = {} }) {
   const c = { ...DEFAULTS, ...cfg, ...(source.maxNewPerSource ? { maxNewPerSource: source.maxNewPerSource } : {}) }; // 月ごとの日程表など、件数の多い収集元は、上限を個別に指定できる
+  const reviewReasons = (ev) => (source.reviewHolds ?? [])
+    .filter((h) => normName(h.name) === normName(ev.name) && h.date === ev.start?.slice(0, 10))
+    .map((h) => h.reason);
+  const check = (ev) => [...guardEvent(ev, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) }), ...reviewReasons(ev)];
   const day = today(now), stamp = day;
   const out = events.map((e) => ({ ...e }));
   const sum = { fetched: candidates.length, published: [], held: [], withdrawn: [], unchanged: 0, duplicates: 0, rejected: 0, past: 0, notes: [] };
@@ -115,7 +119,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
         noteTimeDifference(existing, ev);
         // 一度、取り下げたものが、取得元に戻ってきたら、検査し直して、再掲載する
         if (existing.status === "withdrawn") {
-          const why = guardEvent({ ...existing }, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
+          const why = check(existing);
           if (!why.length && c.autoPublish) { existing.status = "published"; delete existing.withdrawnReason; sum.published.push({ ...existing, note: "再掲載" }); }
           else sum.unchanged++;
         } else sum.unchanged++;
@@ -127,7 +131,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
     if (matches.length || fresh.some((f) => sameEvent(f.ev, ev))) {
       const own = matches.filter((e) => e.auto && e.sourceId === source.id);
       if (own.length) {
-        const why = guardEvent(ev, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
+        const why = check(ev);
         if (own.length === 1 && !why.length) {
           const existing = own[0];
           candIds.add(existing.id); // 重複判定と消失判定で、同じ公演の同じIDを使う
@@ -141,7 +145,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
       }
       sum.duplicates++; continue;
     }
-    const why = guardEvent({ ...ev, kagura: ev.kagura }, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) });
+    const why = check(ev);
     if (why.length === 1 && why[0] === "すでに終わった日付") { sum.past++; continue; }
     fresh.push({ ev, why });
   }
