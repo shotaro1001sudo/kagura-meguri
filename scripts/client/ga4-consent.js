@@ -1,5 +1,5 @@
 // GA4 basic consent mode: never load gtag.js until explicit statistics consent.
-// The generator embeds this bootstrap early in <head>, before async Cookiebot.
+// The generator embeds this bootstrap early in <head>, before the deferred local CMP.
 (() => {
   const tag = document.currentScript;
   const measurementId = tag?.getAttribute("data-ga4-id") || "";
@@ -45,43 +45,39 @@
   window.addEventListener('popstate', refreshExclusion);
   if (excluded) { stopForExclusion(); return; }
 
-  // When Cookiebot is configured, missing/unavailable consent is DENIED.
-  const consentRequired = tag.hasAttribute("data-require-statistics-consent");
+  // Consent is always required, including missing CMP configuration or failed assets.
   let started = false;
   window.kaguraGa4Allowed = false;
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
   // This command only queues locally; no Google script or analytics request is made yet.
-  window.gtag("consent", "default", { analytics_storage: "denied" });
+  window.gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
 
   function explicitlyAllowed() {
-    const cb = window.Cookiebot;
-    // Cookiebot can grant *implied* consent automatically in some regions.
-    // Require a real response and an explicit choice to prevent silent tracking.
-    return cb?.hasResponse === true &&
-      cb.consent?.statistics === true &&
-      cb.consent?.method === "explicit";
+    try { return window.kaguraConsent?.snapshot()?.statistics === true; }
+    catch (_) { return false; }
   }
 
   function syncConsent() {
     if (refreshExclusion()) return;
-    if (state.status === "tag_error") return;
-    const allowed = !consentRequired || explicitlyAllowed();
+    const allowed = explicitlyAllowed();
     window.kaguraGa4Allowed = allowed;
     if (!allowed) {
       state.status = "waiting_consent";
       if (started) {
+        window["ga-disable-" + measurementId] = true;
         // A Google tag cannot be reliably unloaded. Deny storage, then reload
         // so that the next page does not initialize GA4 after consent is revoked.
-        window.gtag("consent", "update", { analytics_storage: "denied" });
+        window.gtag("consent", "update", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
         window.location.reload();
       }
       return;
     }
-    if (started) return; // Cookiebot may fire both Ready and Accept.
+    if (state.status === "tag_error") { window.kaguraGa4Allowed = false; return; }
+    if (started) return; // The CMP may emit more than one callback.
     started = true;
     state.status = "loading";
-    window.gtag("consent", "update", { analytics_storage: "granted" });
+    window.gtag("consent", "update", { analytics_storage: "granted", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
     window.gtag("js", new Date());
     // Keep only controlled campaign tags. Never send form/query/hash contents.
     const page = new URL(loc.href);
@@ -107,10 +103,8 @@
     window.dispatchEvent(new Event("kagura:analytics-ready"));
   }
 
-  if (consentRequired) {
-    window.addEventListener("CookiebotOnConsentReady", syncConsent);
-    window.addEventListener("CookiebotOnAccept", syncConsent);
-    window.addEventListener("CookiebotOnDecline", syncConsent);
-  }
+  window.addEventListener("kagura:consent", syncConsent);
+  window.addEventListener("focus", syncConsent);
+  window.addEventListener("pageshow", syncConsent);
   syncConsent();
 })();

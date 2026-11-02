@@ -159,7 +159,7 @@ const ldJson = (o) => JSON.stringify(o).replace(/</g, "\\u003c"); // </script> �
 // ---------- 収益化 ----------
 const a = cfg.affiliate;
 // 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
-const vcAllowed = !!(cfg.adsense.client && cfg.cookiebotId); // Existing CSP only; no new hosts or consent bypass.
+const vcAllowed = !!cfg.adsense.client; // Existing CSP only; no new hosts or consent bypass.
 const rakutenOn = !!a.rakutenAffiliateId, jalanOn = vcEnabled({sid:a.valueCommerceSid,pid:a.jalanPid,allowed:vcAllowed},"stay"), amazonOn = !!a.amazonTag;
 const experienceAff = { sid: a.valueCommerceSid, pid: a.jalanActivityPid, allowed:vcAllowed }; // 体験は宿と別案件のpid
 const hasAffiliate = rakutenOn || jalanOn || amazonOn || !!(experienceAff.sid && experienceAff.pid) || ['supplies','experiences','rental'].some(category=>offersFor(visitorPlanning,category,{guide:true},nowJst.slice(0,10)).length);
@@ -354,16 +354,13 @@ const collectNotes = (body) => {
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
   const en = lang === "en";
   const quizOffer = !en && !noindex && !withForm && (path === '/' || /^\/(calendar|map|weekend|this-month)\.html$/.test(path) || /^\/(events|regular|pref|month|kagura)\//.test(path));
-  // A resource-free VC readiness listener precedes CMP only on VC pages.
-  // Cookiebot remains the first external script, synchronous; all rendering/analytics follow it.
-  // AdSense external loader temporarily omitted while CMP availability is uncertain.
-  // Keep publisher configuration, ads.txt and consent controls; restore only after verification.
-  const cookieBotBootstrap = cfg.cookiebotId ? `<script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="${esc(cfg.cookiebotId)}" data-blockingmode="auto" type="text/javascript"></script>` : "";
-  // Consent bootstrap also checks the current Cookiebot state, even if its Ready event has fired.
-  const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}"${cfg.cookiebotId ? ' data-require-statistics-consent=""' : ""}>${GA4_CONSENT_JS}</script>` : "";
+  // Local CMP loads after parsing; analytics/ads remain closed until an explicit choice.
+  // AdSense and GoatCounter remain paused.
+  const consentBootstrap = `<link rel="stylesheet" href="/vendor/cookieconsent-3.2.1/cookieconsent.css"><script defer src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"></script><script defer src="/consent-manager.js"></script>`;
+  const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}" data-require-statistics-consent="">${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${body.includes('data-vc-ad=') ? clientJs("valuecommerce-ready") : ""}${cookieBotBootstrap}${body.includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
-<script>${FRAME_BUSTER}</script>
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${body.includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>${FRAME_BUSTER}</script>${consentBootstrap}
 <script>${HEAD_MOTION}</script>
 <script>${VT_JS}</script><link rel="expect" href="#main" blocking="render">
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
@@ -381,7 +378,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 <div class="wrap${wide ? " wide" : ""}"><main id="main">${withAdDisclosure(en ? body : collectNotes(body))}</main>
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
-<p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cfg.cookiebotId ? cookieControls(en)+clientJs("cookie-controls") : ""}</div>
+<p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
 ${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
@@ -1069,7 +1066,7 @@ const SOURCES_FILE = process.env.SOURCES_FILE ?? "data/sources.json";
 const autoSources = existsSync(SOURCES_FILE) ? readJson(SOURCES_FILE).filter((s) => s.enabled !== false && s.termsChecked).map((s) => s.name) : [];
 const policyCtx = {
   cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
-  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasCB: !!cfg.cookiebotId, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
+  hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasCB: true, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプライバシーポリシーです。取得する情報と利用目的、外部サービスへの情報の送信、Cookie、個人情報の開示・訂正・削除のご請求について定めています。`, privacyHtml(policyCtx));
@@ -1132,3 +1129,8 @@ console.log(`built: ${events.length} events (${upcoming.length} upcoming), ${reg
 const stayAudit = issuedRakutenStays.audit();
 console.log(`Rakuten stay issued coverage: ${stayAudit.verified.length} verified / ${stayAudit.unverified.length} unverified unique destinations`);
 if (stayAudit.unverified.length) console.warn("RAKUTEN_STAY_ISSUANCE_UNVERIFIED: existing links retained; obtain exact issued URLs", JSON.stringify(stayAudit.unverified));
+
+// Version-pinned local CMP assets, including its MIT license. No CDN runtime dependency.
+mkdirSync(`${OUT}/vendor/cookieconsent-3.2.1`, { recursive: true });
+for (const f of ["cookieconsent.umd.js", "cookieconsent.css", "LICENSE"]) copyFileSync(`assets/vendor/cookieconsent-3.2.1/${f}`, `${OUT}/vendor/cookieconsent-3.2.1/${f}`);
+copyFileSync("scripts/client/consent-manager.js", `${OUT}/consent-manager.js`);

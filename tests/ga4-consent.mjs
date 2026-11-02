@@ -1,4 +1,4 @@
-// GA4 basic consent mode regression tests (offline, with mocked Cookiebot API).
+// GA4 basic consent mode regression tests (offline, with mocked kaguraConsent API).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -12,7 +12,7 @@ function simulate({ requireConsent = true, cb = undefined, search = "", stored =
   const added = [], listeners = {}, sent = [];
   let reloads = 0;
   const window = {
-    Cookiebot: cb,
+    kaguraConsent: cb,
     addEventListener(name, cb) { listeners[name] = cb; },
     location: { search, hostname, href: "https://" + hostname + "/events/test.html" + search, reload() { reloads++; } },
     localStorage: {
@@ -40,7 +40,7 @@ function simulate({ requireConsent = true, cb = undefined, search = "", stored =
   };
 }
 const response = (statistics, method = "explicit", hasResponse = true) => ({
-  hasResponse, consent: { statistics, method }
+  snapshot: () => ({ ready: hasResponse, statistics: hasResponse && method === 'explicit' && statistics })
 });
 
 export function ga4ConsentTests({ ok, section, build }) {
@@ -61,19 +61,8 @@ export function ga4ConsentTests({ ok, section, build }) {
       ok($('#cookie-reject-optional').length===0&&html.indexOf('id="cookie-controls"')>html.indexOf('</main>'),path+': 上部の独自拒否枠なし・末尾の設定入口');
       ok($('#cookie-settings-status[role="status"][aria-live="polite"]').length===1,path+': 設定表示の状態読み上げ');
       ok($('script').filter((_,n)=>$(n).text().trim()===readFileSync('scripts/client/cookie-controls.js','utf8').trim()).length===1,path+': Cookie設定コードが1回');
-      const bot = $("head > script#Cookiebot");
-      ok(bot.length === 1 && bot.attr("data-cbid") === "test-consent-id",
-        path + ": 正しいCBIDを持つCookiebotが1回だけ設置される");
-      ok(bot.attr("data-blockingmode") === "auto" && bot.attr("async") === undefined,
-        path + ": 自動ブロック、非asyncで初期化する");
-      const first = $("head script").first();
-      const listener = readFileSync("scripts/client/valuecommerce-ready.js", "utf8").trim();
-      ok((first.attr("id") === "Cookiebot" || (first.text().trim() === listener && first.nextAll("script").first().attr("id") === "Cookiebot")) && $("head script[src]").first().attr("id") === "Cookiebot",
-        path + ": CMP前は通信/描画しない正確なVC監視コードのみ、Cookiebotは最初の外部script");
-      ok(html.indexOf('id="Cookiebot"') < html.indexOf('data-ga4-id="G-TEST123456"'),
-        path + ": Cookiebotの後にGA4同意制御を初期化する");
-      ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('id="Cookiebot"'),
-        path + ": Cookiebot実行前にCSPを適用");
+      ok($('script[src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"][defer]').length === 1 && $('script[src="/consent-manager.js"][defer]').length === 1, path + ': pinned local CMP');
+      ok($('script[src*="cookiebot"]').length === 0, path + ': no old CMP runtime');
       ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"),
         path + ": スクリプトCSPハッシュあり");
     }
@@ -81,27 +70,27 @@ export function ga4ConsentTests({ ok, section, build }) {
 
   const missing = simulate();
   ok(missing.added.length === 0 && missing.window.kaguraGa4Allowed === false,
-    "Cookiebotが読み込めない場合はGA4を開始しない");
+    "kaguraConsentが読み込めない場合はGA4を開始しない");
   ok(missing.calls()[0]?.[0] === "consent" && missing.calls()[0]?.[1] === "default" &&
     missing.calls()[0]?.[2]?.analytics_storage === "denied", "最初の同意状態はdenied");
   const undecided = simulate({ cb: response(false, null, false) });
-  undecided.notify("CookiebotOnConsentReady");
+  undecided.notify("kagura:consent");
   ok(undecided.added.length === 0, "未回答ならGA4を開始しない");
   const rejected = simulate({ cb: response(false) });
-  rejected.notify("CookiebotOnDecline");
+  rejected.notify("kagura:consent");
   ok(rejected.added.length === 0 && rejected.window.kaguraGa4Allowed === false,
     "明示的な拒否ならGA4を開始しない");
   const implied = simulate({ cb: response(true, "implied") });
-  implied.notify("CookiebotOnConsentReady");
+  implied.notify("kagura:consent");
   ok(implied.added.length === 0, "地域別の自動（implied）同意は許可とみなさない");
   const noResponse = simulate({ cb: response(true, "explicit", false) });
-  noResponse.notify("CookiebotOnConsentReady");
+  noResponse.notify("kagura:consent");
   ok(noResponse.added.length === 0, "未回答のままstatisticsだけtrueでも拒否");
 
   const waiting = simulate();
-  waiting.window.Cookiebot = response(true);
-  waiting.notify("CookiebotOnConsentReady");
-  waiting.notify("CookiebotOnAccept");
+  waiting.window.kaguraConsent = response(true);
+  waiting.notify("kagura:consent");
+  waiting.notify("kagura:consent");
   ok(waiting.added.length === 1 && waiting.added[0].src ===
     "https://www.googletagmanager.com/gtag/js?id=G-TEST123456" && waiting.window.kaguraGa4Allowed === true,
     "明示的な統計同意後だけGA4を1回読み込む");
@@ -125,14 +114,14 @@ export function ga4ConsentTests({ ok, section, build }) {
       "自己/Preview/ローカル閲覧を同意済みでも除外: " + JSON.stringify(options));
   }
   ok(simulate({cb:response(true),stored:"1",search:"?analytics=on"}).added.length === 1, "本人が除外を解除できる");
-  for (const lifecycle of ['pageshow', 'focus', 'popstate', 'CookiebotOnAccept']) {
+  for (const lifecycle of ['pageshow', 'focus', 'popstate', 'kagura:consent']) {
     const cached = simulate({cb:response(true)});
     cached.window.localStorage.setItem('kagura.analytics.exclude', '1');
     cached.notify(lifecycle);
     ok(!cached.window.kaguraGa4Allowed && cached.window['ga-disable-G-TEST123456'] === true && cached.window.kaguraAnalytics.status === 'excluded', '起動済みページも除外を再確認: '+lifecycle);
     cached.added[0].onload();
     cached.window.localStorage.removeItem('kagura.analytics.exclude');
-    cached.notify('CookiebotOnAccept');
+    cached.notify('kagura:consent');
     ok(cached.window.kaguraAnalytics.status === 'excluded' && cached.added.length === 1 && cached.calls().filter(c=>c[0]==='config').length===1, '除外後の遅延load/解除/同意通知で勝手に再開しない: '+lifecycle);
   }
   const otherTab=simulate({cb:response(true)});
@@ -142,7 +131,7 @@ export function ga4ConsentTests({ ok, section, build }) {
   ok(!otherTab.window.kaguraGa4Allowed && otherTab.window['ga-disable-G-TEST123456'] === true, '別タブの除外を即時反映');
   const beforeConsent=simulate();
   beforeConsent.window.localStorage.setItem('kagura.analytics.exclude','1');
-  beforeConsent.window.Cookiebot=response(true);beforeConsent.notify('CookiebotOnAccept');
+  beforeConsent.window.kaguraConsent=response(true);beforeConsent.notify('kagura:consent');
   ok(beforeConsent.added.length===0 && beforeConsent.window.kaguraAnalytics.status==='excluded','同意待ち中に除外されたらタグを起動しない');
   const privateQuery = simulate({cb:response(true), search:"?email=private%40example.com&utm_source=x&utm_medium=social&utm_campaign=autumn&utm_content=post_01#private"});
   const config = privateQuery.calls().find(x => x[0] === "config")?.[2];
@@ -151,13 +140,13 @@ export function ga4ConsentTests({ ok, section, build }) {
   privateQuery.added[0].onerror();
   ok(privateQuery.window.kaguraAnalytics.status === "tag_error" && !privateQuery.window.kaguraGa4Allowed,
     "タグ読込失敗をローカル診断で区別し、クリック計測も停止する");
-  waiting.window.Cookiebot = response(false);
-  waiting.notify("CookiebotOnDecline");
+  waiting.window.kaguraConsent = response(false);
+  waiting.notify("kagura:consent");
   ok(waiting.window.kaguraGa4Allowed === false && waiting.reloads === 1 &&
     waiting.calls().some((x) => x[0] === "consent" && x[1] === "update" &&
       x[2].analytics_storage === "denied"), "同意取り消しで遮断して再読み込み");
 
-  const withoutCookiebot = simulate({ requireConsent: false });
-  ok(withoutCookiebot.added.length === 1 && withoutCookiebot.window.kaguraGa4Allowed === true,
-    "Cookiebot未設定の構成は従来どおりGA4を読み込む");
+  const withoutkaguraConsent = simulate({ requireConsent: false });
+  ok(withoutkaguraConsent.added.length === 0 && withoutkaguraConsent.window.kaguraGa4Allowed === false,
+    "CMP未設定の構成でも必ず同意を要求する");
 }

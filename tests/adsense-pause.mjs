@@ -21,8 +21,7 @@ export function adsensePauseTests({ ok, section, build }) {
   for (const path of pages) {
     const html = readFileSync(path, "utf8"), $ = cheerio.load(html);
     ok(!html.includes("adsbygoogle.js"), path + ": no external AdSense loader (including inline injection)");
-    const bot = $('script#Cookiebot[src="https://consent.cookiebot.com/uc.js"]');
-    ok(bot.length === 1 && bot.attr("data-cbid") === cfg.cookiebotId && bot.attr("data-blockingmode") === "auto", path + ": Cookiebot preserved");
+    ok($('script[src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"]').length === 1 && $('script[src*="cookiebot"]').length === 0, path + ": local CMP only");
     ok($('script[data-ga4-id][data-require-statistics-consent]').length === 1 && $('script[src*="googletagmanager.com/gtag/js"]').length === 0, path + ": GA4 statistics gate preserved");
     const scripts = $('script').map((_, node) => $(node).text().trim()).get();
     ok($('#cookie-settings-open').length === 1 && scripts.includes(controls), path + ": cookie settings and fallback preserved");
