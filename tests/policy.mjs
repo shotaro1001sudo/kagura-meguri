@@ -132,7 +132,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     ok(p.includes('リンクを押す前にも発生') && p.includes('広告画像の取得・表示') && p.includes('接続元IPアドレス'), '本番: 画像通信の時機・目的・通信情報を説明');
     ok(p.includes('Cookie等を利用する場合') && p.includes('すべての画像要求でCookieや閲覧ページの完全なURLが送られるという意味ではありません'), '本番: Cookieや完全URLを全要求の確定動作としない');
 
-    ok(prodCfg.goatcounter === "kagurameguri" && read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter で計測し、ポリシーにも載る");
+    ok(prodCfg.goatcounter === "kagurameguri" && !read(join(d, "index.html")).includes("https://kagurameguri.goatcounter.com/count") && p.includes("GoatCounter(アクセス解析)"), "本番: GoatCounter の読み込みは一時停止し、設定とポリシーを保持する");
     const pub = prodCfg.adsense.client;
     ok(/^ca-pub-\d{16}$/.test(pub) && !read(join(d, "index.html")).includes("adsbygoogle.js") && read(join(d, "ads.txt")) === `google.com, ${pub.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n` && p.includes("Google AdSense(Google LLC)"), "本番: AdSense ローダーは停止し、発行者ID・ads.txt・ポリシーを維持");
   }
@@ -158,7 +158,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     const d = sub("gc", { TEST_GOATCOUNTER: "kagura-test" }); const p = text(join(d, "privacy.html"));
     const h = read(join(d, "index.html")), $ = cheerio.load(h);
     const s = $('script[src="https://gc.zgo.at/count.v5.js"]');
-    ok(s.attr("data-goatcounter") === "https://kagura-test.goatcounter.com/count" && /^sha384-/.test(s.attr("integrity")) && s.attr("crossorigin") === "anonymous", "GoatCounter: 改ざん検知(SRI)つきで読み込み、送り先は設定したコード");
+    ok(s.length === 0 && $("script[data-goatcounter]").length === 0, "GoatCounter: 設定があっても一時停止中は読み込まない");
     const csp = cspOf(join(d, "index.html"));
     ok(/script-src[^;]*https:\/\/gc\.zgo\.at/.test(csp) && /connect-src[^;]*https:\/\/kagura-test\.goatcounter\.com/.test(csp), "GoatCounter: CSP で、配信元と送り先だけを許可する");
     ok(p.includes("GoatCounter(アクセス解析)") && p.includes("Cookieもブラウザに保存する識別子も使いません") && !p.includes("取得も保存もしていません(アクセス解析を導入する場合"), "GoatCounter: ポリシーに、外部送信の行・Cookie を使わないこと・集計だけであることが書かれる");
