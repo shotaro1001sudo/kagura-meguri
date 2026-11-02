@@ -14,12 +14,12 @@
     },
     "dependencies": {
         "cheerio": "^1.2.0",
-        "nodemailer": "10.1.0"
+        "nodemailer": "10.1.7"
     },
     "devDependencies": {
-        "imapflow": "2.4.0",
-        "jsdom": "30.1.2",
-        "mailparser": "3.9.38",
+        "imapflow": "2.5.7",
+        "jsdom": "30.1.3",
+        "mailparser": "3.9.47",
         "yaml": "2.9.1"
     }
 }
