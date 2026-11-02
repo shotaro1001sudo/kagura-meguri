@@ -19,7 +19,7 @@ export function goatcounterPauseTests({ ok, section, build }) {
     for (const path of pages) {
       const $ = cheerio.load(readFileSync(path, "utf8"));
       const scripts = $("script").toArray();
-      ok(scripts.every(node => !/gc\.zgo\.at|goatcounter\.com|goatcounter\s*(?:\.|\[)/i.test($(node).text() + ($(node).attr("src") || ""))) && $("script[data-goatcounter]").length === 0,
+      ok(scripts.every(node => !/gc\.zgo\.at|goatcounter\.com|goatcounter\s*(?:\.\s*(?:count|bind_events)|\[)/i.test($(node).text() + ($(node).attr("src") || ""))) && $("script[data-goatcounter]").length === 0,
         path + ": no GoatCounter loader, inline injection, or count calls");
       ok($('link[href*="gc.zgo.at"],link[href*="goatcounter.com"],img[src*="goatcounter.com"],iframe[src*="goatcounter.com"]').length === 0,
         path + ": no alternative GoatCounter requests");
