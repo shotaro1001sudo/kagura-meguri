@@ -23,7 +23,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   const pv = text(join(OUT, "privacy.html")), ds = text(join(OUT, "disclaimer.html"));
   for (const h of ["運営者", "取得する情報", "利用目的", "外部サービスの利用と、情報の送信", "投稿フォーム・お問い合わせフォームについて", "第三者への提供", "保存期間", "開示・訂正・削除", "この方針の改定"]) ok(pv.includes(h), `プライバシーポリシーに「${h}」の項目がある`);
   ok(pv.includes("迷惑投稿") && pv.includes("個人情報の保護に関する法律"), "迷惑投稿対策と、関係する法令への言及がある");
-  ok(pv.includes('最終更新: 2026年10月26日') && pv.includes('外部広告画像の読み込みと広告リンク利用時の通信の違いを追記') && pv.includes('案内の表示済み情報の一時保存を追記') && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "診断の改定日と従来の改定履歴が出る");
+  ok(pv.includes('最終更新: 2026年11月2日') && pv.includes('外部広告画像の読み込みと広告リンク利用時の通信の違いを追記') && pv.includes('案内の表示済み情報の一時保存を追記') && (cfg.privacy.history ?? []).length >= 1 && (cfg.privacy.history ?? []).every((x) => pv.includes(x.slice(0, 12))), "診断の改定日と従来の改定履歴が出る");
   section("利用規約・法令に沿った記載");
   const tm = text(join(OUT, "terms.html"));
   ok(["適用", "開催情報の投稿", "禁止事項", "違反への対応", "知的財産権", "免責", "規約の変更", "分離可能性", "準拠法・管轄裁判所"].every((t) => tm.includes(`(${t})`)), "利用規約に、適用・投稿・禁止事項・知的財産・免責・変更・準拠法と管轄の各条がある");
@@ -71,7 +71,7 @@ export async function policyTests({ ok, section, OUT, build }) {
   }
   ok(bad.length === 0, "Cookie・localStorage・IndexedDB を使っていない(使うなら、ポリシーの更新が必要)", bad.join(","));
   ok([...keys].sort().join() === "intro,km-quiz-offer,lastSend", "保存するのは sessionStorage の intro・km-quiz-offer・lastSend だけ", [...keys].join(","));
-  ok(pv.includes("Cookie(クッキー)を設定しません") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");
+  ok(pv.includes("kagura_consent_v1") && pv.includes("182日間") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");
   // (3) 画面に出す「広告・アフィリエイト」の表示は、実態に合っている
   const ev = cheerio.load(read(join(OUT, "events/t-full.html")));
   ok(ev(".stay,.staylinks,.stay-banner").length===0,"未設定の宿おすすめ枠を省略");

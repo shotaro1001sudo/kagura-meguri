@@ -190,9 +190,9 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     win.gtag=(...args)=>events.push(args);win.kaguraGa4Allowed=false;
     win.document.addEventListener('click',e=>e.preventDefault()); // 外部遷移・実広告クリックを発生させない
     win.eval(readFileSync('scripts/client/affiliate.js','utf8'));
-    win.Cookiebot={hasResponse:true,consent:{marketing:true,method:'explicit'}};
+    win.kaguraConsent={snapshot:()=>({ready:true,marketing:true})};
     win.eval(readFileSync('scripts/client/valuecommerce-consent.js','utf8'));
-    win.dispatchEvent(new win.Event('CookiebotOnConsentReady'));
+    win.dispatchEvent(new win.Event('kagura:consent'));
     const links=[...win.document.querySelectorAll('a[data-affiliate-category],[data-vc-ad][data-affiliate-category]')];
     const click=a=>(a.matches('[data-vc-ad]')?a.querySelector(':scope > a'):a).click();
     const show=(ratio=1)=>emit(links.map(target=>({target,isIntersecting:true,intersectionRatio:ratio})));

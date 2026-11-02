@@ -11,7 +11,7 @@ document.addEventListener("click", (event) => {
   link = link.closest?.("[data-vc-ad]") || link;
 
   // The bootstrap enables GA4 only after explicit statistics consent.
-  // Do not trust Cookiebot's potentially automatic/implied consent here.
+  // Only the consent bootstrap may enable analytics.
   if (window.kaguraGa4Allowed !== true) return;
 
   const category=link.getAttribute('data-affiliate-category');

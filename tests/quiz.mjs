@@ -93,7 +93,7 @@ export function quizTests({ok,section,OUT}) {
   t=setup();t.time(1000);t.hide('hidden');t.time(60000);t.hide('visible');t.scroll(200);t.leave();ok(t.box.hidden,'非表示の滞在時間を閲覧と数えない');t.time(90000);t.leave();ok(!t.box.hidden,'可視閲覧時間が閾値に達してから表示');t.hide('hidden');ok(t.box.hidden,'タブ非表示では既存案内も閉じる');t.close();
   t=setup();t.time(31000);t.scroll(200);t.d.querySelector('#editing').dispatchEvent(new t.w.Event('input',{bubbles:true}));t.d.querySelector('#previous').focus();t.leave();ok(t.box.hidden,'入力済みフォームはフォーカス外でも抑制');t.close();
   t=setup();t.time(31000);t.scroll(200);t.box.getBoundingClientRect=()=>({top:20,height:700});t.leave();ok(t.box.hidden&&!t.w.sessionStorage.getItem('km-quiz-offer'),'安全な表示領域がない場合は出さない');t.close();
-  t=setup();t.time(31000);t.scroll(200);t.leave();t.w.dispatchEvent(new t.w.Event('CookiebotOnDialogDisplay'));ok(t.box.hidden,'案内後にCMPを開いた場合も除去');
+  t=setup();t.time(31000);t.scroll(200);t.leave();t.w.dispatchEvent(new t.w.Event('kagura:consent-dialog'));ok(t.box.hidden,'案内後にCMPを開いた場合も除去');
   const click=new t.w.MouseEvent('click',{bubbles:true,cancelable:true});t.d.querySelector('#official').dispatchEvent(click);ok(!click.defaultPrevented,'公式リンクのクリックを横取りしない');t.close();
   t=setup();t.time(31000);t.scroll(200);t.leave();t.w.dispatchEvent(new t.w.Event('resize'));ok(t.box.hidden,'画面回転/リサイズ時は閉じて再配置による遮蔽を避ける');t.close();
   ok(!/beforeunload|pushState|popstate|showModal|box\.show\(/.test(js),'離脱ダイアログ・履歴操作・モーダル表示なし');

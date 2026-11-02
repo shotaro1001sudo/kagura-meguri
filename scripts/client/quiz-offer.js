@@ -8,7 +8,7 @@
   const close=box.querySelector('button');
   const visible=n=>n&&!n.hidden&&getComputedStyle(n).display!=='none'&&getComputedStyle(n).visibility!=='hidden'&&n.getClientRects().length>0;
   const typing=()=>document.activeElement?.matches('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
-  const blocked=()=>Array.from(document.querySelectorAll('dialog[open],[role="dialog"],#CybotCookiebotDialog')).some(n=>visible(n));
+  const blocked=()=>Array.from(document.querySelectorAll('dialog[open],[role="dialog"],#cc-main .cm,#cc-main .pm')).some(n=>visible(n));
   const engagedTime=()=>elapsed+(visibleSince===null?0:Date.now()-visibleSince);
   function dismiss(){
     if(box.hidden)return;
@@ -55,7 +55,7 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!box.hidden){e.preventDefault();dismiss();}});
   document.addEventListener('input',e=>{if(e.target.closest('form')){dirty=true;dismiss();}});
   document.addEventListener('focusin',()=>{if(typing())dismiss();});
-  window.addEventListener('CookiebotOnDialogDisplay',dismiss);
+  window.addEventListener('kagura:consent-dialog',dismiss);
   window.addEventListener('resize',dismiss); // 回転・狭幅化で本文を覆う位置に残さない。
   document.addEventListener('visibilitychange',visibility);
   document.addEventListener('mouseout',leave);window.addEventListener('scroll',scroll,{passive:true});

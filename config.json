@@ -20,7 +20,7 @@
     "name": "神楽めぐり編集部",
     "contact": "",
     "established": "2026年10月",
-    "updated": "2026年10月10日"
+    "updated": "2026年11月2日"
   },
   "form": {
     "endpoint": "https://api.web3forms.com/submit",
@@ -38,9 +38,10 @@
     "retention": "対応が完了してから、12か月を目安に",
     "history": [
       "2026年10月10日 制定",
-      "2026年10月22日 Web3Formsの保存期間・国外処理・再委託先の説明を改定"
+      "2026年10月22日 Web3Formsの保存期間・国外処理・再委託先の説明を改定",
+      "2026年11月2日 同意管理を自サイト配信のCookieConsentに変更。保存期間、解析・広告画像の同意と撤回、解析・広告の一時停止を明記"
     ],
-    "updated": "2026年10月22日"
+    "updated": "2026年11月2日"
   },
   "seo": {
     "googleVerification": "KbL9gJRGHY5flHq-yVJ5GBDOgnOC4fS809E8yAwNRrw",

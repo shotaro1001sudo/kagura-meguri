@@ -22,7 +22,7 @@
       failed.delete(banner);
       // A late load after rejection must not reveal a VC slot.
       if (!banner.hasAttribute('data-vc-ad') ||
-          ['allowed', 'unselected'].includes(window.kaguraVcConsent?.state)) banner.hidden = false;
+          window.kaguraVcConsent?.state === 'allowed') banner.hidden = false;
     } else {
       failed.add(banner);
       banner.hidden = true;
