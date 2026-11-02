@@ -1,3 +1,4 @@
+import { goatcounterPauseTests } from "./goatcounter-pause.mjs";
 import { adsensePauseTests } from "./adsense-pause.mjs";
 import { rakutenStayIssuedTests } from "./rakuten-stay-issued.mjs";
 import { stayPlanningTests } from './stay-planning.mjs';
@@ -344,6 +345,7 @@ reservationTests({ ok, section });
 upcomingSummaryTests({ ok, section });
 ga4ConsentTests({ ok, section, build });
 adsensePauseTests({ ok, section, build });
+goatcounterPauseTests({ ok, section, build });
 analyticsEventTests({ ok, section });
 analyticsSyncTests({ ok, section });
 await adminTests({ ok, section });
