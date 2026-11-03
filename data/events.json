@@ -1923,7 +1923,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)"
+      "公式案内はトランペット・神楽笛・ピアノの音楽コンサート。神楽舞の公演として確認できないため保留。"
     ]
   },
   {
@@ -1932,23 +1932,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "中畑神社",
-    "start": "2026-11-14T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "五ヶ村西公民館",
+    "start": "2026-11-14T17:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ17:00、神事18:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.728685,
+    "lng": 131.268149,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-48072097a3",
@@ -1956,23 +1956,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "柚木野神社",
-    "start": "2026-11-22T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "下組公民館",
+    "start": "2026-11-22T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ16:00、神事17:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.741352,
+    "lng": 131.2931189,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-723d3293fc",
@@ -1995,7 +1995,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "玄武公民館: 町PDFは開始15:00、観光協会は神事16:00・舞入れ16:30。開始時刻の不一致を解消できないため保留。"
     ]
   },
   {
@@ -2004,23 +2004,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "下野八幡大神社",
-    "start": "2026-11-22T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "下野東公民館",
+    "start": "2026-11-22T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "神事・舞入れ16:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7417092,
+    "lng": 131.3163525,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-49ebc7661e",
@@ -2043,7 +2043,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "神楽宿は個人宅。公開施設の会場として確認できず、神社を会場とみなさない。所在地を推測せず保留。"
     ]
   },
   {
@@ -2052,23 +2052,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "秋元神社",
-    "start": "2026-11-28T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "秋元公民館",
+    "start": "2026-11-28T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ16:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.6633175,
+    "lng": 131.2961148,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-f1b5a227a2",
@@ -2076,23 +2076,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "二上神社",
-    "start": "2026-12-05T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "跡取川公民館",
+    "start": "2026-12-05T14:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "表示時刻14:00は神事開始。舞入れは16:30。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.694936,
+    "lng": 131.24627,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-ace2af5dc5",
@@ -2100,23 +2100,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "逢初天神宮",
-    "start": "2026-12-05T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "下川登公民館",
+    "start": "2026-12-05T14:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "表示時刻14:00は神事開始。舞入れは15:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7053802,
+    "lng": 131.3170087,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-1dd6592dff",
@@ -2124,23 +2124,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "歳神社",
-    "start": "2026-12-05T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "民宿 神楽の館",
+    "start": "2026-12-05T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ16:00、神事19:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7266482,
+    "lng": 131.3455689,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-5e0cd48ce1",
@@ -2163,7 +2163,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "神楽宿は個人宅。町PDF開始15:00と観光協会舞入れ15:30も異なる。所在地を推測せず保留。"
     ]
   },
   {
@@ -2172,23 +2172,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "石神神社",
-    "start": "2026-12-12T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "野方野公民館",
+    "start": "2026-12-12T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "表示時刻16:00は舞入れ。神事は14:00から。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7090289,
+    "lng": 131.3527597,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-99252f918c",
@@ -2196,23 +2196,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "熊野鳴瀧神社",
-    "start": "2027-01-09T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "田原出張所",
+    "start": "2027-01-09T17:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ17:00、神事19:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7770427,
+    "lng": 131.2559061,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-fa3aa2759c",
@@ -2220,23 +2220,23 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "広福神社",
-    "start": "2027-01-23T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "高岩公民館",
+    "start": "2027-01-23T16:30",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ16:30、神事19:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7494863,
+    "lng": 131.2612006,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-d6f13be10b",
@@ -2244,71 +2244,71 @@
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "熊野神社",
-    "start": "2027-02-06T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "上田原公民館",
+    "start": "2027-02-06T16:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "舞入れ16:00、神事19:30。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7669888,
+    "lng": 131.2776471,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-b644bf8195",
-    "name": "高千穂の夜神楽 岩戸（下永の内公民館）",
+    "name": "高千穂の日神楽 岩戸（下永の内公民館）",
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "天岩戸神社",
-    "start": "2026-11-15T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "下永の内公民館",
+    "start": "2026-11-15T09:30",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "日神楽。表示時刻9:30は神事開始。舞入れは10:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7299983,
+    "lng": 131.3510055,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-c333c90625",
-    "name": "高千穂の夜神楽 岩戸（大野原公民館）",
+    "name": "高千穂の日神楽 岩戸（大野原公民館）",
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
     "venue": "左京大明神社",
-    "start": "2026-11-29T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "start": "2026-11-29T13:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "日神楽。表示時刻13:00は神事開始。舞入れの個別時刻は未確認。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7209277,
+    "lng": 131.3454287,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-2efe304ca6",
@@ -2331,32 +2331,32 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "観光協会は神事のみ12:30、町PDFは日神楽12:00〜16:00。神楽上演の有無・時刻を確認できないため保留。"
     ]
   },
   {
     "id": "takachiho-yokagura-3f633c6f28",
-    "name": "高千穂の夜神楽 三田井（中川登公民館）",
+    "name": "高千穂の日神楽 三田井（中川登公民館）",
     "kagura": "高千穂神楽",
     "prefecture": "宮崎県",
     "city": "高千穂町",
-    "venue": "端午宮神社",
-    "start": "2026-12-13T00:00",
-    "timeUnknown": true,
-    "fee": "",
+    "venue": "中川登公民館",
+    "start": "2026-12-13T09:30",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "description": "日神楽。表示時刻9:30は神事開始。舞入れは10:00。 会場は神楽宿です。関連する神社と開催場所を取り違えないようご注意ください。町の案内では公表地区への観光客の参加は可能で、事前予約は不要です。終演時刻・当日の変更は公式情報をご確認ください。",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
+    "source": "高千穂町・高千穂町観光協会（令和8年度公式日程）",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "一度の新規が多すぎる"
-    ]
+    "status": "published",
+    "lat": 32.7143921,
+    "lng": 131.3283207,
+    "checked": "2026-11-04",
+    "reservationStatus": "not_required"
   },
   {
     "id": "takachiho-yokagura-51fc687f5b",
@@ -2379,7 +2379,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "観光協会は神事のみ、町PDFは日神楽。神楽上演の有無を確認できないため保留。"
     ]
   },
   {
@@ -2403,7 +2403,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "観光協会は神事のみ、町PDFは日神楽。神楽上演の有無を確認できないため保留。"
     ]
   },
   {
@@ -2427,7 +2427,7 @@
     "misses": 0,
     "status": "pending",
     "holdReasons": [
-      "一度の新規が多すぎる"
+      "町・観光協会とも神事のみの案内。神楽の公開公演として確認できないため保留。"
     ]
   },
   {
@@ -2458,46 +2458,47 @@
     "name": "「神謝歳」あさ神楽会",
     "kagura": "広島神楽",
     "prefecture": "広島県",
-    "city": "",
-    "venue": "",
+    "city": "広島市安佐北区",
+    "venue": "安佐北区民文化センター ホール",
     "start": "2026-12-13T10:00",
-    "fee": "",
-    "url": "https://www.instagram.com/asa4.kgr/",
-    "description": "",
+    "fee": "前売: 大人1,800円・子ども800円／当日: 大人2,000円・子ども1,000円",
+    "url": "https://7ticket.jp/s/115904/p/20261213/1",
+    "description": "開場9:30、開演10:00。あさ神楽会による神楽公演。全席指定。チケットの取扱い・当日券の残席は公式情報をご確認ください。終演時刻は未確認です。",
     "auto": true,
     "sourceId": "npo-hiroshima",
-    "source": "NPO広島神楽芸術研究所(神楽日程表)",
+    "source": "安佐北区民文化センター／公式公演・販売案内",
     "sourceUrl": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "場所(市区町村・会場)が不明"
-    ]
+    "status": "published",
+    "address": "可部7丁目28-25",
+    "lat": 34.5258976,
+    "lng": 132.5077501,
+    "checked": "2026-11-04"
   },
   {
     "id": "npo-hiroshima-b9782fa4ee",
     "name": "あさきた神楽公演 宮崎神楽団",
     "kagura": "広島神楽",
     "prefecture": "広島県",
-    "city": "",
-    "venue": "",
-    "start": "2027-01-17T00:00",
-    "timeUnknown": true,
-    "fee": "",
-    "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2027&mon=1#251",
-    "description": "",
+    "city": "広島市安佐北区",
+    "venue": "安佐北区民文化センター ホール",
+    "start": "2027-01-17T14:00",
+    "fee": "自由席: 一般1,200円・中学生以下300円／エリア指定席: 一般1,500円・中学生以下500円",
+    "url": "https://www.bunkacky-s.jp/events/event-2133/",
+    "description": "第6回あさきた神楽公演。出演は宮崎神楽団。開場13:00、開演14:00。前売券・当日券と入場方法は公式情報をご確認ください。終演時刻は未確認です。",
     "auto": true,
     "sourceId": "npo-hiroshima",
-    "source": "NPO広島神楽芸術研究所(神楽日程表)",
+    "source": "安佐北区民文化センター／公式公演・販売案内",
     "sourceUrl": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "場所(市区町村・会場)が不明"
-    ]
+    "status": "published",
+    "address": "可部7丁目28-25",
+    "lat": 34.5258976,
+    "lng": 132.5077501,
+    "checked": "2026-11-04"
   }
 ]
