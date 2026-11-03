@@ -1,1 +1,204 @@
-{}
+{
+  "otaru-matsumae": {
+    "sourceId": "otaru-matsumae",
+    "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
+    "digest": "1e1e8b9abb2f5d64369cf32345dd759c5dace50e29f97fa7e78f4b26f7c65299",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
+        "digest": "c16f833c232b7e6b072d06386598770439e7bd440ea1a09d31aa9990de530892",
+        "linkCount": 161
+      },
+      {
+        "url": "https://otaru.gr.jp/category/tourist/ibennto",
+        "digest": "ce4bb80267daf844c84383582df703cb5796f6fa8d0762ea61fa62125fd0394a",
+        "linkCount": 187
+      }
+    ],
+    "reason": "B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。"
+  },
+  "tanagura-kagura": {
+    "sourceId": "tanagura-kagura",
+    "url": "https://www.town.tanagura.fukushima.jp/kasseika-kannkoubussann/event/page000338.html",
+    "digest": "68b19e69250a7ee8379c0c72f22bffc1c87db7eab25fc6ae4c4ce792bebdb666",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.town.tanagura.fukushima.jp/kasseika-kannkoubussann/event/page000338.html",
+        "digest": "a1a3cd6a0fddada3da5130048106a4f16465639777ae54dce86a5fc8379cd568",
+        "linkCount": 40
+      }
+    ],
+    "reason": "B：2026/12/12〜13霜月大祭。祭典期間と御神楽の奉納時間を区別。年度更新を確認。"
+  },
+  "chichibu-jinja-kagura": {
+    "sourceId": "chichibu-jinja-kagura",
+    "url": "https://www.chichibu-jinja.or.jp/kagura/",
+    "digest": "467684feea9924f4acd444ff304a80f7678c4770486e11377589420ae610e408",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.chichibu-jinja.or.jp/kagura/",
+        "digest": "41bf9f7c643a9bf22659c06191d0d66053b783867d497e3bc9c240d5b070fb12",
+        "linkCount": 75
+      }
+    ],
+    "reason": "B：年間の奉納日を掲載。例年日程だけで当年開催を確定せず、当年告知と開始時刻を確認。"
+  },
+  "toei-hanamatsuri": {
+    "sourceId": "toei-hanamatsuri",
+    "url": "https://www.toeinavi.jp/column/detail/72/",
+    "digest": "f404519ab9c95f1d178e8950eab279b356a00af4b43818579b2481c817ced5d3",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.toeinavi.jp/column/detail/72/",
+        "digest": "fd8a2ad45344a2da564e03f4dc69d027010ccc35942f9d5eec11356d2e07aa7c",
+        "linkCount": 141
+      }
+    ],
+    "reason": "A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。"
+  },
+  "hamamatsu-kawai-hanamai": {
+    "sourceId": "hamamatsu-kawai-hanamai",
+    "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
+    "digest": "42d6218329b01733a7d99418ecdcd79ef60db561bb169886423f751e058f377f",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
+        "digest": "447482d013278b1b72fd7083c82054b7d3fd79996626ef6c8839d4d0861e8fba",
+        "linkCount": 36
+      }
+    ],
+    "reason": "B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。"
+  },
+  "ise-daikagura-kandayu": {
+    "sourceId": "ise-daikagura-kandayu",
+    "url": "https://www.kandayuyamamoto.jp/category/kouen/",
+    "digest": "2b228d2a09878675639173c9b93a0fae399b507fc8f1d4eb8b76d1ff26dab642",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.kandayuyamamoto.jp/category/kouen/",
+        "digest": "5b1898b246d16b94e561406fc1daae64f04c1219e95f72933177e754fff4874a",
+        "linkCount": 165
+      }
+    ],
+    "reason": "A：公演予定と公演報告が混在。開催予定のみ抽出。団体所在地ではなく実会場の都道府県で登録。非公開訪問を除外。"
+  },
+  "kitahiroshima-kagura": {
+    "sourceId": "kitahiroshima-kagura",
+    "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
+    "digest": "495d4b036f2bb3bf5df413cd2b8b1378a38f10c03b599d0049a6af9f2fa049ef",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
+        "digest": "545c03d0991a6c21607c3b626bdafc9298979653890b66f5c6a946da4668487c",
+        "linkCount": 107
+      }
+    ],
+    "reason": "B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。"
+  },
+  "iinan-kaguradan": {
+    "sourceId": "iinan-kaguradan",
+    "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
+    "digest": "b683010fb9f892032b2cfd4a02b369a03002205c0d4e08c619048c052aedbd3a",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
+        "digest": "887f5081b81dbeed1dbd36d0a37cdf4a2b3fbee32461af3fc557c5a1524d9c73",
+        "linkCount": 47
+      }
+    ],
+    "reason": "B：日付・会場・演目を掲載。11/14一般観覧不可などは公開公演から除外。催事開演と当団出演時刻を区別。"
+  },
+  "niyodogawa-tosa-kagura": {
+    "sourceId": "niyodogawa-tosa-kagura",
+    "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
+    "digest": "d95d4c7bf270bfb5a556ff740fe5cfc9229661240483b8075cdd74c25b31cc9a",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
+        "digest": "9c8e2417b9a9346788c7353cd276da831e804d87b01e4a784bb9c26234a18313",
+        "linkCount": 169
+      }
+    ],
+    "reason": "B：池川神社秋季大祭。神楽時間未定と12〜16時が同ページ内で不一致のため要確認。稽古日を公演に混入しない。"
+  },
+  "yufu-shonai-kagura": {
+    "sourceId": "yufu-shonai-kagura",
+    "url": "https://yufuin.gr.jp/news/news-6903/",
+    "digest": "b1efba1cf01b77e4c9d897d3aaa24bd05f6481e0aa6b13c4eea018b2dcd60f21",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://yufuin.gr.jp/news/news-6903/",
+        "digest": "516456022212051280c63182e956b9c1988d9c182075e524bace36b30db463bd",
+        "linkCount": 88
+      },
+      {
+        "url": "https://yufuin.gr.jp/news",
+        "digest": "22593fdc62cd1d9be1bf22560e89ce75b758e6f548e40c017bdf236634a66613",
+        "linkCount": 93
+      }
+    ],
+    "reason": "B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。"
+  },
+  "toyama-shimotsuki": {
+    "sourceId": "toyama-shimotsuki",
+    "url": "https://tohyamago.com/archives/1203",
+    "digest": "952d4334d30ea0cce4e7d05cbea4fd0f389f1bd1ceeca93c618e254582ac9b5f",
+    "checked": "2026-11-04",
+    "changed": "2026-11-04",
+    "reviewedDigest": "",
+    "pending": true,
+    "pages": [
+      {
+        "url": "https://tohyamago.com/archives/1203",
+        "digest": "5f27a7e4e2d6a8a98b4111aee6fd49de1d6debaf4c86bad59440e7f06acd6abb",
+        "linkCount": 41
+      },
+      {
+        "url": "https://tohyamago.com/archives/category/information",
+        "digest": "888068afbf5da21ebdd68bc6aff94ead44f95a9d69377926ab6b28a84cd81371",
+        "linkCount": 92
+      }
+    ],
+    "reason": "C・年度更新待ち：霜月祭案内と2025年日程を確認。2026年開催日程は未確認。翌日未明の時刻・隔年開催を要確認。"
+  }
+}
