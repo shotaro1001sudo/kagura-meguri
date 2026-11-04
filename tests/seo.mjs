@@ -61,6 +61,16 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     if (/^\/pref\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに都道府県名`);
     if (/^\/kagura\/./.test(p) && p !== "/kagura/index.html") ok(title.includes($("h1").text()), `${p}: タイトルに神楽の種類名`);
     if (/^\/month\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに年月`);
+    if (p === "/pref/広島県.html") {
+      ok(/^広島県の神楽スケジュール【\d{4}(〜\d{4})?年】日程・会場 \| /.test(title), "広島県: スケジュールと掲載年をタイトルに明示");
+      const years = [...new Set($(".pref-month h2").map((_, e) => $(e).text().slice(0, 4)).get())].sort();
+      if (years.length) {
+        ok(title.includes(years.length > 1 ? `${years[0]}〜${years.at(-1)}年` : `${years[0]}年`), "広島県: タイトルの年が月別一覧の範囲と一致");
+        ok(desc.includes("月別スケジュール") && desc.includes("県内すべての公演ではありません") && desc.includes("確認できた情報"), "広島県: 既存の月別一覧と掲載範囲を説明");
+      }
+    } else if (/^\/pref\//.test(p)) {
+      ok(title.startsWith(`${$("h1").text()} 日程【`), `${p}: 他県のタイトル形式は維持`);
+    }
     // OGP・共有
     ok((p.startsWith("/en/") ? /^https:\/\/.+\/og-en\.jpg$/ : /^https:\/\/.+\/og\.jpg$/).test($('meta[property="og:image"]').attr("content") ?? "") && $('meta[name="twitter:card"]').attr("content") === "summary_large_image", `${p}: 共有画像(og:image / twitter:card)`);
     ok($('meta[property="og:title"]').attr("content") === title && $('meta[property="og:description"]').attr("content") === desc, `${p}: OGPのタイトル・説明が、ページと一致`);

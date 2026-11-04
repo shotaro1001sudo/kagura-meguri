@@ -766,8 +766,8 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
     : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" });
   write(`dist/pref/${p}.html`, layout({
-    title: `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
-    desc: clip(`${p}で開催される神楽の日程と会場をまとめています。${isHiroshima ? "公式情報をもとに、直近・月別スケジュールと予約方法をご案内。" : ""}${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
+    title: isHiroshima ? `${p}の神楽スケジュール【${yearsOf(list)}】日程・会場 | ${cfg.siteName}` : `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
+    desc: isHiroshima && list.length ? clip(`${p}の神楽公演を月別スケジュールで探せます。開催予定${list.length}件${reg.length ? `、定期公演${reg.length}件` : ""}。会場・料金・予約要否は確認できた情報を掲載。県内すべての公演ではありません。詳細ページで公式情報をご確認ください。`) : clip(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`),
     path: prefHref(p), noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
