@@ -37,10 +37,10 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "追加した新デザインの背景・ボタンを除き、余白と月別の配置だけを調整する");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
-  ok(h("title").text().startsWith("広島県の神楽 日程【") &&
+  ok(h("title").text().startsWith("広島県の神楽スケジュール【") &&
     h("h1").text().trim() === "広島県の神楽" &&
-    (h('meta[name="description"]').attr("content") || "").includes("公式情報をもとに"),
-    "広島の元のタイトル・H1・説明文を維持する");
+    (h('meta[name="description"]').attr("content") || "").includes("公式情報をご確認ください"),
+    "広島のスケジュールを示すmetadataと既存H1・公式情報への案内");
   const months = h(".pref-month");
   const nav = h(".pref-month-nav a[href^='#hiroshima-2']");
   ok(h(".pref-month-nav .meta").length === 1 &&
