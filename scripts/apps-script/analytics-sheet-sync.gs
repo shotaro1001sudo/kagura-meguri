@@ -69,6 +69,11 @@ function kaguraUpsert_(ss,name,header,rows,replaceSource) {
   const values=[header].concat(Array.from(records.values()));
   if(values.length>20000) throw kaguraFailure_("SHEET_ROW_LIMIT");
   if(table.sheet.getMaxRows()<values.length) table.sheet.insertRowsAfter(table.sheet.getMaxRows(),values.length-table.sheet.getMaxRows());
+  // Preserve raw dimensions (including date/numeric-looking queries) before parsing.
+  // Failed source snapshots are replaced from fresh API rows on the normal retry;
+  // formatting alone cannot recover a previously coerced Date's original text.
+  const dimensionColumn=header.indexOf("dimension")+1;
+  if(dimensionColumn && values.length>1) table.sheet.getRange(2,dimensionColumn,values.length-1,1).setNumberFormat("@");
   table.sheet.getRange(1,1,values.length,header.length).setValues(values);
   if(table.rows.length>values.length) table.sheet.getRange(values.length+1,1,table.rows.length-values.length,header.length).clearContent();
   table.sheet.setFrozenRows(1);

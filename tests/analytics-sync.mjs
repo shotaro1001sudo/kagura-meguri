@@ -8,7 +8,7 @@ export function harness({sessions=false} = {}) {
   const diagnostics=[];
   const state={coerceOverallId:false,coerceDates:false,sheetZone:"Asia/Tokyo",brokenRunRead:false,gaFailure:false,gaMetrics:{},funnelRows:undefined,funnelRowCount:undefined,funnelStatus:false,deviceRows:undefined,deviceStatus:200,brokenFunnelRead:false,gscStatus:200,pageStatus:200,pageRows:undefined,brokenPageRead:false,empty:false,zone:"Asia/Tokyo",query:"=private_formula()",brokenRead:false};
   const ss={getSpreadsheetTimeZone:()=>state.sheetZone,getId:()=>"13wwhjxbh9SH0xMXpd8uhNGgiCTv6gJ52qEBNMB-x8vY",getSheetByName:name=>tabs.get(name),insertSheet(name){
-    const s={values:[],maxRows:1000,getLastRow(){return this.values.length;},getMaxRows(){return this.maxRows;},
+    const s={values:[],formats:new Map(),maxRows:1000,getLastRow(){return this.values.length;},getMaxRows(){return this.maxRows;},
       insertRowsAfter(_at,count){this.maxRows+=count;},setFrozenRows(){},getRange(r,c,n,width){return {
         getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:width},(_,j)=>{
           let value=s.values[r-1+i]?.[c-1+j]??"";
@@ -25,7 +25,20 @@ export function harness({sessions=false} = {}) {
           if(state.brokenPageRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page"&&s.values[r-1+i]?.[1]==="GSC"&&j===7)return "corrupt";
           return state.brokenRead&&name==="12_計測日次"&&r===1&&i===1&&j===4?"corrupt":value;
         })),
-        setValues(rows){rows.forEach((row,i)=>{s.values[r-1+i]??=[];row.forEach((v,j)=>{s.values[r-1+i][c-1+j]=v;});});},
+        setNumberFormat(format){
+          if(state.formatFailure)throw new Error('format failed');
+          for(let i=0;i<n;i++)for(let j=0;j<width;j++)s.formats.set((r-1+i)+','+(c-1+j),format);
+        },
+        setValues(rows){rows.forEach((row,i)=>{s.values[r-1+i]??=[];row.forEach((v,j)=>{
+          // Model write-time parsing: changing the format after this is too late.
+          if(state.coerceDimensions && r-1+i>0 && s.values[0]?.[c-1+j]==='dimension' &&
+            (state.ignorePlainText || s.formats.get((r-1+i)+','+(c-1+j))!=='@') && typeof v==='string') {
+            if(/^\d{1,2}\/\d{1,2}$/.test(v))v=new FixedDate('2026-'+v.split('/').map(x=>x.padStart(2,'0')).join('-')+'T00:00:00+09:00');
+            else if(/^\d{4}-\d{2}-\d{2}$/.test(v))v=new FixedDate(v+'T00:00:00+09:00');
+            else if(/^\d+(?:\.\d+)?$/.test(v))v=Number(v);
+          }
+          s.values[r-1+i][c-1+j]=v;
+        });});},
         clearContent(){s.values.splice(r-1,n);},setWrap(){}
       };}
     };tabs.set(name,s);return s;
@@ -78,6 +91,28 @@ export function harness({sessions=false} = {}) {
 
 export function analyticsSyncTests({ok,section}) {
   section("分析保存: 独立取得・保存照合・エラー診断・日次制御");
+  for(const query of ['4/7','2027-04-07','00123','1.50','=SUM(1,2)','+123','@example','-123']) {
+    const text=harness({sessions:true});text.ready();text.state.coerceDimensions=true;text.state.coerceDates=true;text.state.query=query;
+    ok(text.run().status==='success'&&text.props.KAGURA_SESSION_LAST_SUCCESS==='2026-10-24','文字列dimensionを保存し全媒体のreadback成功 '+query);
+    const row=text.records('13_計測内訳').find(r=>r[1]==='GSC'&&r[2]==='query');
+    ok(row[6]===(/^[=+@-]/.test(query)?"'"+query:query)&&row[7]==='[1,10,0.1,5]','原文と式escape・metrics_jsonを維持 '+query);
+    ok([...text.tabs.get('13_計測内訳').formats.keys()].every(k=>k.endsWith(',6'))&&text.tabs.get('12_計測日次').formats.size===0&&text.tabs.get('14_計測実行').formats.size===0,'書式変更はdimensionデータ列だけ');
+    ok(typeof text.records('12_計測日次').find(r=>r[1]==='GA4')[4]==='string'&&typeof text.records('12_計測日次').find(r=>r[0]==='GA4-2026-10-20')[4]==='number','空欄と数値指標の型を保持');
+  }
+  const repair=harness({sessions:true});repair.ready();repair.state.coerceDimensions=true;repair.state.ignorePlainText=true;repair.state.query='4/7';
+  ok(repair.run().error==='SYNC_PARTIAL'&&!repair.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&!repair.props.KAGURA_ANALYTICS_LAST_SUCCESS,'日付への型変化は比較を緩めず拒否');
+  ok(repair.records('13_計測内訳').find(r=>r[1]==='GSC'&&r[2]==='query')[6] instanceof repair.context.Date,'旧挙動の失敗後に日付化された部分行が残る');
+  const preserved=JSON.stringify(repair.records('13_計測内訳').filter(r=>r[1]!=='GSC'));
+  repair.state.ignorePlainText=false;
+  // A stale partial row absent from the fresh result must also be removed.
+  repair.tabs.get('13_計測内訳').values.push(['stale-partial','GSC','query','','','','old','[]','','']);
+  ok(repair.run().status==='success'&&repair.props.KAGURA_ANALYTICS_LAST_SUCCESS==='2026-10-24','通常の2回目で原文を再取得して全体ガード更新');
+  ok(repair.records('13_計測内訳').filter(r=>r[1]==='GSC'&&r[2]==='query').length===1&&repair.records('13_計測内訳').find(r=>r[1]==='GSC'&&r[2]==='query')[6]==='4/7','部分行を重複なく置換し古い行を除去');
+  ok(JSON.stringify(repair.records('13_計測内訳').filter(r=>r[1]!=='GSC'))===preserved&&repair.calls.filter(c=>c.source==='GA4').length===11&&repair.calls.filter(c=>c.source==='GSC').length===8,'GA4と実在GA4_SESSIONの成功行・APIスキップを維持');
+  const limited=harness({sessions:true});limited.ready();limited.state.coerceDimensions=true;limited.state.ignorePlainText=true;limited.state.query='4/7';limited.run();limited.run();const limitedCount=limited.calls.length;limited.state.ignorePlainText=false;
+  ok(limited.run().error==='SYNC_PARTIAL'&&limited.calls.length===limitedCount&&!limited.props.KAGURA_ANALYTICS_LAST_SUCCESS,'修正後も1日2回上限を超えず全体成功にしない');
+  const formatting=harness();formatting.ready();formatting.state.formatFailure=true;
+  ok(formatting.run().error==='SYNC_ERROR'&&!formatting.props.KAGURA_ANALYTICS_LAST_SUCCESS,'書式指定失敗は未確認のまま成功ガードを更新しない');
   for(const zone of ['Asia/Tokyo','America/Los_Angeles']) {
     const dates=harness();dates.ready();dates.state.coerceDates=true;dates.state.sheetZone=zone;
     ok(dates.run().status==='success',`日付/日時のDate読戻をシート時間帯で照合 ${zone}`);
