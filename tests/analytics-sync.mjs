@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
 const code=readFileSync("scripts/apps-script/analytics-sheet-sync.gs","utf8");
-function harness() {
+export function harness({sessions=false} = {}) {
   const props={},tabs=new Map(),calls=[],triggers=[];
   let released=0;
   const diagnostics=[];
@@ -18,6 +18,8 @@ function harness() {
             value=new FixedDate(value.replace(' ','T')+(value.length===10?'T00:00:00':'')+offset);
           }
           if(state.coerceOverallId && name==='14_計測実行' && r-1+i>0 && c-1+j===0 && typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) value=new FixedDate(value+'T00:00:00'+(state.sheetZone==='Asia/Tokyo'?'+09:00':'-07:00'));
+          if(state.brokenSessionRead && name==='13_計測内訳' && s.values[r-1+i]?.[1]==='GA4_SESSION' && j===7)return 'corrupt';
+          if(state.brokenSessionLedger && name==='14_計測実行' && String(s.values[r-1+i]?.[0]).endsWith('-GA4_SESSION') && j===3)return 'corrupt';
           if(state.brokenRunRead && name==='14_計測実行' && r-1+i>0 && c-1+j===3)return 'corrupt';
           if(state.brokenFunnelRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page_event"&&j===7)return "corrupt";
           if(state.brokenPageRead&&name==="13_計測内訳"&&s.values[r-1+i]?.[2]==="page"&&s.values[r-1+i]?.[1]==="GSC"&&j===7)return "corrupt";
@@ -28,7 +30,7 @@ function harness() {
       };}
     };tabs.set(name,s);return s;
   }};
-  class FixedDate extends Date { constructor(...args){super(...(args.length?args:['2026-10-23T22:30:00Z']));} }
+  class FixedDate extends Date { constructor(...args){super(...(args.length?args:[state.now||'2026-10-23T22:30:00Z']));} }
   const context={Map,Date:FixedDate,Number,Array,JSON,Object,String,encodeURIComponent,console:{error:msg=>diagnostics.push(msg)},
     PropertiesService:{getScriptProperties:()=>({getProperty:k=>props[k],setProperty:(k,v)=>{props[k]=v;}})},
     SpreadsheetApp:{getActiveSpreadsheet:()=>ss,flush(){}},
@@ -40,6 +42,11 @@ function harness() {
     }},
     AnalyticsData:{Properties:{runReport(request){
       calls.push({source:"GA4",request});
+      if(request.dimensions.length===0) {
+        if(state.sessionFailure)throw new Error('403 secret-response-token');
+        return {metricHeaders:request.metrics,rows:state.sessionEmpty?[]:[{metricValues:[{value:state.sessionZero?'0':'2'},{value:state.sessionZero?'0':'7'}]}],
+          metadata:{timeZone:state.sessionZone||state.zone,subjectToThresholding:!!state.sessionThreshold}};
+      }
       if(state.gaFailure)throw new Error("403 Permission denied: secret-response-token");
       const dimension=request.dimensions[0].name,funnel=request.dimensions.length===2;
       if(funnel&&state.funnelStatus)throw new Error("403 secret-response");
@@ -61,6 +68,7 @@ function harness() {
     }}
   };
   runInNewContext(code,context);
+  if(sessions) runInNewContext(readFileSync('scripts/apps-script/analytics-session-report.gs','utf8')+'\n'+readFileSync('scripts/apps-script/analytics-session-sync.gs','utf8'),context);
   const ready=()=>{props.KAGURA_ANALYTICS_FREE_CONFIRMED="yes";props.KAGURA_GA4_PROPERTY_ID="123456";};
   const run=()=>{try{return context.dailyKaguraAnalyticsSync();}catch(error){return {error:error.message};}};
   const records=name=>tabs.get(name)?.values.slice(1)||[];

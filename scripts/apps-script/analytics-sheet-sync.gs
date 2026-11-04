@@ -212,7 +212,8 @@ function checkKaguraAnalyticsSetup() {
     readyForOwnerTest:free&&property&&bound&&typeof AnalyticsData!=="undefined",
     note:"OAuth scopes/API enablement and access still require owner test; no API requests made"};
 }
-/** Max 10 API calls/run; source-specific same-day success guard, <=2 attempts/source/day. */
+/** Max 15 API calls/run with optional session snapshot (10 existing + 5).
+ * Independent same-day guards; <=2 attempts/component/day. No new trigger. */
 function dailyKaguraAnalyticsSync() {
   const props=PropertiesService.getScriptProperties(),ss=SpreadsheetApp.getActiveSpreadsheet();
   if(!ss || ss.getId()!==KAGURA_ANALYTICS_SYNC.SPREADSHEET_ID) throw kaguraFailure_("BOUND_SHEET_REQUIRED");
@@ -268,8 +269,14 @@ function dailyKaguraAnalyticsSync() {
     const status=results.includes("error")?(results.some(x=>x!=="error")?"partial":"error"):results.includes("no_data")?"no_data":"success";
     log(day,status,"GA4="+results[0]+"; GSC="+results[1]+"; independent saves; no_data/not_returned are not zero");
     if(status==="success" || status==="no_data") props.setProperty("KAGURA_ANALYTICS_LAST_SUCCESS",day);
+    // An optional companion must never break the existing GA4/GSC success state.
+    let sessionSnapshot = {status:'unavailable'};
+    if (typeof kaguraSyncSessionSnapshot_ === 'function') {
+      try { sessionSnapshot = kaguraSyncSessionSnapshot_(ss,now); }
+      catch (error) { sessionSnapshot = {status:'error',reason:kaguraErrorCode_(error)}; }
+    }
     if(status==="partial" || status==="error") throw kaguraFailure_("SYNC_"+status.toUpperCase());
-    return {status,sources:results};
+    return {status,sources:results,sessionSnapshot};
   } finally {lock.releaseLock();}
 }
 /** Owner-only explicit opt-in after the first verified sync. No VC trigger changes. */
