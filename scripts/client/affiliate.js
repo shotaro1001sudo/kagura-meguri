@@ -12,6 +12,7 @@ document.addEventListener("click", (event) => {
 
   // The bootstrap enables GA4 only after explicit statistics consent.
   // Only the consent bootstrap may enable analytics.
+  if (window.kaguraCheckAnalyticsConsent && !window.kaguraCheckAnalyticsConsent()) return;
   if (window.kaguraGa4Allowed !== true) return;
 
   const category=link.getAttribute('data-affiliate-category');
@@ -40,6 +41,7 @@ document.addEventListener("click", (event) => {
   if(typeof IntersectionObserver!=='function'||typeof document.querySelectorAll!=='function')return;
   const sent=new Set();
   const observer=new IntersectionObserver(entries=>{
+    if(window.kaguraCheckAnalyticsConsent && !window.kaguraCheckAnalyticsConsent())return;
     if(window.kaguraGa4Allowed!==true||typeof window.gtag!=='function'||document.visibilityState!=='visible')return;
     for(const entry of entries) {
       const link=entry.target;

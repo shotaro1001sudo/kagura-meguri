@@ -1,3 +1,4 @@
+import './analytics-session-report.mjs';
 import './consent-manager-test.mjs';
 import { goatcounterPauseTests } from "./goatcounter-pause.mjs";
 import { adsensePauseTests } from "./adsense-pause.mjs";

@@ -7,7 +7,7 @@
 
   // One bootstrap per document, even if another integration inserts it again.
   if (window.kaguraAnalytics) return;
-  const state = window.kaguraAnalytics = { status: "waiting_consent", version: "2026-10-26" };
+  const state = window.kaguraAnalytics = { status: "waiting_consent", version: "2026-11-04" };
   const loc = window.location;
   let excluded = false;
   try {
@@ -103,6 +103,13 @@
     window.dispatchEvent(new Event("kagura:analytics-ready"));
   }
 
+  // Recheck persisted consent immediately before custom events (including another tab).
+  window.kaguraCheckAnalyticsConsent = () => {
+    if (refreshExclusion()) return false;
+    if (!explicitlyAllowed()) { syncConsent(); return false; }
+    // Sending an event must never initialize the tag or recursively emit ready.
+    return window.kaguraGa4Allowed === true;
+  };
   window.addEventListener("kagura:consent", syncConsent);
   window.addEventListener("focus", syncConsent);
   window.addEventListener("pageshow", syncConsent);

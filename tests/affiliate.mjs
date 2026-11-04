@@ -31,7 +31,7 @@ export function affiliateTests({ ok, section, OUT, build }) {
     ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"), "追加スクリプトがCSPのハッシュに含まれる");
   }
 
-  function fire({ label = "stay-rakuten/t-full", sponsored = true, consent = true, cookieBot = true, gtag = true, tag = "SPAN" } = {}) {
+  function fire({ label = "stay-rakuten/t-full", sponsored = true, consent = true, cookieBot = true, gtag = true, tag = "SPAN", freshConsent = true } = {}) {
     let callback; const events = [];
     class Element {
       closest(selector) { return selector === "a[data-goatcounter-click]" ? link : null; }
@@ -45,12 +45,14 @@ export function affiliateTests({ ok, section, OUT, build }) {
       getElementById(id) { return id === "Cookiebot" && cookieBot ? {} : null; }
     };
     const window = { location: { pathname: "/events/t-full.html" }, kaguraGa4Allowed: !cookieBot || consent, Cookiebot: { consent: { statistics: consent } } };
+    window.kaguraCheckAnalyticsConsent = () => freshConsent;
     if (gtag) window.gtag = (...args) => events.push(args);
     runInNewContext(script, { document, window, Element });
     callback({ target: Object.assign(new Element(), { tagName: tag }) });
     return events;
   }
 
+  ok(fire({freshConsent:false}).length===0, "別タブ撤回で古い許可フラグが残っても広告クリックを送信しない");
   const good = fire();
   ok(good.length === 1 && good[0][0] === "event" && good[0][1] === "affiliate_click", "対象クリックで1イベントだけ送信");
   ok(good[0]?.[2]?.affiliate_partner === "rakuten" && good[0]?.[2]?.affiliate_content_id === "t-full" && good[0]?.[2]?.affiliate_page_path === "/events/t-full.html", "広告主・公演ID・ページ情報を送信");

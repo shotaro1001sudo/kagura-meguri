@@ -5,6 +5,7 @@
   const path = window.location.pathname;
   const detail = /^\/(events|regular)\/([A-Za-z0-9_-]+)\.html$/.exec(path);
   function send(name, params) {
+    if (window.kaguraCheckAnalyticsConsent && !window.kaguraCheckAnalyticsConsent()) return false;
     if (window.kaguraGa4Allowed !== true || typeof window.gtag !== "function") return false;
     window.gtag("event", name, { ...params, transport_type: "beacon" });
     return true;

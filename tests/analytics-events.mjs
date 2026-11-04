@@ -37,5 +37,15 @@ export function analyticsEventTests({ ok, section }) {
   w.kaguraGa4Allowed = false;
   const count=sent.length; click("#detail");
   ok(sent.length===count, "同意撤回後は導線計測しない");
+  w.kaguraGa4Allowed = true;
+  w.kaguraCheckAnalyticsConsent = () => false;
+  click('#official');
+  ok(sent.length===count, '古い許可フラグが残っていても送信直前の同意拒否を尊重');
+  w.kaguraCheckAnalyticsConsent = () => true;
+  click('#official');click('#official');
+  ok(sent.length===count+2, '重複クリックも既存の総イベント数として保持し、ブラウザでセッションを捏造しない');
+  w.dispatchEvent(new w.Event('pageshow'));
+  w.dispatchEvent(new w.Event('kagura:analytics-ready'));
+  ok(sent.filter(x=>x[1]==='view_event').length===1, 'BFCache相当の同一文書復元で閲覧イベントを重複送信しない');
   dom.window.close();
 }
