@@ -226,3 +226,60 @@ GitHub公開と実GAS反映は別工程。既存プロジェクトの対象フ�
 - https://developers.google.com/tag-platform/security/guides/privacy （Google公式のga-disable方式）
 - https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event
 - https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event
+
+## 2026-11-04: 同意後の行動をGA4セッション単位で読む
+
+既存の `view_event` / `official_link_click` / `affiliate_click` の総数・イベント名は維持する。
+再クリックを間引いたり、sessionStorage/独自タイマーをGA4セッションとして扱わない。
+公演閲覧は従来どおり1文書1回（再読込・別タブは別文書、BFCache復元は同一文書）。
+長時間開いた文書でGA4セッションが切り替わっても、閲覧イベントを自動で再発行しない。
+そのため `view_event` sessions は「イベントを受信したセッション」であり、全滞在セッションではない。
+クリックはセッション切替後も操作ごとに送り、GA4側の割当・集計に任せる。
+公式・広告クリックと広告表示の直前にも既存CMPの保存同意と自己除外を再確認する。
+これにより別タブでの撤回後、focus通知前の操作でも古い許可フラグだけで送信しない。
+
+### 既存アクセスだけを使う読取専用レポート
+
+`analytics-session-report.gs` は `analytics-sheet-sync.gs` と同じ既存の非公開GAS向けの
+**任意の手動関数**。リポジトリ公開だけではGASには反映されない。
+本変更では実GASへの設置・実行、権限追加、サービス有効化、トリガー変更は行っていない。
+既存AnalyticsDataの認証・無料設定が使えなければ未取得として保留する。新しいOAuth認証を求めない。
+既存の日次取得10要求やSheet列・保存済み値は変更しない。
+
+`readKaguraSessionReport('2026-10-27', '2026-11-02')` は同じ期間を指定した5要求を行う。
+日付は実プロパティ時間帯、両端を含む最大28日。7日/28日はそれぞれ直接取得する。
+3番目の引数に `/events/実在ID.html` 等の公開パスを渡せば、そのパスで発生した行動だけを集計する。
+パスの実在はサイト原本と照合する。クエリ・ハッシュ・外部URLは指定不可。
+
+| kind | APIの条件 | 読み方 |
+|---|---|---|
+| all | eventName指定なし | 全体sessions（page指定時はそのページのsessions） |
+| view_event | eventName完全一致 | 公演詳細閲覧イベントのあるsessions |
+| official_link_click | eventName完全一致 | 公式リンク操作のあるsessions |
+| affiliate_click | eventName完全一致 | 広告リンク操作のあるsessions |
+| outbound_union | 上記クリック2種のinListFilter | どちらかの外部遷移があるsessions。2行の和ではない |
+
+全要求で `dimensions: []`、`metrics: sessions,eventCount` とし、条件は `dimensionFilter` に置く。
+日別・URL別・イベント別行を合算して期間全体やunionにしない。
+同じセッションで両リンクを押した場合もunionはAPIが直接計算する。
+`eventCount` は同じ条件の総回数を並記する。予約・来場・売上や実人数ではない。
+URLごとの数値を全体の内訳として加算しない。クリックsessions÷閲覧sessionsも、同一セッションの
+順序付きファネル転換率を保証しない（クリックしたセッションにview_eventがない場合がある）。
+
+- GA4のsessionsはHLL++による**重複除外セッション集計（近似）**。厳密な人数や独自IDのdistinctではない。
+- レポートは期間・時間帯・取得時刻・品質注記を返す。無応答行はnull、0へ置換しない。
+- 時間帯不一致、不正スキーマ/数値、権限エラーは停止。自動再試行・保存・ログ出力はしない。
+- しきい値・サンプリング・other行への欠落は品質注記に残す。速報値は後日変わり得る。
+- 同意情報の有無、自己/Debug除外はAPI通信成功だけで認証できない。既存記録は利用者による
+  除外設定報告のみで実測未認証。外部利用者の確定KPIとして扱わない。
+- WindsorでeventNameを非表示にしても複数の集計行が返る場合、unionではない。
+  日別合算と一致する期間値にも非加算保証はない。上の無次元集計と照合できるまで参考値に留める。
+- 既存の標準指標・標準dimensionのみ。カスタムdimension登録、キーイベント化、BigQueryや課金は不要。
+
+検証: ローカルのモックで拒否/撤回・通知前の除外・復元・重複クリック、要求の期間とunionフィルター、
+欠損・不正値・品質フラグを検証する。実Googleタグ/複数タブのGAセッション割当やGA4受信は模擬しない。
+再読込/別タブ/セッション切替を跨ぐ重複除外はGA4依存で、実受信検証なしに成功とは断定しない。
+
+一次資料: [Data APIのレポート](https://developers.google.com/analytics/devguides/reporting/data/v1/basics)、
+[標準指標](https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema)、
+[GA4のHLL++近似集計](https://developers.google.com/analytics/blog/2022/hll)。

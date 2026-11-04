@@ -146,6 +146,23 @@ export function ga4ConsentTests({ ok, section, build }) {
     waiting.calls().some((x) => x[0] === "consent" && x[1] === "update" &&
       x[2].analytics_storage === "denied"), "同意取り消しで遮断して再読み込み");
 
+  for (const lifecycle of ['pageshow', 'focus', 'event-time']) {
+    const revoked = simulate({cb:response(true)});
+    revoked.window.kaguraConsent = response(false); // Shared cookie changed in another tab.
+    if (lifecycle === 'event-time') revoked.window.kaguraCheckAnalyticsConsent();
+    else revoked.notify(lifecycle);
+    ok(!revoked.window.kaguraGa4Allowed && revoked.reloads === 1,
+      '別タブ撤回を再確認して送信を遮断: '+lifecycle);
+  }
+  const notStarted = simulate();
+  notStarted.window.kaguraConsent = response(true);
+  ok(!notStarted.window.kaguraCheckAnalyticsConsent() && notStarted.added.length === 0,
+    'イベント直前の確認はタグ起動・ready通知を再帰的に発生させない');
+  const gate = simulate({cb:response(true)});
+  gate.window.localStorage.setItem('kagura.analytics.exclude','1');
+  ok(gate.window.kaguraCheckAnalyticsConsent() === false,
+    'storage通知前でもイベント直前に自己除外を確認');
+
   const withoutkaguraConsent = simulate({ requireConsent: false });
   ok(withoutkaguraConsent.added.length === 0 && withoutkaguraConsent.window.kaguraGa4Allowed === false,
     "CMP未設定の構成でも必ず同意を要求する");
