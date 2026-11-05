@@ -2508,5 +2508,24 @@
     "lat": 34.5258976,
     "lng": 132.5077501,
     "checked": "2026-11-04"
+  },
+  {
+    "id": "michinoeki-chiyoda-kagura-2027-03",
+    "name": "道の駅舞ロードIC千代田「神楽の日」",
+    "kagura": "広島神楽",
+    "prefecture": "広島県",
+    "city": "山県郡北広島町",
+    "venue": "道の駅舞ロードIC千代田",
+    "start": "2027-03-07T16:00",
+    "fee": "無料(当日の施設内レシートの提示が必要)",
+    "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
+    "description": "道の駅で神楽を1演目観られる公演です。2026年度の公式予定では、2027年3月7日16:00から春木神楽団が「土蜘蛛」を上演予定。観覧には当日の施設内レシートの提示が必要です。終了時刻・予約要否は未確認のため、最新の公式案内をご確認ください。",
+    "source": "北広島町「神楽スケジュール2026」・本文訂正",
+    "checked": "2026-11-05",
+    "status": "published",
+    "lat": 34.67459,
+    "lng": 132.53838,
+    "geoPrecision": "city",
+    "reservationStatus": "unknown"
   }
 ]
