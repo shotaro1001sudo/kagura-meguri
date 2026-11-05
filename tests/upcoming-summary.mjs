@@ -30,7 +30,31 @@ export function upcomingSummaryTests({ok,section}) {
       ok(!!ad&&page('main *').toArray().indexOf(summary[0])<page('main *').toArray().indexOf(ad),'要約が最初の広告リンクより前');
       ok(readFileSync(out+detail,'utf8').includes('庄内神楽祭り'),'詳細リンク先存在');
     }
+    // 日程検索のある2種類にも、本文と検索用説明文を同じ掲載データから生成する。
+    for (const [kind, firstId, date, venue] of [
+      ['遠山の霜月祭', 'tohyama-shimotsuki-kodouki-kawai-2026', '2026年12月5日', '熊野神社'],
+      ['花祭', 'hanamatsuri-toei-kobayashi-2026', '2026年11月13日', '諏訪神社'],
+    ]) {
+      const seasonal = cheerio.load(readFileSync(out+'/kagura/'+kind+'.html', 'utf8'));
+      const summary = seasonal('.upcoming-summary');
+      const description = seasonal('meta[name=description]').attr('content');
+      ok(summary.find('li').length === 3 && summary.find('a').first().attr('href') === '/events/'+firstId+'.html', kind+': 開催順の直近3件と詳細導線');
+      ok(summary.text().includes(date) && summary.text().includes(venue) && description.includes(date) && description.includes(venue), kind+': 本文とdescriptionの日時・会場が一致');
+      ok(seasonal('title').text().includes('地区別・会場一覧'), kind+': 地区別の日程一覧であることをtitleに明示');
+      if (kind === '花祭') ok(summary.text().includes('11月15日') && description.includes('11月15日'), '花祭: 翌日以降まで続く開催期間を省略しない');
+    }
     const other=cheerio.load(readFileSync(out+'/kagura/広島神楽.html','utf8'));
     ok(other('.upcoming-summary').length===0,'他種類へ一括展開しない');
   }
+  // 開催シーズンが終わっても、翌年の開催予定を推測して表示しない。
+  const expiredOut = 'dist-test-seasonal-expired';
+  const expiredBuild = spawnSync('node', ['scripts/build.mjs'], {encoding:'utf8', env:{...process.env, BUILD_NOW:'2027-01-12T12:00', OUT_DIR:expiredOut}});
+  ok(expiredBuild.status === 0, '季節の祭り: 開催後build', expiredBuild.stderr);
+  if (expiredBuild.status === 0) for (const kind of ['遠山の霜月祭', '花祭']) {
+    const page = cheerio.load(readFileSync(expiredOut+'/kagura/'+kind+'.html', 'utf8'));
+    ok(page('.upcoming-summary li').length === 0 && page('.upcoming-summary').text().includes('開催予定はありません'), kind+': 終了済み日程を再掲しない');
+    ok(page('meta[name=description]').attr('content').includes('開催予定はありません') && !page('meta[name=description]').attr('content').includes('直近は'), kind+': 終了後のdescriptionも空状態に追随');
+    ok(page('meta[name=robots]').attr('content').includes('noindex'), kind+': 開催予定0件の既存noindex方針を維持');
+  }
+
 }
