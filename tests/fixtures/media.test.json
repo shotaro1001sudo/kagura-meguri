@@ -1,0 +1,8 @@
+[
+  { "id": "p-orochi", "kind": "photo", "kagura": "石見神楽", "caption": "演目「大蛇」<script>alert(1)</script>", "alt": "大蛇が火を噴く場面", "provider": "reader", "credit": "山田", "taken": "2026-10", "place": "浜田市・テスト神社", "received": "2026-10-05", "width": 64, "height": 48, "status": "published" },
+  { "id": "p-official", "kind": "photo", "kagura": "石見神楽", "alt": "神楽殿で舞う鬼", "provider": "official", "credit": "テスト社中", "received": "2026-10-03", "width": 64, "height": 48, "status": "published" },
+  { "id": "p-anon", "kind": "photo", "kagura": "高千穂神楽", "alt": "夜神楽の舞", "provider": "reader", "received": "2026-10-04", "width": 64, "height": 48, "status": "published" },
+  { "id": "p-gone", "kind": "photo", "kagura": "石見神楽", "alt": "取り下げた写真", "provider": "reader", "credit": "出てはいけない", "received": "2026-10-02", "width": 64, "height": 48, "status": "withdrawn" },
+  { "id": "v-orochi", "kind": "youtube", "kagura": "石見神楽", "youtube": "AbCdEfGhIj0", "title": "大蛇の舞(テスト)", "provider": "official", "credit": "テスト社中", "received": "2026-10-06", "status": "published" },
+  { "id": "v-unknown", "kind": "youtube", "kagura": "存在しない神楽", "youtube": "ZyXwVuTsRq9", "title": "ページのない種類", "provider": "reader", "received": "2026-10-06", "status": "published" }
+]

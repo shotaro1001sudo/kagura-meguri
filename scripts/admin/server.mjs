@@ -1,22 +1,29 @@
 // 管理者用ページ(自分のPCだけで使う): npm run admin
-//   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
+//   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況 / 写真・動画の追加・掲載をやめる
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS,
+  loadMedia, mediaKaguras, suggestMediaId, upsertMedia, setMediaStatus, paths } from "./store.mjs";
+import { MEDIA_SIZES, PROVIDERS, creditLabel } from "../lib/media.mjs";
 import { fetchFormMails } from "./mail.mjs";
-import { publish, pendingChanges } from "./publish.mjs";
+import { publish, pendingChanges, MEDIA } from "./publish.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.js": ["app.js", "text/javascript; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"] };
-const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
+const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: blob:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
+// 写真のファイル(一覧の見本の表示用)。名前の形を決めて、ほかの場所のファイルは読ませない
+const MEDIA_FILE = /^\/media\/([a-z0-9][a-z0-9-]{0,63}(?:-s)?\.webp)$/;
+// 1回で受け取る大きさの上限。写真の追加だけ、画像の分(base64)を見込んで大きくする
+const BODY_LIMIT = { "/api/media/save": 3_000_000 };
 const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
 /**
@@ -33,12 +40,17 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   const state = async () => {
     const box = loadInbox(root);
     const local = loadLocal(root);
+    const media = loadMedia(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
-      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null) };
+      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
+      media: media.map((m) => ({ ...m, creditLabel: creditLabel(m) })), mediaKaguras: mediaKaguras(root), mediaId: suggestMediaId(today(), media),
+      mediaCfg: { start: cfg.media?.start ?? "", formUrl: cfg.media?.formUrl ?? "", sizes: MEDIA_SIZES, providers: PROVIDERS } };
   };
 
   // 開催データを変えた操作は、そのままコミットして push する(数分後にサイトに反映)
   const release = (what, e) => publisher(root, `data(admin): ${what}: ${e.name}`).catch((err) => ({ ok: false, step: "push", log: err.message }));
+  // 写真・動画は、一覧のデータと写真のファイルを、いっしょに送る
+  const releaseMedia = (what, m) => publisher(root, `data(admin): 写真・動画 ${what}: ${m.kagura} ${m.id}`, { paths: MEDIA }).catch((err) => ({ ok: false, step: "push", log: err.message }));
 
   const api = {
     "GET /api/state": () => state(),
@@ -90,6 +102,22 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       return { publish: pub, state: await state() };
     }),
 
+    // 写真・動画の追加・編集。新しい写真は、画面で WebP に変換・縮小したもの(大・小)を受け取る
+    "POST /api/media/save": (body) => serial(async () => {
+      const r = upsertMedia(root, body.item ?? {}, body.originalId ?? null, { photos: body.photos, kaguras: mediaKaguras(root), today: today() });
+      if (r.errs) return [400, { error: "入力内容を確認してください", fields: r.errs }];
+      const pub = await releaseMedia(body.originalId ? "編集" : "追加", r.item);
+      return { saved: r.item.id, publish: pub, state: await state() };
+    }),
+
+    // 写真・動画の掲載をやめる(写真はファイルも消す) / 動画を掲載に戻す
+    "POST /api/media/status": (body) => serial(async () => {
+      const r = setMediaStatus(root, body.id, body.status);
+      if (r.err) return [r.err[0], { error: r.err[1] }];
+      const pub = await releaseMedia(body.status === "withdrawn" ? "掲載をやめる" : "掲載に戻す", r.item);
+      return { publish: pub, state: await state() };
+    }),
+
     // 申請・問い合わせの状態とメモ
     "POST /api/inbox/update": (body) => serial(async () => {
       const box = loadInbox(root);
@@ -120,6 +148,12 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       if (file === "app.html") body = body.replace("%%TOKEN%%", token);
       return send(200, type, body);
     }
+    const mf = req.method === "GET" && url.pathname.match(MEDIA_FILE);
+    if (mf) {
+      const p = join(paths(root).mediaDir, mf[1]);
+      if (!existsSync(p)) return json(404, { error: "not found" });
+      return send(200, "image/webp", await readFile(p));
+    }
     const handler = api[`${req.method} ${url.pathname}`];
     if (!handler) return json(404, { error: "not found" });
     if (req.headers["x-admin-token"] !== token) return json(403, { error: "トークンがありません。画面を開き直してください。" });
@@ -128,7 +162,11 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     if (req.method === "POST") {
       if (!/^application\/json/.test(req.headers["content-type"] ?? "")) return json(415, { error: "JSON で送ってください" });
       let raw = "";
-      for await (const c of req) { raw += c; if (raw.length > 200_000) return json(413, { error: "大きすぎます" }); }
+      // 上限を超えたら、ためずに読み捨ててから断る(途中で返すと、画面には「接続が切れた」としか伝わらない)
+      const limit = BODY_LIMIT[url.pathname] ?? 200_000;
+      let tooBig = false;
+      for await (const c of req) { if (tooBig) continue; raw += c; if (raw.length > limit) { tooBig = true; raw = ""; } }
+      if (tooBig) return json(413, { error: "大きすぎます(写真は、長い辺を小さくしてから選んでください)" });
       try { body = JSON.parse(raw || "{}"); } catch { return json(400, { error: "JSON が正しくありません" }); }
     }
     try {

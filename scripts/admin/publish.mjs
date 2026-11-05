@@ -1,11 +1,13 @@
-// 管理者用ページの操作を、サイトに反映する: 確認のビルド → 開催データだけをコミット → push
+// 管理者用ページの操作を、サイトに反映する: 確認のビルド → 開催データ(と写真・動画)だけをコミット → push
 // GitHub 側に、週次の自動収集などの新しいコミットがあるときは、取り込んでから push し直す。
 import { execFile } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const DATA = ["data/events.json", "data/geocache.json"];
+export const DATA = ["data/events.json", "data/geocache.json"];
+// 写真・動画: 一覧のデータと、写真のファイルの置き場所(掲載をやめて消したファイルも、ここで送る)
+export const MEDIA = ["data/media.json", "assets/media"];
 
 function run(cmd, args, opts) {
   return new Promise((resolve) => {
@@ -24,7 +26,7 @@ export function findGit() {
 /** 開催データに、まだサイトへ反映していない変更があるか(未コミット、または未 push) */
 export async function pendingChanges(root, git = findGit()) {
   const g = (...a) => run(git, a, { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
-  const st = await g("status", "--porcelain", "--", ...DATA);
+  const st = await g("status", "--porcelain", "--", ...DATA, ...MEDIA);
   const ahead = await g("rev-list", "--count", "@{u}..HEAD");
   return { uncommitted: st.ok && st.out.length > 0, unpushed: ahead.ok ? Number(ahead.out) || 0 : 0 };
 }
@@ -33,7 +35,7 @@ export async function pendingChanges(root, git = findGit()) {
  * 開催データをコミットして push する。返り値の ok が false なら、step(build / commit / push)と log で理由を示す。
  * データの保存は済んでいるので、失敗しても、あとで「もう一度公開する」でやり直せる。
  */
-export async function publish(root, message, { git = findGit(), check = true } = {}) {
+export async function publish(root, message, { git = findGit(), check = true, paths = DATA } = {}) {
   const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   const g = (...a) => run(git, a, { cwd: root, env });
 
@@ -45,11 +47,14 @@ export async function publish(root, message, { git = findGit(), check = true } =
     if (!b.ok) return { ok: false, step: "build", log: b.out.slice(-2000) };
   }
 
-  // 2. 開催データだけをコミット(ほかの作業中のファイルは、巻き込まない)
-  const files = DATA.filter((f) => existsSync(join(root, f)));
+  // 2. 決まったファイルだけをコミット(ほかの作業中のファイルは、巻き込まない)。
+  //    新しい写真のファイルは、まだ Git が知らないので、先に add する(消したファイルも、add で記録する)
+  const files = paths.filter((f) => existsSync(join(root, f)));
   const st = await g("status", "--porcelain", "--", ...files);
   if (!st.ok) return { ok: false, step: "commit", log: st.out };
   if (st.out) {
+    const a = await g("add", "-A", "--", ...files);
+    if (!a.ok) return { ok: false, step: "commit", log: a.out };
     const c = await g("commit", "-m", message, "--", ...files);
     if (!c.ok) return { ok: false, step: "commit", log: c.out };
   }

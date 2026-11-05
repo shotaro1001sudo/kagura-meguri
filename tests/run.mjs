@@ -38,6 +38,7 @@ import { englishTests } from "./english.mjs";
 import { organizersTests } from "./organizers.mjs";
 import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
+import { mediaTests } from "./media.mjs";
 import { homeTests } from "./home.mjs";
 import { sourcesTests } from "./sources.mjs";
 import { consistencyTests } from "./consistency.mjs";
@@ -57,7 +58,7 @@ import { visitorPlanningTests } from './visitor-planning.mjs';
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", TEST_MEDIA_START: "", TEST_MEDIA_FORM: "", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -352,6 +353,7 @@ goatcounterPauseTests({ ok, section, build });
 analyticsEventTests({ ok, section });
 analyticsSyncTests({ ok, section });
 await adminTests({ ok, section });
+await mediaTests({ ok, section, build });
 await valuecommerceTests({ ok, section });
 await valuecommerceSummaryTests({ ok, section });
 valuecommerceGASTests({ ok, section });

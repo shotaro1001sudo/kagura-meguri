@@ -68,6 +68,9 @@ export function cspFor(html, cfg) {
     //  スクリプトの許可は、これまでどおりハッシュのまま。CSS の書き込みは、スクリプトの実行より危険が小さい)
     d["style-src-elem"] = ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"];
   }
+  // 動画の再生ボタンがあるページだけ、YouTube(プライバシー強化モード)の再生画面の埋め込みを許可する。
+  // 埋め込みは、再生ボタンを押したときに初めて作る(scripts/client/media.js)
+  if (/\bdata-yt="/.test(html)) d["frame-src"] = [...d["frame-src"].filter((x) => x !== "'none'"), "https://www.youtube-nocookie.com"];
   return Object.entries(d).map(([k, v]) => `${k} ${[...new Set(v)].join(" ")}`).join("; ") + "; upgrade-insecure-requests";
 }
 

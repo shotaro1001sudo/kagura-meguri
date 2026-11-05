@@ -1016,3 +1016,23 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 /* Keep the local consent UI close to the site's paper-and-ink palette. */
 #cc-main { --cc-font-family: system-ui, sans-serif; --cc-bg: #f8f5ee; --cc-primary-color: #302c26; --cc-secondary-color: #514b43; --cc-btn-primary-bg: #4c594b; --cc-btn-primary-hover-bg: #384437; --cc-btn-primary-color: #fff; --cc-btn-primary-border-color: #4c594b; --cc-btn-secondary-bg: #e8e3d9; --cc-btn-secondary-color: #302c26; --cc-btn-secondary-border-color: #d3ccbf; --cc-toggle-on-bg: #4c594b; --cc-cookie-category-block-bg: #eee9df; --cc-modal-border-radius: 10px; }
 #cc-main button { min-height: 44px; }
+
+/* 写真・動画(神楽の種類のページ)。飾りは罫線と余白だけ。動画の枠は、暗い地(夜の神楽殿)に朱の線の再生ボタン */
+.media{max-width:860px;margin:8px 0 4px}.media h2{margin-top:48px}
+.media-grid{list-style:none;margin:16px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:28px 20px}
+.media-grid figure{margin:0}
+.media-grid .m-photo a{display:block;border-radius:2px}
+.media-grid img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:2px;background:var(--card)}
+.media-grid figcaption{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:0 .9em;font-size:var(--fs-xs);line-height:1.8;color:var(--mut)}
+.media-grid .m-cap{flex-basis:100%;color:var(--fg);word-break:auto-phrase}
+.yt-box{aspect-ratio:4/3;background:#171513;border-radius:2px;overflow:hidden}
+.yt-box iframe{display:block;width:100%;height:100%;border:0}
+.yt-play{all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;color:#e4ddd0;text-align:center;font-family:var(--sans)}
+.yt-play:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+.yt-icon{width:52px;height:52px;border:1.5px solid #cf7a68;border-radius:50%;position:relative;transition:background-color var(--t-s) var(--ease)}
+.yt-icon::after{content:"";position:absolute;left:20px;top:15px;border-style:solid;border-width:10px 0 10px 16px;border-color:transparent transparent transparent #cf7a68}
+.yt-play:hover .yt-icon{background:rgb(207 122 104/.16)}
+.yt-t{font-size:var(--fs-s);line-height:1.6;word-break:auto-phrase}
+.yt-play small{font-size:var(--fs-2xs);color:#aaa093;word-break:auto-phrase}
+.media-call{margin-top:20px}
+.media-form{margin:28px 0 8px}

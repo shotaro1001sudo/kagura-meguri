@@ -15,6 +15,7 @@ import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
+import { mediaState, checkMediaConfig, checkMediaItem, mediaSection, mediaLd, photoFiles } from "./lib/media.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
@@ -50,6 +51,11 @@ const GOATCOUNTER = "";
 if (process.env.TEST_AFF_OFF) cfg.affiliate = { rakutenAffiliateId: "", valueCommerceSid: "", jalanPid: "", jalanActivityPid: "", amazonTag: "" }; // テスト用(アフィリエイト未設定の状態から確かめる)
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
 if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: VC.sid, jalanPid: VC.stay }; // テスト用(宿のアフィリエイト)
+// 写真・動画(神楽の種類のページ)。テストでは、データ・画像の置き場所・掲載を始める日・受付フォームを差し替える
+const MEDIA_FILE = process.env.MEDIA_FILE ?? "data/media.json";
+const MEDIA_DIR = process.env.MEDIA_DIR ?? "assets/media";
+if (process.env.TEST_MEDIA_START != null) cfg.media = { ...cfg.media, start: process.env.TEST_MEDIA_START };
+if (process.env.TEST_MEDIA_FORM != null) cfg.media = { ...cfg.media, formUrl: process.env.TEST_MEDIA_FORM };
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -380,7 +386,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
-${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
+${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${body.includes('data-yt="') ? clientJs("media") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -491,6 +497,29 @@ const kaguraPref = (k) => [...events, ...regular].find((e) => e.kagura === k)?.p
 const kaguraCount = (k) => [...upcoming, ...regular].filter((e) => e.kagura === k).length;
 const kaguras = [...new Set([...events, ...regular].map((e) => e.kagura).filter(Boolean))]
   .sort((a, b) => byPref(kaguraPref(a), kaguraPref(b)) || kaguraCount(b) - kaguraCount(a) || a.localeCompare(b, "ja"));
+
+// ---------- 写真・動画: 検査して、神楽の種類ごとに分ける ----------
+// 掲載を始める日(media.start)より前は、何も表示しない(利用規約の変更を、効力の発生より前に知らせるため)
+const media = mediaState(cfg, today);
+const mediaByKagura = new Map();
+{
+  const list = existsSync(MEDIA_FILE) ? readJson(MEDIA_FILE) : [];
+  const merrs = checkMediaConfig(cfg), ids = new Set();
+  if (!Array.isArray(list)) merrs.push(`${MEDIA_FILE} は、配列にしてください`);
+  for (const m of Array.isArray(list) ? list : []) {
+    const w = `[${m.id ?? "id なし"}]`;
+    for (const msg of Object.values(checkMediaItem(m))) merrs.push(`${w} ${msg}`);
+    if (ids.has(m.id)) merrs.push(`${w} id が重複しています`);
+    ids.add(m.id);
+    if (m.kind === "photo" && m.status === "published") for (const f of photoFiles(m.id)) if (!existsSync(`${MEDIA_DIR}/${f}`)) merrs.push(`${w} 写真のファイル ${MEDIA_DIR}/${f} がありません`);
+  }
+  if (merrs.length) { console.error("写真・動画のデータエラー:\n" + merrs.map((x) => "  " + x).join("\n")); process.exit(1); }
+  if (media.live) for (const m of list.filter((x) => x.status === "published").sort((a, b) => b.received.localeCompare(a.received) || a.id.localeCompare(b.id))) {
+    if (!kaguras.includes(m.kagura)) { console.warn(`写真・動画 [${m.id}]: 「${m.kagura}」のページがないため、表示しません`); continue; }
+    mediaByKagura.set(m.kagura, [...(mediaByKagura.get(m.kagura) ?? []), m]);
+  }
+}
+const shownMedia = [...mediaByKagura.values()].flat();
 
 // ---------- トップ ----------
 // 「開催予定」: 直近2か月(開催のある月)だけをカードで出し、その先は月ごとのボタンにする(件数が増えても長くならない)
@@ -735,12 +764,12 @@ for (const k of kaguras) {
     title: `${k}の日程【${yearsOf(list)}】公演・開催情報 | ${cfg.siteName}`,
     desc: clip(k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + "、" : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`),
     path: kaguraHref(k), active: "/kagura/", noindex: list.length + reg.length === 0,
-    ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
+    ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))]), ...mediaLd(mediaByKagura.get(k) ?? [], cfg.baseUrl)].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
 ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
 ${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}
-${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
+${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}${mediaSection(k, mediaByKagura.get(k) ?? [], { formOpen: media.formOpen })}
 ${kaguraDetail(k, info)}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
@@ -1028,12 +1057,31 @@ const doc = (path, title, desc, inner, opts = {}) => {
   write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, ld: crumbsLd(crumbs), body: `${crumbNav(crumbs)}${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
 };
 
-doc("/submit.html", "掲載の依頼", "神楽の開催情報の掲載依頼フォーム", `<p>神楽の開催情報をお送りください。公式情報で内容を確かめてから掲載します。掲載される場所や流れは<a href="/organizers.html">主催者の方へ</a>をご覧ください。</p>${submitForm(cfg)}`, { lead: "掲載は無料です。", crumbs: [["主催者の方へ", "/organizers.html"]], layout: { noindex: true, withForm: true, active: "/submit.html" } });
+doc("/submit.html", "掲載の依頼", "神楽の開催情報の掲載依頼フォーム", `<p>神楽の開催情報をお送りください。公式情報で内容を確かめてから掲載します。掲載される場所や流れは<a href="/organizers.html">主催者の方へ</a>をご覧ください。</p>${media.formOpen ? '<p>神楽の写真・動画は、<a href="/photos.html">写真・動画を送る</a>のページからお送りください(このフォームでは受け付けていません)。</p>' : ""}${submitForm(cfg)}`, { lead: "掲載は無料です。", crumbs: [["主催者の方へ", "/organizers.html"]], layout: { noindex: true, withForm: true, active: "/submit.html" } });
 
 // 主催者の方へ(掲載の依頼を増やす。「神楽 イベント 掲載 無料」のような検索にも当てる)
 doc("/organizers.html", "主催者の方へ", `神楽の主催者・神社・保存会・神楽団・自治体・観光協会の皆さまへ。${cfg.siteName}では、神楽の開催情報を無料で掲載しています。掲載される場所や送り方、掲載までの流れ、訂正・削除の方法をご案内します。`,
   organizersHtml({ esc, siteName: cfg.siteName, formReady: formReady(cfg) }),
   { lead: "神楽の開催情報を、無料で掲載します。", layout: { active: "/organizers.html" } });
+
+// 写真・動画の送り方(受付中のときだけ)。受け付けは Google フォーム(写真のファイルを送れるため)
+if (media.formOpen) doc("/photos.html", "写真・動画を送る", `神楽の写真と、YouTube に公開した動画を募集しています。送る前に確かめていただきたいこと、掲載までの流れ、掲載をやめたいときの連絡先をご案内します。`, `
+<p>神楽の写真や、YouTube に公開した動画を募集しています。お送りいただいたものは、編集部が確かめてから、<a href="/kagura/">神楽の種類のページ</a>に掲載します。観覧した方のほか、神楽団・保存会・主催者の方からの、公式の写真も歓迎します。</p>
+<h2>送る前に、確かめてください</h2>
+<ul><li>ご自身で撮影したもの(または、撮影した人・権利を持つ団体から、提供の許可を得たもの)に限ります。</li>
+<li>撮影や公開が禁止・制限されている場所・場面のものは、送らないでください。撮影のきまりは、神社や主催者の指示に従ってください。</li>
+<li>観客など、舞い手以外の人の顔がはっきり写っている写真は、送らないでください。</li>
+<li>動画は、YouTube に公開したもの(限定公開を含みます)の URL をお送りください。動画のファイルは受け付けていません。</li></ul>
+<h2>掲載までの流れ</h2>
+<ol><li>下のボタンから、Google フォームを開いて送ります。写真のファイルを送るには、Google アカウントへのログインが必要です。</li>
+<li>編集部が内容を確かめ、掲載するものを選びます。お送りいただいたものを、すべて掲載するとは限りません。</li>
+<li>写真は縮小して掲載します。撮影した場所などの、写真に含まれる情報(Exif)は取り除きます。</li>
+<li>掲載するお名前は、フォームで選べます(ニックネームでも構いません)。載せない場合は「読者提供」、団体からの提供は「提供: 団体名」と表示します。</li></ol>
+<p class="media-form"><a class="btn" href="${esc(media.formUrl)}" target="_blank" rel="noopener">Google フォームで送る</a></p>
+<p class="meta">Google LLC が提供する Google フォームのページが開きます。入力した内容と写真は、Google のサーバーを通じて、運営者に届きます(<a href="/privacy.html">プライバシーポリシー</a>)。</p>
+<h2>掲載をやめたいとき</h2>
+<p>掲載した写真・動画は、お申し出があれば、確かめたうえで速やかに掲載をやめます。写っている方や、権利をお持ちの方からのお申し出も受け付けます。<a href="/contact.html">お問い合わせ</a>から、ページの URL を添えてご連絡ください。</p>
+<p>くわしくは、<a href="/terms.html">利用規約</a>の「写真・動画の提供」をご覧ください。</p>`, { lead: "掲載は無料です。編集部が確かめてから掲載します。" });
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です。運営者と連絡先、サイトの目的、開催情報の集め方と出典の示し方、広告などによる収益について説明しています。`, `
 <p class="symbol"><img src="/symbol.png" alt="${esc(op.name)}のシンボル" width="120" height="120"></p>
@@ -1068,6 +1116,7 @@ const policyCtx = {
   cfg, op, mailLink, auto: autoSources, autoPublish: cfg.collect?.autoPublish !== false,
   hasAds: !!cfg.adsense.client, hasGA: !!cfg.analyticsId, hasCB: true, hasGC: !!cfg.goatcounter, hasAffil: hasAffiliate,
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
+  media: { ...media, hasVideo: shownMedia.some((m) => m.kind === "youtube"), today },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプライバシーポリシーです。取得する情報と利用目的、外部サービスへの情報の送信、Cookie、個人情報の開示・訂正・削除のご請求について定めています。`, privacyHtml(policyCtx));
 doc("/terms.html", "利用規約", `${cfg.siteName}の利用規約です。サイトの利用条件、開催情報の投稿の扱い、禁止事項、免責、規約の変更、準拠法と管轄裁判所について定めています。`, termsHtml(policyCtx));
@@ -1084,7 +1133,7 @@ const sm = [
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ["/en/", EN_CHECKED], ["/en/guide.html", EN_CHECKED], ["/en/kagura.html", EN_CHECKED], ["/en/history.html", EN_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay],
-  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", (() => { const m = privacyUpdated(cfg).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
+  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", (() => { const m = privacyUpdated(cfg, media).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay], ...(media.formOpen ? [["/photos.html", media.start]] : []),
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [kaguraHref(k), lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
   ...prefs.map((p) => [prefHref(p), lastmodOf([...upcoming, ...regular].filter((x) => x.prefecture === p))]),
@@ -1105,6 +1154,8 @@ write("dist/events.ics", vcal(upcoming));
 mkdirSync(OUT, { recursive: true });
 // 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
 for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg", "washi.svg", "washi-dark.svg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
+// 写真・動画: 掲載中の写真だけを出力する(取り下げたもの・掲載を始める日より前のものは、サイトに置かない)
+for (const m of shownMedia.filter((x) => x.kind === "photo")) { mkdirSync(`${OUT}/media`, { recursive: true }); for (const f of photoFiles(m.id)) copyFileSync(`${MEDIA_DIR}/${f}`, `${OUT}/media/${f}`); }
 // 検索エンジンや古いブラウザは、/favicon.ico を直接見に行く。シンボルの画像から作って置く
 writeFileSync(`${OUT}/favicon.ico`, pngToIco(readFileSync("assets/favicon-48.png")));
 

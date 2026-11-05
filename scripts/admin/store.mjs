@@ -1,8 +1,9 @@
-// 管理者用ページのデータ: 開催(data/events.json)と、Gmail から読み込んだ申請・問い合わせ(.admin/inbox.json)
+// 管理者用ページのデータ: 開催(data/events.json)・写真と動画(data/media.json と assets/media/)と、Gmail から読み込んだ申請・問い合わせ(.admin/inbox.json)
 // .admin/ と admin.local.json は、投稿者の名前・メールアドレスやパスワードを含むため、Git には入れない(.gitignore)。
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
+import { checkMediaItem, pickMediaFields, photoFiles, webpSize, MEDIA_LIMITS, MEDIA_SIZES } from "../lib/media.mjs";
 
 const readJson = (p, d) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : d);
 // 書き込み途中で止まっても、元のファイルが壊れないように、別名で書いてから置き換える
@@ -14,6 +15,9 @@ export const paths = (root) => ({
   inbox: join(root, ".admin/inbox.json"),
   local: join(root, "admin.local.json"),
   config: join(root, "config.json"),
+  regular: join(root, "data/regular.json"),
+  media: join(root, "data/media.json"),
+  mediaDir: join(root, "assets/media"),
 });
 
 export const loadEvents = (root) => readJson(paths(root).events, []);
@@ -104,4 +108,87 @@ export function suggestId(draft, events) {
   let id = base, n = 2;
   while (events.some((x) => x.id === id)) id = `${base}-${n++}`;
   return id;
+}
+
+// ---------- 写真・動画 ----------
+export const loadMedia = (root) => readJson(paths(root).media, []);
+export const saveMedia = (root, list) => writeJson(paths(root).media, list);
+
+/** 写真・動画を載せられる神楽の種類(サイトに種類のページがあるもの = 掲載中の開催・定期公演の種類) */
+export function mediaKaguras(root) {
+  const rows = [...loadEvents(root), ...readJson(paths(root).regular, [])].filter((x) => x.status === "published");
+  return [...new Set(rows.map((x) => x.kagura).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+/** 受付日から、ID の候補を作る(m-日付-連番) */
+export function suggestMediaId(received, list) {
+  const base = `m-${String(received || "").replace(/-/g, "") || "new"}`;
+  let n = 1;
+  while (list.some((x) => x.id === `${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
+/** 画面から届いた画像(base64 の WebP)を読む。中身が WebP で、大きさが決まりの範囲かを、ここで確かめる */
+export function decodePhoto(b64, which) {
+  if (typeof b64 !== "string" || !/^[A-Za-z0-9+/]+=*$/.test(b64)) return { err: "画像を読めませんでした" };
+  const buf = Buffer.from(b64, "base64");
+  if (buf.length > MEDIA_LIMITS[which]) return { err: `画像が大きすぎます(${Math.round(buf.length / 1000)}KB)` };
+  const size = webpSize(buf);
+  if (!size) return { err: "WebP の画像ではありません" };
+  if (Math.max(size.width, size.height) > MEDIA_SIZES[which]) return { err: "画像の画素数が、決まりより大きいです" };
+  return { buf, ...size };
+}
+
+/**
+ * 写真・動画を追加・更新する。originalId が null なら追加(写真は photos { large, small } が必要)。
+ * 写真のファイルを書き込んでから、data/media.json を保存する。
+ */
+export function upsertMedia(root, input, originalId, { photos, kaguras, today }) {
+  const list = loadMedia(root);
+  const i = originalId ? list.findIndex((x) => x.id === originalId) : -1;
+  if (originalId && i < 0) return { errs: { id: "元の写真・動画が見つかりません(ほかで消された可能性があります)" } };
+  const prev = i >= 0 ? list[i] : null;
+  const m = pickMediaFields({ ...input, kind: prev ? prev.kind : input.kind });
+  m.received ||= today;
+  if (prev) m.id = prev.id; // 掲載後の ID は変えない(写真のファイル名になっているため)
+  else m.id ||= suggestMediaId(m.received, list);
+  m.status = prev?.status ?? "published";
+  let large, small;
+  if (m.kind === "photo") {
+    if (prev) { m.width = prev.width; m.height = prev.height; }
+    else {
+      large = decodePhoto(photos?.large, "large"); small = decodePhoto(photos?.small, "small");
+      if (large.err || small.err) return { errs: { file: large.err || small.err } };
+      Object.assign(m, { width: large.width, height: large.height });
+    }
+  }
+  const errs = checkMediaItem(m);
+  if (!prev && list.some((x) => x.id === m.id)) errs.id = "同じIDの写真・動画が、すでにあります";
+  if (!kaguras.includes(m.kagura)) errs.kagura = "サイトに種類のページがある神楽を選んでください";
+  if (Object.keys(errs).length) return { errs };
+  if (large) {
+    const dir = paths(root).mediaDir;
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const [fl, fs] = photoFiles(m.id);
+    writeFileSync(join(dir, fl), large.buf); writeFileSync(join(dir, fs), small.buf);
+  }
+  if (i >= 0) list[i] = m; else list.push(m);
+  saveMedia(root, list);
+  return { item: m };
+}
+
+/**
+ * 掲載をやめる / 掲載に戻す。写真の掲載をやめるときは、ファイルも消す(GitHub にも残さない。
+ * 戻すときは、写真を選び直して追加する)。動画は、状態を変えるだけ。
+ */
+export function setMediaStatus(root, id, status) {
+  const list = loadMedia(root);
+  const m = list.find((x) => x.id === id);
+  if (!m) return { err: [404, "写真・動画が見つかりません"] };
+  if (!["published", "withdrawn"].includes(status)) return { err: [400, "不明な状態です"] };
+  if (status === "published" && m.kind === "photo" && photoFiles(m.id).some((f) => !existsSync(join(paths(root).mediaDir, f)))) return { err: [400, "写真のファイルを消したため、掲載に戻せません。写真を選び直して、追加してください"] };
+  m.status = status;
+  if (status === "withdrawn" && m.kind === "photo") for (const f of photoFiles(m.id)) rmSync(join(paths(root).mediaDir, f), { force: true });
+  saveMedia(root, list);
+  return { item: m };
 }

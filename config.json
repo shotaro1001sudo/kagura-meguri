@@ -27,6 +27,10 @@
     "accessKey": "20ab6985-4c0f-4fc8-a523-17fa2e601df2",
     "providerName": "Web3Forms"
   },
+  "media": {
+    "start": "",
+    "formUrl": ""
+  },
   "collect": {
     "autoPublish": true,
     "maxNewPerSource": 15,

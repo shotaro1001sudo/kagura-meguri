@@ -2,7 +2,7 @@
 "use strict";
 const TOKEN = document.querySelector('meta[name="admin-token"]').content;
 let S = null; // サーバーから受け取った状態
-const view = { tab: "home", evFilter: "upcoming", evQuery: "", sub: "open", con: "open", selSubmit: null, selContact: null };
+const view = { tab: "home", evFilter: "upcoming", evQuery: "", sub: "open", con: "open", selSubmit: null, selContact: null, mediaFilter: "published" };
 
 // ---------- 小さな道具 ----------
 function h(tag, attrs, ...kids) {
@@ -56,7 +56,7 @@ function render() {
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === view.tab)));
   const open = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
   $("#n-submit").textContent = open("submit") || ""; $("#n-contact").textContent = open("contact") || "";
-  main.replaceChildren(...({ home: homeView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])());
+  main.replaceChildren(...({ home: homeView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact"), media: mediaView }[view.tab])());
 }
 
 function homeView() {
@@ -72,7 +72,8 @@ function homeView() {
       card(count("ended"), "終了した開催", { tab: "events", evFilter: "ended" }),
       card(count("withdrawn"), "取り下げた開催", { tab: "events", evFilter: "withdrawn" }),
       card(inb("submit", isOpen), "未対応の申請", { tab: "submit", sub: "open" }),
-      card(inb("contact", isOpen), "未対応・対応中の問い合わせ", { tab: "contact", con: "open" })),
+      card(inb("contact", isOpen), "未対応・対応中の問い合わせ", { tab: "contact", con: "open" }),
+      card(S.media.filter((m) => m.status === "published").length, "掲載中の写真・動画", { tab: "media", mediaFilter: "published" })),
     old ? h("p", { class: "warn" }, `確認日から60日を過ぎた、掲載中の開催が ${old} 件あります。公式情報で、変更がないか確かめてください(開催一覧の「要確認」)。`) : "",
     h("h3", null, "Gmail から読み込む"),
     S.mailReady
@@ -275,6 +276,139 @@ function mail(x, body) {
     return;
   }
   h("a", { href: `mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` }).click();
+}
+
+// ---------- 写真・動画 ----------
+// 写真は、このブラウザの中で WebP に描き直して縮小してから送る(撮影の位置などの Exif は、描き直しで消える)
+const mediaState = () => {
+  const c = S.mediaCfg;
+  if (!c.start) return ["warn", "サイトへの表示は、まだ始めていません。config.json の media.start(表示と受付を始める日)を入れると、その日から神楽の種類のページに表示されます(MEDIA.md)。追加した写真・動画は、それまでは表示されません。"];
+  if (c.start > S.today) return ["warn", `${c.start} から、神楽の種類のページに表示されます(それまでは、利用規約の予告だけが出ます)。`];
+  return ["mut", `${c.start} から表示中です。${c.formUrl ? "受付のページ(/photos.html)も公開中です。" : "受付のフォーム(media.formUrl)は、まだ設定されていません。"}`];
+};
+function mediaView() {
+  const rows = S.media.filter((m) => view.mediaFilter === "all" || m.status === view.mediaFilter).sort((a, b) => b.received.localeCompare(a.received) || b.id.localeCompare(a.id));
+  const [cls, note] = mediaState();
+  const sel = h("select", { "aria-label": "表示する写真・動画", onchange: (ev) => { view.mediaFilter = ev.target.value; render(); } },
+    ...[["published", "掲載中"], ["withdrawn", "掲載をやめたもの"], ["all", "すべて"]].map(([v, t]) => h("option", { value: v, selected: view.mediaFilter === v }, t)));
+  const kaguraPage = (k) => `${S.baseUrl}/kagura/${encodeURIComponent(k)}.html`;
+  return [
+    h("h2", null, "写真・動画"),
+    h("p", { class: cls }, note),
+    h("div", { class: "bar" }, sel,
+      h("button", { class: "btn ghost", onclick: () => openMediaEditor(null, "photo") }, "写真を追加する"),
+      h("button", { class: "btn ghost", onclick: () => openMediaEditor(null, "youtube") }, "動画(YouTube)を追加する"),
+      h("span", { class: "mut" }, `${rows.length} 件`)),
+    rows.length ? h("table", null,
+      h("thead", null, h("tr", null, h("th", null, ""), h("th", null, "内容"), h("th", { class: "hide-sm" }, "神楽の種類"), h("th", null, "表示する名前"), h("th", { class: "hide-sm" }, "受付日"), h("th", null, ""))),
+      h("tbody", null, rows.map((m) => h("tr", null,
+        h("td", null, m.kind === "photo" ? (m.status === "published" ? h("img", { src: `/media/${m.id}-s.webp`, alt: "", width: 96, height: Math.round(96 * m.height / m.width), class: "thumb" }) : badge("old", "写真(削除済み)")) : badge("pending", "動画")),
+        h("td", null, m.kind === "photo" ? m.alt : ext(`https://www.youtube.com/watch?v=${m.youtube}`, m.title), m.caption ? h("div", { class: "mut" }, m.caption) : "", m.status === "withdrawn" ? h("div", null, badge("withdrawn", "掲載をやめた")) : ""),
+        h("td", { class: "hide-sm" }, m.status === "published" && m.kagura ? ext(kaguraPage(m.kagura), m.kagura) : m.kagura),
+        h("td", null, m.creditLabel),
+        h("td", { class: "hide-sm nw" }, m.received),
+        h("td", { class: "act" },
+          h("button", { class: "btn ghost small", onclick: () => openMediaEditor(m) }, "編集"), " ",
+          m.status === "published" ? h("button", { class: "btn ghost small", onclick: () => setMediaStatus(m, "withdrawn") }, "掲載をやめる")
+            : m.kind === "youtube" ? h("button", { class: "btn ghost small", onclick: () => setMediaStatus(m, "published") }, "掲載に戻す") : "")))))
+      : h("p", { class: "mut" }, "該当する写真・動画はありません。"),
+    h("h3", null, "受け付けの流れ"),
+    h("ol", { class: "mut" },
+      h("li", null, "Google フォームの回答を開き、3点の確認(本人の撮影か・撮影してよい場所か・観客の顔が写っていないか)に「はい」と答えているかを確かめます。"),
+      h("li", null, "写真は Google ドライブからこのPCに保存し、「写真を追加する」で選びます。iPhone の HEIC は、JPEG に変えてから選びます。"),
+      h("li", null, "保存すると、写真のファイルとデータを、そのまま GitHub に送ります(数分後にサイトに反映)。"),
+      h("li", null, "掲載するかを決めたら、Google ドライブの元のファイルを削除します(プライバシーポリシーの約束)。")),
+  ];
+}
+
+async function setMediaStatus(m, status) {
+  const what = m.kind === "photo" ? "写真" : "動画";
+  const msg = status === "withdrawn"
+    ? `この${what}の掲載をやめます。すぐにサイトに反映します。${m.kind === "photo" ? "写真のファイルも消します(戻すときは、写真を選び直して追加します)。" : ""}よろしいですか？`
+    : "この動画を、もう一度掲載します(すぐにサイトに反映します)。よろしいですか？";
+  if (!confirm(msg)) return;
+  toast("保存して公開しています…(数十秒かかることがあります)");
+  try { const r = await call("/api/media/status", { id: m.id, status }); published(r, status === "withdrawn" ? "掲載をやめました" : "掲載に戻しました"); render(); }
+  catch (err) { toast(err.message, true); }
+}
+
+// 画像を、長い辺が max 画素以下の WebP にする。描き直すので、Exif(撮影の位置など)は残らない
+async function toWebp(file, max, quality) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+  catch { throw new Error("この画像は読み込めませんでした。iPhone の HEIC などは、JPEG に変えてから選んでください。"); }
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * k)), hh = Math.max(1, Math.round(bmp.height * k));
+  const c = document.createElement("canvas"); c.width = w; c.height = hh;
+  const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(bmp, 0, 0, w, hh);
+  bmp.close?.();
+  const blob = await new Promise((r) => c.toBlob(r, "image/webp", quality));
+  if (!blob || blob.type !== "image/webp") throw new Error("このブラウザでは WebP に変換できません。Chrome か Edge で、この画面を開いてください。");
+  const b64 = await new Promise((r, j) => { const fr = new FileReader(); fr.onload = () => r(String(fr.result).split(",")[1]); fr.onerror = j; fr.readAsDataURL(blob); });
+  return { b64, w, h: hh, bytes: blob.size, preview: c.toDataURL("image/webp", quality) };
+}
+
+function openMediaEditor(m, kind) {
+  const d = m || { kind, provider: "reader", received: S.today, id: S.mediaId };
+  const isPhoto = d.kind === "photo";
+  const dlg = $("#dlg"), form = $("#dlg-form");
+  const f = (id, label, input, wide, hint) => h("div", { class: "f" + (wide ? " wide" : "") }, h("label", { for: "m-" + id }, label), input, hint ? h("small", { class: "mut" }, hint) : "", h("small", { class: "err", id: "merr-" + id }));
+  const inp = (id, v, a = {}) => h("input", { id: "m-" + id, name: id, value: v ?? "", ...a });
+  let photos = null;
+  const preview = h("div", { class: "preview" }, m && isPhoto && m.status === "published" ? h("img", { src: `/media/${m.id}-s.webp`, alt: "" }) : "");
+  const fileInput = h("input", { id: "m-file", type: "file", accept: "image/jpeg,image/png,image/webp", onchange: async (ev) => {
+    const file = ev.target.files[0]; photos = null; preview.replaceChildren(); $("#merr-file").textContent = "";
+    if (!file) return;
+    preview.replaceChildren(h("span", { class: "mut" }, "変換しています…"));
+    try {
+      const [large, small] = await Promise.all([toWebp(file, S.mediaCfg.sizes.large, 0.82), toWebp(file, S.mediaCfg.sizes.small, 0.8)]);
+      photos = { large: large.b64, small: small.b64 };
+      preview.replaceChildren(h("img", { src: small.preview, alt: "" }), h("span", { class: "mut" }, `${large.w}×${large.h}(${Math.round(large.bytes / 1000)}KB)。撮影の位置などの情報(Exif)は、取り除きました。`));
+    } catch (err) { preview.replaceChildren(); $("#merr-file").textContent = err.message; }
+  } });
+  const provider = h("select", { id: "m-provider", name: "provider" }, Object.entries(S.mediaCfg.providers).map(([v, t]) => h("option", { value: v, selected: d.provider === v }, t)));
+  form.replaceChildren(
+    h("h2", null, m ? (isPhoto ? "写真を編集する" : "動画を編集する") : (isPhoto ? "写真を追加する" : "動画(YouTube)を追加する")),
+    !m ? h("div", { class: "f chk wide" }, h("input", { type: "checkbox", id: "m-agree", required: true }), h("label", { for: "m-agree" }, "フォームの回答で、3点の確認(本人の撮影か・撮影してよい場所か・観客の顔が写っていないか)と、利用規約への同意を確かめました")) : "",
+    h("div", { class: "grid" },
+      isPhoto && !m ? f("file", `写真(JPEG・PNG・WebP。長い辺 ${S.mediaCfg.sizes.large} 画素に縮小します)`, fileInput, true) : "",
+      isPhoto ? h("div", { class: "f wide" }, preview) : "",
+      !isPhoto ? f("youtube", "YouTube の動画の URL", inp("youtube", d.youtube ? `https://www.youtube.com/watch?v=${d.youtube}` : "", { type: "url", required: true, placeholder: "https://www.youtube.com/watch?v=…", readonly: m ? true : null }), true) : "",
+      !isPhoto ? f("title", "動画の題名(再生ボタンに表示。80字まで)", inp("title", d.title, { maxlength: 80, required: true }), true) : "",
+      f("kagura", "神楽の種類(表示するページ)", h("select", { id: "m-kagura", name: "kagura" }, h("option", { value: "" }, "選択"), S.mediaKaguras.map((k) => h("option", { selected: k === d.kagura }, k)))),
+      f("id", "ID(写真のファイル名になる)", inp("id", d.id, { pattern: "[a-z0-9][a-z0-9-]*", readonly: m ? true : null })),
+      isPhoto ? f("alt", "写真の内容の説明(読み上げ用。120字まで)", inp("alt", d.alt, { maxlength: 120, required: true, placeholder: "例: 大蛇が火を噴きながら、とぐろを巻く場面" }), true) : "",
+      f("caption", "見出し(演目など。60字まで)", inp("caption", d.caption, { maxlength: 60, placeholder: "例: 演目「大蛇」" }), true),
+      f("provider", "提供者の区分", provider),
+      f("credit", "表示する名前(40字まで)", inp("credit", d.credit, { maxlength: 40 }), false, "一般の方で空欄なら「読者提供」。団体は団体名が必要です。"),
+      f("place", "撮影した場所(任意。60字まで)", inp("place", d.place, { maxlength: 60, placeholder: "例: 浜田市・〇〇神社" })),
+      f("taken", "撮影した時期(任意。YYYY-MM か YYYY-MM-DD)", inp("taken", d.taken, { maxlength: 10, placeholder: "2026-11" })),
+      f("received", "受付日", inp("received", d.received, { type: "date", readonly: m ? true : null }))),
+    h("div", { class: "bar mt" },
+      h("button", { class: "btn", value: "save", id: "m-save" }, m ? "保存する" : "掲載する"),
+      h("button", { class: "btn ghost", value: "cancel", formnovalidate: true }, "やめる")));
+  form.onsubmit = async (ev) => {
+    if (ev.submitter?.value !== "save") return;
+    ev.preventDefault();
+    const v = (id) => ($("#m-" + id)?.value ?? "").trim();
+    form.querySelectorAll(".err").forEach((x) => (x.textContent = "")); form.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
+    if (!m && !$("#m-agree").checked) { toast("フォームの回答で、確認と同意を確かめてください", true); return; }
+    if (isPhoto && !m && !photos) { $("#merr-file").textContent = "写真を選んでください(変換が終わるまで、お待ちください)"; return; }
+    const item = { kind: d.kind, id: v("id"), kagura: v("kagura"), caption: v("caption"), provider: v("provider"), credit: v("credit"), place: v("place"), taken: v("taken"), received: v("received"),
+      ...(isPhoto ? { alt: v("alt") } : { youtube: v("youtube"), title: v("title") }) };
+    const btn = $("#m-save"); btn.disabled = true; btn.textContent = "保存して公開しています…(数十秒かかることがあります)";
+    try {
+      const r = await call("/api/media/save", { item, originalId: m ? m.id : null, photos: m ? null : photos });
+      dlg.close();
+      published(r, "保存しました");
+      render();
+    } catch (err) {
+      btn.disabled = false; btn.textContent = m ? "保存する" : "掲載する";
+      for (const [k, msg] of Object.entries(err.fields || {})) { const el = $("#merr-" + k) || $("#merr-" + (isPhoto ? "file" : "youtube")); if (el) el.textContent = msg; $("#m-" + k)?.setAttribute("aria-invalid", "true"); }
+      toast(err.message, true);
+    }
+  };
+  dlg.showModal();
 }
 
 // ---------- 起動 ----------
