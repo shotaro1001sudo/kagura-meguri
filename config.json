@@ -20,7 +20,7 @@
     "name": "神楽めぐり編集部",
     "contact": "",
     "established": "2026年10月",
-    "updated": "2026年11月2日"
+    "updated": "2026年11月5日"
   },
   "form": {
     "endpoint": "https://api.web3forms.com/submit",
@@ -28,8 +28,8 @@
     "providerName": "Web3Forms"
   },
   "media": {
-    "start": "",
-    "formUrl": ""
+    "start": "2026-11-05",
+    "formUrl": "https://forms.gle/6EnTdKUtnsHymj4R6"
   },
   "collect": {
     "autoPublish": true,
