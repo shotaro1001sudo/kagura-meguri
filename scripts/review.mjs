@@ -1,3 +1,5 @@
+import { socialEvidenceErrors, isSocialEvent, socialDuplicate } from './lib/social-evidence.mjs';
+import { guardEvent, sameEvent } from './lib/collect-core.mjs';
 // pending の確認と承認:
 //   node scripts/review.mjs                 一覧を表示
 //   node scripts/review.mjs approve <id>... 承認して公開対象にする("all" で全件)
@@ -25,7 +27,12 @@ if (!targets.length) { console.log("対象がありません"); process.exit(1);
 if (cmd === "approve") {
   const bad = targets.filter((e) => !e.prefecture || !e.kagura);
   if (bad.length) { console.log(`prefecture / kagura が空のものは承認できません。先に data/events.json で埋めてください:\n${bad.map((e) => "  " + e.id).join("\n")}`); process.exit(1); }
-  targets.forEach((e) => { e.status = "published"; });
+  const socialErrors = targets.flatMap(e => isSocialEvent(e) ? [
+    ...socialEvidenceErrors(e), ...guardEvent(e, { now: new Date() }),
+    ...(events.some(other => other.id !== e.id && other.status !== 'withdrawn' && (sameEvent(e, other) || socialDuplicate(e, other))) ? ['SNS: 同一公演の候補があります。既存公演に統合してください'] : [])
+  ].map(reason => `${e.id}: ${reason}`) : []);
+  if (socialErrors.length) { console.error(socialErrors.join('\n')); process.exit(1); }
+  targets.forEach((e) => { e.status = "published"; delete e.holdReasons; });
   console.log(`${targets.length} 件を公開対象にしました`);
 } else if (cmd === "reject") {
   const set = new Set(targets.map((e) => e.id));

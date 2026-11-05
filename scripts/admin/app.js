@@ -172,6 +172,10 @@ function openEditor(e, item) {
       f("url", "公式情報のURL", inp("url", d.url, { type: "url", maxlength: 300, placeholder: "https://" }), true),
       f("description", "ひとこと説明(300字まで)", h("textarea", { id: "e-description", rows: 3, maxlength: 300 }, d.description || ""), true),
       f("source", "出典(確かめたページの名前)", inp("source", d.source, { maxlength: 80, placeholder: "例: 〇〇町観光協会" })),
+      f("socialOrganizer", "SNSの保存会・社中名（SNS掲載時）", inp("socialOrganizer", d.socialEvidence?.organizer, { maxlength: 100 })),
+      f("socialAuthorityUrl", "公式アカウントの根拠URL（団体サイト・自治体の紹介など）", inp("socialAuthorityUrl", d.socialEvidence?.authorityUrl, { type: "url", maxlength: 500 })),
+      f("socialAuthorityNote", "主体を確認した内容（例: 観光協会の紹介から投稿元へのリンクを確認）", inp("socialAuthorityNote", d.socialEvidence?.authorityNote, { maxlength: 300 }), true),
+      h("div", { class: "f chk" }, h("input", { type: "checkbox", id: "e-socialVerified" }), h("label", { for: "e-socialVerified" }, "SNSの個別投稿をログインせずに読み、公式の投稿元・開催日・会場・入力した事実を確認しました（検索要約だけではチェックしない）")),
       f("checked", "確認日", inp("checked", d.checked || S.today, { type: "date" }))),
     h("div", { class: "bar mt" },
       h("button", { class: "btn", value: "save", id: "e-save" }, item ? "許可して掲載する" : "保存する"),
@@ -185,7 +189,7 @@ function openEditor(e, item) {
     const endDate = v("enddate") || date;
     const ev2 = { id: v("id"), name: v("name"), kagura: v("kagura"), prefecture: v("prefecture"), city: v("city"), venue: v("venue"), address: v("address"),
       start: date ? `${date}T${unknown ? "00:00" : v("time") || "00:00"}` : "", end: v("endtime") && date ? `${endDate}T${v("endtime")}` : "",
-      timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked") };
+      timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked"), socialOrganizer: v("socialOrganizer"), socialAuthorityUrl: v("socialAuthorityUrl"), socialAuthorityNote: v("socialAuthorityNote"), socialVerified: $("#e-socialVerified").checked };
     form.querySelectorAll(".err").forEach((x) => (x.textContent = "")); form.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
     const btn = $("#e-save"); btn.disabled = true; btn.textContent = "保存して公開しています…(数十秒かかることがあります)";
     try {

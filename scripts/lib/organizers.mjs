@@ -27,6 +27,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 </ul>
 
 <h2>送り方</h2>
+<p>保存会・社中のX（Twitter）・Instagram・Facebookの開催案内も受け付けます。開催日・会場が分かる<strong>公開投稿の個別URL</strong>を、掲載依頼フォームの「公式情報のURL」にご記入ください。公式の投稿元と事実を確認してから、出典リンクと確認日を添えて掲載します。画像・投稿全文は転載しません。ログインが必要な投稿や検索結果だけでは掲載できません。SNSの自動巡回は行っていません。</p>
 <div class="oways">
 <section class="oway"><h3>1件ずつの開催</h3>
 <p><a href="/submit.html">掲載の依頼フォーム</a>から、1件ずつお送りください。${formReady ? "" : "現在は、送信ボタンを押すと、入力した内容が入ったメールの作成画面が開きます。そのまま送ってください。"}</p>

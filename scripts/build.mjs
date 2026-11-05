@@ -1,3 +1,5 @@
+import { socialEvidenceErrors, isSocialEvent, socialDuplicate, SOCIAL_LABELS, socialPlatform } from './lib/social-evidence.mjs';
+import { sameEvent } from './lib/collect-core.mjs';
 import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
@@ -63,6 +65,7 @@ function validateCommon(rows, ids) {
     if (!/^[A-Za-z0-9_-]+$/.test(e.id ?? "")) errs.push(`${w} id は英数字・ハイフン・アンダースコアのみ`);
     if (ids.has(e.id)) errs.push(`${w} id が重複しています`);
     ids.add(e.id);
+    errs.push(...socialEvidenceErrors(e).map(reason => `${w} ${reason}`));
     if (!e.name) errs.push(`${w} name が空です`);
     if (!e.prefecture) errs.push(`${w} prefecture が空です`);
     if (e.url && !HTTP_URL.test(e.url)) errs.push(`${w} url は http(s):// で始まる安全なURLにしてください(現在: ${e.url})`);
@@ -76,6 +79,9 @@ function validateCommon(rows, ids) {
     if (!DT.test(e.start ?? "")) errs.push(`${w} start は YYYY-MM-DDTHH:mm 形式にしてください(現在: ${e.start})`);
     if (e.end && !DT.test(e.end)) errs.push(`${w} end の形式が不正です`);
     if (e.end && e.end < e.start) errs.push(`${w} end が start より前です`);
+  }
+  for (const [i, e] of rawEvents.entries()) {
+    if (isSocialEvent(e) && rawEvents.some((other, j) => i !== j && (sameEvent(e, other) || socialDuplicate(e, other)))) errs.push(`[${e.id}] SNS: 同一公演の重複候補があります`);
   }
   validateCommon(rawRegular, new Set());
   for (const r of rawRegular) {
@@ -437,6 +443,10 @@ const lastmodOf = (list) => list.map((x) => x.checked).filter(Boolean).sort().po
 const crumbsLd = (items) => ({ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: items.map(([name, p], i) => ({ "@type": "ListItem", position: i + 1, name, ...(p ? { item: `${cfg.baseUrl}${p}` } : {}) })) });
 const listNames = (arr, n = 3) =>arr.slice(0, n).map((x) => x.name.replace(/\s*[(〈].*$/, "")).join("、");
 const sourceNote = (x) => {
+  if (x.socialEvidence) {
+    const s = x.socialEvidence;
+    return `<p class="meta annotation">出典: ${esc(s.organizer)} / <a href="${esc(s.postUrl)}" rel="noopener noreferrer" target="_blank">${esc(SOCIAL_LABELS[socialPlatform(s.postUrl)])}の公開投稿</a>（${jpDate(s.checked)}確認）。開催日・会場を確認して掲載しています。最新の案内は投稿元をご確認ください。</p>`;
+  }
   if (!x.source && !x.checked && !x.auto) return "";
   const day = x.checked ?? x.lastSeen; // 自動取得したものは、最後に取得元で確認できた日
   return `<p class="meta annotation">出典: ${esc(x.source ?? "")}${day ? `(${jpDate(day)}${x.auto ? "取得" : "確認"})` : ""}</p>`;
