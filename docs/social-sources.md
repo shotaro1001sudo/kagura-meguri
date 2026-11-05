@@ -30,20 +30,20 @@ node scripts/review.mjs
 
 ## 自動収集と公式資料の確認範囲
 
-- X: [Developer Guidelines](https://docs.x.com/developer-guidelines) を2026-11-05に原文確認。非APIのスクレイピング・ブラウザ自動化は認められていません。[Pricing](https://docs.x.com/x-api/getting-started/pricing) は親スレッドで同日確認され、従量課金・事前クレジット購入が必要との報告。今回は新規API・課金を使いません。
+- X: [Developer Guidelines](https://docs.x.com/developer-guidelines) を2026-11-05に原文確認。非APIのスクレイピング・ブラウザ自動化は認められていません。[Pricing](https://docs.x.com/x-api/getting-started/pricing) は同日確認。従量課金・事前クレジット購入が必要です。今回は新規API・課金を使いません。
 - Instagram: [Terms of Use](https://help.instagram.com/581066165581870/) は検索結果の公式抜粋に無許可の自動収集禁止が表示されましたが、直接取得は429でした。**原文確認済みとは扱いません**。[Instagram Platform overview](https://developers.facebook.com/documentation/instagram-platform/overview) も直接アクセスできませんでした。
 - Facebook: [Automated Data Collection Terms](https://www.facebook.com/legal/automated_data_collection_terms) はログイン・一時ブロック画面になりました。**規約本文を確認できていません**。制限回避や追加接続は行っていません。
 - 検索結果は投稿の発見候補に限ります。日時・会場・公式主体を公開一次情報で確認できなければ保留です。既存の無料接続で任意の保存会の投稿を網羅して取得できることは確認できていません。
 
-`collect.mjs` はSNSドメインを通信前に除外し、アダプタがSNS URLを返しても取得しません。通常ページからの未確認リダイレクトも自動追跡しません（取得失敗として既存データを保持、レポートで確認）。既存のtermsChecked・robots・件数上限・失敗時無変更の装置は維持します。通常アダプタがSNSリンクを候補として返した場合も自動公開せず保留にします。SNS用の `data/sources.json` 登録・termsCheckedの日付の追加はありません。
+`collect.mjs` はSNSドメインを通信前に除外し、アダプタがSNS URLを返しても取得しません。通常ページのリダイレクトは、各転送先を通信前に検査し、SNSなら停止します。通常サイトの転送はrobotsを確認し、間隔を空けて最大5回まで追跡します。全国拡張ソースは同一オリジン限定を維持します（拒否・失敗時は既存データを保持し、レポートで確認）。既存のtermsChecked・robots・件数上限・失敗時無変更の装置は維持します。通常アダプタがSNSリンクを候補として返した場合も自動公開せず保留にします。SNS用の `data/sources.json` 登録・termsCheckedの日付の追加はありません。
 
 ## 実データの扱い
 
 新しいSNS公演は追加していません。既存の `ev-20261031`（三川内神楽・2026-10-31霜月祭）はInstagramのプロフィールURLしかなく、個別投稿による根拠が不足するため保留へ戻しました。元の開催情報・確認日は残し、2026-11-05の保留理由を追記しています。開催日はすでに過ぎており、今後の開催一覧の件数は変わりませんが、当該詳細ページは生成されなくなります。
 
-今後の主体確認候補として、福岡県観光連盟の [京築神楽](https://www.crossroadfukuoka.jp/feature/keichiku-kagura) に団体SNS一覧があるとの親スレッドの調査結果があります。SNS投稿自体の確認は未実施のため、公演データや検証済みアカウントとしては登録していません。
+今後の主体確認候補として、福岡県観光連盟の [京築神楽](https://www.crossroadfukuoka.jp/feature/keichiku-kagura) で団体SNS一覧を確認しました。SNS投稿自体の確認は未実施のため、公演データや検証済みアカウントとしては登録していません。
 
-### 主体確認の入口（2026-11-05、親スレッドで公式リンク照合）
+### 主体確認の入口（2026-11-05、公式リンク照合）
 
 | 保存会・社中 | SNSアカウント | 主体確認の根拠 |
 |---|---|---|
@@ -52,3 +52,5 @@ node scripts/review.mjs
 | 相模里神楽 垣澤社中 | [X](https://x.com/kakizawa_kagura) / [Instagram](https://www.instagram.com/kakizawa_kagura/) / [Facebook](https://www.facebook.com/sagamisatokagura) | [社中公式サイト](https://www.sagami-satokagura.com/movie) |
 
 これは主体確認の入口のみです。投稿の開催事実・公開可否は未確認で、巡回設定や掲載済み公演としては登録していません。
+
+既存取得元の転送確認を2026-11-05に試みましたが、この実行環境では有効な15取得元のrobots.txtを取得できず、公開ページへの確認アクセスは行っていません。現地のHTTP転送状態は未確認です。ローカルテストでは通常の301転送、転送先robots拒否、SNSへの302転送、全国拡張ソースの別オリジン拒否を検証しています。

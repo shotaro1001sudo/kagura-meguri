@@ -1,3 +1,4 @@
+import { fetchCollectionPage } from './lib/collection-fetch.mjs';
 import { socialPlatform } from './lib/social-evidence.mjs';
 // 公式サイトからの開催情報の、週次の自動収集と、自動掲載: node scripts/collect.mjs [sourceId]
 //
@@ -69,7 +70,7 @@ for (const s of sources) {
         if (!allow.ok) throw Error(allow.reason);
         await sleep(delay);
       }
-      const res = await fetch(pageUrl, { redirect: "error", headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
+      const res = await fetchCollectionPage(pageUrl, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) }, { checkRobots: url => checkRobots(url, UA), delay: () => sleep(delay), sameOrigin: !!s.nationalExpansion });
       if (!res.ok) throw new Error(`HTTP ${res.status}(${pageUrl})`);
       if (s.nationalExpansion && res.url && new URL(res.url).origin !== new URL(pageUrl).origin) throw Error("別サイトへの転送は確認が必要です");
       const body = adapter.decode ? adapter.decode(new Uint8Array(await res.arrayBuffer())) : await res.text();

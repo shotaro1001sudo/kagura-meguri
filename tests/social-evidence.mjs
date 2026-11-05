@@ -1,3 +1,4 @@
+import { fetchCollectionPage } from '../scripts/lib/collection-fetch.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -53,3 +54,16 @@ try {
  writeFileSync(path,JSON.stringify([{...verified(),status:'pending'}]));r=run('scripts/build.mjs',[],{EVENTS_FILE:path,OUT_DIR:join(dir,'out')});assert.equal(r.status,0,r.stderr);assert(!existsSync(join(dir,'out/events/social-test.html')));
 } finally { rmSync(dir,{recursive:true,force:true}); }
 console.log('SNS evidence: intake, admin, approve all, build gate, stale facts, duplicates, and display passed.');
+
+// Redirects retain normal source behavior, but SNS is rejected before any request.
+for (const target of ['https://x.com/a/status/1','https://instagram.com/p/a/','https://facebook.com/a/posts/1']) {
+ const calls=[];
+ await assert.rejects(fetchCollectionPage('https://example.org/start',{}, {checkRobots:async()=>({ok:true}),delay:async()=>{},fetchImpl:async url=>{calls.push(url);return new Response(null,{status:302,headers:{location:target}});}}),/SNS/);
+ assert.deepEqual(calls,['https://example.org/start']);
+}
+const calls=[],robots=[];
+const result=await fetchCollectionPage('https://example.org/start',{}, {checkRobots:async url=>{robots.push(url);return {ok:true};},delay:async()=>{},fetchImpl:async url=>{calls.push(url);return url.endsWith('/start')?new Response(null,{status:301,headers:{location:'/new'}}):new Response('ok');}});
+assert.equal(await result.text(),'ok');assert.deepEqual(calls,['https://example.org/start','https://example.org/new']);assert.deepEqual(robots,['https://example.org/new']);
+await assert.rejects(fetchCollectionPage('https://example.org/start',{}, {sameOrigin:true,checkRobots:async()=>({ok:true}),delay:async()=>{},fetchImpl:async()=>new Response(null,{status:302,headers:{location:'https://other.example.org/'}})}),/別サイト/);
+await assert.rejects(fetchCollectionPage('https://example.org/start',{}, {checkRobots:async()=>({ok:false,reason:'robots denied'}),delay:async()=>{},fetchImpl:async()=>new Response(null,{status:302,headers:{location:'/private'}})}),/robots denied/);
+console.log('Collection redirects: normal redirects retained, robots checked, SNS blocked before access.');
