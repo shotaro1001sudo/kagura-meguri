@@ -1,3 +1,5 @@
+import { isSocialEvent, socialEvidenceErrors, socialDuplicate, socialFacts } from '../lib/social-evidence.mjs';
+import { sameEvent } from '../lib/collect-core.mjs';
 // 管理者用ページのデータ: 開催(data/events.json)と、Gmail から読み込んだ申請・問い合わせ(.admin/inbox.json)
 // .admin/ と admin.local.json は、投稿者の名前・メールアドレスやパスワードを含むため、Git には入れない(.gitignore)。
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
@@ -90,6 +92,18 @@ export function upsertEvent(events, input, originalId, status) {
   const next = { ...prev };
   for (const k of FIELDS) { if (k in e) next[k] = e[k]; else delete next[k]; }
   next.status = status ?? prev.status ?? "published";
+  if (isSocialEvent(next)) {
+    if (input.socialVerified === true) next.socialEvidence = {
+      postUrl: next.url, organizer: String(input.socialOrganizer ?? '').trim(),
+      authorityUrl: String(input.socialAuthorityUrl ?? '').trim(), authorityNote: String(input.socialAuthorityNote ?? '').trim(),
+      checked: next.checked, publicAccess: true, facts: socialFacts(next)
+    };
+    if (next.status === 'published') {
+      const reasons = socialEvidenceErrors(next);
+      if (events.some(x => x.id !== originalId && x.status !== 'withdrawn' && (sameEvent(next, x) || socialDuplicate(next, x)))) reasons.push('SNS: 同一公演の候補があります。既存公演を編集してください');
+      if (reasons.length) return { errs: { url: reasons.join(' / ') } };
+    }
+  }
   if (PLACE.some((k) => (prev[k] ?? "") !== (next[k] ?? ""))) { delete next.lat; delete next.lng; delete next.geoPrecision; }
   // 項目の並びを、既存のデータにそろえる(差分を読みやすくする)
   const order = [...FIELDS.filter((k) => k !== "timeUnknown").slice(0, 9), "timeUnknown", "fee", "url", "description", "source", "checked", "status"];

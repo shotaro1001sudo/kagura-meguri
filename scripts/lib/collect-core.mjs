@@ -1,3 +1,4 @@
+import { isSocialEvent, socialDuplicate } from './social-evidence.mjs';
 // 自動収集の「判断」の部分(通信・ファイルの読み書きは、collect.mjs が行う)。
 // ここは、入力から出力が決まる純粋な関数だけにして、細かくテストできるようにしている。
 //
@@ -79,7 +80,7 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
   const reviewReasons = (ev) => (source.reviewHolds ?? [])
     .filter((h) => normName(h.name) === normName(ev.name) && h.date === ev.start?.slice(0, 10))
     .map((h) => h.reason);
-  const check = (ev) => [...guardEvent(ev, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) }), ...reviewReasons(ev)];
+  const check = (ev) => [...guardEvent(ev, { now, horizonDays: c.horizonDays, nameHint: nameHint(source) }), ...reviewReasons(ev), ...(isSocialEvent(ev) || isSocialEvent({ url: source.url }) ? ["SNS投稿は手動で根拠を確認してください（自動掲載不可）"] : [])];
   const day = today(now), stamp = day;
   const out = events.map((e) => ({ ...e }));
   const sum = { fetched: candidates.length, published: [], held: [], withdrawn: [], unchanged: 0, duplicates: 0, rejected: 0, past: 0, notes: [] };
@@ -127,8 +128,8 @@ export function reconcile({ events, candidates, source, now, rejectedIds = new S
       continue;
     }
     // 同じ開催(名称のゆれ・時刻の有無を除いて)が、すでにあれば、重複。運営者の登録を、優先する
-    const matches = out.filter((e) => e.status !== "withdrawn" && (key(e) === key(ev) || sameEvent(e, ev)));
-    if (matches.length || fresh.some((f) => sameEvent(f.ev, ev))) {
+    const matches = out.filter((e) => e.status !== "withdrawn" && (key(e) === key(ev) || sameEvent(e, ev) || socialDuplicate(e, ev)));
+    if (matches.length || fresh.some((f) => sameEvent(f.ev, ev) || socialDuplicate(f.ev, ev))) {
       const own = matches.filter((e) => e.auto && e.sourceId === source.id);
       if (own.length) {
         const why = check(ev);

@@ -1,3 +1,4 @@
+import { socialPlatform } from './lib/social-evidence.mjs';
 // 公式サイトからの開催情報の、週次の自動収集と、自動掲載: node scripts/collect.mjs [sourceId]
 //
 // 流れ: 取得 → 読み取り(アダプタ) → 1件ずつ自動検査 → 掲載 / 保留 / 取り下げ → レポート
@@ -48,6 +49,7 @@ for (const s of sources) {
   if (only && s.id !== only) continue;
   if (s.enabled === false) { lines.push(`- ⏸ ${s.id}: 停止中(enabled: false)`); continue; }
   if (!s.termsChecked) { lines.push(`- ⚠ ${s.id}: 利用規約の確認日(termsChecked)が未記入のため、取得していません`); inactive++; continue; }
+  if (socialPlatform(s.url)) { lines.push(`- ⏸ ${s.id}: SNSの自動取得は無効です。公開投稿を手動確認してください`); inactive++; continue; }
   try {
     const checkRobots = s.nationalExpansion ? strictRobotsAllows : robotsAllows;
     const delay = Math.max(DELAY_MS, s.requestDelayMs ?? 0);
@@ -59,6 +61,7 @@ for (const s of sources) {
     const items = [], snapshots = [];
     for (let i = 0; i < pages.length; i++) {
       const pageUrl = pages[i];
+      if (socialPlatform(pageUrl)) throw Error("SNSの自動取得は無効です");
       if (i || s.nationalExpansion) await sleep(delay);
       if (s.nationalExpansion && i) {
         if (new URL(pageUrl).origin !== new URL(s.url).origin) throw Error("監視URLは同一オリジンのみ");
@@ -66,7 +69,7 @@ for (const s of sources) {
         if (!allow.ok) throw Error(allow.reason);
         await sleep(delay);
       }
-      const res = await fetch(pageUrl, { headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
+      const res = await fetch(pageUrl, { redirect: "error", headers: { "user-agent": UA, "accept-language": "ja" }, signal: AbortSignal.timeout(15000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}(${pageUrl})`);
       if (s.nationalExpansion && res.url && new URL(res.url).origin !== new URL(pageUrl).origin) throw Error("別サイトへの転送は確認が必要です");
       const body = adapter.decode ? adapter.decode(new Uint8Array(await res.arrayBuffer())) : await res.text();
