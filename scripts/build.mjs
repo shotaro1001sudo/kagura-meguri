@@ -1,3 +1,4 @@
+import { loadPerformancePhotos, performancePhoto } from "./lib/performance-photos.mjs";
 import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
@@ -92,6 +93,8 @@ function validateCommon(rows, ids) {
 
 // ---------- 日付: すべて「日本時間の文字列」として扱う(ビルドを行うサーバーの時区に依存させない) ----------
 const nowJst = process.env.BUILD_NOW ?? new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16);
+const performancePhotos = loadPerformancePhotos(readJson('data/performance-photos.json'), {events: rawEvents, regular: rawRegular}, nowJst.slice(0,10));
+const photoFor = (kind, record) => performancePhotos.get(`${kind}/${record.id}`);
 const asMs = (s) => Date.parse(`${s}:00Z`);
 const isUpcoming = (e) => {
   if (e.timeUnknown) return (e.end || e.start).slice(0, 10) >= nowJst.slice(0, 10);
@@ -380,7 +383,7 @@ ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移�
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
-${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
+${performancePhotos.size ? clientJs("performance-photos") : ""}${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -411,15 +414,15 @@ const namePh = (s = "") => { const m = s.match(/^(.+?)([(（][^()（）]+[)）])
 const sepList = (items) => { const xs = items.filter(Boolean); return xs.length ? `<span class="sl"><span class="sl-in">${xs.map((x) => `<span>${x}</span>`).join("")}</span></span>` : ""; };
 const card = (e, h = "h3", withFacts = true) => {
   const p = parts(e.start);
-  return `<div class="card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
+  return `<div class="card performance-card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <${h}><a href="/events/${e.id}.html">${namePh(e.name)}</a></${h}>
 <div class="meta">${sepList([sameSeries(e).length ? '<span class="rep">定例開催</span>' : "", e.timeUnknown ? TIME_UNKNOWN : nobr(startTimes(e)), placePh(e.prefecture, e.city), !withFacts && e.fee ? esc(e.fee) : ""])}</div>
-${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div></div>`;
+${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div>${performancePhoto(photoFor("events", e))}</div>`;
 };
-const regCard = (r) => `<div class="card reg"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
+const regCard = (r) => `<div class="card reg performance-card"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
 <h3><a href="/regular/${r.id}.html">${namePh(r.name)}</a></h3>
 <div class="meta">${sepList([nobr(esc(r.schedule)), placePh(r.prefecture, r.city)])}</div>
-${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
+${cardFacts(r)}${kaguraTag(r.kagura)}</div>${performancePhoto(photoFor("regular", r))}</div>`;
 const write = (p, c) => { p = p.replace(/^dist(?=\/)/, OUT); mkdirSync(p.replace(/[\\/][^\\/]*$/, "") || ".", { recursive: true }); writeFileSync(p, c); };
 const hero = (h, p) => `<section class="hero"><h1>${h}</h1>${p ? `<p>${p}</p>` : ""}</section>`;
 const empty = (msg) => `<p class="empty">${msg}</p>`;
@@ -480,7 +483,7 @@ const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
 rmSync(OUT, { recursive: true, force: true });
 
 // クライアント用の軽量データ (地図・日付と場所の検索)
-const lite = events.map((e) => { const { id, name, kagura, prefecture, city, venue, description, start, end, sessions, lat, lng, fee, timeUnknown } = e; return { id, name, kagura, prefecture, city, venue, description, reservation: reservationLabel(e), start, end, sessions, lat, lng, fee, timeUnknown, up: isUpcoming(e) }; });
+const lite = events.map((e) => { const { id, name, kagura, prefecture, city, venue, description, start, end, sessions, lat, lng, fee, timeUnknown } = e; return { id, name, kagura, prefecture, city, venue, description, reservation: reservationLabel(e), start, end, sessions, lat, lng, fee, timeUnknown, photo: photoFor("events", e), up: isUpcoming(e) }; });
 write("dist/events.json", JSON.stringify(lite));
 write("dist/regular.json", JSON.stringify(regular.map(({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }) => ({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }))));
 
@@ -650,6 +653,7 @@ var tabs=[].slice.call(f.querySelectorAll('[role=tab]'));
 function setTab(v,focus){tab=v;tabs.forEach(function(t){var on=t.id==='tab-'+v;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on;if(on&&focus)t.focus()})}
 [].forEach.call(pf.options,function(o){if(o.value)regionOf[o.value]=o.dataset.r});
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var performancePhoto=${performancePhoto.toString()};
 var p2=function(n){return String(n).padStart(2,'0')};
 var ymd=function(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
 var WD=['日','月','火','水','木','金','土'];
@@ -683,7 +687,7 @@ function draw(){
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
   out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+byM[m].map(row).join('')+'</ol></details>'}).join('');
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
+    return '<li class="performance-card"><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span>'+performancePhoto(x.photo)+'</li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
   document.getElementById('weekend-empty').hidden=!(loaded&&!failed&&!hit.length&&tab==='dp'&&when==='weekend');
   var q=new URLSearchParams();if(tab==='kw'){if(kw.value.trim())q.set('q',kw.value.trim())}else{if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value)}
@@ -900,10 +904,10 @@ ${regular.length ? `<h2>毎週・毎晩の定期公演</h2>${regular.map(regCard
 // ---------- 今週末の神楽・今月の神楽(「神楽 今週末」「今月 神楽」のような検索と、ブックマークに当てる。URLは固定で、中身が日付で変わる) ----------
 const occCard = (r, d) => {
   const p = parts(`${d}T00:00`);
-  return `<div class="card reg occ"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
+  return `<div class="card reg occ performance-card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <h3><a href="/regular/${r.id}.html">${esc(r.name)}</a></h3>
 <div class="meta">${sepList(["定期公演", nobr(esc(r.schedule)), placePh(r.prefecture, r.city)])}</div>
-${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
+${cardFacts(r)}${kaguraTag(r.kagura)}</div>${performancePhoto(photoFor("regular", r))}</div>`;
 };
 const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${list.map(({ r, closed }) => regCard(r) + (closed.length ? `<p class="meta">※ ${closed.map(mdLabel).join("・")}は、休演です。</p>` : "")).join("")}` : "");
 const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[["/weekend.html", "今週末の神楽"], ["/this-month.html", "今月の神楽"], ["/calendar.html", "日付・場所で探す"], ["/map.html", "地図で探す"]].filter(([h]) => h !== self).map(([h, t]) => `<a class="tag" href="${h}">${t}</a>`).join("")}${months.slice(0, 3).map((m) => `<a class="tag" href="/month/${m}.html">${monthLabel(m)}</a>`).join("")}</div>`;
@@ -1134,3 +1138,9 @@ if (stayAudit.unverified.length) console.warn("RAKUTEN_STAY_ISSUANCE_UNVERIFIED:
 mkdirSync(`${OUT}/vendor/cookieconsent-3.2.1`, { recursive: true });
 for (const f of ["cookieconsent.umd.js", "cookieconsent.css", "LICENSE"]) copyFileSync(`assets/vendor/cookieconsent-3.2.1/${f}`, `${OUT}/vendor/cookieconsent-3.2.1/${f}`);
 copyFileSync("scripts/client/consent-manager.js", `${OUT}/consent-manager.js`);
+
+// Only manifest-reviewed assets are copied; collected data cannot introduce images.
+if (performancePhotos.size) {
+  mkdirSync(`${OUT}/performance-photos`, {recursive:true});
+  for (const photo of performancePhotos.values()) copyFileSync(`assets${photo.src}`, `${OUT}${photo.src}`);
+}

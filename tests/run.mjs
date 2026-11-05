@@ -1,3 +1,4 @@
+import './performance-photos.mjs';
 import './analytics-session-sync.mjs';
 import './analytics-session-report.mjs';
 import './consent-manager-test.mjs';
