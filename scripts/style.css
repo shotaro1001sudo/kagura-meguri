@@ -421,7 +421,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 footer{margin-top:72px;border-top:1px solid var(--line);padding:28px 0 48px;color:var(--mut);font-size:var(--fs-s);text-align:center;letter-spacing:.12em;line-height:2.4}
 footer a{color:var(--mut);display:inline-block;white-space:nowrap;padding:7px 2px;line-height:2.4}
 /* フッターのリンクは、区切りの文字を使わず余白で並べる(行末に「・」がぶら下がらない) */
-footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:center;column-gap:1.4em}footer .copy{margin-top:6px}footer .fnote{line-height:1.9;margin-bottom:6px}
+footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:center;column-gap:1.4em}footer .flinks+.flinks{margin-top:14px}footer .copy{margin-top:6px}footer .fnote{line-height:1.9;margin-bottom:6px}
 /* 「・」区切りの並び(sepList): 各項目の前の「・」は、行の頭に来たときだけ枠の外に隠れる */
 .sl{display:block;overflow:hidden}.sl-in{display:flex;flex-wrap:wrap;margin-left:-1.2em}
 .sl-in>span{position:relative;min-width:0;padding-left:1.2em}.sl-in>span::before{content:"・";position:absolute;left:0;width:1.2em;text-align:center}
