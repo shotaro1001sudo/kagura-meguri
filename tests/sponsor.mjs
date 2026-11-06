@@ -16,9 +16,12 @@ export function sponsorTests({ ok, section, OUT }) {
   ok(internal.length >= 5 && internal.every((h) => existsSync(fileOf(h))), "サイト内のリンクが、すべて実在するページにつながる", internal.filter((h) => !existsSync(fileOf(h))).join(", "));
 
   // 「載せられる場所」の例が、実在する県・定期公演のページを指す
-  ok(internal.some((h) => /^\/pref\/.+\.html$/.test(h)) && internal.some((h) => /^\/regular\/.+\.html$/.test(h)), "載せられる場所の例が、県のページと定期公演のページにつながる");
-  // 確かめていない数字(閲覧数など)を、ページに書かない
-  ok(!/\d[\d,]*\s*(PV|ページビュー|人|回|万)/.test(text), "閲覧数などの数字を書いていない");
+  const egs = $("main a").filter((_, a) => /^\/(pref|regular)\/.+\.html$/.test($(a).attr("href"))).map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
+  const titleOf = (h) => cheerio.load(read(fileOf(h)))("h1").text();
+  ok(egs.some(([h]) => h.startsWith("/pref/")) && egs.some(([h]) => h.startsWith("/regular/")) && egs.every(([h, t]) => t && titleOf(h).includes(t)), "載せられる場所の例が、県・定期公演のページにつながり、リンクの文字が行き先の名前になっている", egs.map(([h, t]) => `${t}→${titleOf(h)}`).join(", "));
+  // 確かめていない数字(閲覧数など)や、読者の傾向を、ページに書かない
+  ok(!/\d[\d,]*\s*(PV|ページビュー|人|回|万)/.test(text) && !/読者の(多く|大半|ほとんど)/.test(text), "閲覧数などの数字や、確かめていない読者の傾向を書いていない");
+  ok(text.includes("毎週・毎晩の定期公演") && text.includes("編集部が書き"), "言葉の統一: 「毎週・毎晩の定期公演」、書き手は「編集部」");
 
   // 問い合わせの案内が、実物のフォームの選択肢と一致している
   const topic = "広告・取材などのご相談";

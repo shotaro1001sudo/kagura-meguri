@@ -1048,7 +1048,7 @@ doc("/organizers.html", "主催者の方へ", `神楽の主催者・神社・保
 
 // 広告・協賛について(地域の観光協会・宿・お店に、協賛枠とPR記事を案内する。例のリンクは、実在する県・定期公演のページ)
 doc("/sponsor.html", "広告・協賛について", `観光協会・自治体・宿・お店の皆さまへ。${cfg.siteName}の協賛枠とPR記事のご案内です。載せられる場所、掲載の方針、掲載までの流れを説明しています。`,
-  sponsorHtml({ esc, siteName: cfg.siteName, prefHref: prefs.length ? prefHref(prefs[0]) : "/calendar.html", regularHref: regular.length ? `/regular/${regular[0].id}.html` : "/calendar.html" }),
+  sponsorHtml({ esc, siteName: cfg.siteName, pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined, reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined }),
   { lead: "神楽を観に出かける方へ、地域の情報を届けます。" });
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です。運営者と連絡先、サイトの目的、開催情報の集め方と出典の示し方、広告などによる収益について説明しています。`, `
