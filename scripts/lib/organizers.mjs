@@ -60,7 +60,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <li>載せるのは、<strong>事実の情報と、公式情報へのリンク</strong>です。主催者のサイトの文章・写真・図などは転載しません。</li>
 <li><strong>一般の見学を想定していない神事や、公開を望まれない行事</strong>は掲載しません。地域の方が公表している範囲で掲載します。</li>
 <li><strong>ご依頼者のお名前・ご連絡先</strong>は、サイトに表示しません(<a href="/privacy.html">プライバシーポリシー</a>)。</li>
-<li>掲載は無料です。</li>
+<li>掲載は無料です。<a href="/sponsor.html">協賛や広告</a>の有無で、掲載の並び順や内容は変わりません。</li>
 </ul>
 
 <h2>訂正・削除・掲載の停止</h2>
