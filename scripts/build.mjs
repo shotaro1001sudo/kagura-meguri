@@ -12,11 +12,12 @@ import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, privacyUpdated, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
 import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
-import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
+import { englishPages, CHECKED as EN_CHECKED, SITE_EN, PREF_EN } from "./lib/english.mjs";
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { mediaState, checkMediaConfig, checkMediaItem, mediaSection, mediaLd, photoFiles } from "./lib/media.mjs";
-import { REGIONS, regionOf } from "./lib/util.mjs";
+import { checkLineup, lineupCell, lineupShort, troupesOf, troupeHref, programHref, programKey, programNames } from "./lib/lineup.mjs";
+import { REGIONS, regionOf, PREFECTURES } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
@@ -56,6 +57,10 @@ const MEDIA_FILE = process.env.MEDIA_FILE ?? "data/media.json";
 const MEDIA_DIR = process.env.MEDIA_DIR ?? "assets/media";
 if (process.env.TEST_MEDIA_START != null) cfg.media = { ...cfg.media, start: process.env.TEST_MEDIA_START };
 if (process.env.TEST_MEDIA_FORM != null) cfg.media = { ...cfg.media, formUrl: process.env.TEST_MEDIA_FORM };
+// 県ごとの「今週末の神楽」(地元のファン向け。SNS 用の画像つき)を作る県。テストでは差し替える
+if (process.env.TEST_WEEKEND_PREFS != null) cfg.weekendPrefectures = process.env.TEST_WEEKEND_PREFS ? process.env.TEST_WEEKEND_PREFS.split(",") : [];
+const WEEKEND_PREFS = cfg.weekendPrefectures ?? [];
+for (const p of WEEKEND_PREFS) if (!PREFECTURES.includes(p)) { console.error(`config.json の weekendPrefectures に、都道府県ではない名前があります: ${p}`); process.exit(1); }
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -82,6 +87,7 @@ function validateCommon(rows, ids) {
     if (!DT.test(e.start ?? "")) errs.push(`${w} start は YYYY-MM-DDTHH:mm 形式にしてください(現在: ${e.start})`);
     if (e.end && !DT.test(e.end)) errs.push(`${w} end の形式が不正です`);
     if (e.end && e.end < e.start) errs.push(`${w} end が start より前です`);
+    for (const m of checkLineup(e)) errs.push(`${w} ${m}`);
   }
   validateCommon(rawRegular, new Set());
   for (const r of rawRegular) {
@@ -142,7 +148,7 @@ const refList = (refs = []) => refs.length ? `<p class="meta">参考: ${refs.map
 // 神楽の種類ページの、くわしい解説(歴史・特徴・演目・観賞のコツ)。データがある項目だけ出す
 const kaguraDetail = (k, info) => !(info?.history?.length || info?.features?.length) ? "" : `<section class="detail">${info.history?.length ? `<h2>${esc(k)}の歴史</h2>${info.history.map((t) => `<p>${esc(t)}</p>`).join("")}` : ""}
 ${info.features?.length ? `<h2>${esc(k)}の特徴</h2><ul>${info.features.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-${info.programs?.length ? `<h2>主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
+${info.programs?.length ? `<h2 id="programs">主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
 ${info.viewing?.length ? `<h2>観賞のコツ</h2><ul>${info.viewing.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 ${refList(info.refs)}</section>`;
 // 開催ごとの編集部の解説(data/event-notes.json)。公式情報から調べた事実だけを、出典つきで載せる
@@ -393,6 +399,15 @@ ${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.incl
 
 // 県・神楽の種類のページの URL(リンクは、すべてこの2つで作る)
 const prefHref = (p) => `/pref/${encodeURIComponent(p)}.html`;
+// 県ごとのカレンダー(ICS)。URL は英字にする(カレンダーアプリに登録する URL を、壊れにくくするため)
+const prefSlug = (p) => { const s = (PREF_EN[p] ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-"); if (!s) throw new Error(`都道府県の英語名がありません: ${p}`); return s; };
+const prefIcsPath = (p) => `/ics/${prefSlug(p)}.ics`;
+const shortPref = (p) => (p === "北海道" ? p : p.replace(/[都府県]$/, ""));
+const weekendPrefHref = (p) => `/weekend/${prefSlug(p)}.html`; // 県ごとの今週末の神楽(config.json の weekendPrefectures)
+const calSubscribe = (p) => {
+  const url = `${cfg.domain}${prefIcsPath(p)}`;
+  return `<section class="cal-sub" aria-labelledby="cal-sub-h"><h2 id="cal-sub-h">${esc(p)}の神楽を、カレンダーで受け取る</h2><p>登録すると、${esc(p)}の新しい公演が、お使いのカレンダーに自動で入ります(毎週の定期公演は、90日先までの公演日)。</p><p class="cal-btns"><a class="btn ghost sm" href="https://calendar.google.com/calendar/render?cid=${encodeURIComponent(`webcal://${url}`)}" target="_blank" rel="noopener">Googleカレンダーに追加</a><a class="btn ghost sm" href="webcal://${url}">iPhone・Macのカレンダーに追加</a><button type="button" class="btn ghost sm" data-copy="https://${url}">URLをコピー</button></p></section>${clientJs("share")}`;
+};
 const kaguraHref = (k) => `/kagura/${encodeURIComponent(k)}.html`;
 // 件数の要約(「開催予定 3件 ・ 定期公演 1件」。0件の項目は出さない)
 const countLine = (n, m) => [n ? `開催予定 ${n}件` : "", m ? `定期公演 ${m}件` : ""].filter(Boolean).join(" ・ ") || "開催予定はありません";
@@ -404,10 +419,10 @@ const sameSeries = (e) => events.filter((x) => x.id !== e.id && seriesKey(x) ===
 const TIME_UNKNOWN = "時刻未確認";
 const startTimes = (e) => hm(e.sessions?.length ? e.sessions.map((x) => x.slice(0, 5) + "〜").join("・") : `${e.start.slice(11, 16)}〜`);
 // 一覧カードの会場・料金・予約: 分かっている項目だけを出す(会場は常に。分からなければ「未確認」)。出典・確認日は開催ページで見せる
-const cardFacts = (e) => {
+const cardFacts = (e, { lineup = true } = {}) => {
   const fact = (k, v) => `<div><span class="k">${k}:</span><span>${v ? esc(v) : '<span class="tbd">未確認</span>'}</span></div>`;
   const reservation = reservationLabel(e);
-  return `<div class="meta event-facts">${fact("会場", e.venue)}${e.fee ? fact("料金", e.fee) : ""}${reservation !== "要確認" ? fact("予約要否", reservation) : ""}</div>`;
+  return `<div class="meta event-facts">${fact("会場", e.venue)}${lineup && e.lineup?.length ? fact("出演", lineupShort(e)) : ""}${e.fee ? fact("料金", e.fee) : ""}${reservation !== "要確認" ? fact("予約要否", reservation) : ""}</div>`;
 };
 // 地名と、名前の最後の「(会場名)」は、まとまりの途中で改行しない(.ph)。Safari など文節で折り返せないブラウザ向け
 const ph = (s) => `<span class="ph">${esc(s)}</span>`;
@@ -415,12 +430,12 @@ const placePh = (pref, city) => [pref, city].filter(Boolean).map(ph).join(" ");
 const namePh = (s = "") => { const m = s.match(/^(.+?)([(（][^()（）]+[)）])$/); return m ? esc(m[1]) + ph(m[2]) : esc(s); };
 // 「・」で区切る並び: 区切りは各項目の前に置き、行の頭に来たものは枠の外に隠す(行頭・行末に「・」だけが残らない)
 const sepList = (items) => { const xs = items.filter(Boolean); return xs.length ? `<span class="sl"><span class="sl-in">${xs.map((x) => `<span>${x}</span>`).join("")}</span></span>` : ""; };
-const card = (e, h = "h3", withFacts = true) => {
+const card = (e, h = "h3", withFacts = true, extra = "", opts = {}) => {
   const p = parts(e.start);
   return `<div class="card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <${h}><a href="/events/${e.id}.html">${namePh(e.name)}</a></${h}>
 <div class="meta">${sepList([sameSeries(e).length ? '<span class="rep">定例開催</span>' : "", e.timeUnknown ? TIME_UNKNOWN : nobr(startTimes(e)), placePh(e.prefecture, e.city), !withFacts && e.fee ? esc(e.fee) : ""])}</div>
-${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div></div>`;
+${withFacts ? cardFacts(e, opts) : ""}${extra}${kaguraTag(e.kagura)}</div></div>`;
 };
 const regCard = (r) => `<div class="card reg"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
 <h3><a href="/regular/${r.id}.html">${namePh(r.name)}</a></h3>
@@ -486,7 +501,7 @@ const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
 rmSync(OUT, { recursive: true, force: true });
 
 // クライアント用の軽量データ (地図・日付と場所の検索)
-const lite = events.map((e) => { const { id, name, kagura, prefecture, city, venue, description, start, end, sessions, lat, lng, fee, timeUnknown } = e; return { id, name, kagura, prefecture, city, venue, description, reservation: reservationLabel(e), start, end, sessions, lat, lng, fee, timeUnknown, up: isUpcoming(e) }; });
+const lite = events.map((e) => { const { id, name, kagura, prefecture, city, venue, description, start, end, sessions, lat, lng, fee, timeUnknown } = e; return { id, name, kagura, prefecture, city, venue, description, reservation: reservationLabel(e), start, end, sessions, lat, lng, fee, timeUnknown, up: isUpcoming(e), ...(e.lineup?.length ? { troupes: troupesOf(e) } : {}) }; });
 write("dist/events.json", JSON.stringify(lite));
 write("dist/regular.json", JSON.stringify(regular.map(({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }) => ({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }))));
 
@@ -702,7 +717,7 @@ function draw(){
   var hit=list.filter(function(x){
     if(!x.up)return false;
     var s=x.start.slice(0,10),e=(x.end||x.start).slice(0,10);
-    if(tab==='kw'){var text=normalize([x.name,x.kagura,x.prefecture,x.city,x.venue,x.description].join(' '));return words.every(function(w){return text.indexOf(w)>=0})}
+    if(tab==='kw'){var text=normalize([x.name,x.kagura,x.prefecture,x.city,x.venue,x.description].concat(x.troupes||[]).join(' '));return words.every(function(w){return text.indexOf(w)>=0})}
     if(a&&e<a)return false;if(b&&s>b)return false;
     if(pf.value)return x.prefecture===pf.value;
     if(rg.value)return regionOf[x.prefecture]===rg.value;
@@ -743,13 +758,32 @@ fetch('/events.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(f
 </script>`,
 }));
 
+// 神楽団・演目の集計(種類の一覧・県のページ・神楽団と演目のページで使う)
+const troupeMap = new Map(), programMap = new Map();
+for (const e of events) for (const x of e.lineup ?? []) {
+  troupeMap.set(x.troupe, [...(troupeMap.get(x.troupe) ?? []), { e, programs: x.programs }]);
+  for (const p of x.programs) programMap.set(programKey(p), [...(programMap.get(programKey(p)) ?? []), { e, troupe: x.troupe, as: p }]);
+}
+const byStart = (a, b) => a.e.start.localeCompare(b.e.start);
+const troupeUp = (t) => (troupeMap.get(t) ?? []).filter((x) => isUpcoming(x.e)).sort(byStart);
+const programUp = (k) => (programMap.get(k) ?? []).filter((x) => isUpcoming(x.e)).sort(byStart);
+const troupes = [...troupeMap.keys()].sort((a, b) => troupeUp(b).length - troupeUp(a).length || a.localeCompare(b, "ja"));
+const programs = [...programMap.keys()].sort((a, b) => programUp(b).length - programUp(a).length || a.localeCompare(b, "ja"));
+const LINEUP_NOTE = `<p class="meta">出演・演目は、主催者などの公式情報で発表された予定です。変わることがあります。掲載している公演だけをまとめているため、すべての出演予定ではありません。</p>`;
+// これまでの出演(終わった公演)の短い一覧
+const pastList = (rows) => rows.length ? `<h2>これまでの出演</h2><ol class="monthlist">${rows.map(({ e, text }) => `<li><span class="md">${esc(jpDate(e.start.slice(0, 10)))}</span><span><a href="/events/${e.id}.html">${esc(e.name)}</a>${text ? `<span class="meta">${text}</span>` : ""}</span></li>`).join("")}</ol>` : "";
+const progLinks = (ps) => ps.map((p) => `<a href="${programHref(p)}">「${esc(p)}」</a>`).join("");
+const troupeLinks = (ts) => ts.map((t) => `<a href="${troupeHref(t)}">${esc(t)}</a>`).join("・");
+const groupByKagura = (names, kindOf) => { const m = new Map(); for (const n of names) { const k = kindOf(n) || "そのほか"; m.set(k, [...(m.get(k) ?? []), n]); } return [...m.entries()]; };
+const mainKagura = (rows) => { const c = {}; for (const { e } of rows) if (e.kagura) c[e.kagura] = (c[e.kagura] ?? 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ""; };
+
 // ---------- 神楽の種類 一覧 + 個別 ----------
 write("dist/kagura/index.html", layout({
   title: `神楽の種類一覧 | 流派・系統ごとに探す | ${cfg.siteName}`,
   desc: clip(`${kaguras.slice(0, 5).join("、")}など、神楽の種類ごとに開催日程と定期公演を探せます。それぞれの特徴もあわせて紹介しています。`),
   path: "/kagura/", active: "/kagura/", alts: [["en", "/en/kagura.html"]],
   ld: crumbsLd([["ホーム", "/"], ["種類で探す"]]),
-  body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "流派や系統ごとに、開催情報を探せます。")}<h2 class="sr">神楽の種類の一覧</h2>${kaguras
+  body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "流派や系統ごとに、開催情報を探せます。")}${troupes.length ? `<p class="lead"><a href="/troupe/">神楽団から探す</a> ・ <a href="/program/">演目から探す</a>こともできます。</p>` : ""}<h2 class="sr">神楽の種類の一覧</h2>${kaguras
     .map((k) => `<div class="card"><div><h3><a href="${kaguraHref(k)}">${esc(k)}</a></h3>${kaguraInfo[k]?.tagline ? `<p class="tagline">${esc(kaguraInfo[k].tagline)}</p>` : ""}<div class="meta">${countLine(upcoming.filter((e) => e.kagura === k).length, regular.filter((r) => r.kagura === k).length)}</div></div></div>`)
     .join("") || empty("掲載中の神楽の種類は、まだありません。")}${adSlot(cfg.adsense.slotList)}`,
 }));
@@ -775,7 +809,76 @@ ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(m
   }));
 }
 
+// ---------- 神楽団・演目(地元のファンは「推しの神楽団」「観たい演目」で探す) ----------
+// 開催データの lineup から作る。開催予定のあるページだけを検索に出す(これまでの出演だけのページは noindex)
+
+for (const t of troupes) {
+  const rows = troupeMap.get(t), up = troupeUp(t), past = rows.filter((x) => !isUpcoming(x.e)).sort((a, b) => b.e.start.localeCompare(a.e.start));
+  const progs = [...new Set(rows.flatMap((x) => x.programs))];
+  const prefsOf = [...new Set(rows.map((x) => x.e.prefecture))], kinds = [...new Set(rows.map((x) => x.e.kagura).filter(Boolean))];
+  const crumbs = [["ホーム", "/"], ["神楽団から探す", "/troupe/"], [t]];
+  write(`dist/troupe/${t}.html`, layout({
+    title: `${t}の公演予定【${yearsOf(up.map((x) => x.e))}】出演する神楽 | ${cfg.siteName}`,
+    desc: clip(`${t}が出演する神楽の公演予定です。${up.length ? `開催予定${up.length}件(${jpDate(up[0].e.start.slice(0, 10))}から)。` : "いまは掲載中の出演予定はありません。"}${progs.length ? `演目は「${progs.slice(0, 4).join("」「")}」など。` : ""}日時・会場と公式情報へのリンクつき。`),
+    path: troupeHref(t), noindex: !up.length, ld: [crumbsLd(crumbs), itemListLd(`${t}の出演予定`, up.map((x) => ({ href: `/events/${x.e.id}.html`, name: x.e.name })))].filter(Boolean),
+    body: `${crumbNav(crumbs)}${hero(esc(t), up.length ? `出演予定 ${up.length}件` : "掲載中の出演予定はありません")}
+<p class="lead">${esc(t)}の出演が発表されている公演をまとめています。${kinds.length ? `${kinds.map((k) => kaguraTag(k)).join("")}` : ""}${prefsOf.map((p) => `<a class="tag" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</p>
+${up.length ? `<h2>出演予定</h2>${up.map(({ e, programs: ps }) => { const co = troupesOf(e).filter((x) => x !== t); return card(e, "h3", true, `${ps.length ? `<p class="meta lp-line">演目: ${progLinks(ps)}</p>` : ""}${co.length || e.lineupMore ? `<p class="meta lp-line">共演: ${troupeLinks(co)}${e.lineupMore ? `${co.length ? " " : ""}ほか` : ""}</p>` : ""}`, { lineup: false }); }).join("")}` : empty("いまは、掲載中の出演予定はありません。新しい公演が分かりしだい、ここに載せます。")}
+${progs.length ? `<h2>これまでに掲載した演目</h2><p class="taglist lp-tags">${progLinks(progs)}</p>` : ""}
+${pastList(past.slice(0, 20).map(({ e, programs: ps }) => ({ e, text: ps.map((p) => `「${esc(p)}」`).join("") })))}
+${LINEUP_NOTE}
+<p class="meta"><a href="/troupe/">ほかの神楽団を見る</a> ・ <a href="/program/">演目から探す</a></p>`,
+  }));
+}
+
+for (const k of programs) {
+  const rows = programMap.get(k), up = programUp(k), past = rows.filter((x) => !isUpcoming(x.e)).sort((a, b) => b.e.start.localeCompare(a.e.start));
+  const names = programNames(k).filter((n) => n === k || rows.some((x) => x.as === n) || Object.values(kaguraInfo).some((i) => i.programs?.some((pr) => pr.name === n)));
+  const label = names.length > 1 ? `${k}(${names.slice(1).join("・")})` : k;
+  // 神楽の種類ページの「主な演目」に解説があれば、出典のあるそのページへの案内とともに見せる
+  const about = Object.entries(kaguraInfo).filter(([kind]) => kaguras.includes(kind)).flatMap(([kind, i]) => (i.programs ?? []).filter((pr) => programNames(k).includes(pr.name)).map((pr) => ({ kind, pr })));
+  const crumbs = [["ホーム", "/"], ["演目から探す", "/program/"], [`「${k}」`]];
+  write(`dist/program/${k}.html`, layout({
+    title: `神楽「${k}」が観られる公演【${yearsOf(up.map((x) => x.e))}】日程 | ${cfg.siteName}`,
+    desc: clip(`神楽の演目「${label}」が上演される公演の日程です。${up.length ? `開催予定${up.length}件。出演は${[...new Set(up.map((x) => x.troupe))].slice(0, 3).join("・")}など。` : "いまは掲載中の上演予定はありません。"}日時・会場と公式情報へのリンクつき。`),
+    path: programHref(k), noindex: !up.length, ld: [crumbsLd(crumbs), itemListLd(`「${k}」の上演予定`, up.map((x) => ({ href: `/events/${x.e.id}.html`, name: x.e.name })))].filter(Boolean),
+    body: `${crumbNav(crumbs)}${hero(`「${esc(label)}」が観られる公演`, up.length ? `上演予定 ${up.length}件` : "掲載中の上演予定はありません")}
+${about.length ? `<section class="about">${about.map(({ kind, pr }) => `<p>${esc(pr.text)}<span class="meta">(<a href="${kaguraHref(kind)}#programs">${esc(kind)}の主な演目</a>より)</span></p>`).join("")}</section>` : ""}
+${up.length ? `<h2>上演予定</h2>${up.map(({ e, troupe, as }) => card(e, "h3", true, `<p class="meta lp-line">出演: <a href="${troupeHref(troupe)}">${esc(troupe)}</a>${as !== k ? `(「${esc(as)}」と表記)` : ""}</p>`, { lineup: false })).join("")}` : empty("いまは、掲載中の上演予定はありません。新しい公演が分かりしだい、ここに載せます。")}
+${pastList(past.slice(0, 20).map(({ e, troupe }) => ({ e, text: esc(troupe) })))}
+${LINEUP_NOTE}
+<p class="meta"><a href="/program/">ほかの演目を見る</a> ・ <a href="/troupe/">神楽団から探す</a></p>`,
+  }));
+}
+
+// 一覧: 神楽団は、出演の多い神楽の種類ごとに。演目は、上演予定の多い順に
+if (troupes.length) write("dist/troupe/index.html", layout({
+  title: `神楽団から探す | 出演予定と演目 | ${cfg.siteName}`,
+  desc: clip(`${troupes.slice(0, 4).join("、")}など、神楽団ごとの出演予定と演目をまとめています。推しの神楽団の次の公演を、日時・会場つきで確かめられます。`),
+  path: "/troupe/", active: "/kagura/", noindex: !troupes.some((t) => troupeUp(t).length),
+  ld: crumbsLd([["ホーム", "/"], ["神楽団から探す"]]),
+  body: `${crumbNav([["ホーム", "/"], ["神楽団から探す"]])}${hero("神楽団から探す", `${troupes.length}団体`)}
+<p class="lead">出演が発表されている公演から、神楽団ごとのページを作っています。<a href="/program/">演目から探す</a>こともできます。</p>
+${groupByKagura(troupes, (t) => mainKagura(troupeMap.get(t))).map(([kind, ts]) => `<h2>${esc(kind)}</h2><ul class="troupe-list">${ts.map((t) => `<li><a href="${troupeHref(t)}">${esc(t)}</a><span class="meta">${troupeUp(t).length ? `出演予定 ${troupeUp(t).length}件` : "これまでの出演"}</span></li>`).join("")}</ul>`).join("")}
+${LINEUP_NOTE}`,
+}));
+if (programs.length) write("dist/program/index.html", layout({
+  title: `演目から探す | 神楽の演目と上演予定 | ${cfg.siteName}`,
+  desc: clip(`「${programs.slice(0, 4).join("」「")}」など、神楽の演目ごとに、上演される公演と出演する神楽団をまとめています。`),
+  path: "/program/", active: "/kagura/", noindex: !programs.some((k) => programUp(k).length),
+  ld: crumbsLd([["ホーム", "/"], ["演目から探す"]]),
+  body: `${crumbNav([["ホーム", "/"], ["演目から探す"]])}${hero("演目から探す", `${programs.length}演目`)}
+<p class="lead">出演と演目が発表されている公演から、演目ごとのページを作っています。<a href="/troupe/">神楽団から探す</a>こともできます。</p>
+<ul class="troupe-list">${programs.map((k) => `<li><a href="${programHref(k)}">「${esc(k)}」</a><span class="meta">${programUp(k).length ? `上演予定 ${programUp(k).length}件` : "これまでの上演"}</span></li>`).join("")}</ul>
+${LINEUP_NOTE}`,
+}));
+
 // ---------- 都道府県ページ ----------
+// この県の開催予定に出演する神楽団(推しの神楽団のページへ)
+const prefTroupes = (list) => {
+  const ts = [...new Set(list.flatMap(troupesOf))];
+  return ts.length ? `<section class="pref-troupes"><h2>出演する神楽団</h2><p class="taglist">${ts.map((t) => `<a class="tag" href="${troupeHref(t)}">${esc(t)}</a>`).join("")}</p><p class="meta">出演が発表されている公演の分です。<a href="/troupe/">神楽団から探す</a> ・ <a href="/program/">演目から探す</a></p></section>` : "";
+};
 for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) {
   const list = events.filter((e) => e.prefecture === p && isUpcoming(e)), reg = regular.filter((r) => r.prefecture === p);
   const kinds = [...new Set([...list, ...reg].map((x) => x.kagura).filter(Boolean))];
@@ -801,7 +904,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
+${upcomingIntro}${WEEKEND_PREFS.includes(p) ? `<p class="pref-weekend"><a href="${weekendPrefHref(p)}">今週末の${esc(shortPref(p))}の神楽</a>(毎日更新。SNS 用の画像も作れます)</p>` : ""}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${list.length + reg.length ? calSubscribe(p) : ""}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prefTroupes(list)}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
   }));
 }
 
@@ -828,7 +931,24 @@ const gcalEvent = (e) => {
   const location = `${e.venue ?? ""} ${e.prefecture}${e.city ?? ""}${e.address ?? ""}`.trim();
   return `https://calendar.google.com/calendar/render?${new URLSearchParams({ action: "TEMPLATE", text: e.name + calendarNotice(e).suffix, dates, ctz: "Asia/Tokyo", location, details })}`;
 };
-const vcal = (list) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteName}//JA`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${ie(cfg.siteName)}`, "X-WR-TIMEZONE:Asia/Tokyo", ...list.flatMap(veventLines), "END:VCALENDAR"].join("\r\n") + "\r\n";
+const vcal = (list, { name = cfg.siteName, extra = [] } = {}) => ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:-//${cfg.siteName}//JA`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${ie(name)}`, "X-WR-TIMEZONE:Asia/Tokyo", ...list.flatMap(veventLines), ...extra, "END:VCALENDAR"].join("\r\n") + "\r\n";
+// 定期公演の時刻: 「19:00開演」「20:00〜21:00」「21:00ごろ終演」から、開演と終演を読む(開場・受付の時刻は使わない)
+const regularTimes = (r) => {
+  const sch = String(r.schedule ?? ""), pad5 = (t) => t && t.padStart(5, "0");
+  const st = sch.match(/(\d{1,2}:\d{2})\s*(?:開演|開始)/)?.[1] ?? sch.match(/(\d{1,2}:\d{2})\s*〜/)?.[1] ?? sch.match(/\d{1,2}:\d{2}/)?.[0];
+  const en = sch.match(/(\d{1,2}:\d{2})\s*(?:ごろ)?\s*(?:終演|終了)/)?.[1] ?? (st ? sch.match(new RegExp(`${st}\\s*〜\\s*(\\d{1,2}:\\d{2})`))?.[1] : undefined);
+  return { st: pad5(st), en: pad5(en) };
+};
+const regularVevent = (r, d) => {
+  const { st, en } = regularTimes(r);
+  const start = st ? `${d}T${st}` : "";
+  const end = st && en && en > st ? `${d}T${en}` : st ? new Date(asMs(start) + 2 * 3600e3).toISOString().slice(0, 16) : "";
+  return ["BEGIN:VEVENT", `UID:${r.id}-${ymd(d)}@${cfg.domain || "kagura"}`, `DTSTAMP:${nowJst.slice(0, 10).replace(/-/g, "")}T000000Z`,
+    `SUMMARY:${ie(`${r.name}(定期公演)`)}`,
+    `DESCRIPTION:${ie([r.schedule, `${cfg.siteName}: ${cfg.baseUrl}/regular/${r.id}.html`, "※ 休演や時間の変更があります。出かける前に公式情報をご確認ください。"].join("\n"))}`,
+    ...(start ? [`DTSTART;TZID=Asia/Tokyo:${dt(start)}`, `DTEND;TZID=Asia/Tokyo:${dt(end)}`] : [`DTSTART;VALUE=DATE:${ymd(d)}`, `DTEND;VALUE=DATE:${nextDay(d)}`]),
+    `LOCATION:${ie(`${r.venue ?? ""} ${r.prefecture}${r.city ?? ""}`.trim())}`, `URL:${cfg.baseUrl}/regular/${r.id}.html`, "END:VEVENT"];
+};
 // 共有: LINE で送る・リンクをコピー(押したときだけ、外部へ移動する。コピーはこのページの中だけで動く)
 const shareBlock = (path, title) => { const url = `${cfg.baseUrl}${path}`; return `<p class="share"><span class="meta">共有</span><a class="btn ghost sm" href="https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}" target="_blank" rel="noopener" data-goatcounter-click="share-line">LINEで送る</a><button type="button" class="btn ghost sm" data-copy="${esc(url)}">リンクをコピー</button></p>${clientJs("share")}`; };
 // 開催までの日数(毎日のビルドで更新される)。当日・翌日は言葉で、それ以降は「あと◯日」
@@ -866,6 +986,7 @@ for (const e of events) {
   if (e.description) ld.description = e.description;
   Object.assign(ld, eventFeeSchema(e.fee)); // 残席・券種別価格・販売URLは未確認。料金原文は本文に維持。
   if (e.lat != null) ld.location.geo = { "@type": "GeoCoordinates", latitude: e.lat, longitude: e.lng };
+  if (e.lineup?.length) ld.performer = e.lineup.map((x) => ({ "@type": "PerformingGroup", name: x.troupe, url: `${cfg.baseUrl}${troupeHref(x.troupe)}` }));
   const when = whenOf(e);
   const others = sameSeries(e).filter(isUpcoming);
   write(`dist/events/${e.id}.html`, layout({
@@ -874,7 +995,7 @@ for (const e of events) {
     desc: padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
-<div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
+<div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>${e.lineup?.length ? `<tr><th>出演</th><td>${lineupCell(e)}<small class="lineup-note">出演・演目は予定です。変わることがあります。</small></td></tr>` : ""}
 <tr><th>料金</th><td>${e.fee ? esc(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}</div>
 <div class="desc-lead">${descParas(e.description)}</div>
 ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
@@ -950,7 +1071,7 @@ const otherWays = (self) => `<h2>ほかの探し方</h2><div class="taglist">${[
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]]), itemListLd(`今週末の神楽(${wkLabel})`, [...wkEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...wkRegs, ...wkDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]])}${hero("今週末の神楽", `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
 <p class="lead">この週末に観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
-${weekendRegions.length ? `<p class="weekend-regions">この週末の掲載地域：${weekendRegions.map(p=>`<a href="${prefHref(p)}">${esc(p)}</a>`).join('・')}。リンク先では各県の全日程を確認できます。</p>` : ''}
+${weekendRegions.length ? `<p class="weekend-regions">この週末の掲載地域：${weekendRegions.map(p=>`<a href="${prefHref(p)}">${esc(p)}</a>`).join('・')}。リンク先では各県の全日程を確認できます。</p>` : ''}${WEEKEND_PREFS.length ? `<p class="weekend-local">地域ごとの今週末: ${WEEKEND_PREFS.map((p) => `<a href="${weekendPrefHref(p)}">${esc(shortPref(p))}</a>`).join("・")}</p>` : ""}
 <div class="dpage"><div class="d-top">
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2>
 ${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
@@ -958,6 +1079,60 @@ ${dailyBlock(wkDaily)}
 </div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}</div>` : ""}<div class="d-rest">
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
 ${otherWays("/weekend.html")}</div></div>`,
+  }));
+}
+// ---------- 県ごとの今週末の神楽(地元のファン向け)。SNS 用の画像をページで描き、投稿の文も用意する ----------
+// X の文字数(全角は2、URL は23として数える)
+const xLength = (s) => s.split(/(https?:\/\/\S+)/).reduce((n, part, i) => n + (i % 2 ? 23 : [...part].reduce((m, ch) => { const c = ch.codePointAt(0); return m + ((c <= 0x10ff || (c >= 0x2000 && c <= 0x200d) || (c >= 0x2010 && c <= 0x201f) || (c >= 0x2032 && c <= 0x2037)) ? 1 : 2); }, 0)), 0);
+const townOf = (x) => String(x.city ?? "").replace(/^.+郡/, "");
+const snsRow = (x, d, reg) => ({ md: `${+d.slice(5, 7)}/${+d.slice(8, 10)}`, wd: `(${WD[parts(`${d}T00:00`).wd]})`, name: x.name,
+  meta: [reg ? `${regularTimes(x).st ? `${hm(regularTimes(x).st)}〜` : TIME_UNKNOWN}・定期公演` : x.timeUnknown ? TIME_UNKNOWN : startTimes(x), [townOf(x), x.venue].filter(Boolean).join(" ")].filter(Boolean).join("・"),
+  troupes: reg ? "" : lineupShort(x) });
+for (const p of WEEKEND_PREFS) {
+  const pe = wkEvents.filter((e) => e.prefecture === p), pr = wkRegs.filter(({ r }) => r.prefecture === p), pd = wkDaily.filter(({ r }) => r.prefecture === p);
+  const items = [...pe.map((e) => ({ k: e.start, html: card(e), sns: snsRow(e, e.start.slice(0, 10) < wk.start ? wk.start : e.start.slice(0, 10)) })), ...pr.flatMap(({ r, dates }) => dates.map((d) => ({ k: `${d}T${timeOf(r)}`, html: occCard(r, d), sns: snsRow(r, d, true) })))].sort((a, b) => a.k.localeCompare(b.k));
+  const after = upcoming.filter((e) => e.prefecture === p && e.start.slice(0, 10) > wk.end).slice(0, 5);
+  const sp = shortPref(p), path = weekendPrefHref(p), sub = [wkRenkyu, wkHolidays.join("・")].filter(Boolean).join("・");
+  const title = `今週末の${sp}の神楽`;
+  // 投稿の文: X は文字数に収まるだけ並べる。Instagram は本文のリンクを押せないので、プロフィールのリンクへ案内する
+  const tags = `#${sp}神楽 #神楽`;
+  const line = (x) => `・${x.sns.md}${x.sns.wd} ${x.sns.name}`;
+  const url = `${cfg.baseUrl}${path}?utm_source=x&utm_medium=social&utm_campaign=weekend_${prefSlug(p)}&utm_content=post_${ymd(wk.start)}`;
+  const head = `${title}(${wkLabel})${items.length ? ` ${items.length}件` : ""}`;
+  let xText = "";
+  for (let n = items.length; n >= 0; n--) {
+    const body = items.length ? [...items.slice(0, n).map(line), ...(n < items.length ? [`ほか${items.length - n}件`] : [])] : ["いまのところ掲載はありません。このあとの公演はこちら"];
+    xText = [head, ...body, tags, url].join("\n");
+    if (xLength(xText) <= 280) break;
+  }
+  const igText = [head, ...(items.length ? items.slice(0, 12).map(line) : ["いまのところ掲載はありません。このあとの公演は、サイトでご覧ください。"]), "", "日時・出演は変わることがあります。お出かけ前に公式情報をご確認ください。", `くわしくはプロフィールのリンク(${cfg.domain})から`, "", `${tags} #神楽団 #${sp}`].join("\n");
+  const snsData = { site: cfg.siteName, title, range: `${wkLabel}${sub ? ` ・ ${sub}` : ""}`, items: items.map((x) => x.sns),
+    next: after.map((e) => snsRow(e, e.start.slice(0, 10))), nextTitle: `このあとの${sp}の神楽`,
+    note: "日時・出演は変わることがあります。お出かけ前に公式情報をご確認ください。", asOf: `${jpDate(today)}時点の情報`, url: `${cfg.domain}${path.replace(/\.html$/, "")}`,
+    file: `kagura-${prefSlug(p)}-weekend-${ymd(wk.start)}.png`, alt: `${title}(${wkLabel})の一覧の画像。${items.length ? `${items.length}件` : "掲載なし"}`, shareText: xText };
+  const snsKit = `<section class="sns-kit" id="sns-kit" aria-labelledby="sns-h"><h2 id="sns-h">SNSで紹介する</h2>
+<p>この週末の${esc(sp)}の神楽を、X・Instagram に投稿できる縦長の画像にしました(ページを開いた時点の情報で、このブラウザの中で描きます)。</p>
+<div class="sns-preview"></div>
+<p class="sns-btns"><button type="button" class="btn" id="sns-save" disabled>画像を保存</button><button type="button" class="btn ghost" id="sns-share" hidden>共有する</button></p>
+<p class="meta" id="sns-status" role="status" aria-live="polite"></p>
+<noscript><p class="meta">画像を作るには、JavaScript が必要です。</p></noscript>
+<h3>投稿の文(X)</h3><textarea class="sns-text" readonly rows="7" aria-label="Xへの投稿の文">${esc(xText)}</textarea><p><button type="button" class="btn ghost sm" data-copy="${esc(xText)}">文をコピー</button></p>
+<h3>投稿の文(Instagram)</h3><textarea class="sns-text" readonly rows="7" aria-label="Instagramへの投稿の文">${esc(igText)}</textarea><p><button type="button" class="btn ghost sm" data-copy="${esc(igText)}">文をコピー</button></p>
+<p class="meta">X の文のリンクには、どの投稿から来たかを数える印(utm)を付けています。</p></section>
+<script type="application/json" id="sns-data">${JSON.stringify(snsData).replace(/</g, "\\u003c")}</script>${clientJs("weekend-image")}${clientJs("share")}`;
+  write(`dist${path}`, layout({
+    title: `${title}(${wkLabel}) | ${cfg.siteName}`,
+    desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に${p}で観られる神楽の公演と定期公演を、日付順にまとめています。${items.length ? `${items.length}件。` : ""}出演する神楽団・会場・公式情報つき。毎日自動で更新しています。`)),
+    path, active: "/weekend.html", wide: true,
+    ld: [crumbsLd([["ホーム", "/"], ["今週末の神楽", "/weekend.html"], [p]]), itemListLd(`${title}(${wkLabel})`, [...pe.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...pr, ...pd].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
+    body: `${crumbNav([["ホーム", "/"], ["今週末の神楽", "/weekend.html"], [p]])}${hero(esc(title), `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
+<p class="lead">この週末に${esc(p)}で観られる神楽を、日付順に並べています(${jpDate(today)}時点。毎日自動で更新)。<a href="${prefHref(p)}">${esc(p)}の全日程</a>・<a href="/weekend.html">全国の今週末</a>も見られます。</p>
+<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2>
+${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の${esc(p)}の開催情報は、いまのところ見つかっていません。`)}
+${dailyBlock(pd)}
+${after.length ? `<h2>このあとの${esc(sp)}の神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
+${calSubscribe(p)}
+${snsKit}`,
   }));
 }
 {
@@ -1131,12 +1306,18 @@ const sm = [
   ["/", allDay], ["/map.html", allDay], ["/calendar.html", allDay], ["/kagura/", allDay],
   // 日付で変わるページ: 「その週末・その月になった日」と、載せている情報の確認日の、新しいほう
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
+  ...WEEKEND_PREFS.map((p) => [weekendPrefHref(p), maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].filter((x) => x.prefecture === p).map((x) => x.checked))]),
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ["/en/", EN_CHECKED], ["/en/guide.html", EN_CHECKED], ["/en/kagura.html", EN_CHECKED], ["/en/history.html", EN_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay],
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", (() => { const m = privacyUpdated(cfg, media).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay], ...(media.formOpen ? [["/photos.html", media.start]] : []),
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   ...kaguras.filter((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k)).map((k) => [kaguraHref(k), lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k))]),
   ...prefs.map((p) => [prefHref(p), lastmodOf([...upcoming, ...regular].filter((x) => x.prefecture === p))]),
+  // 神楽団・演目: 開催予定のあるページだけ(これまでの出演だけのページは noindex のため入れない)
+  ...(troupes.some((t) => troupeUp(t).length) ? [["/troupe/", lastmodOf(troupes.flatMap((t) => troupeUp(t).map((x) => x.e)))]] : []),
+  ...troupes.filter((t) => troupeUp(t).length).map((t) => [troupeHref(t), lastmodOf(troupeUp(t).map((x) => x.e))]),
+  ...(programs.some((k) => programUp(k).length) ? [["/program/", lastmodOf(programs.flatMap((k) => programUp(k).map((x) => x.e)))]] : []),
+  ...programs.filter((k) => programUp(k).length).map((k) => [programHref(k), lastmodOf(programUp(k).map((x) => x.e))]),
   ...months.map((k) => [`/month/${k}.html`, lastmodOf(monthMap.get(k))]),
   ...upcoming.map((e) => [`/events/${e.id}.html`, e.checked ?? nowJst.slice(0, 10)]),
   ...regular.map((r) => [`/regular/${r.id}.html`, r.checked ?? nowJst.slice(0, 10)]),
@@ -1151,6 +1332,12 @@ const feedItems = [...upcoming.map((e) => ({ id: e.id, title: e.name, href: `/ev
   .sort((a, b) => b.day.localeCompare(a.day)).slice(0, 30);
 write("dist/feed.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ja"><title>${xml(cfg.siteName)} 新着の開催情報</title><subtitle>${xml(cfg.description)}</subtitle><link href="${cfg.baseUrl}/feed.xml" rel="self"/><link href="${cfg.baseUrl}/"/><id>${cfg.baseUrl}/</id><updated>${allDay}T00:00:00+09:00</updated><author><name>${xml(op.name)}</name></author>${feedItems.map((i) => `<entry><title>${xml(i.title)}</title><link href="${cfg.baseUrl}${i.href}"/><id>${cfg.baseUrl}${i.href}</id><updated>${i.day}T00:00:00+09:00</updated><summary>${xml(i.summary.trim())}</summary></entry>`).join("")}</feed>\n`);
 write("dist/events.ics", vcal(upcoming));
+// 県ごとのカレンダー(地元の人向け)。開催予定に加えて、毎週の定期公演の90日先までの公演日を入れる(毎晩の公演は、予定で埋まるため入れない)
+for (const p of prefs) {
+  const days = daysBetween(today, addDays(today, 89));
+  const regs = regular.filter((r) => r.prefecture === p && !isDaily(r));
+  write(`dist${prefIcsPath(p)}`, vcal(upcoming.filter((e) => e.prefecture === p), { name: `${cfg.siteName} ${p}の神楽`, extra: regs.flatMap((r) => days.filter((d) => regularOn(r, d)).flatMap((d) => regularVevent(r, d))) }));
+}
 mkdirSync(OUT, { recursive: true });
 // 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
 for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg", "washi.svg", "washi-dark.svg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);

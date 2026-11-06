@@ -40,6 +40,7 @@ import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
 import { mediaTests } from "./media.mjs";
 import { mediaFormTests } from "./media-form.mjs";
+import { localFansTests } from "./local-fans.mjs";
 import { homeTests } from "./home.mjs";
 import { sourcesTests } from "./sources.mjs";
 import { consistencyTests } from "./consistency.mjs";
@@ -59,7 +60,7 @@ import { visitorPlanningTests } from './visitor-planning.mjs';
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", TEST_MEDIA_START: "", TEST_MEDIA_FORM: "", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", TEST_MEDIA_START: "", TEST_MEDIA_FORM: "", TEST_WEEKEND_PREFS: "", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -128,7 +129,7 @@ for (const f of htmls) {
   const $ = cheerio.load(read(f)), name = rel(f);
   $("a[href], link[href][rel=canonical]").each((_, el) => {
     const h = $(el).attr("href");
-    if (!h || h.startsWith("#") || h.startsWith("mailto:") || h.startsWith("data:")) return;
+    if (!h || h.startsWith("#") || h.startsWith("mailto:") || h.startsWith("data:") || h.startsWith("webcal:")) return; // webcal: はカレンダーアプリに登録するリンク
     if (/^https?:\/\//.test(h)) {
       if ($(el).attr("target") === "_blank") ok(/noopener/.test($(el).attr("rel") ?? ""), `${name}: target=_blank に noopener`, h);
       return;
@@ -356,6 +357,7 @@ analyticsSyncTests({ ok, section });
 await adminTests({ ok, section });
 await mediaTests({ ok, section, build });
 mediaFormTests({ ok, section });
+await localFansTests({ ok, section, build });
 await valuecommerceTests({ ok, section });
 await valuecommerceSummaryTests({ ok, section });
 valuecommerceGASTests({ ok, section });

@@ -1036,3 +1036,30 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 .yt-play small{font-size:var(--fs-2xs);color:#aaa093;word-break:auto-phrase}
 .media-call{margin-top:20px}
 .media-form{margin:28px 0 8px}
+
+/* 出演・演目(開催ページの「出演」の行・神楽団と演目のページ) */
+.lineup{list-style:none;margin:0;padding:0}
+.lineup li{margin:0 0 4px}
+.lineup .lp{margin-left:.5em;word-break:auto-phrase}
+.lineup .lp a+a{margin-left:.2em}
+.lineup .lp-more{color:var(--mut)}
+.lineup-note{display:block;margin-top:4px;font-size:var(--fs-2xs);color:var(--mut)}
+.lp-line{margin:2px 0 6px}
+.lp-line a+a,.lp-tags a+a{margin-left:.3em}
+.troupe-list{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 24px}
+.troupe-list li{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);min-height:44px;box-sizing:border-box}
+.troupe-list .meta{font-size:var(--fs-xs);white-space:nowrap}
+
+/* 県ごとのカレンダー購読 */
+.cal-sub{margin:36px 0 8px;padding:16px 18px;background:var(--card);border-left:2px solid var(--ac)}
+.cal-sub h2{margin:0 0 6px;font-size:var(--fs-l)}
+.cal-sub p{margin:6px 0}
+.cal-btns{display:flex;flex-wrap:wrap;gap:8px}.cal-btns .btn{margin:0}
+
+/* 県ごとの今週末の神楽: SNS 用の画像と投稿の文 */
+.pref-weekend,.weekend-local{margin:10px 0}
+.sns-kit{margin:48px 0 8px;padding-top:8px;border-top:1px solid var(--line)}
+.sns-preview canvas{display:block;width:100%;max-width:360px;height:auto;aspect-ratio:4/5;border-radius:2px;background:#171513}
+.sns-btns{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}.sns-btns .btn{margin:0}
+.sns-text{display:block;width:100%;max-width:560px;box-sizing:border-box;font:inherit;font-size:var(--fs-s);line-height:1.7;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:2px;padding:10px 12px;resize:vertical}
+.sns-kit h3{margin:22px 0 6px;font-size:var(--fs-m)}

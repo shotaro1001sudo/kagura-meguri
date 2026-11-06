@@ -1,9 +1,11 @@
 // Gmail(IMAP)から、フォームの通知メール(Web3Forms 経由)を読み込み、申請・問い合わせとして取り出す
 import { createHash } from "node:crypto";
+import { parseLineupText } from "../lib/lineup.mjs";
 
 // フォームの項目名(ラベル) → 開催データの項目
 const SUBMIT_LABELS = { "神楽・イベントの名称": "name", "神楽の種類": "kagura", "都道府県": "prefecture", "市区町村": "city", "会場名": "venue",
-  "番地までの住所": "address", "開催日": "date", "開始時刻": "time_start", "終了時刻": "time_end", "料金": "fee", "公式情報のURL": "url", "ひとこと説明": "description" };
+  "番地までの住所": "address", "開催日": "date", "開始時刻": "time_start", "終了時刻": "time_end", "料金": "fee", "公式情報のURL": "url", "ひとこと説明": "description",
+  "出演する神楽団と演目": "lineup" };
 
 /** 件名から種類を判定する。返信(Re:)や、週次の通知など、フォーム以外のメールは null */
 export function classify(subject = "", site) {
@@ -58,6 +60,9 @@ export function draftFrom(fields, json) {
     if (k === "timeUnknown") base.timeUnknown = json.timeUnknown === true;
     else if (typeof json[k] === "string" && json[k]) base[k] = json[k];
   }
+  // 出演する神楽団と演目(任意)。編集の画面で、掲載の前に確かめる
+  const lineup = parseLineupText(f.lineup);
+  if (lineup.length) base.lineup = lineup;
   return base;
 }
 

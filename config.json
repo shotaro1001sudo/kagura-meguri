@@ -27,6 +27,7 @@
     "accessKey": "20ab6985-4c0f-4fc8-a523-17fa2e601df2",
     "providerName": "Web3Forms"
   },
+  "weekendPrefectures": ["広島県"],
   "media": {
     "start": "2026-11-05",
     "formUrl": "https://forms.gle/6EnTdKUtnsHymj4R6"

@@ -172,6 +172,8 @@ function openEditor(e, item) {
       f("fee", "料金(任意)", inp("fee", d.fee, { maxlength: 80 })),
       f("url", "公式情報のURL", inp("url", d.url, { type: "url", maxlength: 300, placeholder: "https://" }), true),
       f("description", "ひとこと説明(300字まで)", h("textarea", { id: "e-description", rows: 3, maxlength: 300 }, d.description || ""), true),
+      f("lineup", "出演・演目(任意。1行に1団体。例: 津浪神楽団: 八岐大蛇、紅葉狩。演目が未発表なら団体名だけ)", h("textarea", { id: "e-lineup", rows: 3, maxlength: 1500 }, (d.lineup || []).map((x) => (x.programs.length ? `${x.troupe}: ${x.programs.join("、")}` : x.troupe)).join("\n")), true),
+      h("div", { class: "f chk" }, h("input", { type: "checkbox", id: "e-lineupMore", checked: !!d.lineupMore }), h("label", { for: "e-lineupMore" }, "ほかにも出演がある(「ほか」と表示)")),
       f("source", "出典(確かめたページの名前)", inp("source", d.source, { maxlength: 80, placeholder: "例: 〇〇町観光協会" })),
       f("checked", "確認日", inp("checked", d.checked || S.today, { type: "date" }))),
     h("div", { class: "bar mt" },
@@ -186,7 +188,8 @@ function openEditor(e, item) {
     const endDate = v("enddate") || date;
     const ev2 = { id: v("id"), name: v("name"), kagura: v("kagura"), prefecture: v("prefecture"), city: v("city"), venue: v("venue"), address: v("address"),
       start: date ? `${date}T${unknown ? "00:00" : v("time") || "00:00"}` : "", end: v("endtime") && date ? `${endDate}T${v("endtime")}` : "",
-      timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked") };
+      timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked"),
+      lineupText: $("#e-lineup").value, lineupMore: $("#e-lineupMore").checked };
     form.querySelectorAll(".err").forEach((x) => (x.textContent = "")); form.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
     const btn = $("#e-save"); btn.disabled = true; btn.textContent = "保存して公開しています…(数十秒かかることがあります)";
     try {

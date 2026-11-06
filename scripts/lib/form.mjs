@@ -41,10 +41,11 @@ ${field("venue", "会場名", { required: true, max: 80, placeholder: "例: 〇�
 <div class="f-row">${field("date", "開催日", { type: "date", required: true, max: 10 })}
 ${field("time_start", "開始時刻", { type: "time", max: 5 })}</div>
 ${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者の公式ページ、または自治体・観光協会のページ。https:// で始まるものに限ります。" })}
-<details class="more-fields"><summary>くわしく書く <small>(任意: 住所・終了時刻・料金・ひとこと説明)</small></summary>
+<details class="more-fields"><summary>くわしく書く <small>(任意: 住所・終了時刻・料金・出演・ひとこと説明)</small></summary>
 ${field("address", "番地までの住所", { max: 100, hint: "地図に正しく表示するために使います。分かる範囲で結構です。" })}
 ${field("time_end", "終了時刻", { type: "time", max: 5 })}
 ${field("fee", "料金", { max: 80, placeholder: "例: 無料、1,000円" })}
+${area("lineup", "出演する神楽団と演目", { max: 400, hint: "1行に1団体。例: 〇〇神楽団: 八岐大蛇、紅葉狩。発表されている分だけで結構です。", rows: 3 })}
 ${area("description", "ひとこと説明", { max: 300, hint: "300字まで。写真や文章の転載はご遠慮ください。", rows: 4 })}
 </details>
 </fieldset>

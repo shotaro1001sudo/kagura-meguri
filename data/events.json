@@ -49,6 +49,26 @@
     "fee": "一般3,000円・学生2,000円・ペア5,000円(全席自由)",
     "url": "https://dive-hiroshima.com/events/events-126861/",
     "description": "津浪神楽団「八岐大蛇」、横田神楽・北山社中「八重垣の能」、横田神楽団「滝夜叉姫」の3つの神楽公演に、レクチャーとワークショップが加わります。開演は13時30分。",
+    "lineup": [
+      {
+        "troupe": "津浪神楽団",
+        "programs": [
+          "八岐大蛇"
+        ]
+      },
+      {
+        "troupe": "横田神楽・北山社中",
+        "programs": [
+          "八重垣の能"
+        ]
+      },
+      {
+        "troupe": "横田神楽団",
+        "programs": [
+          "滝夜叉姫"
+        ]
+      }
+    ],
     "source": "ひろしま観光ナビ(DIVE!HIROSHIMA)",
     "checked": "2026-10-09",
     "status": "published",
@@ -69,6 +89,15 @@
     "url": "https://midori-gr.com/shinrin/2026/11/15/%E7%A5%9E%E6%A5%BD%E9%91%91%E8%B3%9E-4/",
     "sourceUrl": "https://www.city.hiroshima.lg.jp/living/kosodate/1021253/1025917/1036698.html",
     "description": "綾西神楽團による「瀧夜叉姫」「隠神」の上演が予定されています。参加無料・事前申込不要。当日雨天の場合は11月22日に延期されます。演目は変更される場合があるため、出かける前に公式案内をご確認ください。",
+    "lineup": [
+      {
+        "troupe": "綾西神楽團",
+        "programs": [
+          "瀧夜叉姫",
+          "隠神"
+        ]
+      }
+    ],
     "source": "広島市公式ウェブサイト",
     "checked": "2026-10-21",
     "status": "published",
@@ -311,6 +340,12 @@
     "fee": "無料(当日の施設内レシートの提示が必要)",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
     "description": "道の駅で毎月1回、神楽を1演目観られる「神楽の日」。観覧無料ですが、当日の施設内レシートの提示が必要です。11月は大塚神楽団が出演します(演目は未定)。",
+    "lineup": [
+      {
+        "troupe": "大塚神楽団",
+        "programs": []
+      }
+    ],
     "source": "北広島町",
     "checked": "2026-10-10",
     "status": "published",
@@ -407,6 +442,14 @@
     "fee": "無料(当日の施設内レシートの提示が必要)",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
     "description": "道の駅で毎月1回、神楽を1演目観られる「神楽の日」。観覧無料ですが、当日の施設内レシートの提示が必要です。12月は移原神楽団が「風宮」を上演します。",
+    "lineup": [
+      {
+        "troupe": "移原神楽団",
+        "programs": [
+          "風宮"
+        ]
+      }
+    ],
     "source": "北広島町",
     "checked": "2026-10-10",
     "status": "published",
@@ -445,6 +488,14 @@
     "fee": "無料(当日の施設内レシートの提示が必要)",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
     "description": "道の駅で毎月1回、神楽を1演目観られる「神楽の日」。観覧無料ですが、当日の施設内レシートの提示が必要です。1月は中原神楽団が「葛城山」を上演します。",
+    "lineup": [
+      {
+        "troupe": "中原神楽団",
+        "programs": [
+          "葛城山"
+        ]
+      }
+    ],
     "source": "北広島町",
     "checked": "2026-10-10",
     "status": "published",
@@ -624,6 +675,12 @@
     "fee": "",
     "url": "https://asakitabc.com/%E4%B8%BB%E5%82%AC%E4%BA%8B%E6%A5%AD/%E4%BB%A4%E5%92%8C8%E5%B9%B4%E5%BA%A6%E3%80%80%E7%AC%AC5%E5%9B%9E%E3%80%8C%E3%81%82%E3%81%95%E3%81%8D%E3%81%9F%E7%A5%9E%E6%A5%BD%E5%85%AC%E6%BC%94%E3%80%8D%E3%82%92%E9%96%8B%E5%82%AC%E3%81%97%E3%81%BE/",
     "description": "安佐北区民文化センターで開かれる第5回あさきた神楽公演。出演はあさひが丘神楽団です。開場13:00、開演14:00。チケットの種類・購入方法と入場整理券の案内は公式情報をご確認ください。終演時刻は未確認です。",
+    "lineup": [
+      {
+        "troupe": "あさひが丘神楽団",
+        "programs": []
+      }
+    ],
     "auto": true,
     "sourceId": "npo-hiroshima",
     "source": "安佐北区民文化センター（公式公演案内）／セブンチケット／NPO広島神楽芸術研究所",
@@ -872,6 +929,32 @@
     "fee": "",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/8362.html",
     "description": "千代田地域のまつりで、神楽などのステージ発表があります(産業フェア2026と同時開催)。午後の部12:20から、本地中組神楽団「紅葉狩」、旭神楽団「武蔵野ヶ原」、砂庭神楽団「磐戸開」、今田神楽団「殺生石」の順に上演予定。15:25から閉会行事・餅まき抽選会。雨天時は交流センター紫の里(千代田開発センター)。料金は記載がないため、主催者にご確認ください。",
+    "lineup": [
+      {
+        "troupe": "本地中組神楽団",
+        "programs": [
+          "紅葉狩"
+        ]
+      },
+      {
+        "troupe": "旭神楽団",
+        "programs": [
+          "武蔵野ヶ原"
+        ]
+      },
+      {
+        "troupe": "砂庭神楽団",
+        "programs": [
+          "磐戸開"
+        ]
+      },
+      {
+        "troupe": "今田神楽団",
+        "programs": [
+          "殺生石"
+        ]
+      }
+    ],
     "auto": true,
     "sourceId": "npo-hiroshima",
     "source": "NPO広島神楽芸術研究所(神楽日程表)",
@@ -897,6 +980,39 @@
     "fee": "",
     "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2026&mon=11#442",
     "description": "安佐北区の神楽などの保存会が出演する発表会(主催:あさきた神楽発表会実行委員会)。開会セレモニーのあと、くむら神楽保存会「神降し」、岩上八幡神社神楽保存会「鯛釣り」、亀崎神社神楽保存会「刀舞」、諸木郷土芸能保存会「大鬼・小鬼」、小河原火舞保存会「薙刀舞」、くむら神楽保存会「世鬼の舞」を上演予定。車はフジグラン高陽店の駐車場を利用。料金は記載がないため、主催者にご確認ください。プログラムは変更の場合があります。",
+    "lineup": [
+      {
+        "troupe": "くむら神楽保存会",
+        "programs": [
+          "神降し",
+          "世鬼の舞"
+        ]
+      },
+      {
+        "troupe": "岩上八幡神社神楽保存会",
+        "programs": [
+          "鯛釣り"
+        ]
+      },
+      {
+        "troupe": "亀崎神社神楽保存会",
+        "programs": [
+          "刀舞"
+        ]
+      },
+      {
+        "troupe": "諸木郷土芸能保存会",
+        "programs": [
+          "大鬼・小鬼"
+        ]
+      },
+      {
+        "troupe": "小河原火舞保存会",
+        "programs": [
+          "薙刀舞"
+        ]
+      }
+    ],
     "auto": true,
     "sourceId": "npo-hiroshima",
     "source": "NPO広島神楽芸術研究所(神楽日程表)",
@@ -1706,6 +1822,12 @@
     "fee": "",
     "url": "https://akitakata-kankou.jp/event/22533/",
     "description": "11月7日の夜神楽は20:30開始、出演は神幸神楽団。催し全体の点灯は17時頃、ライブは19時からです。夜神楽の終了時刻・料金・予約条件は公式案内でご確認ください。",
+    "lineup": [
+      {
+        "troupe": "神幸神楽団",
+        "programs": []
+      }
+    ],
     "auto": true,
     "sourceId": "akitakata",
     "source": "安芸高田市観光ナビ(安芸高田市観光協会)",
@@ -1832,6 +1954,13 @@
     "fee": "指定席2,500円／自由席高校生以上 前売1,500円・当日1,700円、小中学生500円",
     "url": "https://artscouncil-hiroshima.jp/event/43318/",
     "description": "佐伯区の神楽団などが出演する公演です。飯南神楽団は16時40分頃に出演予定。未就学児の膝上観覧は無料です。",
+    "lineup": [
+      {
+        "troupe": "飯南神楽団",
+        "programs": []
+      }
+    ],
+    "lineupMore": true,
     "source": "広島市文化財団（カルチャーひろしま）／飯南神楽団",
     "checked": "2026-10-30",
     "status": "published",
@@ -2472,6 +2601,12 @@
     "fee": "前売: 大人1,800円・子ども800円／当日: 大人2,000円・子ども1,000円",
     "url": "https://7ticket.jp/s/115904/p/20261213/1",
     "description": "開場9:30、開演10:00。あさ神楽会による神楽公演。全席指定。チケットの取扱い・当日券の残席は公式情報をご確認ください。終演時刻は未確認です。",
+    "lineup": [
+      {
+        "troupe": "あさ神楽会",
+        "programs": []
+      }
+    ],
     "auto": true,
     "sourceId": "npo-hiroshima",
     "source": "安佐北区民文化センター／公式公演・販売案内",
@@ -2496,6 +2631,12 @@
     "fee": "自由席: 一般1,200円・中学生以下300円／エリア指定席: 一般1,500円・中学生以下500円",
     "url": "https://www.bunkacky-s.jp/events/event-2133/",
     "description": "第6回あさきた神楽公演。出演は宮崎神楽団。開場13:00、開演14:00。前売券・当日券と入場方法は公式情報をご確認ください。終演時刻は未確認です。",
+    "lineup": [
+      {
+        "troupe": "宮崎神楽団",
+        "programs": []
+      }
+    ],
     "auto": true,
     "sourceId": "npo-hiroshima",
     "source": "安佐北区民文化センター／公式公演・販売案内",
@@ -2520,6 +2661,14 @@
     "fee": "無料(当日の施設内レシートの提示が必要)",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
     "description": "道の駅で神楽を1演目観られる公演です。2026年度の公式予定では、2027年3月7日16:00から春木神楽団が「土蜘蛛」を上演予定。観覧には当日の施設内レシートの提示が必要です。終了時刻・予約要否は未確認のため、最新の公式案内をご確認ください。",
+    "lineup": [
+      {
+        "troupe": "春木神楽団",
+        "programs": [
+          "土蜘蛛"
+        ]
+      }
+    ],
     "source": "北広島町「神楽スケジュール2026」・本文訂正",
     "checked": "2026-11-05",
     "status": "published",

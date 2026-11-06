@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync 
 import { join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
 import { checkMediaItem, pickMediaFields, photoFiles, webpSize, MEDIA_LIMITS, MEDIA_SIZES } from "../lib/media.mjs";
+import { checkLineup, parseLineupText } from "../lib/lineup.mjs";
 
 const readJson = (p, d) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : d);
 // 書き込み途中で止まっても、元のファイルが壊れないように、別名で書いてから置き換える
@@ -62,17 +63,22 @@ export function validateEvent(e, events, originalId = null) {
   if (e.url && !/^https:\/\/[^\s]+$/.test(e.url)) errs.url = "https:// で始まるURLを入力してください";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(e.checked ?? "")) errs.checked = "確認日を入力してください";
   for (const [k, n] of Object.entries(LIMITS)) if (String(e[k] ?? "").length > n) errs[k] = `${n}字以内にしてください`;
+  const lineupErrs = checkLineup(e);
+  if (lineupErrs.length) errs.lineup = lineupErrs.join(" / ");
   return errs;
 }
 
 // 画面から受け取った項目だけを取り込む(それ以外の項目は、元のデータのまま残す)
-const FIELDS = ["id", "name", "kagura", "prefecture", "city", "venue", "address", "start", "end", "timeUnknown", "fee", "url", "description", "source", "checked"];
+const FIELDS = ["id", "name", "kagura", "prefecture", "city", "venue", "address", "start", "end", "timeUnknown", "fee", "url", "description", "source", "checked", "lineup", "lineupMore"];
 const PLACE = ["prefecture", "city", "venue", "address"];
 export function cleanEvent(input) {
   const e = {};
   for (const k of FIELDS) {
     const v = input[k];
     if (k === "timeUnknown") { if (v === true) e.timeUnknown = true; continue; }
+    // 出演・演目は、画面の入力(1行に1団体の文)から作る。空なら持たない
+    if (k === "lineup") { const l = typeof input.lineupText === "string" ? parseLineupText(input.lineupText) : Array.isArray(v) ? v : []; if (l.length) e.lineup = l; continue; }
+    if (k === "lineupMore") { if (v === true && e.lineup?.length) e.lineupMore = true; continue; }
     const s = typeof v === "string" ? v.trim() : "";
     if (s || k === "fee") e[k] = s;
   }
@@ -96,7 +102,7 @@ export function upsertEvent(events, input, originalId, status) {
   next.status = status ?? prev.status ?? "published";
   if (PLACE.some((k) => (prev[k] ?? "") !== (next[k] ?? ""))) { delete next.lat; delete next.lng; delete next.geoPrecision; }
   // 項目の並びを、既存のデータにそろえる(差分を読みやすくする)
-  const order = [...FIELDS.filter((k) => k !== "timeUnknown").slice(0, 9), "timeUnknown", "fee", "url", "description", "source", "checked", "status"];
+  const order = [...FIELDS.filter((k) => k !== "timeUnknown").slice(0, 9), "timeUnknown", "fee", "url", "description", "lineup", "lineupMore", "source", "checked", "status"];
   const sorted = Object.fromEntries([...order.filter((k) => k in next).map((k) => [k, next[k]]), ...Object.entries(next).filter(([k]) => !order.includes(k))]);
   if (i >= 0) events[i] = sorted; else events.push(sorted);
   return { event: sorted };
