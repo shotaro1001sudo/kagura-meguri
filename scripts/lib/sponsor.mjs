@@ -13,7 +13,6 @@ export function sponsorHtml({ esc, siteName, pref, reg }) {
 <ul class="opoints">
 <li><b>出かける方に届く</b><span>開催日や会場を調べている方が読むページに載ります。</span></li>
 <li><b>地域ごとに載る</b><span>都道府県や定期公演のページに、その地域の情報として載ります。</span></li>
-<li><b>中立のまま</b><span>協賛があっても、開催情報の掲載や並び順は変わりません。</span></li>
 </ul>
 <p class="octa"><a class="btn" href="/contact.html">協賛について問い合わせる</a></p>
 
