@@ -376,7 +376,7 @@ function published(r, what) {
   const p = r.publish;
   const geo = r.geocode ? "\n" + r.geocode.split("\n").filter((l) => /^(OK|NG|--)/.test(l)).join("\n") : "";
   if (!p || p.ok) return toast(`${what}。サイトに反映しました(数分後に表示が変わります)${geo}`);
-  const step = { build: "サイトを作る確認で、問題が見つかりました", commit: "コミットできませんでした", push: "GitHub に送れませんでした" }[p.step] || "公開できませんでした";
+  const step = { build: "サイトを作る確認で、問題が見つかりました", test: "開催データのテストで、問題が見つかりました(このまま送ると、GitHub の公開処理が止まります)", commit: "コミットできませんでした", push: "GitHub に送れませんでした" }[p.step] || "公開できませんでした";
   toast(`${what}が、サイトには反映していません。${step}。\n概要の「もう一度公開する」で、やり直せます。\n${(p.log || "").split("\n").slice(-4).join("\n")}`, true);
 }
 async function republish() {

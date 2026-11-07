@@ -8,6 +8,10 @@ import { join } from "node:path";
 // 却下した保留(rejected.json)も送る(週次の自動収集が、GitHub 上で同じものを取り直さないように)
 const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json"];
 
+// 公開前に走らせる、開催データを確かめるテスト(package.json の test:data と同じもの)。
+// GitHub の公開処理は npm test(この6本 + tests/run.mjs)が通らないと公開しないので、データで落ちるものはここで止める。
+export const DATA_TESTS = ["keichiku-events", "social-evidence", "held-review", "tokyo-events", "collection-172", "national-sources"].map((t) => `tests/${t}.mjs`);
+
 function run(cmd, args, opts) {
   return new Promise((resolve) => {
     execFile(cmd, args, { encoding: "utf8", maxBuffer: 8 << 20, timeout: 120_000, ...opts }, (err, stdout, stderr) =>
@@ -44,19 +48,24 @@ export async function repoWebUrl(root, git = findGit()) {
 }
 
 /**
- * 開催データをコミットして push する。返り値の ok が false なら、step(build / commit / push)と log で理由を示す。
+ * 開催データをコミットして push する。返り値の ok が false なら、step(build / test / commit / push)と log で理由を示す。
  * データの保存は済んでいるので、失敗しても、あとで「もう一度公開する」でやり直せる。
  */
 export async function publish(root, message, { git = findGit(), check = true } = {}) {
   const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   const g = (...a) => run(git, a, { cwd: root, env });
 
-  // 1. 公開前の確認: サイトを作れるか(壊れたデータを公開しない)
+  // 1. 公開前の確認: サイトを作れるか、開催データのテストが通るか(GitHub の公開処理で落ちるデータを送らない)
   if (check) {
     const out = mkdtempSync(join(tmpdir(), "kagura-admin-"));
     const b = await run(process.execPath, ["scripts/build.mjs"], { cwd: root, env: { ...process.env, OUT_DIR: out } });
     rmSync(out, { recursive: true, force: true });
     if (!b.ok) return { ok: false, step: "build", log: b.out.slice(-2000) };
+    for (const t of DATA_TESTS) {
+      if (!existsSync(join(root, t))) continue;
+      const r = await run(process.execPath, [t], { cwd: root });
+      if (!r.ok) return { ok: false, step: "test", log: `${t}\n${r.out}`.slice(-2000) };
+    }
   }
 
   // 2. 開催データだけをコミット(ほかの作業中のファイルは、巻き込まない)
