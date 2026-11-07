@@ -27,6 +27,8 @@ Act   改善     振り返りの Issue に「今週やること」(担当: 人 /
                  検索の改善案は ID(SEO-日付-番号)付きで analytics/ に。実施したかと効果を、翌週以降に自動で確かめる
 ```
 
+**最終目標:** 売上(広告・アフィリエイトの報酬)の月額の目標と期限は、非公開の `analytics/goal.json` にあります。月曜の検索・アクセス分析は、まず売上(バリューコマースはシート 11 から自動。楽天・AdSense は運営者が goal.json に入れる)と目標までの道筋を点検し、改善案を売上への効果の順に並べます。
+
 **数字の置き場所:** 掲載数などサイトの数字は公開(GitHub)。アクセス数・検索の数字は公開しない(非公開スプレッドシートと、このPCの `analytics/`。git に入らない)。SNS は倍率だけ公開し、実数は Buffer の画面で見る。
 
 **運営者が毎週すること(月曜)**
@@ -57,7 +59,7 @@ Claude デスクトップアプリの「定期タスク」で動きます。**�
 
 | 名前 | いつ | やること | 状態(2026-11-07) |
 |---|---|---|---|
-| kagurameguri-weekly-analytics | 毎週月曜 9:00 | Chrome で非公開スプレッドシートの GA4・Search Console を読み、前週比・改善案(SEO-ID 付き)・前回の改善の効果を `analytics/weekly-<日付>.md` に。`analytics/state.json`(提案の追跡)と `analytics/focus.json`(次の計画)も更新。要約を通知 | 有効(2026-11-07 登録)。初回は手動の「Run now」で、Chrome の操作を許可しておくとよい |
+| kagurameguri-weekly-analytics | 毎週月曜 9:00 | Chrome で非公開スプレッドシートの売上(11)・GA4・Search Console を読み、目標(analytics/goal.json)に対する売上の進み具合、前週比・改善案(SEO-ID 付き)・前回の改善の効果を `analytics/weekly-<日付>.md` に。`analytics/state.json`(提案の追跡)と `analytics/focus.json`(次の計画)も更新。要約を通知 | 有効(2026-11-07 登録)。初回は手動の「Run now」で、Chrome の操作を許可しておくとよい |
 | kagura-meguri-daily-note | 2日に1回 18:00 | note 記事を書き、神楽日和(kagurabi_info)で公開。振り返りの focus の地方を優先して題材にする。時刻の判明・データの食い違いを NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
 | kagurameguri-monthly-research-2 | 毎月1日 9:00 | 振り返りの focus の地方を優先して掲載候補を調べ、提案する(読むだけ)。自動収集に回せる「収集元の候補」も挙げる | 有効(2026-11-07 登録。初回は 12/1)。番号なしの kagurameguri-monthly-research は、登録前の古い設定フォルダ |
 
