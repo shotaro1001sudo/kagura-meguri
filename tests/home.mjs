@@ -139,7 +139,7 @@ export async function homeTests({ ok, section, OUT, build }) {
 
   section("検索向け: タイトルの年・開催の構造化データ");
   const titleOf = (p) => cheerio.load(read(join(OUT, p)))("title").text();
-  ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島県の神楽スケジュール【2026年】"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));
+  ok(titleOf("kagura/石見神楽.html") === "石見神楽の日程【2026年】公演・開催情報 | 神楽めぐり" && titleOf("pref/広島県.html").startsWith("広島神楽スケジュール2026｜"), "神楽の種類・都道府県のページの題に、開催の年を入れる(「◯◯神楽 2026」で探す人に合わせる)", titleOf("kagura/石見神楽.html"));
   const ldOf = (id) => { const $e = cheerio.load(read(join(OUT, `events/${id}.html`))); return $e('script[type="application/ld+json"]').map((_, s) => JSON.parse($e(s).text())).get().flat().find((x) => x["@type"] === "Event"); };
   const full = ldOf("t-full"), xss = ldOf("t-xss");
   ok(!full.offers && !xss.offers, "自由記述料金から販売中・券種価格・販売URLを推測しない", JSON.stringify([full.offers, xss.offers]));

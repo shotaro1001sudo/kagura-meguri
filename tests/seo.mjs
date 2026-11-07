@@ -62,11 +62,12 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     if (/^\/kagura\/./.test(p) && p !== "/kagura/index.html") ok(title.includes($("h1").text()), `${p}: タイトルに神楽の種類名`);
     if (/^\/month\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに年月`);
     if (p === "/pref/広島県.html") {
-      ok(/^広島県の神楽スケジュール【\d{4}(〜\d{4})?年】日程・会場 \| /.test(title), "広島県: スケジュールと掲載年をタイトルに明示");
+      ok(/^広島神楽スケジュール\d{4}(〜\d{4})?｜広島県の神楽 日程・会場一覧 \| /.test(title), "広島県: 検索語どおり「広島神楽スケジュール」と掲載年を、タイトルの先頭に(SEO-20261107-1)", title);
       const years = [...new Set($(".pref-month h2").map((_, e) => $(e).text().slice(0, 4)).get())].sort();
       if (years.length) {
-        ok(title.includes(years.length > 1 ? `${years[0]}〜${years.at(-1)}年` : `${years[0]}年`), "広島県: タイトルの年が月別一覧の範囲と一致");
+        ok(title.includes(years.length > 1 ? `${years[0]}〜${years.at(-1)}｜` : `${years[0]}｜`), "広島県: タイトルの年が月別一覧の範囲と一致");
         ok(desc.includes("月別スケジュール") && desc.includes("県内すべての公演ではありません") && desc.includes("確認できた情報"), "広島県: 既存の月別一覧と掲載範囲を説明");
+        ok(/^広島神楽スケジュール。\d{1,2}月の開催\d+件・\d{1,2}月\d+件/.test(desc), "広島県: 説明文の先頭に、今月・来月の開催件数", desc);
       }
     } else if (/^\/pref\//.test(p)) {
       ok(title.startsWith(`${$("h1").text()} 日程【`), `${p}: 他県のタイトル形式は維持`);
@@ -181,5 +182,19 @@ export function seoTests({ ok, section, OUT, build }) {
     const f = `dist-test-seo/kagura/${k}.html`;
     if (existsSync(f)) { const $ = cheerio.load(read(f)); ok($(".about p").first().text() === v.intro && $(".about h2").text() === `${k}とは`, `神楽ページ ${k}: 「とは」の紹介文が出る`); }
   }
+
+  section("SEO: 検索語に合わせた神楽ページ(SEO-20261107-1〜3)");
+  const kpage = (k) => cheerio.load(read(`dist-test-seo/kagura/${k}.html`));
+  const kdescs = walk("dist-test-seo/kagura").map((f) => cheerio.load(read(f))('meta[name="description"]').attr("content") ?? "");
+  ok(kdescs.every((d) => !/(\d{4}年\d{1,2}月)〜\1の/.test(d)), "開催が同じ月だけなら、「2026年12月〜2026年12月」と重ねず「2026年12月」と書く", kdescs.find((d) => /(\d{4}年\d{1,2}月)〜\1の/.test(d)));
+  { const $ = kpage("花祭"), towns = $(".town-group h3").map((_, e) => $(e).text().replace(/の花祭$/, "")).get();
+    ok($("title").text().startsWith("花祭(花祭り)の日程20") && towns.length >= 1 && $("title").text().includes(`｜${towns.join("・")}の開催一覧`), "花祭: 「花祭り」と、開催のある町の名前をタイトルに(開催のない町の名前は出さない)", $("title").text());
+    ok($(".town-group .card h4").length > 0 && `開催予定 ${$(".town-group .card").length}件` === $(".hero p").text().split(" ・ ")[0], "花祭: 開催予定を町ごとの見出しに分ける");
+    ok(new RegExp(`^花祭\\(花祭り\\)の日程。${towns[0]}: \\d{1,2}/\\d{1,2} `).test($('meta[name="description"]').attr("content")), "花祭: 説明文の先頭に、町ごとの地区と日付", $('meta[name="description"]').attr("content")); }
+  ok(kpage("遠山の霜月祭")("title").text().startsWith("遠山の霜月祭(霜月祭り)20") && kpage("遠山の霜月祭")("title").text().includes("の日程｜12月の各神社の開催一覧"), "遠山の霜月祭: 「霜月祭り」と年をタイトルに");
+  { const $ = kpage("広島神楽"), html = $("main").html();
+    ok($("title").text().startsWith("広島神楽とは｜系統・見どころ") && !$("title").text().includes("スケジュール"), "広島神楽: 種類のページは「系統・見どころ」の役(県のページと同じ語で競らない)", $("title").text());
+    ok($(`.schedule-hub a.btn[href="/pref/${encodeURIComponent("広島県")}.html"]`).length === 1 && html.indexOf("schedule-hub") < html.indexOf("広島神楽とは") && html.indexOf("広島神楽とは") < html.indexOf("<h2>開催予定</h2>"), "広島神楽: 県のスケジュールへの目立つ入口を先に、説明を開催一覧より前に"); }
+  ok(!kpage("石見神楽")(".schedule-hub").length && kpage("石見神楽")("main h2").first().text() !== "石見神楽とは", "設定のない神楽ページの並びは変えない");
   rmSync("dist-test-seo", { recursive: true, force: true });
 }

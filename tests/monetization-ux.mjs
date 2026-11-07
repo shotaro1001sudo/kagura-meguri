@@ -37,7 +37,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "追加した新デザインの背景・ボタンを除き、余白と月別の配置だけを調整する");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
-  ok(h("title").text().startsWith("広島県の神楽スケジュール【") &&
+  ok(h("title").text().startsWith("広島神楽スケジュール") &&
     h("h1").text().trim() === "広島県の神楽" &&
     (h('meta[name="description"]').attr("content") || "").includes("公式情報をご確認ください"),
     "広島のスケジュールを示すmetadataと既存H1・公式情報への案内");
