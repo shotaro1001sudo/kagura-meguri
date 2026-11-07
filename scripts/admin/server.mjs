@@ -4,6 +4,8 @@
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
+// スマホから: Tailscale Serve(自分の端末だけに見える https://<PC>.<tailnet>.ts.net)経由で開ける。
+//            そのアドレスでは、さらにスマホ用の鍵(PC の画面の QR コードで入る Cookie)がないと、画面もデータも出さない(phone.mjs)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -14,6 +16,7 @@ import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl } from "./publish.mjs";
+import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.js": ["app.js", "text/javascript; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"] };
@@ -23,8 +26,11 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost } = {}) {
   const token = randomBytes(24).toString("hex");
+  // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
+  let remoteHost = "";
+  const phoneReady = Promise.resolve().then(() => phoneHost(root)).then((h) => { remoteHost = h || ""; }).catch(() => {});
   const cfg = loadConfig(root);
   const site = cfg.siteName ?? "神楽めぐり";
   // 書き込みは1つずつ順番に(位置の取得の途中で、別の保存が重ならないように)
@@ -124,6 +130,20 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       return { state: await state() };
     }),
 
+    // スマホで開く: QR コード(鍵入りのアドレス)と、鍵の作り直し。PC の画面からだけ(スマホからは 403)
+    "GET /api/phone": async (_b, ctx) => {
+      if (ctx.remote) return [403, { error: "スマホからは使えません" }];
+      await phoneReady;
+      if (!remoteHost) return { ready: false };
+      const link = `https://${remoteHost}/phone?key=${encodeURIComponent(phoneKey(root))}`;
+      return { ready: true, host: remoteHost, qr: await qrSvg(link) };
+    },
+    "POST /api/phone/reset": async (_b, ctx) => {
+      if (ctx.remote) return [403, { error: "スマホからは使えません" }];
+      resetPhoneKey(root);
+      return { reset: true };
+    },
+
     // 申請・問い合わせの状態とメモ
     "POST /api/inbox/update": (body) => serial(async () => {
       const box = loadInbox(root);
@@ -145,9 +165,21 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const json = (code, v) => send(code, "application/json; charset=utf-8", JSON.stringify(v));
     const port = server.address().port;
     const allowed = [`127.0.0.1:${port}`, `localhost:${port}`];
+    const remote = !!remoteHost && req.headers.host === remoteHost;
     // 別のサイトが、名前を付け替えてこのサーバーを読む攻撃(DNS リバインディング)を防ぐ
-    if (!allowed.includes(req.headers.host)) return json(421, { error: "このアドレスからは使えません" });
+    if (!allowed.includes(req.headers.host) && !remote) return json(421, { error: "このアドレスからは使えません" });
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (remote) {
+      // QR コードのアドレス(/phone?key=…)を開くと、スマホに鍵が入る(90日。https だけ・ほかのサイトからは送られない)
+      if (req.method === "GET" && url.pathname === "/phone") {
+        if (!sameKey(url.searchParams.get("key"), phoneKey(root))) return send(403, "text/html; charset=utf-8", phonePage("この QR コードは使えません。PC の管理者用ページで、新しい QR コードを出して読み直してください。"));
+        return send(303, "text/plain; charset=utf-8", "", { location: "/", "set-cookie": `adm_phone=${phoneKey(root)}; Path=/; Max-Age=7776000; HttpOnly; Secure; SameSite=Strict` });
+      }
+      if (url.pathname !== "/app.css" && !sameKey(cookieValue(req.headers.cookie, "adm_phone"), phoneKey(root))) { // 見た目(app.css)だけは、案内ページのために鍵なしで出す
+        return url.pathname.startsWith("/api/") ? json(401, { error: "このスマホには、まだ鍵がありません。PC の画面の QR コードから開いてください。" })
+          : send(401, "text/html; charset=utf-8", phonePage("このスマホには、まだ鍵がありません。PC の管理者用ページの概要にある「スマホで開く」の QR コードを、このスマホのカメラで読んでください。"));
+      }
+    }
     if (req.method === "GET" && ASSETS[url.pathname]) {
       const [file, type] = ASSETS[url.pathname];
       let body = await readFile(join(HERE, file), "utf8");
@@ -157,7 +189,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const handler = api[`${req.method} ${url.pathname}`];
     if (!handler) return json(404, { error: "not found" });
     if (req.headers["x-admin-token"] !== token) return json(403, { error: "トークンがありません。画面を開き直してください。" });
-    if (req.headers.origin && !allowed.map((h) => `http://${h}`).includes(req.headers.origin)) return json(403, { error: "ほかのサイトからは使えません" });
+    if (req.headers.origin && ![...allowed.map((h) => `http://${h}`), ...(remote ? [`https://${remoteHost}`] : [])].includes(req.headers.origin)) return json(403, { error: "ほかのサイトからは使えません" });
     let body = {};
     if (req.method === "POST") {
       if (!/^application\/json/.test(req.headers["content-type"] ?? "")) return json(415, { error: "JSON で送ってください" });
@@ -166,7 +198,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       try { body = JSON.parse(raw || "{}"); } catch { return json(400, { error: "JSON が正しくありません" }); }
     }
     try {
-      const out = await handler(body);
+      const out = await handler(body, { remote });
       if (Array.isArray(out)) json(out[0], out[1]); else json(200, out);
     } catch (err) { console.error(err); json(500, { error: `処理に失敗しました: ${err.message}` }); }
   });
@@ -174,9 +206,15 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   return new Promise((resolve, reject) => {
     const listen = (p) => server.listen(p, "127.0.0.1");
     server.once("error", (err) => { if (err.code === "EADDRINUSE" && port !== 0) { server.once("error", reject); listen(0); } else reject(err); });
-    server.once("listening", () => resolve({ server, token, url: `http://127.0.0.1:${server.address().port}/` }));
+    server.once("listening", () => resolve({ server, token, url: `http://127.0.0.1:${server.address().port}/`, phoneReady }));
     listen(port);
   });
+}
+
+/** スマホに鍵がないときなどの、文字だけの案内ページ */
+function phonePage(message) {
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>管理者用ページ | 神楽めぐり</title><link rel="stylesheet" href="/app.css"></head><body><main><h2>神楽めぐり 管理者用ページ</h2><p class="warn">${esc(message)}</p></main></body></html>`;
 }
 
 /** 緯度経度のない開催に、住所から位置を付ける(scripts/geocode.mjs を、開催データだけに使う) */
@@ -202,6 +240,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const already = await fetch(running, { signal: AbortSignal.timeout(1500) }).then((r) => r.text()).then((t) => t.includes("管理者用ページ")).catch(() => false);
   if (already) { open(running); console.log(`起動済みの管理者用ページを開きました: ${running}`); process.exit(0); }
   const { url } = await startAdmin({ port, root: join(HERE, "..", "..") });
-  console.log(`管理者用ページ: ${url}\n(このPCの中だけで動いています。この画面を閉じるか、Ctrl+C で終了します)`);
+  console.log(`管理者用ページ: ${url}\n(この画面を閉じるか、Ctrl+C で終了します。スマホから開くときは、この画面を閉じずに、PC を起動したままにします)`);
   open(url);
 }

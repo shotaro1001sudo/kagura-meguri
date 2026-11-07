@@ -88,3 +88,8 @@ a.stat:hover,a.goal-mini:hover{border-color:var(--ac)}
 table.kpi .now{background:color-mix(in srgb,var(--ac) 9%,transparent)}table.kpi th small{display:block;color:var(--ac);font-size:.7rem;font-weight:normal}
 button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 @media(max-width:600px){.todo{grid-template-columns:2.2rem 1fr}.todo>.btn{grid-column:2;justify-self:start}.goal-mini .go{margin-left:0}}
+/* スマホで開く */
+.phone{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}.phone>div{flex:1 1 260px}
+.qr{background:#fff;padding:8px;border-radius:6px;width:200px;height:200px}
+.steps{padding-left:1.4em}.steps li{margin:4px 0}code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:.9em}
+@media(max-width:600px){main{padding:12px}.top{padding:8px 12px}.top b{font-size:.95rem}.top nav button{padding:6px 8px}table{font-size:.85rem}}

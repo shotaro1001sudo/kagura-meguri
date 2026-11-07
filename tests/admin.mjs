@@ -7,6 +7,7 @@ import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } fro
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
+import { request as httpRequest } from "node:http";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 
@@ -78,7 +79,7 @@ export async function adminTests({ ok, section }) {
   const published = [];
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
-    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r",
+    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net",
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -200,6 +201,36 @@ export async function adminTests({ ok, section }) {
       && (await req("/api/plan/manual", { body: { month: "2026-10", values: { password: 1 } } })).status === 400, "手入力は、正しい月・決まった項目・0 以上の数だけ受け付ける");
     ok(JSON.parse(read(join(ROOT, "analytics/state.json"))).kpi.months["2026-10"].revenueVc === 120, "画面の操作は、週次の分析が書く実績(state.json の kpi)を変えない");
     ok(published.length === n, "目標・KPI・収益化の操作は、このPCだけの記録なので、push しない");
+
+    // ---------- スマホから(Tailscale Serve 経由。Host が ts.net の名前になる) ----------
+    // fetch は Host を変えられないので、http.request で送る
+    const phone = (path, { headers = {}, body, method } = {}) => new Promise((resolve, reject) => {
+      const r = httpRequest({ host: "127.0.0.1", port, path, method: method ?? (body ? "POST" : "GET"), headers: { host: "pc.tail-test.ts.net", ...(body ? { "content-type": "application/json" } : {}), ...headers } }, (res) => {
+        let t = ""; res.on("data", (c) => (t += c)); res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, text: t }));
+      });
+      r.on("error", reject); if (body) r.write(JSON.stringify(body)); r.end();
+    });
+    let ph = await phone("/");
+    ok(ph.status === 401 && !ph.text.includes(token) && ph.text.includes("QR"), "スマホ: 鍵がないと、画面を出さない(トークンも渡さない)");
+    ok((await phone("/api/state", { headers: { "x-admin-token": token } })).status === 401, "スマホ: 鍵がないと、トークンがあってもデータを渡さない");
+    ok((await phone("/app.css")).status === 200, "スマホ: 案内ページの見た目(app.css)だけは、鍵なしで出す");
+    const qr = await req("/api/phone");
+    const key = JSON.parse(read(join(ROOT, ".admin/phone.json"))).key;
+    ok(qr.status === 200 && qr.json.ready === true && qr.json.host === "pc.tail-test.ts.net" && qr.json.qr.startsWith("<svg") && !("key" in qr.json), "PC: スマホ用の QR コード(SVG)を出す(鍵そのものは、データとして返さない)");
+    ok((await phone("/phone?key=wrong")).status === 403, "スマホ: 違う鍵の QR コードでは、開けない");
+    ph = await phone("/phone?key=" + encodeURIComponent(key));
+    const ck = String(ph.headers["set-cookie"] || "");
+    ok(ph.status === 303 && ph.headers.location === "/" && /adm_phone=/.test(ck) && /HttpOnly/.test(ck) && /Secure/.test(ck) && /SameSite=Strict/.test(ck), "スマホ: 正しい QR コードを開くと、鍵を Cookie(HttpOnly・Secure・SameSite=Strict)で入れる", ck);
+    const cookie = { cookie: "adm_phone=" + key };
+    ph = await phone("/", { headers: cookie });
+    ok(ph.status === 200 && ph.text.includes(`content="${token}"`), "スマホ: 鍵があれば、PC と同じ画面を開ける");
+    ph = await phone("/api/plan/manual", { headers: { ...cookie, "x-admin-token": token, origin: "https://pc.tail-test.ts.net" }, body: { month: "2026-10", values: { pitches: 3 } } });
+    ok(ph.status === 200 && JSON.parse(read(planPath)).manual["2026-10"].pitches === 3, "スマホ: 鍵とトークンがあれば、操作もできる(https の ts.net からの送信を受け付ける)");
+    ok((await phone("/api/state", { headers: { ...cookie, "x-admin-token": token, origin: "https://evil.example" } })).status === 403, "スマホ: ほかのサイトからの送信は受け付けない");
+    ok((await phone("/api/phone", { headers: { ...cookie, "x-admin-token": token } })).status === 403 && (await phone("/api/phone/reset", { headers: { ...cookie, "x-admin-token": token }, body: {} })).status === 403, "スマホ: QR コードの表示と鍵の作り直しは、PC からだけ");
+    ok((await phone("/", { headers: { host: "pc.other.ts.net" } })).status === 421, "スマホ: 自分の Tailscale の名前以外のアドレスは、受け付けない");
+    ok((await req("/api/phone/reset", { body: {} })).status === 200 && (await phone("/", { headers: cookie })).status === 401, "PC で鍵を作り直すと、それまでのスマホは開けなくなる");
+    ok(/^\.admin\/$/m.test(read(".gitignore")), "スマホの鍵(.admin/phone.json)は、Git に入らない");
     const js = read("scripts/admin/app.js");
     ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
     ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「今日やること」に出す(判断待ちの件数と二重に数えない)");

@@ -364,10 +364,48 @@ function homeView() {
       ? h("div", { class: "bar" }, h("button", { class: "btn ghost", id: "fetch", onclick: fetchMail }, "新しい申請・問い合わせを読み込む"),
           h("span", { class: "mut" }, S.lastFetch ? `前回: ${new Date(S.lastFetch).toLocaleString("ja-JP")}` : "まだ読み込んでいません"))
       : h("div", { class: "warn" }, h("p", null, "Gmail の設定がまだありません。リポジトリの ADMIN.md の手順で、admin.local.json を作ってください(GitHub には上がりません)。設定後、この画面を開き直します。")),
+    isPc() ? [h("h3", null, "スマホで開く"), phoneBox()] : "",
     h("details", { class: "more mt" }, h("summary", null, "公開のしくみ"),
       h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載と、保留の掲載・却下は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。KPI・収益化の案・問い合わせのメモは、このPCだけに保存し、GitHub には送りません。")),
   ];
 }
+// ---------- スマホで開く(Tailscale 経由。PC の画面だけに出す) ----------
+const isPc = () => ["127.0.0.1", "localhost"].includes(location.hostname);
+function phoneBox() {
+  const p = view.phone;
+  if (!p) return h("div", { class: "panel" },
+    h("p", { class: "lead" }, "外出先のスマホからも、この画面を開けます(このPCが起動していて、この管理者用ページが動いている間だけ)。"),
+    h("button", { class: "btn ghost", onclick: loadPhone }, "スマホ用の QR コードを出す"));
+  if (p.loading) return h("p", { class: "mut" }, "調べています…");
+  if (!p.ready) return h("div", { class: "panel" },
+    h("p", { class: "warn" }, "このPCで Tailscale が見つかりません。次の手順のあと、管理者用ページを開き直してください。"),
+    h("ol", { class: "steps" },
+      h("li", null, "このPCとスマホに、Tailscale(無料)を入れ、同じアカウントでログインする(", ext("https://tailscale.com/download", "ダウンロード"), ")"),
+      h("li", null, "Tailscale の管理画面で、MagicDNS と HTTPS 証明書を有効にする(", ext("https://login.tailscale.com/admin/dns", "DNS の設定"), ")"),
+      h("li", null, "このPCで、コマンド ", h("code", null, "tailscale serve --bg 4300"), " を1回だけ実行する(このPCの管理者用ページを、自分の端末だけに https で見せる設定)")),
+    h("p", { class: "mut" }, "詳しくは、リポジトリの ADMIN.md の「スマホから開く」。"),
+    h("button", { class: "btn ghost small", onclick: loadPhone }, "もう一度調べる"));
+  return h("div", { class: "panel phone" },
+    h("img", { class: "qr", src: "data:image/svg+xml;base64," + btoa(p.qr), alt: "スマホ用の QR コード", width: "200", height: "200" }),
+    h("div", null,
+      h("p", { class: "lead" }, "スマホのカメラで読むと、このスマホで管理者用ページが開きます(鍵が入り、90日間はそのまま開けます)。"),
+      h("p", { class: "mut" }, "アドレス: https://", p.host, "/ ・ スマホで Tailscale をオンにしておく必要があります。"),
+      h("p", { class: "warn small" }, "この QR コードは、スマホの鍵です。ほかの人に見せたり、写真で送ったりしないでください。"),
+      h("div", { class: "bar" },
+        h("button", { class: "btn ghost small", onclick: () => { view.phone = null; render(); } }, "QR コードを隠す"),
+        h("button", { class: "btn ghost small", onclick: resetPhone }, "鍵を作り直す(今までのスマホを締め出す)"))));
+}
+async function loadPhone() {
+  view.phone = { loading: true }; render();
+  try { view.phone = await call("/api/phone"); } catch (err) { view.phone = null; toast(err.message, true); }
+  render();
+}
+async function resetPhone() {
+  if (!confirm("スマホ用の鍵を作り直します。これまで開けていたスマホは、新しい QR コードを読むまで開けなくなります。よろしいですか？")) return;
+  try { await call("/api/phone/reset", {}); toast("鍵を作り直しました。新しい QR コードを読んでください"); await loadPhone(); }
+  catch (err) { toast(err.message, true); }
+}
+
 // 確認日から60日を過ぎた、掲載中の開催(開催一覧の「要確認」)
 function staleEvents() { return S.events.filter((e) => evState(e)[0] === "published" && e.checked && daysSince(e.checked) > 60); }
 
