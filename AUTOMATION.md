@@ -10,7 +10,22 @@ GitHub Actions の画面: https://github.com/shotaro1001sudo/kagura-meguri/actio
 | 3:00(毎日) | build-and-deploy | サイトを組み立てて公開。終わった開催の整理、「今週末」「今月」ページの更新 | [deploy.yml](.github/workflows/deploy.yml) |
 | 5:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼 | [COLLECT.md](COLLECT.md) |
 | 5:15(毎日) | post-social | その日のX投稿6本(7時から4時間ごと)を Buffer に予約 | [SOCIAL.md](SOCIAL.md) |
-| 9:00(毎月1日) | kagurameguri-monthly-research | 掲載候補の神楽を調べて提案(GitHub ではなく Claude の定期タスク) | ― |
+
+## Claude の定期タスク(このPC)
+
+Claude デスクトップアプリの「定期タスク」で動きます。**このPCが起動していて、Claude アプリが開いているときだけ**動きます。設定は `C:\Users\shota\.claude\scheduled-tasks\` にあります。
+
+| 名前 | いつ | やること | 状態(2026-11-07) |
+|---|---|---|---|
+| kagura-meguri-daily-note | 2日に1回 18:00 | サイトの情報と公式情報から note 記事を書き、神楽日和(kagurabi_info)で公開。NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
+| kagurameguri-monthly-research | (毎月1日 9:00 の予定) | 九州・中国・四国・近畿の掲載候補を調べて提案(読むだけ) | **未登録**。設定ファイルだけ残っていて、動いていない |
+
+## 外部サービス
+
+| サービス | やること |
+|---|---|
+| Buffer | post-social が予約した投稿を、時刻どおりに X へ出す。予約の確認・修正もここで |
+| ChatGPT | 以前の X 投稿タスク。post-social と二重投稿になるので止める |
 
 ## きっかけがあると動くもの
 
