@@ -742,15 +742,18 @@ for (const k of kaguras) {
   const list = upcoming.filter((e) => e.kagura === k), reg = regular.filter((r) => r.kagura === k);
   const first = [...events, ...regular].find((e) => e.kagura === k);
   const info = kaguraInfo[k];
+  // GSCで開催日検索を確認した季節の祭りだけ、既存の直近日程を冒頭に表示する。
+  const seasonalSchedule = k === "遠山の霜月祭" || k === "花祭";
+  const showUpcomingSummary = k === "庄内神楽" || seasonalSchedule;
   const when = list.length ? `${monthLabel(ym(list[0].start))}〜${monthLabel(ym(list[list.length - 1].start))}の開催${list.length}件` : "";
   write(`dist/kagura/${k}.html`, layout({
-    title: `${k}の日程【${yearsOf(list)}】公演・開催情報 | ${cfg.siteName}`,
-    desc: clip(k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + "、" : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`),
+    title: `${k}の日程【${yearsOf(list)}】${seasonalSchedule ? "地区別・会場一覧" : "公演・開催情報"} | ${cfg.siteName}`,
+    desc: clip(showUpcomingSummary ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + "、" : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`),
     path: kaguraHref(k), active: "/kagura/", noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
 ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
-${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
+${showUpcomingSummary ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : ""}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}
 ${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
 ${kaguraDetail(k, info)}
