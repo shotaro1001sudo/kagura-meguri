@@ -1,5 +1,7 @@
 # 神楽めぐり：バリューコマース成果レポートAPIの安全な接続手順
 
+> 2026-11-07: このページで使う GitHub Actions のワークフロー(valuecommerce-readonly-check / valuecommerce-private-sheets-sync)は、使っていないため削除しました。使うときは git の履歴から戻してください。スクリプト本体は残しています。
+
 ## 状態
 2026-10-21：利用者は画像掲載後にCLIENT_KEYとCLIENT_SECRETを再発行済みと報告。**新キーの登録・実接続はまだ未確認**。旧キーの文字列をコード・管理台帳・GitHub Issue・ログに残さない。
 

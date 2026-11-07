@@ -1,5 +1,7 @@
 # バリューコマース：非公開収益集計の設定（追加費用・機密情報漏えい防止）
 
+> 2026-11-07: このページで使う GitHub Actions のワークフロー(valuecommerce-readonly-check / valuecommerce-private-sheets-sync)は、使っていないため削除しました。使うときは git の履歴から戻してください。スクリプト本体は残しています。
+
 2026-10-21：利用者がAPI鍵再発行とGitHub Secrets登録、手動API接続テスト成功を報告。
 [公式トークン](https://pub-docs.valuecommerce.ne.jp/docs/as-77-token-api/) / [公式注文別レポート](https://pub-docs.valuecommerce.ne.jp/docs/as-78-order-report-api/)
 

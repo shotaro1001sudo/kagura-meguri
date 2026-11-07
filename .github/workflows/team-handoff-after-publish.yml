@@ -1,5 +1,6 @@
 name: team-handoff-after-publish
-# GitHub event-driven handoff. No polling, ChatGPT session, secret, billing or external API.
+# サイトの公開(build-and-deploy)が失敗したときだけ、調査用の Issue を立てる。
+# 公開成功の引継ぎIssue(【集客引継ぎ・公開処理成功】)は 2026-11-07 に廃止し、開いているものは自動で閉じる。
 on:
   workflow_run:
     workflows: [build-and-deploy]
@@ -37,18 +38,26 @@ jobs:
         env:
           HANDOFF_CHANGED_FILES_FILE: ${{ runner.temp }}/kagura-files.txt
         run: node scripts/handoff/event-router.mjs
-      - name: Create an idempotent, public evidence-only issue for the receiving team
+      - name: Create an idempotent issue only when publishing failed
         if: ${{ steps.route.outputs.handoff == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           HANDOFF_TITLE: ${{ steps.route.outputs.title }}
           HANDOFF_BODY: ${{ steps.route.outputs.body }}
         run: |
-          # Same commit/run -> same title. Do not open duplicates on reruns.
+          # Same run -> same title. Do not open duplicates on reruns.
           if gh issue list --state all --limit 100 --json title --jq '.[].title' | grep -Fqx -- "$HANDOFF_TITLE"; then
-            echo "既存の引継ぎIssueを確認。重複作成しません。" >> "$GITHUB_STEP_SUMMARY"
+            echo "既存のIssueを確認。重複作成しません。" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           printf '%s\n' "$HANDOFF_BODY" > "$RUNNER_TEMP/kagura-handoff.txt"
           gh issue create --title "$HANDOFF_TITLE" --body-file "$RUNNER_TEMP/kagura-handoff.txt" >/dev/null
-          echo "新規引継ぎIssueを作成。関係者は確認できた範囲のみ採用してください。" >> "$GITHUB_STEP_SUMMARY"
+      # 廃止した「公開成功の引継ぎIssue」が開いていれば閉じる(なければ何もしない)
+      - name: Close retired publication-evidence issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --state open --limit 200 --search "集客引継ぎ 公開処理成功 in:title" --json number,title --jq '.[] | select(.title | startswith("【集客引継ぎ・公開処理成功】")) | .number' |
+          while read -r n; do
+            gh issue close "$n" --reason "not planned" --comment "公開成功の引継ぎIssueは廃止しました(AUTOMATION.md)。公開の失敗時だけ Issue を立てます。" >/dev/null
+          done

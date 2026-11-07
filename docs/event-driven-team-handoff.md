@@ -1,5 +1,7 @@
 # 神楽めぐり：イベント駆動型への移行手順（2026-10-21）
 
+> 2026-11-07: 公開成功の引継ぎIssue(【集客引継ぎ・公開処理成功】)は廃止しました。公開の失敗時の Issue だけを残しています。現在の自動化の一覧は [AUTOMATION.md](../AUTOMATION.md)。
+
 ## 実行済みの段階
 GitHub Pagesのデプロイ完了をトリガーに、公開結果とチームの受け渡し証跡をGitHub Issueへ記録するワークフローを追加する（`.github/workflows/team-handoff-after-publish.yml`）。
 

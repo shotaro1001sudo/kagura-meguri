@@ -18,13 +18,11 @@ export function eventHandoffTests({ok,section}) {
      !isUserFacingChange("docs/monetization-private.md") &&
      !isUserFacingChange(".github/workflows/valuecommerce-private-sheets-sync.yml"),
      "表示関連の変更だけを通知対象にし、報酬・設定ファイルを除外");
-  const safe=classifyHandoff({event:baseline,repoName,changedFiles:["scripts/client/ga4-consent.js","docs/monetization-private.md"]});
-  ok(safe?.kind==="publication-evidence" &&
-     safe.title.includes(sha.slice(0,12)) &&
-     safe.body.includes("https://github.com/"+repoName+"/actions/runs/12345") &&
-     safe.body.includes("実表示") &&
-     !safe.body.includes("monetization-private") &&
-     safe.body.includes("実表示確認前の新機能告知は禁止"),"公開成功で引き継ぎを発行し、表示未検証を区別");
+  ok(classifyHandoff({event:baseline,repoName,changedFiles:["data/events.json","scripts/client/ga4-consent.js"]})===null,
+     "公開に成功したときは、引継ぎIssueを作らない(2026-11-07に廃止)");
+  const wf=readFileSync(".github/workflows/team-handoff-after-publish.yml","utf8");
+  ok(wf.includes('startswith("【集客引継ぎ・公開処理成功】")') && wf.includes("gh issue close"),
+     "開いている公開成功の引継ぎIssueは、題で絞って閉じる");
   ok(classifyHandoff({event:baseline,repoName,changedFiles:["docs/valuecommerce-gas-no-cloud.md"]})===null,
      "内部ドキュメント変更時に不要な告知を作らない");
   const noSchedule=JSON.parse(JSON.stringify(baseline)); noSchedule.workflow_run.event="schedule";

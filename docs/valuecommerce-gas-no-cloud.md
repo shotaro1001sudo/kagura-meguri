@@ -1,5 +1,7 @@
 # ValueCommerce → 神楽めぐり統合Google Sheets｜Google Cloudを自分で作成しない無料枠連携
 
+> 2026-11-07: このページで使う GitHub Actions のワークフロー(valuecommerce-readonly-check / valuecommerce-private-sheets-sync)は、使っていないため削除しました。使うときは git の履歴から戻してください。スクリプト本体は残しています。
+
 ## なぜこの方式か
 - Google Apps Scriptは作成時に「デフォルトCloudプロジェクト」を内部で自動作成する。ユーザー自身でGoogle Cloud Consoleを開き、標準プロジェクト・課金アカウント・サービスアカウント・JSON鍵を作る必要はない。
 - 既存の **統合Google Sheet** から「拡張機能 → Apps Script」で実行する。GASにはSpreadsheetAppとUrlFetchAppが組み込みであるため、Google Sheets APIを追加有効化する必要もない。

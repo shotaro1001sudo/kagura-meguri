@@ -32,26 +32,8 @@ export function classifyHandoff({event, repoName, changedFiles = []}) {
       ].join("\n"),
     };
   }
-  if (r.conclusion !== "success" ||
-      !["push","workflow_dispatch"].includes(kind) ||
-      !changedFiles.some(isUserFacingChange)) return null;
-  const files = changedFiles.filter(isUserFacingChange).slice(0,8);
-  return {
-    kind: "publication-evidence",
-    title: "【集客引継ぎ・公開処理成功】" + sha.slice(0,12),
-    body: [
-      "### 神楽めぐり・改修 → 集客への引き継ぎ",
-      "GitHub Pages公開ワークフローが success で終了しました。これはデプロイ処理の成功であり、PC/スマホでの実表示や新機能の内容まで検証した証拠ではありません。",
-      "- 実行: " + link,
-      "- コミット: " + sha,
-      "- 対象: https://kagurameguri.jp/",
-      "- 変更対象ファイル: " + files.map(x => x.replaceAll("\`", "")).join(", "),
-      "- 改修担当: PC/スマホで実表示・リンク・検索・月別を確認し、確認済みの機能のみ03_サイト改修へ記録。",
-      "- 集客担当: 実表示確認前の新機能告知は禁止。実際の掲載内容を確かめたうえでBuffer予約枠を点検し、重複せず告知する。",
-      "- 管理: 統合管理台帳のISS-002と、03_サイト改修・04_SNS運用の受領証跡を照合。",
-      "- プライバシー: 注文ID・報酬金額・アフィリエイト秘密情報はこのGitHub Issueに記載しません。",
-    ].join("\n"),
-  };
+  // 公開成功の引継ぎIssue(【集客引継ぎ・公開処理成功】)は、2026-11-07に廃止。失敗のときだけ知らせる
+  return null;
 }
 
 export function writeGitHubOutput(result, outputPath) {
