@@ -19,6 +19,7 @@ export const paths = (root) => ({
   rejected: join(root, "data/rejected.json"),
   review: join(root, "data/weekly-review.json"),
   analytics: join(root, "analytics/state.json"),
+  plan: join(root, "analytics/plan.json"),
 });
 
 export const loadEvents = (root) => readJson(paths(root).events, []);
@@ -161,6 +162,65 @@ export function setProposalStatus(root, id, status, today, note = "") {
   else { delete x.declinedAt; delete x.declineNote; }
   writeJson(p.analytics, s);
   return { proposal: x };
+}
+
+// 最終目標・KPI・収益化の案(analytics/plan.json。このPCだけ・git に入らない)。運営者が採用・見送り・目標の変更・実績の入力をする
+// 実績は、週次の分析タスクが analytics/state.json の kpi に書く(自動の分)。手入力の分は plan.json の manual
+export const PLAN_STATUS = { proposed: "提案中", adopted: "採用", declined: "見送り", done: "実施済み" };
+export const MANUAL_FIELDS = { rakuten: "楽天の報酬(円)", adsense: "AdSense の収益(円)", direct: "協賛・有料プランの収入(円)", contracts: "有償の契約数(件)", pitches: "提案した相手の数(件)" };
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+export function loadPlan(root) {
+  const p = readJson(paths(root).plan, null);
+  if (!p) return null;
+  const s = readJson(paths(root).analytics, null);
+  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals: s?.kpi ?? null, updated: p.updated ?? null };
+}
+export function setPlanItem(root, { kind, id, status, note = "", targets }, today) {
+  const p = paths(root);
+  const plan = readJson(p.plan, null);
+  if (!plan) return { code: 404, error: "analytics/plan.json がありません" };
+  const list = kind === "kpi" ? plan.kpis : kind === "mon" ? plan.monetization : null;
+  if (!list) return { code: 400, error: "種類が正しくありません" };
+  const x = list.find((y) => y.id === id);
+  if (!x) return { code: 404, error: "項目が見つかりません" };
+  if (targets !== undefined) {
+    if (kind !== "kpi" || !targets || typeof targets !== "object" || Array.isArray(targets)) return { code: 400, error: "目標の形が正しくありません" };
+    const clean = {};
+    for (const [m, v] of Object.entries(targets)) {
+      if (!MONTH.test(m) || typeof v !== "number" || !Number.isFinite(v) || v < 0) return { code: 400, error: "目標は、月(YYYY-MM)ごとの 0 以上の数で入れてください" };
+      clean[m] = v;
+    }
+    if (!Object.keys(clean).length) return { code: 400, error: "目標が空です" };
+    x.targets = clean; x.targetsChangedAt = today;
+  }
+  if (status !== undefined) {
+    const allowed = kind === "kpi" ? ["proposed", "adopted", "declined"] : ["proposed", "adopted", "declined", "done"];
+    if (!allowed.includes(status)) return { code: 400, error: "その状態にはできません" };
+    if (status === "done" && x.status !== "adopted") return { code: 400, error: "実施済みにできるのは、採用した案だけです" };
+    x.status = status;
+    if (status === "proposed") { delete x.decidedAt; delete x.note; }
+    else { x.decidedAt = today; if (note) x.note = String(note).slice(0, 300); else if (status !== "done") delete x.note; }
+  }
+  plan.updated = today;
+  writeJson(p.plan, plan);
+  return { item: x };
+}
+export function setManual(root, month, values, today) {
+  const p = paths(root);
+  const plan = readJson(p.plan, null);
+  if (!plan) return { code: 404, error: "analytics/plan.json がありません" };
+  if (!MONTH.test(month || "")) return { code: 400, error: "月が正しくありません" };
+  const row = { ...(plan.manual?.[month] ?? {}) };
+  for (const [k, v] of Object.entries(values || {})) {
+    if (!(k in MANUAL_FIELDS)) return { code: 400, error: "入れられない項目があります" };
+    if (v === null || v === "") { row[k] = null; continue; }
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0) return { code: 400, error: `${MANUAL_FIELDS[k]}は、0 以上の数で入れてください(空欄は未入力)` };
+    row[k] = v;
+  }
+  plan.manual = { ...(plan.manual ?? {}), [month]: { ...row, updatedAt: today } };
+  plan.updated = today;
+  writeJson(p.plan, plan);
+  return { manual: plan.manual[month] };
 }
 
 /** 申請の内容から、ID の候補を作る(日付+連番。画面で書き換えられる) */

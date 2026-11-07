@@ -163,6 +163,46 @@ export async function adminTests({ ok, section }) {
     ok(an.proposals.find((p) => p.id === "SEO-20261001-2").status === "proposed" && !("declinedAt" in an.proposals.find((p) => p.id === "SEO-20261001-2")), "見送りは、戻せる");
     ok((await req("/api/proposals/update", { body: { id: "SEO-20261001-3", status: "declined" } })).status === 400 && (await req("/api/proposals/update", { body: { id: "SEO-20261001-1", status: "implemented" } })).status === 400, "実施済みの案は見送りにできず、実施・評価の状態は画面から変えられない(週次の分析が決める)");
     ok(published.length === n, "改善案の見送りは、このPCだけの記録なので、push しない");
+
+    // ---------- 目標・収益: KPI と収益化の案の採用・見送り、目標の数、手入力の実績(analytics/plan.json) ----------
+    const planPath = join(ROOT, "analytics/plan.json");
+    ok((await req("/api/state")).json.plan === null, "目標の計画がないときは、plan を null で渡す(画面は案内を出す)");
+    writeFileSync(planPath, JSON.stringify({ goal: { title: "テストの目標", monthlyRevenueYen: 1000, targetMonth: "2027-03" },
+      kpis: [{ id: "revenue", kind: "KGI", name: "月の売上", unit: "円", targets: { "2026-12": 150 }, status: "proposed" }],
+      monetization: [{ id: "MON-1", title: "有料プラン", expectedYen: [1, 2], status: "proposed" }], manual: {} }));
+    an = JSON.parse(read(join(ROOT, "analytics/state.json"))); an.kpi = { months: { "2026-10": { revenueVc: 120 } } }; writeFileSync(join(ROOT, "analytics/state.json"), JSON.stringify(an));
+    st = (await req("/api/state")).json;
+    ok(st.plan.kpis.length === 1 && st.plan.monetization.length === 1 && st.plan.actuals.months["2026-10"].revenueVc === 120 && st.planStatus.adopted === "採用" && "rakuten" in st.manualFields, "目標・KPI・収益化の案と、週次の分析が出した実績を、画面に渡す");
+    r = await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", status: "adopted" } });
+    let pl = JSON.parse(read(planPath));
+    ok(r.status === 200 && pl.kpis[0].status === "adopted" && pl.kpis[0].decidedAt === "2026-10-10", "KPI を採用すると、plan.json に採用と日付を記録する");
+    r = await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", targets: { "2026-12": 200, "2027-01": 400 } } });
+    pl = JSON.parse(read(planPath));
+    ok(r.status === 200 && pl.kpis[0].targets["2027-01"] === 400 && pl.kpis[0].status === "adopted", "KPI の目標の数を変えられる(採用のまま)");
+    ok((await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", targets: { "2026-12": -1 } } })).status === 400
+      && (await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", targets: { "12月": 1 } } })).status === 400
+      && (await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", targets: { "2026-12": "1" } } })).status === 400, "目標の数は、月(YYYY-MM)ごとの 0 以上の数だけ受け付ける");
+    ok((await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "done" } })).status === 400, "採用していない収益化の案は、実施済みにできない");
+    ok((await req("/api/plan/item", { body: { kind: "kpi", id: "revenue", status: "done" } })).status === 400 && (await req("/api/plan/item", { body: { kind: "x", id: "revenue", status: "adopted" } })).status === 400
+      && (await req("/api/plan/item", { body: { kind: "mon", id: "MON-9", status: "adopted" } })).status === 404, "KPI に「実施済み」はなく、種類・ID が正しくない操作は受け付けない");
+    r = await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "declined", note: "人手が足りない" } });
+    pl = JSON.parse(read(planPath));
+    ok(r.status === 200 && pl.monetization[0].status === "declined" && pl.monetization[0].note === "人手が足りない", "収益化の案を見送ると、理由を記録する");
+    await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "proposed" } });
+    await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "adopted" } });
+    r = await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "done" } });
+    pl = JSON.parse(read(planPath));
+    ok(r.status === 200 && pl.monetization[0].status === "done" && !("note" in pl.monetization[0]), "見送りは戻せ、採用した案は実施済みにできる");
+    r = await req("/api/plan/manual", { body: { month: "2026-10", values: { rakuten: 300, adsense: null, contracts: 1 } } });
+    pl = JSON.parse(read(planPath));
+    ok(r.status === 200 && pl.manual["2026-10"].rakuten === 300 && pl.manual["2026-10"].adsense === null && pl.manual["2026-10"].contracts === 1 && pl.manual["2026-10"].updatedAt === "2026-10-10", "手入力の実績を、月ごとに保存する(空欄は null=未入力。0 にしない)");
+    ok((await req("/api/plan/manual", { body: { month: "2026-13", values: {} } })).status === 400 && (await req("/api/plan/manual", { body: { month: "2026-10", values: { rakuten: -5 } } })).status === 400
+      && (await req("/api/plan/manual", { body: { month: "2026-10", values: { password: 1 } } })).status === 400, "手入力は、正しい月・決まった項目・0 以上の数だけ受け付ける");
+    ok(JSON.parse(read(join(ROOT, "analytics/state.json"))).kpi.months["2026-10"].revenueVc === 120, "画面の操作は、週次の分析が書く実績(state.json の kpi)を変えない");
+    ok(published.length === n, "目標・KPI・収益化の操作は、このPCだけの記録なので、push しない");
+    const js = read("scripts/admin/app.js");
+    ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
+    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \+ plan\.length/.test(js), "決めていない KPI・収益化の案は、判断待ちの件数にも入る");
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });

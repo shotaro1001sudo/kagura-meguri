@@ -11,7 +11,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl } from "./publish.mjs";
 
@@ -36,7 +36,8 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
-      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => "") };
+      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
+      plan: loadPlan(root), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS };
   };
 
   // 開催データを変えた操作は、そのままコミットして push する(数分後にサイトに反映)
@@ -107,6 +108,18 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     // 検索の改善案を見送る / 見送りを戻す(analytics/state.json。このPCだけ。push しない)
     "POST /api/proposals/update": (body) => serial(async () => {
       const r = setProposalStatus(root, body.id, body.status, today(), body.note);
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+
+    // 目標・KPI・収益化の案: 採用 / 見送り / 実施済み / 目標の変更 と、手入力の実績(analytics/plan.json。このPCだけ。push しない)
+    "POST /api/plan/item": (body) => serial(async () => {
+      const r = setPlanItem(root, { kind: body.kind, id: body.id, status: body.status, note: body.note, targets: body.targets }, today());
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+    "POST /api/plan/manual": (body) => serial(async () => {
+      const r = setManual(root, body.month, body.values, today());
       if (r.error) return [r.code, { error: r.error }];
       return { state: await state() };
     }),

@@ -51,3 +51,7 @@ a{color:var(--ac)}
 .links{margin:0 0 8px;font-size:.9rem}
 .acts{padding-left:1.3em}.acts li{margin:4px 0}
 details summary{cursor:pointer;color:var(--mut)}
+.scroll{overflow-x:auto}
+table.kpi{margin-top:8px;min-width:480px}table.kpi td,table.kpi th{text-align:right;white-space:nowrap}table.kpi th:first-child{text-align:left}
+table.kpi td.ok{color:var(--ok);font-weight:bold}table.kpi td.ng{color:var(--ac)}
+.goal-h{margin-top:0}

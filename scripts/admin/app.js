@@ -57,7 +57,8 @@ function render() {
   const open = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
   $("#n-submit").textContent = open("submit") || ""; $("#n-contact").textContent = open("contact") || "";
   $("#n-decide").textContent = decisions().total || "";
-  main.replaceChildren(...({ home: homeView, decide: decideView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
+  $("#n-goal").textContent = planOpen().length || "";
+  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
 // ---------- 判断待ち(人が決めること) ----------
@@ -68,7 +69,8 @@ function decisions() {
   const proposals = S.proposals || [];
   const openProps = proposals.filter((p) => p.status === "proposed" && !done.has(p.id));
   const actions = S.review?.actions || [];
-  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, total: pending.length + actions.length + openProps.length };
+  const plan = planOpen();
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, plan, total: pending.length + actions.length + openProps.length + plan.length };
 }
 const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); };
 
@@ -110,6 +112,9 @@ function decideView() {
         d.actions.length ? h("ul", { class: "acts" }, d.actions.map((a) => h("li", null, a.text, actLinks[a.key] && S.repo ? [" ", link(...actLinks[a.key])] : ""))) : h("p", { class: "mut" }, "保留の判断のほかに、人が行う項目はありません。"),
         h("p", { class: "mut" }, `${S.review.updated || ""} の振り返りより。終えたら、`, S.repo ? link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue") : "振り返りの Issue", " にチェックを入れてください(このPCの画面と GitHub の、両方を見なくて済むように、ここにも出しています)。")),
 
+    h("h3", null, `目標・KPI と収益化の案(${d.plan.length}件)`),
+    d.plan.length ? h("p", { class: "bar" }, h("span", null, `まだ決めていない KPI・収益化の案が ${d.plan.length} 件あります。`), h("a", { href: "#", onclick: goTab("goal") }, "目標・収益を開く")) : h("p", { class: "mut" }, S.plan ? "決めていない KPI・収益化の案はありません。" : "このPCに、目標の計画(analytics/plan.json)がありません。"),
+
     h("h3", null, `検索の改善案(${d.openProps.length}件)`),
     !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
       : h("div", null,
@@ -137,6 +142,154 @@ async function setProposal(p, status) {
   catch (err) { toast(err.message, true); }
 }
 
+// ---------- 目標・収益(analytics/plan.json。このPCだけ・GitHub に送らない) ----------
+// 最終目標 → KPI(月ごとの目標と実績)→ 収益化の案。実績は、自動の分(週次の分析が state.json の kpi に書く)と、手入力の分(plan.json の manual)
+function planOpen() {
+  const p = S.plan;
+  if (!p) return [];
+  return [...p.kpis.map((x) => ({ kind: "kpi", ...x })), ...p.monetization.map((x) => ({ kind: "mon", ...x }))].filter((x) => x.status === "proposed");
+}
+const yen = (n) => (n == null ? "—" : "¥" + Math.round(n).toLocaleString("ja-JP"));
+const num = (n, unit) => (n == null ? "—" : unit === "円" ? yen(n) : Math.round(n).toLocaleString("ja-JP") + (unit === "回" ? "" : unit));
+const curMonth = () => S.today.slice(0, 7);
+const addMonth = (m, k) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1 + k, 1)).toISOString().slice(0, 7);
+const monthLabel = (m) => `${m.slice(0, 4)}年${+m.slice(5, 7)}月`;
+// その月の実績。自動の値がない・手入力が空のときは、足さずに「含まれていない分」として返す(0 とみなさない)
+function actual(id, m) {
+  const a = S.plan.actuals?.months?.[m] || {};
+  const man = S.plan.manual?.[m] || {};
+  if (id === "revenue") {
+    const parts = { "バリューコマース": a.revenueVc, "楽天": man.rakuten, "AdSense": man.adsense, "協賛・有料プラン": man.direct };
+    let sum = 0, any = false; const missing = [];
+    for (const [k, v] of Object.entries(parts)) { if (v == null) missing.push(k); else { sum += v; any = true; } }
+    return { v: any ? sum : null, missing };
+  }
+  if (id === "contracts" || id === "pitches") return { v: man[id] ?? null, missing: man[id] == null ? ["手入力"] : [] };
+  if (id === "conversions") return { v: a.conversionsVc ?? null, missing: ["楽天(数えていません)"] };
+  return { v: a[id] ?? null, missing: a[id] == null ? ["週次の分析"] : [] };
+}
+const decidedLine = (x) => (x.decidedAt ? [h("dt", null, S.planStatus[x.status] || "決定"), h("dd", null, `${x.decidedAt}${x.note ? " ・ " + x.note : ""}`)] : "");
+function goalView() {
+  const p = S.plan;
+  if (!p) return [h("h2", null, "目標・収益"), h("p", { class: "warn" }, "このPCに、目標の計画(analytics/plan.json)がありません。Claude に「最終目標から KPI を作って」と頼んでください。")];
+  const g = p.goal || {};
+  const now = curMonth();
+  const left = g.targetMonth ? Math.max(0, (+g.targetMonth.slice(0, 4) - +now.slice(0, 4)) * 12 + (+g.targetMonth.slice(5, 7) - +now.slice(5, 7))) : null;
+  const rev = actual("revenue", now), revPrev = actual("revenue", addMonth(now, -1));
+  const kpiRev = p.kpis.find((k) => k.id === "revenue");
+  const months = [...new Set(p.kpis.flatMap((k) => Object.keys(k.targets || {})))].sort();
+  const cols = [addMonth(now, -1), now, ...months.filter((m) => m > now)];
+  const stBadge = (st) => badge({ proposed: "new", adopted: "published", declined: "rejected", done: "done" }[st] || "new", S.planStatus[st] || st);
+
+  const kpiCard = (k) => h("section", { class: "panel decision" },
+    h("h4", null, k.kind === "KGI" ? "【最終目標】" : "", k.name, " ", stBadge(k.status)),
+    h("p", { class: "mut" }, k.why || ""),
+    h("dl", { class: "kv" }, h("dt", null, "測り方"), h("dd", null, k.source || ""), h("dt", null, "決めた時点"), h("dd", null, k.current || ""), decidedLine(k)),
+    h("div", { class: "scroll" }, h("table", { class: "kpi" },
+      h("thead", null, h("tr", null, h("th", null, ""), cols.map((m) => h("th", null, monthLabel(m), m === now ? "(今月)" : "")))),
+      h("tbody", null,
+        h("tr", null, h("th", null, "目標"), cols.map((m) => h("td", null, num(k.targets?.[m], k.unit)))),
+        h("tr", null, h("th", null, "実績"), cols.map((m) => {
+          if (m > now) return h("td", { class: "mut" }, "");
+          const a = actual(k.id, m), t = k.targets?.[m];
+          const cls = a.v == null || t == null ? null : a.v >= t ? "ok" : m < now ? "ng" : null;
+          return h("td", { class: cls, title: a.missing.length ? "含まれていない分: " + a.missing.join("・") : null }, num(a.v, k.unit), a.missing.length && a.v != null ? "*" : "");
+        }))))),
+    h("div", { class: "bar mt" },
+      k.status === "proposed" ? [h("button", { class: "btn", onclick: () => setPlan("kpi", k, "adopted") }, "採用する"), h("button", { class: "btn ghost", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost", onclick: () => setPlan("kpi", k, "declined") }, "見送る")]
+        : k.status === "adopted" ? [h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")]
+        : h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")));
+
+  const monCard = (m) => h("section", { class: "panel decision" },
+    h("h4", null, m.id, " ", m.title, " ", stBadge(m.status)),
+    h("p", null, m.summary || ""),
+    h("dl", { class: "kv" },
+      h("dt", null, "見込み"), h("dd", null, m.expectedYen ? `月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}(目標の月の見込み)` : "—"),
+      h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "手間"), h("dd", null, m.effort || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""),
+      h("dt", null, "最初の一歩"), h("dd", null, m.firstStep || ""), decidedLine(m)),
+    h("div", { class: "bar mt" },
+      m.status === "proposed" ? [h("button", { class: "btn", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn ghost", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
+        : m.status === "adopted" ? [m.ask ? h("button", { class: "btn", onclick: () => copyAsk(m.ask) }, "Claude に頼む文をコピー") : "", h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
+        : h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")));
+
+  const adoptedExp = p.monetization.filter((m) => ["adopted", "done"].includes(m.status) && m.expectedYen).reduce((a, m) => [a[0] + m.expectedYen[0], a[1] + m.expectedYen[1]], [0, 0]);
+  const openKpis = p.kpis.filter((k) => k.status === "proposed").length, openMons = p.monetization.filter((m) => m.status === "proposed").length;
+  return [
+    h("h2", null, "目標・収益"),
+    h("p", { class: "mut" }, "最終目標から作った KPI と、収益化の案です。採用・見送り・目標の数・手入力の実績は、このPCの analytics/plan.json にだけ保存し、GitHub には送りません。毎週月曜の分析が、KPI の実績を出し、目標に対する遅れを知らせます。"),
+    h("section", { class: "panel" },
+      h("h3", { class: "goal-h" }, g.title || "最終目標", g.deadline ? `(${g.deadline.replace(/-/g, "/")} までに)` : ""),
+      h("div", { class: "cards" },
+        h("div", null, h("b", null, num(rev.v, "円")), "今月の売上", rev.missing.length ? h("small", { class: "mut" }, h("br"), "含まれていない分: ", rev.missing.join("・")) : ""),
+        h("div", null, h("b", null, num(kpiRev?.targets?.[now] ?? null, "円")), "今月の目標"),
+        h("div", null, h("b", null, num(revPrev.v, "円")), "先月の売上"),
+        h("div", null, h("b", null, left == null ? "—" : left + "か月"), "目標の月まで")),
+      g.definition ? h("p", { class: "mut" }, g.definition) : "",
+      g.outlook ? h("p", { class: "warn" }, g.outlook) : "",
+      h("p", { class: "mut" }, `採用した収益化の案の見込みの合計: 月 ${yen(adoptedExp[0])}〜${yen(adoptedExp[1])}(目標 ${yen(g.monthlyRevenueYen)})`)),
+
+    h("h3", null, "実績を入れる(自動で取れない分)"),
+    manualForm(),
+
+    h("h3", null, `KPI(決めていないもの ${openKpis}件)`),
+    h("p", { class: "mut" }, "月ごとの目標と実績です。実績の * は、まだ含まれていない分があるもの(数字にマウスを置くと出ます)。目標の数は、採用の前でも後でも変えられます。"),
+    p.kpis.map(kpiCard),
+
+    h("h3", null, `収益化の案(決めていないもの ${openMons}件)`),
+    h("p", { class: "mut" }, "採用すると「Claude に頼む文」をコピーします。Claude に貼り付けてください(営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください)。終えたら「実施済みにする」。"),
+    p.monetization.map(monCard),
+  ];
+}
+function manualForm() {
+  const months = [curMonth(), addMonth(curMonth(), -1)];
+  const m = months.includes(view.manualMonth) ? view.manualMonth : months[0];
+  const row = S.plan.manual?.[m] || {};
+  const form = h("form", { class: "panel", onsubmit: async (ev) => {
+    ev.preventDefault();
+    const values = {};
+    for (const k of Object.keys(S.manualFields)) { const v = form.elements[k].value.trim(); values[k] = v === "" ? null : Number(v); }
+    try { await call("/api/plan/manual", { month: m, values }); toast(`${monthLabel(m)}の実績を保存しました`); render(); }
+    catch (err) { toast(err.message, true); }
+  } },
+    h("div", { class: "bar" }, h("label", { for: "mm" }, "月"), h("select", { id: "mm", onchange: (ev) => { view.manualMonth = ev.target.value; render(); } }, months.map((x) => h("option", { value: x, selected: x === m }, monthLabel(x))))),
+    h("div", { class: "grid" }, Object.entries(S.manualFields).map(([k, label]) => h("div", { class: "f" }, h("label", { for: "man-" + k }, label), h("input", { id: "man-" + k, name: k, type: "number", min: "0", step: "1", inputmode: "numeric", value: row[k] ?? "", placeholder: "未入力" })))),
+    h("p", { class: "mut" }, "楽天は楽天アフィリエイトの成果報酬、AdSense は見積もり収益額の、その月の額です。空欄は「未入力」として扱い、0 とはみなしません。"),
+    h("div", { class: "bar mt" }, h("button", { class: "btn", type: "submit" }, "保存する"), row.updatedAt ? h("span", { class: "mut" }, `前回の保存: ${row.updatedAt}`) : ""));
+  return form;
+}
+async function setPlan(kind, x, status) {
+  let note = "";
+  if (status === "declined") { const v = prompt(`「${x.name || x.title}」を見送ります。理由があれば書いてください(空でも構いません)。`, ""); if (v === null) return; note = v.trim(); }
+  try {
+    await call("/api/plan/item", { kind, id: x.id, status, note });
+    toast({ adopted: "採用しました", declined: "見送りにしました", done: "実施済みにしました", proposed: "提案中に戻しました" }[status]);
+    render();
+    if (kind === "mon" && status === "adopted" && x.ask) copyAsk(x.ask);
+  } catch (err) { toast(err.message, true); }
+}
+async function copyAsk(text) {
+  try { await navigator.clipboard.writeText(text); toast(`コピーしました。Claude に貼り付けてください:\n${text}`); }
+  catch { toast(`コピーできませんでした。次の文を Claude に送ってください:\n${text}`, true); }
+}
+function editTargets(k) {
+  const dlg = $("#dlg"), form = $("#dlg-form");
+  const months = Object.keys(k.targets || {}).sort();
+  form.replaceChildren(
+    h("h2", null, `目標の数を変える: ${k.name}`),
+    h("p", { class: "mut" }, `単位: ${k.unit}。月ごとの目標です。`),
+    h("div", { class: "grid" }, months.map((m) => h("div", { class: "f" }, h("label", { for: "t-" + m }, monthLabel(m)), h("input", { id: "t-" + m, name: m, type: "number", min: "0", step: "1", required: true, value: k.targets[m] })))),
+    h("div", { class: "bar mt" }, h("button", { class: "btn", value: "save" }, "保存する"), h("button", { class: "btn ghost", value: "cancel", formnovalidate: true }, "やめる")));
+  form.onsubmit = async (ev) => {
+    if (ev.submitter?.value !== "save") return;
+    ev.preventDefault();
+    const targets = {};
+    for (const m of months) targets[m] = Number(form.elements[m].value);
+    try { await call("/api/plan/item", { kind: "kpi", id: k.id, targets }); dlg.close(); toast("目標の数を保存しました"); render(); }
+    catch (err) { toast(err.message, true); }
+  };
+  dlg.showModal();
+}
+
 function homeView() {
   const st = S.events.map(evState);
   const count = (k) => st.filter(([s]) => s === k).length;
@@ -146,7 +299,7 @@ function homeView() {
   const dc = decisions();
   return [
     h("h2", null, "概要"),
-    dc.total ? h("p", { class: "warn bar" }, h("span", null, `判断待ちが ${dc.total} 件あります(保留中の開催 ${dc.upcoming.length + dc.past.length}・振り返りの項目 ${dc.actions.length}・検索の改善案 ${dc.openProps.length})。`), h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く")) : "",
+    dc.total ? h("p", { class: "warn bar" }, h("span", null, `判断待ちが ${dc.total} 件あります(保留中の開催 ${dc.upcoming.length + dc.past.length}・振り返りの項目 ${dc.actions.length}・検索の改善案 ${dc.openProps.length}・目標と収益化 ${dc.plan.length})。`), h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く")) : "",
     h("div", { class: "cards" },
       card(count("published"), "掲載中の開催", { tab: "events", evFilter: "upcoming" }),
       card(count("ended"), "終了した開催", { tab: "events", evFilter: "ended" }),
