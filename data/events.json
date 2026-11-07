@@ -1972,18 +1972,18 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
+    "source": "高千穂町観光協会 夜神楽日程表",
+    "checked": "2026-11-07",
+    "status": "published",
     "auto": true,
     "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "玄武公民館: 町PDFは開始15:00、観光協会は神事16:00・舞入れ16:30。開始時刻の不一致を解消できないため保留。"
-    ]
+    "lat": 32.76407,
+    "lng": 131.31372,
+    "geoPrecision": "area"
   },
   {
     "id": "takachiho-yokagura-f85d280df3",
