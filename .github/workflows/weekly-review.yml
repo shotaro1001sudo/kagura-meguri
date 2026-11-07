@@ -3,6 +3,8 @@ name: weekly-review
 # 1. 掲載・収集・SNS の数字を集め、先週と比べる(Check)
 # 2. 目安から外れたものを「今週やること」にして Issue を立てる。先週の Issue は閉じ、チェックの付いていない手書きの項目は持ち越す(Act)
 # 3. 数字と「次に力を入れるところ」を data/weekly-review.json に残す。Claude の定期タスク(note・月次の調査)が、これを読んで次の計画に使う(Plan)
+# 4. SNSの反応を data/social-performance.json(テーマ別の相対値)に残す。翌日からの post-social が、反応のよいテーマを先に出す(Act)
+# 検索・アクセス(GA4/Search Console)の数字は公開しない。このPCの定期タスク「週次の検索・アクセス分析」が、非公開のまま分析する
 on:
   workflow_run:
     workflows: [weekly-collect]
@@ -31,6 +33,12 @@ jobs:
             --jq '[.[] | select(.title | startswith("週次の振り返り("))] | sort_by(.number)' > "$RUNNER_TEMP/prev.json"
           node -e 'const a=require(process.argv[1]); require("fs").writeFileSync(process.argv[2], a.map(i=>i.body).join("\n"))' "$RUNNER_TEMP/prev.json" "$RUNNER_TEMP/prev.md"
           echo "numbers=$(node -p 'require(process.argv[1]).map(i=>i.number).join(" ")' "$RUNNER_TEMP/prev.json")" >> "$GITHUB_OUTPUT"
+      # SNSの反応(Buffer)を、テーマ別の相対値にする。実数は残さない。失敗しても振り返りは続ける
+      # 秘密情報(Secrets)は、この手順だけに渡す
+      - name: social-metrics
+        run: node scripts/social-metrics.mjs
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
       - run: node scripts/weekly-review.mjs
         env:
           PREV_REVIEW_FILE: ${{ runner.temp }}/prev.md
@@ -38,7 +46,7 @@ jobs:
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/weekly-review.json
+          git add data/weekly-review.json data/social-performance.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "chore(auto): 週次の振り返り $(TZ=Asia/Tokyo date +%F)"
           git pull --rebase --autostash

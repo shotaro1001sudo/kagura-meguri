@@ -9,24 +9,35 @@ GitHub Actions の画面: https://github.com/shotaro1001sudo/kagura-meguri/actio
 
 ```
 Plan  計画     data/weekly-review.json の focus(掲載が少ない地方・時刻未定の開催)
+  │            analytics/focus.json(このPC・非公開。検索で求められている題材・未掲載の開催)
   │              → note の題材選び・月次の調査の優先順位に使う
+  │            data/social-performance.json(SNSのテーマ別の反応)→ SNSで出す順番に使う
   ▼
 Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 3:00)→ SNS予約(毎日 5:15)→ note(2日に1回)
   │
   ▼
-Check 点検     週次の振り返り(月、収集の直後)が数字を集め、先週と比べる
-  │              掲載数(14/30/60日・地方別)、収集の結果、SNSの予約数・取りこぼし、読み物の残り
+Check 点検     週次の振り返り(月、収集の直後。GitHub)
+  │              掲載数(14/30/60日・地方別)、収集の結果、SNSの予約数・取りこぼし、読み物の残り、
+  │              SNSの反応(テーマ別の倍率。実数は公開しない)
+  │            検索・アクセス分析(月 9:00。このPC)
+  │              Search Console・GA4 の前週比、検索語ごとの改善の余地、流入元、前回の改善の効果
   ▼
-Act   改善     目安から外れたものを「今週やること」として Issue に出す(担当: 人 / Claude)
-                 先週の Issue は自動で閉じ、手で書き足した未完了の項目は持ち越す
+Act   改善     振り返りの Issue に「今週やること」(担当: 人 / Claude)。先週の Issue は閉じ、手書きの未完了は持ち越す
+                 SNS は反応のよいテーマを自動で先に出す
+                 検索の改善案は ID(SEO-日付-番号)付きで analytics/ に。実施したかと効果を、翌週以降に自動で確かめる
 ```
 
-**運営者が毎週することは、月曜の「週次の振り返り」Issue を見ることだけ**です。
+**数字の置き場所:** 掲載数などサイトの数字は公開(GitHub)。アクセス数・検索の数字は公開しない(非公開スプレッドシートと、このPCの `analytics/`。git に入らない)。SNS は倍率だけ公開し、実数は Buffer の画面で見る。
 
-- 【人】の項目: 自分で行う(保留の確認は管理ページ `npm run admin`)
-- 【Claude】の項目: Claude に「週次の振り返りの Claude の項目をやって」と頼む
-- 「手で見る数字」(Search Console・GA4/GoatCounter・Buffer の反応・note の食い違いメモ)を見て、気づいたことは Issue にコメントするか、`- [ ] やること` を本文に書き足す(来週に持ち越される)
-- 目安(今後30日の掲載30件、保留10件以下など)は [scripts/lib/weekly-review.mjs](scripts/lib/weekly-review.mjs) の `TARGETS` で変えられる
+**運営者が毎週すること(月曜)**
+
+1. 「週次の振り返り」Issue を見る
+   - 【人】の項目: 自分で行う(保留の確認は管理ページ `npm run admin`)
+   - 【Claude】の項目: Claude に「週次の振り返りの Claude の項目をやって」と頼む
+2. 9時すぎに届く通知を見て、`analytics/weekly-<日付>.md`(このPC)の改善案から、やるものを Claude に頼む(例:「SEO-20261109-1 をやって」)。Claude はコミットのメッセージに ID を入れる(実施の確認に使う)
+3. 気づいたことは Issue にコメントするか、`- [ ] やること` を本文に書き足す(来週に持ち越される)
+
+目安(今後30日の掲載30件、保留10件以下など)は [scripts/lib/weekly-review.mjs](scripts/lib/weekly-review.mjs) の `TARGETS` で変えられます。
 
 ## 1日の流れ
 
@@ -34,16 +45,18 @@ Act   改善     目安から外れたものを「今週やること」として
 |---|---|---|---|
 | 3:00(毎日) | build-and-deploy | サイトを組み立てて公開。終わった開催の整理、「今週末」「今月」ページの更新 | [deploy.yml](.github/workflows/deploy.yml) |
 | 4:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼(先週の確認依頼は閉じる) | [COLLECT.md](COLLECT.md) |
-| 収集の直後(月曜) | weekly-review | 週次の振り返り。数字の点検と「今週やること」の Issue。data/weekly-review.json を更新 | [weekly-review.yml](.github/workflows/weekly-review.yml) |
+| 収集の直後(月曜) | weekly-review | SNSの反応を集め(data/social-performance.json)、週次の振り返り。数字の点検と「今週やること」の Issue。data/weekly-review.json を更新 | [weekly-review.yml](.github/workflows/weekly-review.yml) / [SOCIAL.md](SOCIAL.md) |
+| 7:31 ごろ(毎日) | Apps Script(Google 側) | GA4・Search Console の数字を、非公開スプレッドシート(統合管理台帳の 12〜14)に保存 | [docs/analytics-quality.md](docs/analytics-quality.md) |
 | 5:15(毎日) | post-social | その日のX投稿6本(7時から4時間ごと)を Buffer に予約。月曜は収集で増えた開催も対象 | [SOCIAL.md](SOCIAL.md) |
 
 ## Claude の定期タスク(このPC)
 
 Claude デスクトップアプリの「定期タスク」で動きます。**このPCが起動していて、Claude アプリが開いているときだけ**動きます。設定は `C:\Users\shota\.claude\scheduled-tasks\` にあります。
-どちらも、始めに `git fetch` で GitHub 上の最新データ(週次収集の結果と data/weekly-review.json)を読みます(このPCのファイルは書き換えません)。
+どれも、始めに `git fetch` で GitHub 上の最新データ(週次収集の結果と data/weekly-review.json)を読みます(作業中のファイルは書き換えません。書くのは `analytics/` と NOTE-LOG.md だけ)。
 
 | 名前 | いつ | やること | 状態(2026-11-07) |
 |---|---|---|---|
+| kagurameguri-weekly-analytics | 毎週月曜 9:00 | Chrome で非公開スプレッドシートの GA4・Search Console を読み、前週比・改善案(SEO-ID 付き)・前回の改善の効果を `analytics/weekly-<日付>.md` に。`analytics/state.json`(提案の追跡)と `analytics/focus.json`(次の計画)も更新。要約を通知 | 有効(2026-11-07 登録)。初回は手動の「Run now」で、Chrome の操作を許可しておくとよい |
 | kagura-meguri-daily-note | 2日に1回 18:00 | note 記事を書き、神楽日和(kagurabi_info)で公開。振り返りの focus の地方を優先して題材にする。時刻の判明・データの食い違いを NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
 | kagurameguri-monthly-research-2 | 毎月1日 9:00 | 振り返りの focus の地方を優先して掲載候補を調べ、提案する(読むだけ)。自動収集に回せる「収集元の候補」も挙げる | 有効(2026-11-07 登録。初回は 12/1)。番号なしの kagurameguri-monthly-research は、登録前の古い設定フォルダ |
 
@@ -52,7 +65,8 @@ Claude デスクトップアプリの「定期タスク」で動きます。**�
 | サービス | やること |
 |---|---|
 | Buffer | post-social が予約した投稿を、時刻どおりに X へ出す。予約の確認・修正もここで |
-| ChatGPT | 以前の X 投稿タスク。post-social と二重投稿になるので止める |
+| ChatGPT | 以前の X 投稿タスクと「統合運営」(スプレッドシートの分析・SNS記録・社内指示)。**Claude の仕組みに一本化したので止める**(運営者が ChatGPT 側で停止)。ChatGPT が書いていたシート(00〜10・15〜19 など)は、それ以降は更新されない(履歴として残す)。Apps Script が書く 11(バリューコマース)・12〜14(GA4/GSC)は動き続ける |
+| Google Apps Script | GA4・Search Console の数字を毎朝、非公開スプレッドシートに保存。検索・アクセス分析の材料。これは止めない |
 
 ## きっかけがあると動くもの
 

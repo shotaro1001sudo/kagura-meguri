@@ -4,3 +4,4 @@ dist-test*/
 tests/.tmp*/
 .admin/
 admin.local.json
+analytics/

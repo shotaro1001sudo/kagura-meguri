@@ -10,13 +10,14 @@
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { planDay } from "./lib/x-post.mjs";
+import { themeWeights } from "./lib/social-performance.mjs";
 
 const API = "https://api.buffer.com";
 const readJson = (p, fallback) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : fallback);
 const jstToday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 const jstLabel = (iso) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(5, 16).replace("T", " ");
 
-async function gql(key, query, variables = {}) {
+export async function gql(key, query, variables = {}) {
   const res = await fetch(API, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -30,17 +31,19 @@ async function gql(key, query, variables = {}) {
   return body.data;
 }
 
-async function findChannel(key) {
+/** X のチャンネルと、その組織(organization)を探す。channelId を渡すと、そのチャンネルの組織を探す */
+export async function findXChannel(key, channelId = "") {
   const { account } = await gql(key, "query { account { organizations { id name } } }");
   const found = [];
   for (const org of account?.organizations ?? []) {
     const { channels } = await gql(key, `query { channels(input: { organizationId: ${gqlStr(org.id)} }) { id name service } }`);
-    found.push(...(channels ?? []));
+    found.push(...(channels ?? []).map((c) => ({ ...c, organizationId: org.id })));
   }
-  const x = found.filter((c) => ["twitter", "x"].includes(String(c.service).toLowerCase()));
+  const x = channelId ? found.filter((c) => c.id === channelId) : found.filter((c) => ["twitter", "x"].includes(String(c.service).toLowerCase()));
   if (x.length !== 1) throw new Error(`X のチャンネルを1つに決められません(${found.map((c) => `${c.name}:${c.service}:${c.id}`).join(", ") || "チャンネルなし"})。config.json の social.bufferChannelId に、使うチャンネルのIDを入れてください`);
-  return x[0].id;
+  return { channelId: x[0].id, organizationId: x[0].organizationId };
 }
+const findChannel = async (key) => (await findXChannel(key)).channelId;
 
 // 公式ドキュメントの例と同じ形(値は JSON の文字列表記 = GraphQL の文字列として正しい)で書く
 export const gqlStr = (v) => JSON.stringify(String(v));
@@ -86,7 +89,10 @@ async function main() {
   }
 
   const now = process.env.POST_NOW ? Date.parse(`${today}T00:00:00+09:00`) : Date.now();
-  const plan = planDay({ events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now });
+  // 反応のよいテーマを先に出す(週次の振り返りが data/social-performance.json を更新する)
+  const weights = themeWeights(readJson(process.env.PERFORMANCE_FILE ?? "data/social-performance.json", {}));
+  if (Object.keys(weights).length) console.log(`テーマの重み(反応の相対値): ${JSON.stringify(weights)}`);
+  const plan = planDay({ events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights });
   if (!plan.length) { console.log(`${today}: 予約する投稿はありません`); return; }
 
   const channelId = live ? (social.bufferChannelId || await findChannel(key)) : "";

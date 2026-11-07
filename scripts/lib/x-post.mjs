@@ -102,7 +102,7 @@ export function readingCandidates(info, baseUrl, todayJst) {
 const hash = (s) => { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
 /** 読み物を n 件選ぶ。未投稿を優先し、出し切ったら、最後に出してから RERUN_GAP_DAYS 日以上たったものを古い順に */
-export function pickReadings(candidates, posted, todayJst, n) {
+export function pickReadings(candidates, posted, todayJst, n, weights = {}) {
   const last = new Map();
   for (const p of posted) if (p.id?.startsWith("r:")) last.set(p.id, p.date > (last.get(p.id) ?? "") ? p.date : last.get(p.id));
   const fresh = candidates.filter((c) => !last.has(c.id)).sort((a, b) => (b.timely ? 1 : 0) - (a.timely ? 1 : 0) || hash(a.id) - hash(b.id));
@@ -110,7 +110,9 @@ export function pickReadings(candidates, posted, todayJst, n) {
     .filter((c) => last.has(c.id) && dayNum(todayJst) - dayNum(last.get(c.id)) >= RERUN_GAP_DAYS)
     .sort((a, b) => last.get(a.id).localeCompare(last.get(b.id)) || hash(a.id) - hash(b.id));
   const first = DAY_THEME[weekday(todayJst)];
-  const order = [first, ...Object.keys(THEMES).filter((t) => t !== first)];
+  // 曜日のテーマを先頭に、残りは反応のよい順(週次の振り返りが data/social-performance.json から渡す。評価がなければ 1 = 元の順)
+  const w = (t) => weights[t] ?? 1;
+  const order = [first, ...Object.keys(THEMES).filter((t) => t !== first).sort((a, b) => w(b) - w(a))];
   const picked = [];
   const usedKinds = new Set();
   for (const pool of [fresh, reruns]) {
@@ -136,7 +138,7 @@ export function daySlots(todayJst, { firstSlot = "07:00", intervalHours = 4, per
 }
 
 /** 枠に投稿を割り当てる。開催のお知らせは eventSlots の枠(朝・夕方)へ、残りは読み物 */
-export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now() }) {
+export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now(), weights = {} }) {
   const slots = daySlots(todayJst, social);
   const taken = new Set(posted.map((p) => p.dueAt).filter(Boolean));
   const open = slots.filter((s) => !taken.has(s) && Date.parse(s) > now + 10 * 60e3); // 予約済み・過ぎた枠は使わない
@@ -145,7 +147,7 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, prefer.length));
   const evSlots = prefer.slice(0, evs.length);
   const readSlots = open.filter((s) => !evSlots.includes(s));
-  const reads = pickReadings(readingCandidates(info, baseUrl, todayJst), posted, todayJst, readSlots.length);
+  const reads = pickReadings(readingCandidates(info, baseUrl, todayJst), posted, todayJst, readSlots.length, weights);
   const plan = [
     ...evs.map((e, i) => ({ id: e.id, type: "event", dueAt: evSlots[i], text: composeText(e, baseUrl) })),
     ...reads.map((r, i) => ({ id: r.id, type: "reading", dueAt: readSlots[i], text: r.text })),

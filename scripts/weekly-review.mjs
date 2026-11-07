@@ -1,6 +1,6 @@
 // 週次の振り返り(PDCA の Check と Act): node scripts/weekly-review.mjs
 //
-// 読むもの: data/events.json, data/collect-summary.json, data/social-posted.json, data/kagura-info.json, data/sources.json
+// 読むもの: data/events.json, data/collect-summary.json, data/social-posted.json, data/social-performance.json, data/kagura-info.json, data/sources.json
 //           先週の振り返り Issue の本文(PREV_REVIEW_FILE。なければ持ち越しなし)
 // 書くもの: data/weekly-review.json(最新の数字・やること・推移。Claude の定期タスクが次の計画に使う)
 //           REVIEW_OUT(既定 data/weekly-review.md。Issue の本文。コミットしない)
@@ -22,6 +22,7 @@ const metrics = reviewMetrics({
   sources: Array.isArray(src) ? src : src.sources ?? [],
   todayJst: today,
   baseUrl: cfg.baseUrl,
+  performance: readJson(process.env.PERFORMANCE_FILE ?? "data/social-performance.json", null),
 });
 const state = readJson(stateFile, null);
 const prev = state?.history?.length ? state.metrics?.date !== today ? state.metrics : null : null;

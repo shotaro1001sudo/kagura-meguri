@@ -1,7 +1,7 @@
 // 週次の振り返り(PDCA の Check と Act): 数字を集め、先週と比べ、次にやることを決める(外部へは送らない部分)
 // 実行は scripts/weekly-review.mjs。仕組みの全体は AUTOMATION.md の「PDCA」。
 import { REGIONS, regionOf } from "./util.mjs";
-import { readingCandidates, WINDOW_MIN } from "./x-post.mjs";
+import { readingCandidates, WINDOW_MIN, THEMES } from "./x-post.mjs";
 
 export const HISTORY_WEEKS = 26;     // 推移として残す週数(約半年)
 export const TARGETS = {
@@ -16,7 +16,7 @@ const dayNum = (ymd) => Math.floor(Date.parse(`${ymd}T00:00:00Z`) / 86400e3);
 const addDays = (ymd, n) => new Date((dayNum(ymd) + n) * 86400e3).toISOString().slice(0, 10);
 
 /** 今週の数字。入力はすべてリポジトリのデータ(公開情報だけ) */
-export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "" }) {
+export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "", performance = null }) {
   const live = events.filter((e) => e.status === "published");
   const within = (e, from, to) => { const d = e.start.slice(0, 10); return d >= from && d <= to; };
   const up = (n) => live.filter((e) => within(e, todayJst, addDays(todayJst, n)));
@@ -63,9 +63,15 @@ export function reviewMetrics({ events = [], summary = {}, posted = [], info = {
       missedEvents: missed.map((e) => `${e.start.slice(0, 10)} ${e.name}`),
       readingsUnposted: unposted,
       readingDaysLeft: Math.floor(unposted / READING_SLOTS_PER_DAY),
+      // 反応の評価(scripts/social-metrics.mjs)。実数はなく、テーマ別の相対値だけ
+      performance: { status: performance?.status ?? "none", reason: performance?.reason ?? "", samples: performance?.samples ?? 0, themes: performance?.themes ?? {} },
     },
   };
 }
+
+export const THEME_LABELS = { event: "開催のお知らせ", ...THEMES };
+export const WEAK_INDEX = 0.6;   // 反応率がこれ以下のテーマは、書き方を見直す
+export const STRONG_INDEX = 1.5; // 反応率がこれ以上のテーマは、増やす候補
 
 /** 数字から、次にやること(Act)を決める。key は週をまたいで同じ課題を見分けるため */
 export function decideActions(m, prev) {
@@ -83,6 +89,11 @@ export function decideActions(m, prev) {
   if (l.timeUnknown14.length) add("time-unknown", "Claude", `2週間以内で開始時刻が未定の開催が ${l.timeUnknown14.length} 件。公式の最新情報で時刻を確かめる`);
   if (s.missedEvents.length) add("social-missed", "人", `SNSで紹介できないまま開催日を迎えたものが ${s.missedEvents.length} 件。Buffer の予約と post-social の実行を確認する`);
   if (s.readingDaysLeft < TARGETS.readingDaysMin) add("readings-low", "Claude", `SNSの読み物の未投稿が、あと約 ${s.readingDaysLeft} 日分。data/kagura-info.json に出典つきの演目・見どころを足す`);
+  const perf = s.performance ?? {};
+  if (perf.status === "unavailable") add("social-metrics-unavailable", "人", `Buffer から投稿の反応を読めませんでした(${perf.reason || "理由不明"})。APIキーの期限と、反応の読み取り(insightsRead)が使えるかを確認する`);
+  for (const [t, v] of Object.entries(perf.themes ?? {})) {
+    if (v.index != null && v.index <= WEAK_INDEX) add(`social-weak-${t}`, "Claude", `SNSの「${THEME_LABELS[t] ?? t}」は、反応率が全体の ${v.index} 倍。投稿の順番は自動で後ろに回しました。文面(最初の一文・切り口)を見直す`);
+  }
   if (prev && prev.listing && m.listing.upcoming30 < prev.listing.upcoming30 * 0.7) add("listing-drop", "Claude", `今後30日の掲載が先週の ${prev.listing.upcoming30} 件から ${m.listing.upcoming30} 件へ大きく減少。収集元の取りこぼしを確認する`);
   return a;
 }
@@ -100,6 +111,20 @@ export function carryOver(body = "") {
     out.push(m[1].replace(/^\(先週から\)\s*/, ""));
   }
   return out.map((text, i) => ({ key: `carry-${i + 1}`, text }));
+}
+
+/** SNSの反応(テーマ別の相対値)の節。実数は出さない */
+function renderPerformance(perf = {}) {
+  const head = ["### SNSの反応(テーマ別。全体を 1 とした倍率)", ""];
+  if (perf.status === "ok") {
+    const rows = Object.entries(perf.themes ?? {}).sort((a, b) => (b[1].index ?? -1) - (a[1].index ?? -1));
+    return [...head,
+      `直近の投稿 ${perf.samples} 件から(反応率 = いいね・リポスト・返信 ÷ 表示回数)。反応のよいテーマは、翌日から自動で先に投稿します。`, "",
+      "| テーマ | 投稿数 | 反応率 | 届きやすさ |", "|---|---|---|---|",
+      ...rows.map(([t, v]) => `| ${THEME_LABELS[t] ?? t}${v.index != null && v.index >= STRONG_INDEX ? " ★" : ""} | ${v.n} | ${v.index ?? "様子見"} | ${v.reach ?? "様子見"} |`), ""];
+  }
+  const why = { no_data: "評価できる投稿がまだありません(反応の集計は投稿の約1日後)", no_key: "BUFFER_API_KEY が未設定です", unavailable: "Buffer から反応を読めませんでした", none: "まだ集めていません" }[perf.status] ?? perf.status;
+  return [...head, why, ""];
 }
 
 const diff = (now, before) => (before == null ? "" : now === before ? "(先週と同じ)" : `(先週 ${before})`);
@@ -133,6 +158,7 @@ export function renderReview(m, prev, actions, carried = []) {
   ];
   if (l.timeUnknown14.length) lines.push("<details><summary>2週間以内で開始時刻が未定</summary>", "", ...l.timeUnknown14.map((x) => `- ${x}`), "", "</details>", "");
   if (s.missedEvents.length) lines.push("<details><summary>SNSで紹介できなかった開催</summary>", "", ...s.missedEvents.map((x) => `- ${x}`), "", "</details>", "");
+  lines.push(...renderPerformance(s.performance));
   lines.push(
     "## Act: 今週やること",
     "",
@@ -144,12 +170,10 @@ export function renderReview(m, prev, actions, carried = []) {
   for (const x of carried) lines.push(`- [ ] (先週から) ${x.text} <!-- ${x.key} -->`);
   lines.push(
     "",
-    "## 手で見る数字(自動では取れないもの)",
+    "## このPCで見るもの(数字は公開しない)",
     "",
-    "- [ ] Search Console: 検索の表示回数・クリック(前週比) <!-- manual-gsc -->",
-    "- [ ] GA4 または GoatCounter: よく見られたページ・X からの訪問(utm_source=x) <!-- manual-ga -->",
-    "- [ ] Buffer: 先週の投稿の反応(よかった投稿の種類をメモ) <!-- manual-buffer -->",
-    "- [ ] note: NOTE-LOG.md(このPC)の「データとの食い違い」メモがあれば、データを直す <!-- manual-note -->",
+    "- [ ] 検索・アクセスの分析レポート(月曜 9:00 の定期タスク「週次の検索・アクセス分析」が作る `analytics/` の最新ファイル)の改善案を、Claude に頼むか見送るか決める <!-- manual-analytics -->",
+    "- [ ] note: NOTE-LOG.md(このPC)の「時刻判明」「食い違い」メモがあれば、データを直す <!-- manual-note -->",
     "",
     "気づいたことは、この Issue にコメントで残してください。次の週の振り返りで、チェックの付いていない項目は持ち越されます。",
     "",

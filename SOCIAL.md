@@ -21,6 +21,16 @@
 - 紹介文を `kagura-info.json` に足すと、自動で読み物の候補に入ります。
 - リンクには `utm_source=x&utm_medium=social` が付きます。GA4で、Xから来た訪問を分けて見られます。
 
+## 反応を見て、出す順番を変える(PDCA)
+
+毎週月曜、週次の振り返り([weekly-review.yml](.github/workflows/weekly-review.yml))の前に [scripts/social-metrics.mjs](scripts/social-metrics.mjs) が、Buffer から送信済みの投稿の反応を読みます。
+
+- テーマ(開催のお知らせ・演目・歴史など)ごとに、**反応率**(いいね・リポスト・返信 ÷ 表示回数)と**届きやすさ**(表示回数)を、全体を 1 とした倍率にします。直近35日の投稿で、集計に1日かかるので直近2日は除きます。投稿が3件未満のテーマは「様子見」です。
+- 結果は [data/social-performance.json](data/social-performance.json) に残します。**リポジトリは公開なので、表示回数などの実数は書きません**(倍率と件数だけ)。実数は Buffer の画面で見られます。
+- 翌日から post-social が、曜日のテーマを先頭に、残りを**反応のよいテーマから順に**出します。読み物の枠は1日4つなので、反応の弱いテーマが後ろに回ります。
+- 反応率が全体の 0.6 倍以下のテーマは、振り返りの Issue に「文面を見直す」(担当 Claude)として出ます。
+- 反応を読めなかったとき(キーの期限切れ・読み取りの権限なしなど)は、評価を空にして元の順番に戻し、Issue で知らせます。
+
 ## はじめの設定(運営者)
 
 1. Buffer で **Settings → API**(https://publish.buffer.com/settings/api)を開き、APIキーを発行する(期限は、選べるいちばん長いものに。下の「APIキーの期限」を参照)。

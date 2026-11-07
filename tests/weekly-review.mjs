@@ -58,7 +58,10 @@ export function weeklyReviewTests({ ok, section }) {
   const steps = wr.jobs.review.steps;
   ok(steps.filter((s) => s.uses).every((s) => /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/.test(s.uses)) && /# v\d+\.\d+\.\d+/.test(read(".github/workflows/weekly-review.yml")), "外部のアクションは、コミットSHAで固定する");
   const wrText = read(".github/workflows/weekly-review.yml");
-  ok(/git add data\/weekly-review\.json\n/.test(wrText) && !/git add -A|git add \./.test(wrText) && !/secrets\./.test(wrText), "コミットするのは data/weekly-review.json だけで、秘密情報を使わない");
+  ok(/git add data\/weekly-review\.json data\/social-performance\.json\n/.test(wrText) && !/git add -A|git add \./.test(wrText), "コミットするのは、振り返りと SNS の相対値のファイルだけ");
+  const secretSteps = steps.filter((s) => JSON.stringify(s).includes("secrets."));
+  ok(secretSteps.length === 1 && secretSteps[0].name === "social-metrics" && Object.keys(secretSteps[0].env).join() === "BUFFER_API_KEY" && [...wrText.matchAll(/secrets\.(\w+)/g)].every((m) => m[1] === "BUFFER_API_KEY"), "秘密情報は BUFFER_API_KEY だけで、反応を集める手順にだけ渡す");
+  ok(steps.findIndex((s) => s.name === "social-metrics") < steps.findIndex((s) => s.run === "node scripts/weekly-review.mjs"), "反応を集めてから、振り返りを作る");
   ok(/gh issue close "\$n"/.test(wrText) && /startswith\("週次の振り返り\("\)/.test(wrText), "先週の振り返り(失敗の知らせは除く)を閉じて、次に引き継ぐ");
   const collect = read(".github/workflows/collect.yml");
   ok(/gh issue close "\$n"/.test(collect) && /startswith\("週次の自動収集: 確認が必要な項目があります"\)/.test(collect), "週次収集の確認依頼は、新しいものを立てたら古いものを閉じる");
