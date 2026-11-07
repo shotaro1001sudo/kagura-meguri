@@ -1951,18 +1951,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.76407,
-    "lng": 131.31372,
-    "geoPrecision": "area"
+    "status": "pending",
+    "holdReasons": [
+      "玄武公民館: 町PDFは開始15:00、観光協会は神事16:00・舞入れ16:30。開始時刻の不一致を解消できないため保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 会場は玄武公民館で一致。開始は町PDF 15:00、観光協会は神事16:00・舞入れ16:30のまま不一致。"
+    ]
   },
   {
     "id": "takachiho-yokagura-f85d280df3",
@@ -1999,18 +2000,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.71167,
-    "lng": 131.30778,
-    "geoPrecision": "city"
+    "status": "pending",
+    "holdReasons": [
+      "神楽宿は個人宅。公開施設の会場として確認できず、神社を会場とみなさない。所在地を推測せず保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDFも神楽宿を「個人宅」と記載し、所在地は非公表。御霊神社は会場ではない。"
+    ]
   },
   {
     "id": "takachiho-yokagura-429a697da7",
@@ -2119,18 +2121,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.71167,
-    "lng": 131.30778,
-    "geoPrecision": "city"
+    "status": "pending",
+    "holdReasons": [
+      "神楽宿は個人宅。町PDF開始15:00と観光協会舞入れ15:30も異なる。所在地を推測せず保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDFも神楽宿を「個人宅(片内)」と記載し、所在地は非公表。開始も町15:00、観光協会は舞入れ15:30・神事16:00で不一致。"
+    ]
   },
   {
     "id": "takachiho-yokagura-7ef8b20b4e",
@@ -2287,18 +2290,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.71167,
-    "lng": 131.30778,
-    "geoPrecision": "city"
+    "status": "pending",
+    "holdReasons": [
+      "観光協会は神事のみ12:30、町PDFは日神楽12:00〜16:00。神楽上演の有無・時刻を確認できないため保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDFは日神楽12:00〜16:00、観光協会は「神事のみ 12:30〜」のまま。神楽を舞うかが食い違う。"
+    ]
   },
   {
     "id": "takachiho-yokagura-3f633c6f28",
@@ -2335,18 +2339,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.74437,
-    "lng": 131.35204,
-    "geoPrecision": "area"
+    "status": "pending",
+    "holdReasons": [
+      "観光協会は神事のみ、町PDFは日神楽。神楽上演の有無を確認できないため保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDFは日神楽12:00〜16:00、観光協会は「神事のみ 12:00〜」のまま。神楽を舞うかが食い違う。"
+    ]
   },
   {
     "id": "takachiho-yokagura-a21077e244",
@@ -2359,18 +2364,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.71167,
-    "lng": 131.30778,
-    "geoPrecision": "city"
+    "status": "pending",
+    "holdReasons": [
+      "観光協会は神事のみ、町PDFは日神楽。神楽上演の有無を確認できないため保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDFは日神楽12:00〜15:00、観光協会は「神事のみ 12:00〜」のまま。神楽を舞うかが食い違う。"
+    ]
   },
   {
     "id": "takachiho-yokagura-8ad096e57c",
@@ -2383,18 +2389,19 @@
     "timeUnknown": true,
     "fee": "",
     "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "checked": "2026-11-07",
-    "status": "published",
+    "description": "",
     "auto": true,
     "sourceId": "takachiho-yokagura",
+    "source": "高千穂町観光協会 夜神楽日程表",
     "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 32.71167,
-    "lng": 131.30778,
-    "geoPrecision": "city"
+    "status": "pending",
+    "holdReasons": [
+      "町・観光協会とも神事のみの案内。神楽の公開公演として確認できないため保留。",
+      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDF・観光協会とも「神事のみ 10:00〜」。神楽の公開公演ではない。"
+    ]
   },
   {
     "id": "npo-hiroshima-3e6e2116d8",
@@ -2402,11 +2409,11 @@
     "kagura": "石見神楽",
     "prefecture": "島根県",
     "city": "雲南市",
-    "venue": "雲南市立田井小学校 体育館(雲南市吉田町深野90-1)",
+    "venue": "雲南市立田井小学校 体育館",
     "start": "2026-11-22T10:30",
-    "fee": "前売券 1,500円/当日券 2,000円",
-    "url": "https://docs.google.com/forms/d/e/1FAIpQLScYKy1MbVVktxkjXOMtv5QJ80_lCCJli1tkZTZxo9rEMNOcBQ/viewform",
-    "source": "NPO広島神楽芸術研究所(神楽日程表)",
+    "fee": "前売券 1,500円/当日券 2,000円(中学生以下無料)",
+    "url": "https://www.unnan-kankou.jp/news/2026-11-22fukanokagura/",
+    "source": "雲南市観光協会「深野神楽復活40周年 記念共演会」・NPO広島神楽芸術研究所",
     "checked": "2026-11-07",
     "status": "published",
     "auto": true,
@@ -2415,9 +2422,12 @@
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "lat": 35.3077,
-    "lng": 132.90037,
-    "geoPrecision": "city"
+    "lat": 35.2042883,
+    "lng": 132.9176052,
+    "address": "吉田町深野90-1",
+    "end": "2026-11-22T17:00",
+    "description": "深野神楽保存会の復活40周年を記念する共演会。深野神楽保存会「国譲」、深野神楽こども教室「清目」「五行」、大土地神楽保存会神楽方「野見宿禰」、琴庄神楽団「大江山」、石見神楽亀山社中「頼政」、仁多乃炎太鼓との「八戸」などが出演します。開場9:30・開演10:30・終演17:00予定(雲南市観光協会の案内と、NPO広島神楽芸術研究所の告知で確認。観光協会の神楽日程一覧には18:00とありますが、詳細の案内は10:30開演です)。前売券は田井交流センター・チェリヴァホール・ビックハート出雲・はなえーるで扱います。会場は国道314号沿い、田井郵便局の近くで、駐車場は校庭です。開場待ちの場所取りは当日8:30以降、フラッシュ撮影は禁止、動画撮影は指定場所のみです。出発前に公式案内をご確認ください。",
+    "geoSourceUrl": "https://www.openstreetmap.org/node/1423614702"
   },
   {
     "id": "npo-hiroshima-71199c5a25",
