@@ -1914,30 +1914,6 @@
     "stayLinks": false
   },
   {
-    "id": "akitakata-d1153a8ca0",
-    "name": "かむくら座ミニコンサート2026",
-    "kagura": "安芸高田神楽",
-    "prefecture": "広島県",
-    "city": "安芸高田市",
-    "venue": "神楽門前湯治村 かむくら座",
-    "start": "2026-11-22T00:00",
-    "timeUnknown": true,
-    "fee": "",
-    "url": "https://akitakata-kankou.jp/event/21996/",
-    "description": "",
-    "auto": true,
-    "sourceId": "akitakata",
-    "source": "安芸高田市観光ナビ(安芸高田市観光協会)",
-    "sourceUrl": "https://akitakata-kankou.jp/event/",
-    "firstSeen": "2026-11-04",
-    "lastSeen": "2026-11-04",
-    "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "公式案内はトランペット・神楽笛・ピアノの音楽コンサート。神楽舞の公演として確認できないため保留。"
-    ]
-  },
-  {
     "id": "takachiho-yokagura-1a2f33f5c6",
     "name": "高千穂の夜神楽 押方（五ヶ村西公民館）",
     "kagura": "高千穂神楽",
