@@ -42,6 +42,8 @@ export function xpostTests({ ok, section }) {
   ok(again.length === 0, "同じ日に2回動いても、予約済みの枠には入れない");
   const late = planDay({ events, info, posted: [], todayJst: "2026-11-08", baseUrl: base, now: Date.parse("2026-11-08T12:00:00+09:00") });
   ok(late.length === 4 && late.every((p) => Date.parse(p.dueAt) > Date.parse("2026-11-08T12:00:00+09:00")), "過ぎた枠には入れない", String(late.length));
+  const night = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T21:00:00+09:00") });
+  ok(night.length === 2 && night.every((p) => p.type === "reading"), "7時・19時が過ぎてから動いたときは、開催のお知らせを夜中に入れず、翌日に回す", night.map((p) => p.type).join());
 
   const q = createPostQuery({ text: '改行\nと"引用"', channelId: "ch1", dueAt: slots[0] });
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");

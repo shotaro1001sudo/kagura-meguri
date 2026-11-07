@@ -140,9 +140,10 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const slots = daySlots(todayJst, social);
   const taken = new Set(posted.map((p) => p.dueAt).filter(Boolean));
   const open = slots.filter((s) => !taken.has(s) && Date.parse(s) > now + 10 * 60e3); // 予約済み・過ぎた枠は使わない
-  const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, open.length));
+  // 開催のお知らせは、決めた枠(朝・夕方)だけに入れる。その枠が過ぎていたら、翌日に回す(夜中に出さない)
   const prefer = (social.eventSlots ?? [0, 3]).map((i) => slots[i]).filter((s) => open.includes(s));
-  const evSlots = [...prefer, ...open.filter((s) => !prefer.includes(s))].slice(0, evs.length);
+  const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, prefer.length));
+  const evSlots = prefer.slice(0, evs.length);
   const readSlots = open.filter((s) => !evSlots.includes(s));
   const reads = pickReadings(readingCandidates(info, baseUrl, todayJst), posted, todayJst, readSlots.length);
   const plan = [
