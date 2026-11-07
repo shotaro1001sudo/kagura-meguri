@@ -1,8 +1,9 @@
 name: weekly-collect
 # 毎週、公開されている情報を取得し、自動の検査に通ったものを掲載し、公開サイトを更新する。
 # 検査に通らないもの・異常があるときは、掲載せずに、Issue(確認依頼)を作る。
+# 終わると weekly-review(週次の振り返り)が動き、結果を数字で点検する(AUTOMATION.md の「PDCA」)。
 on:
-  schedule: [{ cron: "0 20 * * 0" }] # 毎週月曜 5:00 JST
+  schedule: [{ cron: "0 19 * * 0" }] # 毎週月曜 4:00 JST(5:15 のSNS予約が、収集後のデータを使えるように)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -69,7 +70,11 @@ jobs:
       - if: ${{ steps.summary.outputs.attention == 'true' && !inputs.dry_run }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          gh issue create --title "週次の自動収集: 確認が必要な項目があります($(date -u +%F))" --body-file data/collect-report.md
+          url=$(gh issue create --title "週次の自動収集: 確認が必要な項目があります($(date -u +%F))" --body-file data/collect-report.md)
+          # 先週までの確認依頼は、今週の分に含まれるので閉じる(Issue がたまらないように)
+          gh issue list --state open --limit 50 --search "週次の自動収集 確認が必要 in:title" --json number,url,title \
+            --jq '.[] | select(.title | startswith("週次の自動収集: 確認が必要な項目があります")) | select(.url != "'"$url"'") | .number' |
+          while read -r n; do gh issue close "$n" --comment "新しい確認依頼に引き継ぎました: $url" >/dev/null; done
       - if: ${{ inputs.dry_run }}
         run: cat data/collect-report.md >> "$GITHUB_STEP_SUMMARY"
       # 失敗したときも、知らせる

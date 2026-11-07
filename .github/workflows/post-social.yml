@@ -3,7 +3,7 @@ name: post-social
 # 中身: 開催の2週間前〜3日前の神楽(1日2件まで)+神楽の読み物(演目・種類・歴史・見どころ・見学のコツ)。
 # Secrets の BUFFER_API_KEY が未設定なら、文面の表示だけ(試運転)。
 on:
-  schedule: [{ cron: "15 20 * * *" }] # 毎日 5:15 JST(月曜5:00の週次収集と重ならないように)
+  schedule: [{ cron: "15 20 * * *" }] # 毎日 5:15 JST(月曜は、4:00 の週次収集で増えた開催も対象になる)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -48,4 +48,8 @@ jobs:
       - if: ${{ failure() }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
-          gh issue create --title "SNSの予約投稿(Buffer)が失敗しました($(date -u +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          log="ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # 開いている失敗の Issue があれば、そこに追記する(毎日同じ Issue が増えないように)
+          n=$(gh issue list --state open --limit 20 --search "SNSの予約投稿 失敗 in:title" --json number,title --jq '[.[] | select(.title | startswith("SNSの予約投稿(Buffer)が失敗しました"))][0].number // empty')
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$(date -u +%F) も失敗しました。$log"
+          else gh issue create --title "SNSの予約投稿(Buffer)が失敗しました($(date -u +%F))" --body "$log"; fi

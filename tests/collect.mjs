@@ -261,10 +261,10 @@ export async function collectTests({ ok, section }) {
   ok(dep.updates.length === 2 && dep.updates.every((u) => u.cooldown?.["default-days"] >= 14), "更新の提案(Dependabot)は、公開から14日以上たった版だけにする");
   const wy = YAML.parse(wf);
   const steps = wy.jobs?.collect?.steps ?? [];
-  ok(wy.name === "weekly-collect" && wy.on?.schedule?.[0]?.cron === "0 20 * * 0" && wy.on?.workflow_dispatch?.inputs?.dry_run?.type === "boolean", "読み込んだ結果: 名前・毎週の予定・手動実行(dry_run)が、意図どおり");
+  ok(wy.name === "weekly-collect" && wy.on?.schedule?.[0]?.cron === "0 19 * * 0" && wy.on?.workflow_dispatch?.inputs?.dry_run?.type === "boolean", "読み込んだ結果: 名前・毎週の予定・手動実行(dry_run)が、意図どおり");
   ok(steps.length > 5 && steps.every((s) => typeof s.run === "string" || typeof s.uses === "string"), "読み込んだ結果: すべての手順が、実行内容(run / uses)を持つ");
   ok(steps.find((s) => s.name === "notify-mail")?.if === "${{ always() }}" && Object.keys(steps.find((s) => s.name === "notify-mail")?.env ?? {}).includes("MAIL_TO"), "読み込んだ結果: メールの通知は、常に実行され、設定を受け取る");
-  ok(/cron: "0 20 \* \* 0"/.test(wf), "毎週(日曜20時UTC = 月曜5時JST)に動く");
+  ok(/cron: "0 19 \* \* 0"/.test(wf), "毎週(日曜19時UTC = 月曜4時JST。5:15 のSNS予約より前)に動く");
   ok(/workflow_dispatch/.test(wf) && /dry_run/.test(wf), "手動の起動と、試運転(dry_run)ができる");
   ok(at("node scripts/collect.mjs") < at("node scripts/geocode.mjs") && at("node scripts/geocode.mjs") < at("npm test") && at("npm test") < at("git push"), "順序: 取得 → 位置付け → テスト → 反映(テストに通らなければ、反映されない)");
   // 秘密情報(メールのアカウント)は、最後の通知の手順だけに渡す

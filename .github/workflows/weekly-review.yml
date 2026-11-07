@@ -1,0 +1,58 @@
+name: weekly-review
+# 週次の振り返り(PDCA の Check と Act)。毎週月曜、週次の自動収集(weekly-collect)が終わったら動く。
+# 1. 掲載・収集・SNS の数字を集め、先週と比べる(Check)
+# 2. 目安から外れたものを「今週やること」にして Issue を立てる。先週の Issue は閉じ、チェックの付いていない手書きの項目は持ち越す(Act)
+# 3. 数字と「次に力を入れるところ」を data/weekly-review.json に残す。Claude の定期タスク(note・月次の調査)が、これを読んで次の計画に使う(Plan)
+on:
+  workflow_run:
+    workflows: [weekly-collect]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: write   # data/weekly-review.json を、mainにコミットする
+  issues: write     # 振り返りの Issue を立て、先週の分を閉じる
+concurrency: { group: weekly-review, cancel-in-progress: false }
+jobs:
+  review:
+    # 定期の収集のあとだけ(収集の手動の試運転では動かない)。手動でも実行できる
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'schedule' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # 収集がコミットした最新の data/ を読むため、main の先端を取る
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: main }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 24 }
+      - id: prev
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh issue list --state open --limit 20 --search "週次の振り返り in:title" --json number,title,body \
+            --jq '[.[] | select(.title | startswith("週次の振り返り("))] | sort_by(.number)' > "$RUNNER_TEMP/prev.json"
+          node -e 'const a=require(process.argv[1]); require("fs").writeFileSync(process.argv[2], a.map(i=>i.body).join("\n"))' "$RUNNER_TEMP/prev.json" "$RUNNER_TEMP/prev.md"
+          echo "numbers=$(node -p 'require(process.argv[1]).map(i=>i.number).join(" ")' "$RUNNER_TEMP/prev.json")" >> "$GITHUB_OUTPUT"
+      - run: node scripts/weekly-review.mjs
+        env:
+          PREV_REVIEW_FILE: ${{ runner.temp }}/prev.md
+          REVIEW_OUT: ${{ runner.temp }}/review.md
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/weekly-review.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(auto): 週次の振り返り $(TZ=Asia/Tokyo date +%F)"
+          git pull --rebase --autostash
+          git push
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PREV: ${{ steps.prev.outputs.numbers }}
+        run: |
+          url=$(gh issue create --title "週次の振り返り($(TZ=Asia/Tokyo date +%F))" --body-file "$RUNNER_TEMP/review.md")
+          echo "振り返り: $url" >> "$GITHUB_STEP_SUMMARY"
+          for n in $PREV; do
+            gh issue close "$n" --comment "次の振り返りに引き継ぎました: $url" >/dev/null
+          done
+      - if: ${{ failure() }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh issue create --title "週次の振り返りが、失敗しました($(TZ=Asia/Tokyo date +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

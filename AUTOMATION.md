@@ -3,22 +3,49 @@
 このサイトで、人の手を使わずに動いている仕組みの一覧です。時刻はすべて日本時間です。
 GitHub Actions の画面: https://github.com/shotaro1001sudo/kagura-meguri/actions
 
+## PDCA(週1回まわる)
+
+自動化は、ばらばらに動くのではなく、**週次の振り返り**を中心に1週間で1周します。
+
+```
+Plan  計画     data/weekly-review.json の focus(掲載が少ない地方・時刻未定の開催)
+  │              → note の題材選び・月次の調査の優先順位に使う
+  ▼
+Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 3:00)→ SNS予約(毎日 5:15)→ note(2日に1回)
+  │
+  ▼
+Check 点検     週次の振り返り(月、収集の直後)が数字を集め、先週と比べる
+  │              掲載数(14/30/60日・地方別)、収集の結果、SNSの予約数・取りこぼし、読み物の残り
+  ▼
+Act   改善     目安から外れたものを「今週やること」として Issue に出す(担当: 人 / Claude)
+                 先週の Issue は自動で閉じ、手で書き足した未完了の項目は持ち越す
+```
+
+**運営者が毎週することは、月曜の「週次の振り返り」Issue を見ることだけ**です。
+
+- 【人】の項目: 自分で行う(保留の確認は管理ページ `npm run admin`)
+- 【Claude】の項目: Claude に「週次の振り返りの Claude の項目をやって」と頼む
+- 「手で見る数字」(Search Console・GA4/GoatCounter・Buffer の反応・note の食い違いメモ)を見て、気づいたことは Issue にコメントするか、`- [ ] やること` を本文に書き足す(来週に持ち越される)
+- 目安(今後30日の掲載30件、保留10件以下など)は [scripts/lib/weekly-review.mjs](scripts/lib/weekly-review.mjs) の `TARGETS` で変えられる
+
 ## 1日の流れ
 
 | 時刻 | 名前 | やること | 詳しく |
 |---|---|---|---|
 | 3:00(毎日) | build-and-deploy | サイトを組み立てて公開。終わった開催の整理、「今週末」「今月」ページの更新 | [deploy.yml](.github/workflows/deploy.yml) |
-| 5:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼 | [COLLECT.md](COLLECT.md) |
-| 5:15(毎日) | post-social | その日のX投稿6本(7時から4時間ごと)を Buffer に予約 | [SOCIAL.md](SOCIAL.md) |
+| 4:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼(先週の確認依頼は閉じる) | [COLLECT.md](COLLECT.md) |
+| 収集の直後(月曜) | weekly-review | 週次の振り返り。数字の点検と「今週やること」の Issue。data/weekly-review.json を更新 | [weekly-review.yml](.github/workflows/weekly-review.yml) |
+| 5:15(毎日) | post-social | その日のX投稿6本(7時から4時間ごと)を Buffer に予約。月曜は収集で増えた開催も対象 | [SOCIAL.md](SOCIAL.md) |
 
 ## Claude の定期タスク(このPC)
 
 Claude デスクトップアプリの「定期タスク」で動きます。**このPCが起動していて、Claude アプリが開いているときだけ**動きます。設定は `C:\Users\shota\.claude\scheduled-tasks\` にあります。
+どちらも、始めに `git fetch` で GitHub 上の最新データ(週次収集の結果と data/weekly-review.json)を読みます(このPCのファイルは書き換えません)。
 
 | 名前 | いつ | やること | 状態(2026-11-07) |
 |---|---|---|---|
-| kagura-meguri-daily-note | 2日に1回 18:00 | サイトの情報と公式情報から note 記事を書き、神楽日和(kagurabi_info)で公開。NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
-| kagurameguri-monthly-research | (毎月1日 9:00 の予定) | 九州・中国・四国・近畿の掲載候補を調べて提案(読むだけ) | **未登録**。設定ファイルだけ残っていて、動いていない |
+| kagura-meguri-daily-note | 2日に1回 18:00 | note 記事を書き、神楽日和(kagurabi_info)で公開。振り返りの focus の地方を優先して題材にする。時刻の判明・データの食い違いを NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
+| kagurameguri-monthly-research | (毎月1日 9:00 の予定) | 振り返りの focus の地方を優先して掲載候補を調べ、提案する(読むだけ)。自動収集に回せる「収集元の候補」も挙げる | **未登録**。設定ファイルだけ残っていて、動いていない |
 
 ## 外部サービス
 
@@ -49,8 +76,10 @@ Claude デスクトップアプリの「定期タスク」で動きます。**�
 
 | Issue の題 | 意味 |
 |---|---|
-| 週次の自動収集: 確認が必要な項目があります | 保留の開催がある。管理ページで確認する |
-| SNSの予約投稿(Buffer)が失敗しました | Buffer への予約に失敗。キーの期限・Buffer の予約上限を確認 |
+| 週次の振り返り(日付) | 失敗ではなく、毎週の点検結果。「今週やること」を進める |
+| 週次の振り返りが、失敗しました | 振り返りの作成に失敗。ログを確認 |
+| 週次の自動収集: 確認が必要な項目があります | 保留の開催がある。管理ページで確認する(新しいものが立つと、古いものは閉じる) |
+| SNSの予約投稿(Buffer)が失敗しました | Buffer への予約に失敗。キーの期限・Buffer の予約上限を確認(続けて失敗したら、同じ Issue に追記) |
 | 【公開処理エラー】GitHub Actions #… | サイトの公開に失敗。ログを確認 |
 | BufferのAPIキーを更新してください | キーの期限が14日以内。[SOCIAL.md](SOCIAL.md) の手順で更新 |
 
