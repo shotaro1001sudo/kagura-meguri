@@ -13,7 +13,7 @@ function h(tag, attrs, ...kids) {
     else if (k === "class") el.className = v;
     else el.setAttribute(k, v === true ? "" : v);
   }
-  for (const c of kids.flat()) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
   return el;
 }
 const $ = (s) => document.querySelector(s);
@@ -63,6 +63,7 @@ function render() {
 
 // ---------- 判断待ち(人が決めること) ----------
 // 1. 自動収集の保留(掲載 / 却下) 2. 週次の振り返りの【人】の項目 3. 検索の改善案(Claude に頼む / 見送る)
+// 目標・KPI・収益化の案は「目標・収益」のタブで決める(件数は、そのタブに出す。二重に数えない)
 function decisions() {
   const pending = S.events.filter((e) => e.status === "pending").sort((a, b) => a.start.localeCompare(b.start));
   const done = new Set(S.committedIds || []);
@@ -70,14 +71,21 @@ function decisions() {
   const openProps = proposals.filter((p) => p.status === "proposed" && !done.has(p.id));
   const actions = S.review?.actions || [];
   const plan = planOpen();
-  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, plan, total: pending.length + actions.length + openProps.length + plan.length };
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, plan, total: pending.length + actions.length + openProps.length };
 }
-const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); };
+const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); window.scrollTo(0, 0); };
+// 見出し(件数つき)と、ひとことの説明。長い説明は「詳しく」に畳む
+const secHead = (title, n, lead, more) => [
+  h("h3", { class: "sec-h" }, title, n == null ? "" : h("span", { class: "pill" + (n ? "" : " zero") }, String(n))),
+  lead ? h("p", { class: "lead" }, lead) : "",
+  more ? h("details", { class: "more" }, h("summary", null, "詳しい説明"), h("p", { class: "mut" }, more)) : "",
+];
+const allClear = (text) => h("p", { class: "clear" }, "✓ ", text);
 
 function decideView() {
   const d = decisions();
   const pendCard = (e, past) => h("section", { class: "panel decision" },
-    h("h4", null, e.name, " ", badge("pending", past ? "開催日が過ぎた保留" : "保留")),
+    h("div", { class: "card-h" }, h("h4", null, e.name), badge("pending", past ? "開催日が過ぎた保留" : "保留")),
     h("p", { class: "mut" }, `${when(e)} ・ ${e.prefecture}${e.city || ""} ${e.venue || "(会場未確認)"}${e.kagura ? " ・ " + e.kagura : " ・ 神楽の種類が空"}`),
     (e.holdReasons || []).length ? h("ul", { class: "reasons" }, e.holdReasons.map((r) => h("li", null, r))) : h("p", { class: "mut" }, "保留の理由の記録はありません。"),
     h("p", { class: "links" }, e.url ? ext(e.url, "公式情報を開く") : h("span", { class: "mut" }, "公式情報のURLなし"), e.sourceUrl && e.sourceUrl !== e.url ? [" ・ ", ext(e.sourceUrl, `取得元(${e.source || "収集元"})`)] : ""),
@@ -88,7 +96,7 @@ function decideView() {
   const actLinks = { "collect-stale": [`${S.repo}/actions/workflows/collect.yml`, "週次の自動収集の実行記録"], "collect-errors": [`${S.repo}/issues?q=is%3Aopen+週次の自動収集`, "週次の自動収集の Issue"],
     "social-missed": ["https://publish.buffer.com/", "Buffer の予約"], "social-metrics-unavailable": ["https://publish.buffer.com/settings/api", "Buffer の API キー"] };
   const prop = (p, closed) => h("section", { class: "panel decision" },
-    h("h4", null, p.id, " ", badge(p.status === "declined" ? "rejected" : p.status === "proposed" ? (d.done.has(p.id) ? "doing" : "new") : "published", p.status === "proposed" && d.done.has(p.id) ? "実施(コミットあり)" : S.proposalStatus[p.status] || p.status)),
+    h("div", { class: "card-h" }, h("h4", null, p.id), badge(p.status === "declined" ? "rejected" : p.status === "proposed" ? (d.done.has(p.id) ? "doing" : "new") : "published", p.status === "proposed" && d.done.has(p.id) ? "実施(コミットあり)" : S.proposalStatus[p.status] || p.status)),
     h("dl", { class: "kv" }, h("dt", null, "対象"), h("dd", null, p.target || ""), h("dt", null, "変える内容"), h("dd", null, p.change || ""),
       p.result ? [h("dt", null, "効果"), h("dd", null, typeof p.result === "string" ? p.result : JSON.stringify(p.result))] : "",
       p.declinedAt ? [h("dt", null, "見送り"), h("dd", null, `${p.declinedAt}${p.declineNote ? " ・ " + p.declineNote : ""}`)] : ""),
@@ -97,30 +105,35 @@ function decideView() {
         h("button", { class: "btn", onclick: () => askClaude(p) }, "Claude に頼む文をコピー"),
         h("button", { class: "btn ghost", onclick: () => setProposal(p, "declined") }, "見送る")));
   const closedProps = d.proposals.filter((p) => !d.openProps.includes(p));
+
+  const groups = [
+    { n: d.upcoming.length, body: () => [
+      ...secHead("保留中の開催", d.upcoming.length, "公式情報で日時・会場を確かめて、「掲載」か「却下」を選びます。どちらも、すぐにサイトに反映します。",
+        "週次の自動収集で、自動の検査に通らなかった開催です。却下したものは data/rejected.json に記録され、自動収集で取り直しません。"),
+      d.upcoming.length ? d.upcoming.map((e) => pendCard(e, false)) : allClear("保留中の開催はありません。"),
+      d.past.length ? h("details", { class: "mt" }, h("summary", null, `開催日が過ぎた保留(${d.past.length}件)`), h("p", { class: "mut" }, "サイトには載っていません。却下すると、一覧から片付きます。"), d.past.map((e) => pendCard(e, true))) : ""] },
+    { n: d.actions.length, body: () => [
+      ...secHead("振り返りで、人が行うこと", d.actions.length, "確認先のリンクから確かめ、終えたら振り返りの Issue にチェックを入れます。",
+        `${S.review?.updated || ""} の週次の振り返り(GitHub の Issue)の【人】の項目です。このPCの画面と GitHub の両方を見なくて済むように、ここにも出しています。`),
+      !S.review ? h("p", { class: "mut" }, "週次の振り返りのデータ(data/weekly-review.json)がありません。")
+        : d.actions.length ? [h("ul", { class: "acts panel" }, d.actions.map((a) => h("li", null, a.text, actLinks[a.key] && S.repo ? [" ", link(...actLinks[a.key])] : ""))),
+            S.repo ? h("p", { class: "links" }, link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue を開く")) : ""]
+        : allClear("人が行う項目はありません。")] },
+    { n: d.openProps.length, body: () => [
+      ...secHead("検索の改善案", d.openProps.length, "やるものは「Claude に頼む文をコピー」して Claude に貼り付け、やらないものは「見送る」。",
+        "毎週月曜の分析(このPCの analytics/)が出した案です。コミットに ID が入ると「実施(コミットあり)」になり、効果は翌週以降の分析が判定します。見送ると、次の週から同じ案が出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
+      !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
+        : [d.openProps.length ? d.openProps.map((p) => prop(p, false)) : allClear("決めていない改善案はありません。"),
+          closedProps.length ? h("details", { class: "mt" }, h("summary", null, `実施・見送りの済んだ案(${closedProps.length}件)`), closedProps.map((p) => prop(p, true))) : ""]] },
+  ];
+  // 決めることがあるものを上に。済んだものは、下に1行ずつ
+  const open = groups.filter((g) => g.n), cleared = groups.filter((g) => !g.n);
   return [
     h("h2", null, "判断待ち"),
-    h("p", { class: "mut" }, "人が決めることを、ここにまとめています。毎週月曜の自動収集・振り返り・検索の分析のあとに、増えます。"),
-
-    h("h3", null, `保留中の開催(${d.upcoming.length}件)`),
-    h("p", { class: "mut" }, "週次の自動収集で、自動の検査に通らなかった開催です。公式情報で日時・会場を確かめて、掲載するか却下します。掲載・却下は、すぐにサイトに反映します。却下したものは、自動収集で取り直しません。"),
-    d.upcoming.length ? d.upcoming.map((e) => pendCard(e, false)) : h("p", { class: "mut" }, "保留中の開催はありません。"),
-    d.past.length ? h("details", { class: "mt" }, h("summary", null, `開催日が過ぎた保留(${d.past.length}件)`), h("p", { class: "mut" }, "サイトには載っていません。却下すると、一覧から片付きます。"), d.past.map((e) => pendCard(e, true))) : "",
-
-    h("h3", null, `今週の振り返りで、人が行うこと(${d.actions.length}件)`),
-    !S.review ? h("p", { class: "mut" }, "週次の振り返りのデータ(data/weekly-review.json)がありません。")
-      : h("div", null,
-        d.actions.length ? h("ul", { class: "acts" }, d.actions.map((a) => h("li", null, a.text, actLinks[a.key] && S.repo ? [" ", link(...actLinks[a.key])] : ""))) : h("p", { class: "mut" }, "保留の判断のほかに、人が行う項目はありません。"),
-        h("p", { class: "mut" }, `${S.review.updated || ""} の振り返りより。終えたら、`, S.repo ? link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue") : "振り返りの Issue", " にチェックを入れてください(このPCの画面と GitHub の、両方を見なくて済むように、ここにも出しています)。")),
-
-    h("h3", null, `目標・KPI と収益化の案(${d.plan.length}件)`),
-    d.plan.length ? h("p", { class: "bar" }, h("span", null, `まだ決めていない KPI・収益化の案が ${d.plan.length} 件あります。`), h("a", { href: "#", onclick: goTab("goal") }, "目標・収益を開く")) : h("p", { class: "mut" }, S.plan ? "決めていない KPI・収益化の案はありません。" : "このPCに、目標の計画(analytics/plan.json)がありません。"),
-
-    h("h3", null, `検索の改善案(${d.openProps.length}件)`),
-    !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
-      : h("div", null,
-        h("p", { class: "mut" }, "毎週月曜の分析が出した案です。やるものは「Claude に頼む文をコピー」して、Claude に貼り付けます。やらないものは「見送る」と、次の週から同じ案が出なくなります(この記録は、このPCだけに残り、GitHub には送りません)。"),
-        d.openProps.length ? d.openProps.map((p) => prop(p, false)) : h("p", { class: "mut" }, "決めていない改善案はありません。"),
-        closedProps.length ? h("details", { class: "mt" }, h("summary", null, `実施・見送りの済んだ案(${closedProps.length}件)`), closedProps.map((p) => prop(p, true))) : ""),
+    d.total ? h("p", { class: "lead" }, `決めることが ${d.total} 件あります。上から順に進めてください。`) : allClear("いま決めることはありません。"),
+    open.map((g) => h("div", { class: "group" }, g.body())),
+    d.plan.length ? h("p", { class: "callout bar" }, h("span", null, `目標・収益にも、決めていない KPI・収益化の案が ${d.plan.length} 件あります。`), h("a", { href: "#", class: "btn ghost small", onclick: goTab("goal") }, "目標・収益を開く")) : "",
+    cleared.length ? h("div", { class: "group cleared" }, cleared.map((g) => h("div", null, g.body()))) : "",
   ];
 }
 
@@ -180,64 +193,72 @@ function goalView() {
   const months = [...new Set(p.kpis.flatMap((k) => Object.keys(k.targets || {})))].sort();
   const cols = [addMonth(now, -1), now, ...months.filter((m) => m > now)];
   const stBadge = (st) => badge({ proposed: "new", adopted: "published", declined: "rejected", done: "done" }[st] || "new", S.planStatus[st] || st);
+  const order = { proposed: 0, adopted: 1, done: 2, declined: 3 };
+  const sorted = (list) => [...list].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
 
-  const kpiCard = (k) => h("section", { class: "panel decision" },
-    h("h4", null, k.kind === "KGI" ? "【最終目標】" : "", k.name, " ", stBadge(k.status)),
+  const kpiButtons = (k) => k.status === "proposed"
+    ? [h("button", { class: "btn small", onclick: () => setPlan("kpi", k, "adopted") }, "採用する"), h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "declined") }, "見送る")]
+    : k.status === "adopted" ? [h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")]
+    : [h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")];
+  const kpiCard = (k) => h("section", { class: "panel decision" + (k.status === "declined" ? " dim" : "") },
+    h("div", { class: "card-h" }, h("h4", null, k.kind === "KGI" ? h("span", { class: "kgi" }, "最終目標") : "", k.name), stBadge(k.status)),
     h("p", { class: "mut" }, k.why || ""),
-    h("dl", { class: "kv" }, h("dt", null, "測り方"), h("dd", null, k.source || ""), h("dt", null, "決めた時点"), h("dd", null, k.current || ""), decidedLine(k)),
     h("div", { class: "scroll" }, h("table", { class: "kpi" },
-      h("thead", null, h("tr", null, h("th", null, ""), cols.map((m) => h("th", null, monthLabel(m), m === now ? "(今月)" : "")))),
+      h("thead", null, h("tr", null, h("th", null, ""), cols.map((m) => h("th", { class: m === now ? "now" : null }, monthLabel(m), m === now ? h("small", null, "今月") : "")))),
       h("tbody", null,
-        h("tr", null, h("th", null, "目標"), cols.map((m) => h("td", null, num(k.targets?.[m], k.unit)))),
+        h("tr", null, h("th", null, "目標"), cols.map((m) => h("td", { class: m === now ? "now" : null }, num(k.targets?.[m], k.unit)))),
         h("tr", null, h("th", null, "実績"), cols.map((m) => {
-          if (m > now) return h("td", { class: "mut" }, "");
+          if (m > now) return h("td", null, "");
           const a = actual(k.id, m), t = k.targets?.[m];
-          const cls = a.v == null || t == null ? null : a.v >= t ? "ok" : m < now ? "ng" : null;
+          const cls = [m === now ? "now" : "", a.v == null || t == null ? "" : a.v >= t ? "ok" : m < now ? "ng" : ""].filter(Boolean).join(" ") || null;
           return h("td", { class: cls, title: a.missing.length ? "含まれていない分: " + a.missing.join("・") : null }, num(a.v, k.unit), a.missing.length && a.v != null ? "*" : "");
         }))))),
-    h("div", { class: "bar mt" },
-      k.status === "proposed" ? [h("button", { class: "btn", onclick: () => setPlan("kpi", k, "adopted") }, "採用する"), h("button", { class: "btn ghost", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost", onclick: () => setPlan("kpi", k, "declined") }, "見送る")]
-        : k.status === "adopted" ? [h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")]
-        : h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")));
+    h("details", { class: "more" }, h("summary", null, "測り方"),
+      h("dl", { class: "kv" }, h("dt", null, "測り方"), h("dd", null, k.source || ""), h("dt", null, "決めた時点"), h("dd", null, k.current || ""), decidedLine(k))),
+    h("div", { class: "bar mt" }, kpiButtons(k)));
 
-  const monCard = (m) => h("section", { class: "panel decision" },
-    h("h4", null, m.id, " ", m.title, " ", stBadge(m.status)),
+  const monButtons = (m) => m.status === "proposed"
+    ? [h("button", { class: "btn small", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
+    : m.status === "adopted" ? [m.ask ? h("button", { class: "btn small", onclick: () => copyAsk(m.ask) }, "Claude に頼む文をコピー") : "", h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
+    : [h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")];
+  const monCard = (m) => h("section", { class: "panel decision" + (m.status === "declined" ? " dim" : "") },
+    h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, m.id, " "), m.title), stBadge(m.status)),
+    h("p", { class: "chips" },
+      m.expectedYen ? h("span", { class: "chip" }, `見込み 月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}`) : "",
+      m.effort ? h("span", { class: "chip" }, `手間 ${m.effort}`) : ""),
     h("p", null, m.summary || ""),
-    h("dl", { class: "kv" },
-      h("dt", null, "見込み"), h("dd", null, m.expectedYen ? `月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}(目標の月の見込み)` : "—"),
-      h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "手間"), h("dd", null, m.effort || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""),
-      h("dt", null, "最初の一歩"), h("dd", null, m.firstStep || ""), decidedLine(m)),
-    h("div", { class: "bar mt" },
-      m.status === "proposed" ? [h("button", { class: "btn", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn ghost", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
-        : m.status === "adopted" ? [m.ask ? h("button", { class: "btn", onclick: () => copyAsk(m.ask) }, "Claude に頼む文をコピー") : "", h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
-        : h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")));
+    h("p", { class: "next" }, h("b", null, "最初の一歩: "), m.firstStep || ""),
+    h("details", { class: "more" }, h("summary", null, "理由・気をつけること"),
+      h("dl", { class: "kv" }, h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""), decidedLine(m))),
+    h("div", { class: "bar mt" }, monButtons(m)));
 
   const adoptedExp = p.monetization.filter((m) => ["adopted", "done"].includes(m.status) && m.expectedYen).reduce((a, m) => [a[0] + m.expectedYen[0], a[1] + m.expectedYen[1]], [0, 0]);
   const openKpis = p.kpis.filter((k) => k.status === "proposed").length, openMons = p.monetization.filter((m) => m.status === "proposed").length;
+  const pct = g.monthlyRevenueYen ? Math.min(100, Math.round((adoptedExp[1] / g.monthlyRevenueYen) * 100)) : 0;
   return [
     h("h2", null, "目標・収益"),
-    h("p", { class: "mut" }, "最終目標から作った KPI と、収益化の案です。採用・見送り・目標の数・手入力の実績は、このPCの analytics/plan.json にだけ保存し、GitHub には送りません。毎週月曜の分析が、KPI の実績を出し、目標に対する遅れを知らせます。"),
-    h("section", { class: "panel" },
-      h("h3", { class: "goal-h" }, g.title || "最終目標", g.deadline ? `(${g.deadline.replace(/-/g, "/")} までに)` : ""),
-      h("div", { class: "cards" },
-        h("div", null, h("b", null, num(rev.v, "円")), "今月の売上", rev.missing.length ? h("small", { class: "mut" }, h("br"), "含まれていない分: ", rev.missing.join("・")) : ""),
-        h("div", null, h("b", null, num(kpiRev?.targets?.[now] ?? null, "円")), "今月の目標"),
-        h("div", null, h("b", null, num(revPrev.v, "円")), "先月の売上"),
-        h("div", null, h("b", null, left == null ? "—" : left + "か月"), "目標の月まで")),
-      g.definition ? h("p", { class: "mut" }, g.definition) : "",
-      g.outlook ? h("p", { class: "warn" }, g.outlook) : "",
-      h("p", { class: "mut" }, `採用した収益化の案の見込みの合計: 月 ${yen(adoptedExp[0])}〜${yen(adoptedExp[1])}(目標 ${yen(g.monthlyRevenueYen)})`)),
+    h("section", { class: "panel goal" },
+      h("div", { class: "card-h" }, h("h3", { class: "goal-h" }, g.title || "最終目標"), g.deadline ? h("span", { class: "mut" }, `${g.deadline.replace(/-/g, "/")} までに`) : ""),
+      h("div", { class: "stats" },
+        h("div", { class: "stat" }, h("b", null, num(rev.v, "円")), h("span", null, "今月の売上"), rev.missing.length ? h("small", { class: "mut" }, "未入力: " + rev.missing.join("・")) : ""),
+        h("div", { class: "stat" }, h("b", null, num(kpiRev?.targets?.[now] ?? null, "円")), h("span", null, "今月の目標")),
+        h("div", { class: "stat" }, h("b", null, num(revPrev.v, "円")), h("span", null, "先月の売上")),
+        h("div", { class: "stat" }, h("b", null, left == null ? "—" : left + "か月"), h("span", null, "目標の月まで"))),
+      h("div", { class: "meter-l" }, h("span", null, "採用した収益化の案で届く見込み"), h("span", null, `月 ${yen(adoptedExp[0])}〜${yen(adoptedExp[1])} / ${yen(g.monthlyRevenueYen)}`)),
+      h("progress", { class: "meter", max: "100", value: String(pct), "aria-label": `採用した案で、目標の ${pct}%` }),
+      g.outlook ? h("details", { class: "more" }, h("summary", null, "見立て・売上の数え方"), h("p", { class: "mut" }, g.outlook), g.definition ? h("p", { class: "mut" }, g.definition) : "") : ""),
+    openKpis + openMons ? h("p", { class: "callout" }, `まだ決めていないものが ${openKpis + openMons} 件あります(KPI ${openKpis}・収益化の案 ${openMons})。各カードの「採用する」か「見送る」を押してください。`) : "",
 
-    h("h3", null, "実績を入れる(自動で取れない分)"),
+    ...secHead("収益化の案", openMons, "採用すると、Claude に頼む文をコピーします。Claude に貼り付けてください。終えたら「実施済みにする」。",
+      "営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください。採用・見送りは、このPCの analytics/plan.json にだけ保存し、GitHub には送りません。"),
+    sorted(p.monetization).map(monCard),
+
+    ...secHead("KPI", openKpis, "月ごとの目標と実績です。実績の * は、まだ含まれていない分があるもの(数字にマウスを置くと出ます)。",
+      "バリューコマースの報酬・セッション・広告のクリックは、毎週月曜の分析が自動で入れます。楽天・AdSense・協賛と、契約・提案の数は、下の「実績を入れる」で入れます。目標の数は、採用の前でも後でも変えられます。"),
+    sorted(p.kpis).map(kpiCard),
+
+    ...secHead("実績を入れる", null, "自動で取れない分を、月ごとに入れます。空欄は「未入力」として扱い、0 とはみなしません。"),
     manualForm(),
-
-    h("h3", null, `KPI(決めていないもの ${openKpis}件)`),
-    h("p", { class: "mut" }, "月ごとの目標と実績です。実績の * は、まだ含まれていない分があるもの(数字にマウスを置くと出ます)。目標の数は、採用の前でも後でも変えられます。"),
-    p.kpis.map(kpiCard),
-
-    h("h3", null, `収益化の案(決めていないもの ${openMons}件)`),
-    h("p", { class: "mut" }, "採用すると「Claude に頼む文」をコピーします。Claude に貼り付けてください(営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください)。終えたら「実施済みにする」。"),
-    p.monetization.map(monCard),
   ];
 }
 function manualForm() {
@@ -293,31 +314,62 @@ function editTargets(k) {
 function homeView() {
   const st = S.events.map(evState);
   const count = (k) => st.filter(([s]) => s === k).length;
-  const inb = (k, f) => S.inbox.filter((x) => x.kind === k && f(x)).length;
-  const old = S.events.filter((e) => evState(e)[0] === "published" && e.checked && daysSince(e.checked) > 60).length;
-  const card = (n, label, tab) => h("div", null, h("b", null, n), tab ? h("a", { href: "#", onclick: (ev) => { ev.preventDefault(); Object.assign(view, tab); render(); } }, label) : label);
+  const inb = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
+  const old = staleEvents().length;
   const dc = decisions();
+  const unpublished = !!(S.pending && (S.pending.uncommitted || S.pending.unpushed));
+  const prevMonth = S.plan ? addMonth(curMonth(), -1) : null;
+  const manualMissing = S.plan && prevMonth >= (S.plan.goal?.setAt || "").slice(0, 7) && ["rakuten", "adsense", "direct"].some((k) => S.plan.manual?.[prevMonth]?.[k] == null);
+  // 今日やること: 件数・ひとこと・行き先。0 件のものは、下に「済み」として1行にまとめる
+  const todos = [
+    { n: unpublished ? 1 : 0, unit: "", title: "サイトに反映していない変更", desc: "保存はできています。もう一度、公開してください。", btn: h("button", { class: "btn", id: "repub", onclick: republish }, "もう一度公開する"), urgent: true },
+    { n: dc.upcoming.length + dc.past.length, title: "保留中の開催", desc: "公式情報を確かめて、掲載か却下を選ぶ", go: ["decide"] },
+    { n: inb("submit"), title: "未対応の申請", desc: "投稿フォームからの掲載依頼", go: ["submit", { sub: "open" }] },
+    { n: inb("contact"), title: "未対応・対応中の問い合わせ", desc: "お問い合わせフォームのメール", go: ["contact", { con: "open" }] },
+    { n: dc.actions.length, title: "振り返りで、人が行うこと", desc: "週次の振り返りの【人】の項目", go: ["decide"] },
+    { n: dc.openProps.length, title: "検索の改善案", desc: "Claude に頼むか、見送るかを選ぶ", go: ["decide"] },
+    { n: dc.plan.length, title: "KPI・収益化の案", desc: "採用するか、見送るかを選ぶ", go: ["goal"] },
+    { n: manualMissing ? 1 : 0, unit: "", title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, desc: "楽天・AdSense・協賛の額を入れる", go: ["goal"] },
+    { n: old, title: "確認日から60日を過ぎた開催", desc: "公式情報で、変更がないか確かめる", go: ["events", { evFilter: "stale" }] },
+  ];
+  const row = (t) => h("li", { class: "todo" + (t.urgent ? " urgent" : "") },
+    h("span", { class: "todo-n" }, t.unit === "" ? "!" : String(t.n)),
+    h("span", { class: "todo-t" }, h("b", null, t.title), h("small", null, t.desc)),
+    t.btn || h("a", { href: "#", class: "btn small", onclick: goTab(...t.go) }, "開く"));
+  const open = todos.filter((t) => t.n), done = todos.filter((t) => !t.n && t.unit !== "");
+  const g = S.plan?.goal;
+  const rev = S.plan ? actual("revenue", curMonth()) : null;
+  const target = S.plan?.kpis.find((k) => k.id === "revenue")?.targets?.[curMonth()];
+  const stat = (n, label, go) => h("a", { href: "#", class: "stat", onclick: goTab(...go) }, h("b", null, String(n)), h("span", null, label));
   return [
-    h("h2", null, "概要"),
-    dc.total ? h("p", { class: "warn bar" }, h("span", null, `判断待ちが ${dc.total} 件あります(保留中の開催 ${dc.upcoming.length + dc.past.length}・振り返りの項目 ${dc.actions.length}・検索の改善案 ${dc.openProps.length}・目標と収益化 ${dc.plan.length})。`), h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く")) : "",
-    h("div", { class: "cards" },
-      card(count("published"), "掲載中の開催", { tab: "events", evFilter: "upcoming" }),
-      card(count("ended"), "終了した開催", { tab: "events", evFilter: "ended" }),
-      card(count("withdrawn"), "取り下げた開催", { tab: "events", evFilter: "withdrawn" }),
-      card(inb("submit", isOpen), "未対応の申請", { tab: "submit", sub: "open" }),
-      card(inb("contact", isOpen), "未対応・対応中の問い合わせ", { tab: "contact", con: "open" })),
-    old ? h("p", { class: "warn" }, `確認日から60日を過ぎた、掲載中の開催が ${old} 件あります。公式情報で、変更がないか確かめてください(開催一覧の「要確認」)。`) : "",
+    h("h2", null, "今日やること"),
+    open.length ? h("ul", { class: "todos" }, open.map(row)) : allClear("いまやることはありません。"),
+    done.length ? h("p", { class: "mut small" }, "✓ 済み: ", done.map((t) => t.title).join("・")) : "",
+
+    g ? [h("h3", null, "目標の進み具合"),
+      h("a", { href: "#", class: "panel goal-mini", onclick: goTab("goal") },
+        h("span", null, h("small", null, "最終目標"), h("b", null, g.title || "")),
+        h("span", null, h("small", null, "今月の売上"), h("b", null, num(rev.v, "円")), rev.missing.length ? h("small", { class: "mut" }, "未入力あり") : ""),
+        h("span", null, h("small", null, "今月の目標"), h("b", null, num(target ?? null, "円"))),
+        h("span", { class: "go" }, "目標・収益を開く →"))] : "",
+
+    h("h3", null, "サイトの開催"),
+    h("div", { class: "stats" },
+      stat(count("published"), "掲載中", ["events", { evFilter: "upcoming" }]),
+      stat(count("ended"), "終了", ["events", { evFilter: "ended" }]),
+      stat(count("withdrawn"), "取り下げ", ["events", { evFilter: "withdrawn" }])),
+
     h("h3", null, "Gmail から読み込む"),
     S.mailReady
-      ? h("div", { class: "bar" }, h("button", { class: "btn", id: "fetch", onclick: fetchMail }, "新しい申請・問い合わせを読み込む"),
+      ? h("div", { class: "bar" }, h("button", { class: "btn ghost", id: "fetch", onclick: fetchMail }, "新しい申請・問い合わせを読み込む"),
           h("span", { class: "mut" }, S.lastFetch ? `前回: ${new Date(S.lastFetch).toLocaleString("ja-JP")}` : "まだ読み込んでいません"))
       : h("div", { class: "warn" }, h("p", null, "Gmail の設定がまだありません。リポジトリの ADMIN.md の手順で、admin.local.json を作ってください(GitHub には上がりません)。設定後、この画面を開き直します。")),
-    h("h3", null, "公開について"),
-    S.pending && (S.pending.uncommitted || S.pending.unpushed)
-      ? h("div", { class: "warn bar" }, h("span", null, "サイトに反映していない変更があります。"), h("button", { class: "btn", id: "repub", onclick: republish }, "もう一度公開する")) : "",
-    h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。"),
+    h("details", { class: "more mt" }, h("summary", null, "公開のしくみ"),
+      h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載と、保留の掲載・却下は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。KPI・収益化の案・問い合わせのメモは、このPCだけに保存し、GitHub には送りません。")),
   ];
 }
+// 確認日から60日を過ぎた、掲載中の開催(開催一覧の「要確認」)
+function staleEvents() { return S.events.filter((e) => evState(e)[0] === "published" && e.checked && daysSince(e.checked) > 60); }
 
 // 保存のあとの、公開(コミットと push)の結果を知らせる
 function published(r, what) {
@@ -343,11 +395,11 @@ function eventsView() {
   const q = view.evQuery.trim();
   const rows = S.events
     .map((e) => ({ e, st: evState(e) }))
-    .filter(({ st }) => view.evFilter === "all" || (view.evFilter === "upcoming" ? st[0] === "published" || st[0] === "pending" : st[0] === view.evFilter))
+    .filter(({ e, st }) => view.evFilter === "all" || (view.evFilter === "upcoming" ? st[0] === "published" || st[0] === "pending" : view.evFilter === "stale" ? st[0] === "published" && e.checked && daysSince(e.checked) > 60 : st[0] === view.evFilter))
     .filter(({ e }) => !q || [e.name, e.kagura, e.prefecture, e.city, e.venue, e.id].join(" ").includes(q))
     .sort((a, b) => (view.evFilter === "ended" ? b.e.start.localeCompare(a.e.start) : a.e.start.localeCompare(b.e.start)));
   const sel = h("select", { "aria-label": "表示する開催", onchange: (ev) => { view.evFilter = ev.target.value; render(); } },
-    ...[["upcoming", "これから(掲載中)"], ["ended", "終了"], ["withdrawn", "取り下げ"], ["all", "すべて"]].map(([v, t]) => h("option", { value: v, selected: view.evFilter === v }, t)));
+    ...[["upcoming", "これから(掲載中)"], ["stale", "要確認(確認日から60日超え)"], ["ended", "終了"], ["withdrawn", "取り下げ"], ["all", "すべて"]].map(([v, t]) => h("option", { value: v, selected: view.evFilter === v }, t)));
   const search = h("input", { type: "search", placeholder: "名称・地域で絞り込む", value: view.evQuery, "aria-label": "絞り込み",
     oninput: (ev) => { view.evQuery = ev.target.value; const pos = ev.target.selectionStart; render(); const i = main.querySelector("input[type=search]"); i.focus(); i.setSelectionRange(pos, pos); } });
   return [

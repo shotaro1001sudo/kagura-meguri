@@ -202,7 +202,8 @@ export async function adminTests({ ok, section }) {
     ok(published.length === n, "目標・KPI・収益化の操作は、このPCだけの記録なので、push しない");
     const js = read("scripts/admin/app.js");
     ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
-    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \+ plan\.length/.test(js), "決めていない KPI・収益化の案は、判断待ちの件数にも入る");
+    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「今日やること」に出す(判断待ちの件数と二重に数えない)");
+    ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });

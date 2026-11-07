@@ -55,3 +55,36 @@ details summary{cursor:pointer;color:var(--mut)}
 table.kpi{margin-top:8px;min-width:480px}table.kpi td,table.kpi th{text-align:right;white-space:nowrap}table.kpi th:first-child{text-align:left}
 table.kpi td.ok{color:var(--ok);font-weight:bold}table.kpi td.ng{color:var(--ac)}
 .goal-h{margin-top:0}
+/* 見出し・件数・説明 */
+.lead{margin:0 0 10px}.small{font-size:.85rem}
+.sec-h{display:flex;align-items:center;gap:8px;margin:28px 0 4px;font-size:1.05rem}
+.pill{display:inline-block;min-width:1.6em;padding:0 7px;border-radius:9px;background:var(--ac);color:var(--onac);font-size:.78rem;text-align:center;font-weight:normal}
+.pill.zero{background:none;color:var(--mut);border:1px solid var(--line)}
+.clear{color:var(--ok);margin:4px 0 8px}
+details.more{margin:4px 0 8px}details.more summary{font-size:.85rem}
+.callout{border-left:3px solid var(--ac);background:var(--card);padding:8px 12px;margin:16px 0;border-radius:0 6px 6px 0}
+.cleared{border-top:1px solid var(--line);margin-top:28px}.cleared .sec-h{margin-top:14px}.cleared .lead,.cleared details.more{display:none}
+.card-h{display:flex;justify-content:space-between;align-items:flex-start;gap:6px 10px;flex-wrap:wrap;margin-bottom:4px}.card-h h4,.card-h h3{margin:0}
+.dim{opacity:.65}
+/* 今日やること */
+.todos{list-style:none;padding:0;margin:0 0 10px;display:grid;gap:8px}
+.todo{display:grid;grid-template-columns:3rem 1fr auto;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.todo.urgent{border-left:4px solid var(--warn)}
+.todo-n{font-size:1.5rem;font-weight:bold;color:var(--ac);text-align:center;line-height:1}
+.todo-t{display:flex;flex-direction:column}.todo-t small{color:var(--mut)}
+/* 数字のカード */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0}
+.stat{display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;color:inherit;text-decoration:none}
+a.stat:hover,a.goal-mini:hover{border-color:var(--ac)}
+.stat b{font-size:1.4rem;line-height:1.3}.stat span{color:var(--mut);font-size:.85rem}.stat small{font-size:.75rem}
+.goal-mini{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:center;color:inherit;text-decoration:none}
+.goal-mini>span{display:flex;flex-direction:column}.goal-mini small{color:var(--mut);font-size:.8rem}.goal-mini b{font-size:1.15rem}.goal-mini .go{margin-left:auto;color:var(--ac)}
+/* 目標・収益 */
+.meter-l{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;font-size:.85rem;color:var(--mut);margin-top:10px}
+.meter{display:block;width:100%;height:8px;margin:4px 0 8px;border:0;border-radius:4px;background:var(--line);overflow:hidden;appearance:none}.meter::-webkit-progress-bar{background:var(--line)}.meter::-webkit-progress-value{background:var(--ac)}.meter::-moz-progress-bar{background:var(--ac)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.chip{font-size:.8rem;border:1px solid var(--line);border-radius:10px;padding:0 8px;color:var(--mut)}
+.next{margin:4px 0}
+.kgi{font-size:.72rem;background:var(--ac);color:var(--onac);border-radius:4px;padding:1px 6px;margin-right:6px;vertical-align:middle}
+table.kpi .now{background:color-mix(in srgb,var(--ac) 9%,transparent)}table.kpi th small{display:block;color:var(--ac);font-size:.7rem;font-weight:normal}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+@media(max-width:600px){.todo{grid-template-columns:2.2rem 1fr}.todo>.btn{grid-column:2;justify-self:start}.goal-mini .go{margin-left:0}}
