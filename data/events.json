@@ -1370,27 +1370,6 @@
     "reservationStatus": "unknown"
   },
   {
-    "id": "ev-20261031",
-    "name": "霜月祭",
-    "kagura": "三川内神楽",
-    "prefecture": "宮崎県",
-    "city": "延岡市北浦町三川内",
-    "venue": "大井農業集落センター",
-    "start": "2026-10-31T19:00",
-    "fee": "無料",
-    "url": "https://www.instagram.com/mikawauchi_kagura/?utm_source=ig_web_button_share_sheet",
-    "description": "三川内神楽は、江戸中後期から継承された神楽で、延岡市北浦町の五地区（歌糸、下塚、梅木、大井、市尾内）に伝わっています。この神楽は「岩戸開き」を織り込む演目16番で構成され、芸態、舞座の作り方などはほとんど同じであるため、総称して「三川内神楽」と呼ばれます。",
-    "source": "三川内五神会",
-    "checked": "2026-10-21",
-    "status": "pending",
-    "holdReasons": [
-      "SNSのプロフィールURLのみで、個別投稿と開催事実の根拠を再確認できていないため保留（2026-11-05）"
-    ],
-    "lat": 32.77766,
-    "lng": 131.80208,
-    "geoPrecision": "city"
-  },
-  {
     "id": "kagura-kaikan-oita-67890d3ae8",
     "name": "神楽会館 令和8年12月一般公演(第211回)",
     "kagura": "豊後神楽",
