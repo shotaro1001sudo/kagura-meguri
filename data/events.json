@@ -2427,18 +2427,18 @@
     "start": "2026-11-22T10:30",
     "fee": "前売券 1,500円/当日券 2,000円",
     "url": "https://docs.google.com/forms/d/e/1FAIpQLScYKy1MbVVktxkjXOMtv5QJ80_lCCJli1tkZTZxo9rEMNOcBQ/viewform",
-    "description": "",
+    "source": "NPO広島神楽芸術研究所(神楽日程表)",
+    "checked": "2026-11-07",
+    "status": "published",
     "auto": true,
     "sourceId": "npo-hiroshima",
-    "source": "NPO広島神楽芸術研究所(神楽日程表)",
     "sourceUrl": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
     "firstSeen": "2026-11-04",
     "lastSeen": "2026-11-04",
     "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "開演時刻が10:30と18:00で不一致。雲南市立田井小学校体育館(島根県雲南市吉田町深野90-1)の正確な座標も未確認。時刻と会場位置の公式確認が完了するまで保留。"
-    ]
+    "lat": 35.3077,
+    "lng": 132.90037,
+    "geoPrecision": "city"
   },
   {
     "id": "npo-hiroshima-71199c5a25",
