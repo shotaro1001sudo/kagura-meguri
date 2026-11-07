@@ -1,15 +1,48 @@
-// X への自動投稿: 選び方・文面・署名のテスト(外部へは送らない)
-import { pickEvents, composeText, weightedLength, oauthHeader } from "../scripts/lib/x-post.mjs";
+// SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
+import { createPostQuery } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
-  section("X投稿: 選び方・文面・署名");
+  section("SNS投稿: 選び方・文面・時刻");
+  const base = "https://kagurameguri.jp";
   const ev = (id, start, extra = {}) => ({ id, name: id, start, prefecture: "島根県", city: "益田市", kagura: "石見神楽", status: "published", ...extra });
   const events = [ev("a", "2026-11-05T10:00"), ev("b", "2026-11-20T10:00"), ev("c", "2026-11-03T10:00"), ev("d", "2026-11-08T10:00", { status: "pending" }), ev("e", "2026-11-09T10:00"), ev("f", "2026-11-10T10:00"), ev("g", "2026-11-12T10:00")];
   const got = pickEvents(events, [{ id: "e" }], "2026-11-01", 5).map((x) => x.id);
   ok(got.join() === "a,f,g", "開催の3〜14日前だけ・掲載中だけ・投稿済みを除き、近い順に選ぶ", got.join());
-  ok(pickEvents(events, [], "2026-11-01").length === 2, "1回の投稿は、最大2件");
-  const t = composeText(ev("x", "2026-11-15T13:30", { name: "長".repeat(200) }), "https://kagurameguri.jp");
-  ok(weightedLength(t) <= 280 && t.includes("11/15(日) 13:30〜") && t.includes("https://kagurameguri.jp/events/x.html"), "文面は280字(全角2・URL23)に収まり、日時とURLを含む", String(weightedLength(t)));
-  const h = oauthHeader({ method: "POST", url: "https://api.x.com/2/tweets", keys: { apiKey: "a", apiSecret: "b", accessToken: "c", accessSecret: "d" }, nonce: "n", timestamp: 1 });
-  ok(h.startsWith("OAuth ") && h.includes('oauth_signature="ipLCkEcwtFgz%2BYAT9CrjN4Z8OpI%3D"'), "OAuth署名が、固定の入力で一定");
+  ok(pickEvents(events, [], "2026-11-01").length === 2, "開催のお知らせは、1日に最大2件");
+  const t = composeText(ev("x", "2026-11-15T13:30", { name: "長".repeat(200) }), base);
+  ok(weightedLength(t) <= 280 && t.includes("11/15(日) 13:30〜") && t.includes(`${base}/events/x.html?utm_source=x`), "開催の文面は280字(全角2・URL23)に収まり、日時とURLを含む", String(weightedLength(t)));
+
+  const r = composeReading({ label: "神楽の歴史", title: "石見神楽", body: "一文目です。" + "二文目はとても長い文です。".repeat(30), url: `${base}/kagura/x.html`, tags: "#神楽" });
+  ok(weightedLength(r) <= 280 && r.includes("一文目です。") && !r.includes("…"), "長い読み物は、文の切れ目で280字に収める", String(weightedLength(r)));
+
+  const info = {
+    石見神楽: { source: "出典", intro: "紹介文。", programs: [{ name: "塩祓", text: "清めの舞。" }], history: ["歴史1。", "歴史2。"], features: ["特徴。"], viewing: ["コツ。"] },
+    高千穂神楽: { source: "出典", intro: "紹介文。", programs: [{ name: "鈿女", text: "女性の舞。" }], features: ["特徴。"] },
+    出典なし神楽: { intro: "出典のない紹介文。" },
+  };
+  const cands = readingCandidates(info, base, "2026-11-13"); // 金曜
+  ok(!cands.some((c) => c.id.includes("出典なし")), "出典のない神楽は、読み物にしない");
+  ok(cands.some((c) => c.url === `${base}/kagura/%E7%9F%B3%E8%A6%8B%E7%A5%9E%E6%A5%BD.html?utm_source=x&utm_medium=social`), "神楽の種類ページのURLは、エンコードして計測用の印を付ける");
+  ok(cands.some((c) => c.id === "r:page:weekend:2026-11-13") && !readingCandidates(info, base, "2026-11-12").some((c) => c.id.startsWith("r:page:weekend")), "「今週末の神楽」は金曜だけ候補になる");
+  ok(pickReadings(cands, [], "2026-11-13", 1)[0]?.id === "r:page:weekend:2026-11-13", "金曜は「今週末の神楽」をいちばん先に出す");
+  ok(pickReadings(cands, [], "2026-11-09", 1)[0]?.theme === "program", "月曜は演目の紹介から出す");
+  const four = pickReadings(cands, [], "2026-11-10", 4);
+  ok(new Set(four.map((c) => c.id)).size === 4 && new Set(four.map((c) => c.theme)).size === 4, "1日の読み物は、テーマを散らす", four.map((c) => c.id).join());
+  const all = cands.map((c) => ({ id: c.id, date: "2026-11-01" }));
+  ok(pickReadings(cands, all, "2026-11-20", 3).length === 0, `出し切ったあと、${RERUN_GAP_DAYS}日たつまでは同じ読み物を出さない`);
+  ok(pickReadings(cands, all, "2026-12-05", 3).length === 3, `${RERUN_GAP_DAYS}日たったら、古いものから再投稿する`);
+
+  const slots = daySlots("2026-11-08");
+  ok(slots.join() === ["2026-11-07T22:00:00.000Z", "2026-11-08T02:00:00.000Z", "2026-11-08T06:00:00.000Z", "2026-11-08T10:00:00.000Z", "2026-11-08T14:00:00.000Z", "2026-11-08T18:00:00.000Z"].join(), "投稿枠は日本時間7時から4時間ごとに6本", slots.join());
+  const plan = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T00:00:00+09:00") });
+  ok(plan.length === 6 && plan.filter((p) => p.type === "event").map((p) => p.dueAt).join() === [daySlots("2026-11-01")[0], daySlots("2026-11-01")[3]].join(), "開催のお知らせは7時と19時、残りの枠は読み物", plan.map((p) => `${p.type}@${p.dueAt}`).join());
+  ok(plan.every((p) => weightedLength(p.text) <= 280), "どの投稿も280字に収まる");
+  const again = planDay({ events, info, posted: plan.map((p) => ({ ...p, date: "2026-11-01" })), todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T00:00:00+09:00") });
+  ok(again.length === 0, "同じ日に2回動いても、予約済みの枠には入れない");
+  const late = planDay({ events, info, posted: [], todayJst: "2026-11-08", baseUrl: base, now: Date.parse("2026-11-08T12:00:00+09:00") });
+  ok(late.length === 4 && late.every((p) => Date.parse(p.dueAt) > Date.parse("2026-11-08T12:00:00+09:00")), "過ぎた枠には入れない", String(late.length));
+
+  const q = createPostQuery({ text: '改行\nと"引用"', channelId: "ch1", dueAt: slots[0] });
+  ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");
 }

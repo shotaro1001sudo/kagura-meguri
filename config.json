@@ -48,5 +48,12 @@
     "bingVerification": ""
   },
   "analyticsId": "G-4DJ8WEBN7E",
-  "cookiebotId": "6a4ea6ee-9934-4406-b303-5cc8e491a686"
+  "cookiebotId": "6a4ea6ee-9934-4406-b303-5cc8e491a686",
+  "social": {
+    "firstSlot": "07:00",
+    "intervalHours": 4,
+    "perDay": 6,
+    "eventSlots": [0, 3],
+    "bufferChannelId": ""
+  }
 }

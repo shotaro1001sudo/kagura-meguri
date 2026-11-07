@@ -1,0 +1,42 @@
+name: post-social
+# 毎朝5時(日本時間)に、その日の投稿6本(7時から4時間ごと)を Buffer の予約投稿に入れる。
+# 中身: 開催の2週間前〜3日前の神楽(1日2件まで)+神楽の読み物(演目・種類・歴史・見どころ・見学のコツ)。
+# Secrets の BUFFER_API_KEY が未設定なら、文面の表示だけ(試運転)。
+on:
+  schedule: [{ cron: "0 20 * * *" }] # 毎日 5:00 JST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Buffer に入れず、文面だけ出す(試運転)"
+        type: boolean
+        default: true
+permissions:
+  contents: write   # data/social-posted.json(予約済みの記録)を、mainにコミットする
+  issues: write     # 失敗したとき、Issueで知らせる
+concurrency: { group: post-social, cancel-in-progress: false }
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 24 }
+      # 秘密情報(Secrets)は、この手順だけに渡す。手動実行の既定は試運転
+      - run: node scripts/post-social.mjs
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      - if: ${{ always() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/social-posted.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(auto): SNS予約投稿の記録 $(date -u +%F)"
+          git pull --rebase --autostash
+          git push
+      - if: ${{ failure() }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh issue create --title "SNSの予約投稿(Buffer)が失敗しました($(date -u +%F))" --body "ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
