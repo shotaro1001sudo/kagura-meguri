@@ -2705,5 +2705,27 @@
     "lng": 131.16607,
     "geoSourceUrl": "https://yaokami.jp/1403263/",
     "geoChecked": "2026-11-05"
+  },
+  {
+    "id": "ise-daikagura-toin-20261107",
+    "name": "藝術文化のつどい2026 伊勢大神楽（山本勘太夫社中）",
+    "kagura": "伊勢大神楽",
+    "prefecture": "三重県",
+    "city": "員弁郡東員町",
+    "venue": "イオンモール東員 1F カブキコート",
+    "address": "大字長深字築田510-1",
+    "start": "2026-11-07T13:00",
+    "fee": "",
+    "url": "https://www.kandayuyamamoto.jp/kouen/post-13506/",
+    "description": "岡田文化財団「藝術文化のつどい2026」のミニ公演。11月7日13時から山本勘太夫社中が出演し、約45分の予定です。観覧料・予約要否は未確認です。地図はイオンモール東員の代表地点です。",
+    "source": "伊勢大神楽講社・岡田文化財団",
+    "checked": "2026-11-07",
+    "status": "published",
+    "reservationStatus": "unknown",
+    "stayLinks": false,
+    "lat": 35.06170661,
+    "lng": 136.57944926,
+    "geoSourceUrl": "https://www.mapion.co.jp/phonebook/M02004/24324/ILSP0056395152_ipclm/",
+    "geoChecked": "2026-11-07"
   }
 ]
