@@ -5,7 +5,8 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const DATA = ["data/events.json", "data/geocache.json"];
+// 却下した保留(rejected.json)も送る(週次の自動収集が、GitHub 上で同じものを取り直さないように)
+const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json"];
 
 function run(cmd, args, opts) {
   return new Promise((resolve) => {
@@ -27,6 +28,19 @@ export async function pendingChanges(root, git = findGit()) {
   const st = await g("status", "--porcelain", "--", ...DATA);
   const ahead = await g("rev-list", "--count", "@{u}..HEAD");
   return { uncommitted: st.ok && st.out.length > 0, unpushed: ahead.ok ? Number(ahead.out) || 0 : 0 };
+}
+
+/** 最近のコミットのメッセージに書かれた改善案の ID(SEO-日付-番号)。実施したかの目安に使う(判定は週次の分析タスク) */
+export async function mentionedIds(root, git = findGit()) {
+  const r = await run(git, ["log", "--since=120.days", "--format=%s%n%b"], { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
+  return r.ok ? [...new Set(r.out.match(/\bSEO-\d{8}-\d+\b/g) ?? [])] : [];
+}
+
+/** GitHub のリポジトリの画面の URL(Issue・Actions へのリンクに使う)。GitHub 以外なら空 */
+export async function repoWebUrl(root, git = findGit()) {
+  const r = await run(git, ["remote", "get-url", "origin"], { cwd: root });
+  const m = r.ok && r.out.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?$/);
+  return m ? `https://github.com/${m[1]}/${m[2]}` : "";
 }
 
 /**

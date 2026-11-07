@@ -56,7 +56,85 @@ function render() {
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === view.tab)));
   const open = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
   $("#n-submit").textContent = open("submit") || ""; $("#n-contact").textContent = open("contact") || "";
-  main.replaceChildren(...({ home: homeView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])());
+  $("#n-decide").textContent = decisions().total || "";
+  main.replaceChildren(...({ home: homeView, decide: decideView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
+}
+
+// ---------- 判断待ち(人が決めること) ----------
+// 1. 自動収集の保留(掲載 / 却下) 2. 週次の振り返りの【人】の項目 3. 検索の改善案(Claude に頼む / 見送る)
+function decisions() {
+  const pending = S.events.filter((e) => e.status === "pending").sort((a, b) => a.start.localeCompare(b.start));
+  const done = new Set(S.committedIds || []);
+  const proposals = S.proposals || [];
+  const openProps = proposals.filter((p) => p.status === "proposed" && !done.has(p.id));
+  const actions = S.review?.actions || [];
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, total: pending.length + actions.length + openProps.length };
+}
+const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); };
+
+function decideView() {
+  const d = decisions();
+  const pendCard = (e, past) => h("section", { class: "panel decision" },
+    h("h4", null, e.name, " ", badge("pending", past ? "開催日が過ぎた保留" : "保留")),
+    h("p", { class: "mut" }, `${when(e)} ・ ${e.prefecture}${e.city || ""} ${e.venue || "(会場未確認)"}${e.kagura ? " ・ " + e.kagura : " ・ 神楽の種類が空"}`),
+    (e.holdReasons || []).length ? h("ul", { class: "reasons" }, e.holdReasons.map((r) => h("li", null, r))) : h("p", { class: "mut" }, "保留の理由の記録はありません。"),
+    h("p", { class: "links" }, e.url ? ext(e.url, "公式情報を開く") : h("span", { class: "mut" }, "公式情報のURLなし"), e.sourceUrl && e.sourceUrl !== e.url ? [" ・ ", ext(e.sourceUrl, `取得元(${e.source || "収集元"})`)] : ""),
+    h("div", { class: "bar" },
+      past ? "" : h("button", { class: "btn", onclick: () => openEditor({ ...e, checked: S.today }, null, { approve: true }) }, "内容を確かめて掲載する"),
+      h("button", { class: "btn ghost", onclick: () => rejectEvent(e) }, past ? "却下して片付ける" : "却下する")));
+  const link = (href, text) => (href ? ext(href, text) : "");
+  const actLinks = { "collect-stale": [`${S.repo}/actions/workflows/collect.yml`, "週次の自動収集の実行記録"], "collect-errors": [`${S.repo}/issues?q=is%3Aopen+週次の自動収集`, "週次の自動収集の Issue"],
+    "social-missed": ["https://publish.buffer.com/", "Buffer の予約"], "social-metrics-unavailable": ["https://publish.buffer.com/settings/api", "Buffer の API キー"] };
+  const prop = (p, closed) => h("section", { class: "panel decision" },
+    h("h4", null, p.id, " ", badge(p.status === "declined" ? "rejected" : p.status === "proposed" ? (d.done.has(p.id) ? "doing" : "new") : "published", p.status === "proposed" && d.done.has(p.id) ? "実施(コミットあり)" : S.proposalStatus[p.status] || p.status)),
+    h("dl", { class: "kv" }, h("dt", null, "対象"), h("dd", null, p.target || ""), h("dt", null, "変える内容"), h("dd", null, p.change || ""),
+      p.result ? [h("dt", null, "効果"), h("dd", null, typeof p.result === "string" ? p.result : JSON.stringify(p.result))] : "",
+      p.declinedAt ? [h("dt", null, "見送り"), h("dd", null, `${p.declinedAt}${p.declineNote ? " ・ " + p.declineNote : ""}`)] : ""),
+    closed ? (p.status === "declined" ? h("div", { class: "bar mt" }, h("button", { class: "btn ghost small", onclick: () => setProposal(p, "proposed") }, "見送りを戻す")) : "")
+      : h("div", { class: "bar mt" },
+        h("button", { class: "btn", onclick: () => askClaude(p) }, "Claude に頼む文をコピー"),
+        h("button", { class: "btn ghost", onclick: () => setProposal(p, "declined") }, "見送る")));
+  const closedProps = d.proposals.filter((p) => !d.openProps.includes(p));
+  return [
+    h("h2", null, "判断待ち"),
+    h("p", { class: "mut" }, "人が決めることを、ここにまとめています。毎週月曜の自動収集・振り返り・検索の分析のあとに、増えます。"),
+
+    h("h3", null, `保留中の開催(${d.upcoming.length}件)`),
+    h("p", { class: "mut" }, "週次の自動収集で、自動の検査に通らなかった開催です。公式情報で日時・会場を確かめて、掲載するか却下します。掲載・却下は、すぐにサイトに反映します。却下したものは、自動収集で取り直しません。"),
+    d.upcoming.length ? d.upcoming.map((e) => pendCard(e, false)) : h("p", { class: "mut" }, "保留中の開催はありません。"),
+    d.past.length ? h("details", { class: "mt" }, h("summary", null, `開催日が過ぎた保留(${d.past.length}件)`), h("p", { class: "mut" }, "サイトには載っていません。却下すると、一覧から片付きます。"), d.past.map((e) => pendCard(e, true))) : "",
+
+    h("h3", null, `今週の振り返りで、人が行うこと(${d.actions.length}件)`),
+    !S.review ? h("p", { class: "mut" }, "週次の振り返りのデータ(data/weekly-review.json)がありません。")
+      : h("div", null,
+        d.actions.length ? h("ul", { class: "acts" }, d.actions.map((a) => h("li", null, a.text, actLinks[a.key] && S.repo ? [" ", link(...actLinks[a.key])] : ""))) : h("p", { class: "mut" }, "保留の判断のほかに、人が行う項目はありません。"),
+        h("p", { class: "mut" }, `${S.review.updated || ""} の振り返りより。終えたら、`, S.repo ? link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue") : "振り返りの Issue", " にチェックを入れてください(このPCの画面と GitHub の、両方を見なくて済むように、ここにも出しています)。")),
+
+    h("h3", null, `検索の改善案(${d.openProps.length}件)`),
+    !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
+      : h("div", null,
+        h("p", { class: "mut" }, "毎週月曜の分析が出した案です。やるものは「Claude に頼む文をコピー」して、Claude に貼り付けます。やらないものは「見送る」と、次の週から同じ案が出なくなります(この記録は、このPCだけに残り、GitHub には送りません)。"),
+        d.openProps.length ? d.openProps.map((p) => prop(p, false)) : h("p", { class: "mut" }, "決めていない改善案はありません。"),
+        closedProps.length ? h("details", { class: "mt" }, h("summary", null, `実施・見送りの済んだ案(${closedProps.length}件)`), closedProps.map((p) => prop(p, true))) : ""),
+  ];
+}
+
+async function rejectEvent(e) {
+  if (!confirm(`「${e.name}」(${when(e)})を却下します。\n開催データから外し、週次の自動収集でも取り直しません(サイトには、もともと載っていません)。よろしいですか？`)) return;
+  toast("保存して公開しています…(数十秒かかることがあります)");
+  try { const r = await call("/api/events/reject", { id: e.id }); published(r, "却下しました"); render(); }
+  catch (err) { toast(err.message, true); }
+}
+async function askClaude(p) {
+  const text = `${p.id} をやって。コミットのメッセージに ID を入れて`;
+  try { await navigator.clipboard.writeText(text); toast(`コピーしました。Claude に貼り付けてください:\n${text}`); }
+  catch { toast(`コピーできませんでした。次の文を Claude に送ってください:\n${text}`, true); }
+}
+async function setProposal(p, status) {
+  let note = "";
+  if (status === "declined") { const v = prompt(`${p.id} を見送ります。理由があれば書いてください(空でも構いません)。`, ""); if (v === null) return; note = v.trim(); }
+  try { await call("/api/proposals/update", { id: p.id, status, note }); toast(status === "declined" ? "見送りにしました" : "提案中に戻しました"); render(); }
+  catch (err) { toast(err.message, true); }
 }
 
 function homeView() {
@@ -65,8 +143,10 @@ function homeView() {
   const inb = (k, f) => S.inbox.filter((x) => x.kind === k && f(x)).length;
   const old = S.events.filter((e) => evState(e)[0] === "published" && e.checked && daysSince(e.checked) > 60).length;
   const card = (n, label, tab) => h("div", null, h("b", null, n), tab ? h("a", { href: "#", onclick: (ev) => { ev.preventDefault(); Object.assign(view, tab); render(); } }, label) : label);
+  const dc = decisions();
   return [
     h("h2", null, "概要"),
+    dc.total ? h("p", { class: "warn bar" }, h("span", null, `判断待ちが ${dc.total} 件あります(保留中の開催 ${dc.upcoming.length + dc.past.length}・振り返りの項目 ${dc.actions.length}・検索の改善案 ${dc.openProps.length})。`), h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く")) : "",
     h("div", { class: "cards" },
       card(count("published"), "掲載中の開催", { tab: "events", evFilter: "upcoming" }),
       card(count("ended"), "終了した開催", { tab: "events", evFilter: "ended" }),
@@ -130,7 +210,9 @@ function eventsView() {
         h("td", { class: "hide-sm nw" }, e.checked || "", st[0] === "published" && e.checked && daysSince(e.checked) > 60 ? h("div", null, badge("old", "要確認")) : ""),
         h("td", { class: "act" },
           h("button", { class: "btn ghost small", onclick: () => openEditor(e) }, "編集"), " ",
-          e.status === "withdrawn"
+          e.status === "pending"
+            ? [h("button", { class: "btn small", onclick: () => openEditor({ ...e, checked: S.today }, null, { approve: true }) }, "確かめて掲載"), " ", h("button", { class: "btn ghost small", onclick: () => rejectEvent(e) }, "却下")]
+            : e.status === "withdrawn"
             ? h("button", { class: "btn ghost small", onclick: () => setEventStatus(e, "published") }, "再掲載")
             : h("button", { class: "btn ghost small", onclick: () => setEventStatus(e, "withdrawn") }, "取り下げ"))))))
       : h("p", { class: "mut" }, "該当する開催はありません。"),
@@ -146,15 +228,17 @@ async function setEventStatus(e, status) {
 }
 
 // ---------- 開催の編集(申請の許可にも使う) ----------
-function openEditor(e, item) {
+// opts.approve: 保留中の開催を、内容を確かめて掲載する(自動収集の ID は変えない)
+function openEditor(e, item, opts = {}) {
   const d = e || {};
   const dlg = $("#dlg"), form = $("#dlg-form");
   const f = (id, label, input, wide) => h("div", { class: "f" + (wide ? " wide" : "") }, h("label", { for: "e-" + id }, label), input, h("small", { class: "err", id: "err-" + id }));
   const inp = (id, v, a = {}) => h("input", { id: "e-" + id, name: id, value: v ?? "", ...a });
   const start = d.start || "", end = d.end || "";
   form.replaceChildren(
-    h("h2", null, item ? "内容を確かめて掲載する" : e ? "開催を編集する" : "開催を追加する"),
-    item ? h("p", { class: "warn" }, "公式情報のURLを開き、日時・会場が合っているかを確かめてから掲載してください。出典には、確かめたページの名前を入れます。") : "",
+    h("h2", null, item || opts.approve ? "内容を確かめて掲載する" : e ? "開催を編集する" : "開催を追加する"),
+    item || opts.approve ? h("p", { class: "warn" }, "公式情報のURLを開き、日時・会場が合っているかを確かめてから掲載してください。出典には、確かめたページの名前を入れます。") : "",
+    opts.approve && (d.holdReasons || []).length ? h("div", { class: "warn mt" }, h("b", null, "保留の理由"), h("ul", { class: "reasons" }, d.holdReasons.map((r) => h("li", null, r)))) : "",
     h("div", { class: "grid" },
       f("id", "ID(ページのURLになる。英小文字・数字・ハイフン)", inp("id", d.id, { required: true, pattern: "[a-z0-9-]+", readonly: e && !item ? true : null })), // 掲載後の ID は変えない(ページの URL が変わり、リンク切れになる)
       f("name", "名称", inp("name", d.name, { required: true, maxlength: 80 }), true),
@@ -178,7 +262,7 @@ function openEditor(e, item) {
       h("div", { class: "f chk" }, h("input", { type: "checkbox", id: "e-socialVerified" }), h("label", { for: "e-socialVerified" }, "SNSの個別投稿をログインせずに読み、公式の投稿元・開催日・会場・入力した事実を確認しました（検索要約だけではチェックしない）")),
       f("checked", "確認日", inp("checked", d.checked || S.today, { type: "date" }))),
     h("div", { class: "bar mt" },
-      h("button", { class: "btn", value: "save", id: "e-save" }, item ? "許可して掲載する" : "保存する"),
+      h("button", { class: "btn", value: "save", id: "e-save" }, item || opts.approve ? "許可して掲載する" : "保存する"),
       h("button", { class: "btn ghost", value: "cancel", formnovalidate: true }, "やめる"),
       d.url ? ext(d.url, "公式情報のURLを開く") : ""));
   form.onsubmit = async (ev) => {
@@ -193,12 +277,12 @@ function openEditor(e, item) {
     form.querySelectorAll(".err").forEach((x) => (x.textContent = "")); form.querySelectorAll("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid"));
     const btn = $("#e-save"); btn.disabled = true; btn.textContent = "保存して公開しています…(数十秒かかることがあります)";
     try {
-      const r = await call("/api/events/save", { event: ev2, originalId: e && !item ? e.id : null, inboxId: item ? item.id : null });
+      const r = await call("/api/events/save", { event: ev2, originalId: e && !item ? e.id : null, inboxId: item ? item.id : null, approve: !!opts.approve });
       dlg.close();
-      published(r, "保存しました");
+      published(r, opts.approve ? "掲載しました" : "保存しました");
       render();
     } catch (err) {
-      btn.disabled = false; btn.textContent = item ? "許可して掲載する" : "保存する";
+      btn.disabled = false; btn.textContent = item || opts.approve ? "許可して掲載する" : "保存する";
       const map = { start: "date", end: "endtime" };
       for (const [k, m] of Object.entries(err.fields || {})) { const id = map[k] || k; const el = $("#err-" + id); if (el) el.textContent = m; $("#e-" + id)?.setAttribute("aria-invalid", "true"); }
       toast(err.message, true);

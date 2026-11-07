@@ -46,3 +46,8 @@ a{color:var(--ac)}
 @media(max-width:700px){.hide-sm{display:none}}
 .mt{margin-top:12px}.full{width:100%}
 .nw{white-space:nowrap}
+.decision h4{margin:0 0 4px;font-size:1rem}.decision .mut{margin:0 0 6px}
+.reasons{margin:4px 0 8px;padding-left:1.3em}.reasons li{margin:2px 0}
+.links{margin:0 0 8px;font-size:.9rem}
+.acts{padding-left:1.3em}.acts li{margin:4px 0}
+details summary{cursor:pointer;color:var(--mut)}

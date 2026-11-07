@@ -1,5 +1,6 @@
 // 管理者用ページ(自分のPCだけで使う): npm run admin
 //   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
+//   判断待ち: 自動収集の保留の掲載・却下 / 週次の振り返りの【人】の項目 / 検索の改善案(頼む・見送る)
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
@@ -10,9 +11,9 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
-import { publish, pendingChanges } from "./publish.mjs";
+import { publish, pendingChanges, mentionedIds, repoWebUrl } from "./publish.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.js": ["app.js", "text/javascript; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"] };
@@ -22,7 +23,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl } = {}) {
   const token = randomBytes(24).toString("hex");
   const cfg = loadConfig(root);
   const site = cfg.siteName ?? "神楽めぐり";
@@ -34,7 +35,8 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const box = loadInbox(root);
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
-      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null) };
+      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
+      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => "") };
   };
 
   // 開催データを変えた操作は、そのままコミットして push する(数分後にサイトに反映)
@@ -69,12 +71,16 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       const box = loadInbox(root);
       const item = body.inboxId ? box.items.find((x) => x.id === body.inboxId) : null;
       if (body.inboxId && !item) return [404, { error: "申請が見つかりません" }];
-      const r = upsertEvent(events, body.event ?? {}, body.originalId ?? null, body.originalId ? undefined : "published");
+      // approve: 保留中の開催を、内容を確かめて掲載する(scripts/review.mjs approve と同じく、保留の理由を消す)
+      const approving = body.approve === true && !!body.originalId;
+      if (approving && events.find((x) => x.id === body.originalId)?.status !== "pending") return [400, { error: "掲載できるのは、保留中の開催だけです" }];
+      const r = upsertEvent(events, body.event ?? {}, body.originalId ?? null, approving ? "published" : body.originalId ? undefined : "published");
       if (r.errs) return [400, { error: "入力内容を確認してください", fields: r.errs }];
+      if (approving) delete r.event.holdReasons;
       saveEvents(root, events);
       if (item) { item.eventId = r.event.id; setInboxStatus(item, "published", today()); saveInbox(root, box); }
       const geo = r.event.lat ? "" : await geocode(root);
-      const pub = await release(item ? "掲載(申請)" : body.originalId ? "編集" : "追加", r.event);
+      const pub = await release(item ? "掲載(申請)" : approving ? "掲載(保留)" : body.originalId ? "編集" : "追加", r.event);
       return { saved: r.event.id, geocode: geo, publish: pub, state: await state() };
     }),
 
@@ -88,6 +94,21 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       saveEvents(root, events);
       const pub = await release(body.status === "withdrawn" ? "取り下げ" : "再掲載", e);
       return { publish: pub, state: await state() };
+    }),
+
+    // 保留中の開催の却下(開催データから外し、rejected.json に記録。自動収集が取り直さない)
+    "POST /api/events/reject": (body) => serial(async () => {
+      const r = rejectPending(root, body.id);
+      if (r.error) return [r.code, { error: r.error }];
+      const pub = await release("却下(保留)", r.event);
+      return { publish: pub, state: await state() };
+    }),
+
+    // 検索の改善案を見送る / 見送りを戻す(analytics/state.json。このPCだけ。push しない)
+    "POST /api/proposals/update": (body) => serial(async () => {
+      const r = setProposalStatus(root, body.id, body.status, today(), body.note);
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
     }),
 
     // 申請・問い合わせの状態とメモ

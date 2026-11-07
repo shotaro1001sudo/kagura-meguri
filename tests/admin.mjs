@@ -78,6 +78,7 @@ export async function adminTests({ ok, section }) {
   const published = [];
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
+    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r",
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -124,6 +125,44 @@ export async function adminTests({ ok, section }) {
     r = await req("/api/inbox/update", { body: { id: conItem.id, status: "doing", memo: "電話で確認中" } });
     ok(r.json.state.inbox.find((x) => x.id === conItem.id).memo === "電話で確認中" && r.json.state.inbox.find((x) => x.id === conItem.id).status === "doing", "問い合わせの対応状況とメモを保存する");
     ok(published.length === 3, "問い合わせのメモ・状態や、Gmail の読み込みでは、push しない(開催データが変わらない)");
+
+    // ---------- 判断待ち: 保留の掲載・却下、振り返りの【人】の項目、検索の改善案 ----------
+    const evPath = join(ROOT, "data/events.json");
+    const held = (id, extra = {}) => ({ id, name: "保留 " + id, kagura: "石見神楽", prefecture: "島根県", city: "浜田市", venue: "会館", start: "2026-11-20T18:00", url: "https://example.jp/h", source: "収集元", checked: "2026-10-05", status: "pending", holdReasons: ["一度の新規が多すぎる"], auto: true, sourceId: "s1", ...extra });
+    writeFileSync(evPath, JSON.stringify([...JSON.parse(read(evPath)), held("h-1"), held("h-2")], null, 2));
+    writeFileSync(join(ROOT, "data/weekly-review.json"), JSON.stringify({ updated: "2026-10-12", actions: [{ key: "held", owner: "人", text: "保留が 25 件" }, { key: "collect-errors", owner: "人", text: "収集元で 1 件のエラー" }, { key: "time-unknown", owner: "Claude", text: "時刻未定" }] }));
+    mkdirSync(join(ROOT, "analytics"), { recursive: true });
+    const prop = (id, status) => ({ id, date: "2026-10-01", target: "検索語", change: "タイトル", baseline: { q: [1, 2] }, status, implementedAt: null, result: null });
+    writeFileSync(join(ROOT, "analytics/state.json"), JSON.stringify({ updated: "2026-10-12", snapshot: { keep: true }, proposals: [prop("SEO-20261001-1", "proposed"), prop("SEO-20261001-2", "proposed"), prop("SEO-20261001-3", "implemented")] }));
+    let st = (await req("/api/state")).json;
+    ok(st.review?.actions.map((a) => a.key).join() === "collect-errors", "振り返りからは、人が行う項目だけを出す(保留の判断は、開催の欄で別に出す。Claude の項目は出さない)", JSON.stringify(st.review));
+    ok(st.proposals.length === 3 && !("baseline" in st.proposals[0]) && st.committedIds.join() === "SEO-20261001-1" && st.repo === "https://github.com/o/r", "改善案・コミットに書かれた ID・リポジトリの場所を、画面に渡す(基準の数字は渡さない)");
+
+    r = await req("/api/events/save", { body: { event: { ...held("h-1"), source: "" }, originalId: "h-1", approve: true } });
+    ok(r.status === 400 && r.json.fields.source && JSON.parse(read(evPath)).find((e) => e.id === "h-1").status === "pending", "保留の掲載: 出典がないと、掲載しない(保留のまま)");
+    r = await req("/api/events/save", { body: { event: { ...held("h-1"), source: "浜田市観光協会", checked: "2026-10-10" }, originalId: "h-1", approve: true } });
+    const ap = JSON.parse(read(evPath)).find((e) => e.id === "h-1");
+    ok(r.status === 200 && ap.status === "published" && !("holdReasons" in ap) && ap.auto === true && ap.sourceId === "s1" && ap.checked === "2026-10-10", "保留の掲載: 掲載にし、保留の理由を消す(自動収集の記録は残す)", JSON.stringify(ap));
+    ok(published.at(-1) === "data(admin): 掲載(保留): 保留 h-1", "保留の掲載も、そのままコミットと push をする");
+    ok((await req("/api/events/save", { body: { event: { ...base[0] }, originalId: "a-1", approve: true } })).status === 400, "掲載中の開催を「保留の掲載」として保存することはできない");
+
+    ok((await req("/api/events/reject", { body: { id: "a-1" } })).status === 400 && JSON.parse(read(evPath)).some((e) => e.id === "a-1"), "掲載中の開催は却下できない(取り下げを使う)");
+    ok((await req("/api/events/reject", { body: { id: "nope" } })).status === 404, "ない開催は却下できない");
+    r = await req("/api/events/reject", { body: { id: "h-2" } });
+    const rej = JSON.parse(read(join(ROOT, "data/rejected.json")));
+    ok(r.status === 200 && !JSON.parse(read(evPath)).some((e) => e.id === "h-2") && rej.length === 1 && rej[0].id === "h-2" && rej[0].start === "2026-11-20T18:00", "保留の却下: 開催データから外し、rejected.json に記録する(週次の自動収集が取り直さない)");
+    ok(published.at(-1) === "data(admin): 却下(保留): 保留 h-2", "却下も、そのままコミットと push をする");
+
+    const n = published.length;
+    r = await req("/api/proposals/update", { body: { id: "SEO-20261001-2", status: "declined", note: "季節が過ぎた" } });
+    let an = JSON.parse(read(join(ROOT, "analytics/state.json")));
+    const dp = an.proposals.find((p) => p.id === "SEO-20261001-2");
+    ok(r.status === 200 && dp.status === "declined" && dp.declinedAt === "2026-10-10" && dp.declineNote === "季節が過ぎた" && an.snapshot.keep === true && dp.baseline.q.length === 2, "改善案を見送ると、analytics/state.json に見送りと理由を記録する(ほかの記録は変えない)");
+    r = await req("/api/proposals/update", { body: { id: "SEO-20261001-2", status: "proposed" } });
+    an = JSON.parse(read(join(ROOT, "analytics/state.json")));
+    ok(an.proposals.find((p) => p.id === "SEO-20261001-2").status === "proposed" && !("declinedAt" in an.proposals.find((p) => p.id === "SEO-20261001-2")), "見送りは、戻せる");
+    ok((await req("/api/proposals/update", { body: { id: "SEO-20261001-3", status: "declined" } })).status === 400 && (await req("/api/proposals/update", { body: { id: "SEO-20261001-1", status: "implemented" } })).status === 400, "実施済みの案は見送りにできず、実施・評価の状態は画面から変えられない(週次の分析が決める)");
+    ok(published.length === n, "改善案の見送りは、このPCだけの記録なので、push しない");
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });
@@ -176,5 +215,7 @@ export async function adminTests({ ok, section }) {
   ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write/.test(js), "画面: メールの内容を HTML として扱わない(文字として表示)");
   ok(js.includes("https://mail.google.com/mail/?${q}`, \"_blank\", \"noopener,noreferrer\")"), "返信: Gmail の作成画面を、元の画面と切り離して開く");
   ok(!/\bstyle:|\.style\b/.test(js), "画面: 埋め込みの style を使わない(CSP で止められるため、クラスで指定する)");
+  ok(read("scripts/admin/publish.mjs").includes("\"data/rejected.json\"") && /^analytics\/$/m.test(gi), "送るのは開催データと却下の記録まで。検索・アクセスの分析(analytics/)は Git に入れない");
+  ok(read("scripts/admin/app.html").includes("data-tab=\"decide\"") && js.includes("decide: decideView") && js.includes("/api/events/reject") && js.includes("approve: !!opts.approve"), "画面: 「判断待ち」のタブから、保留の掲載・却下と、改善案の見送りができる");
   ok(!existsSync("dist-test/admin") && !read("scripts/build.mjs").includes("scripts/admin"), "管理者用ページは、公開サイトには含めない");
 }

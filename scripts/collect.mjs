@@ -140,7 +140,7 @@ ${held.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}`).
 ## 前回から続く保留(まだ確認していないもの ${stillPending.length}件)
 ${stillPending.map((e) => `${li(e)}\n  - 理由: ${(e.holdReasons ?? []).join(" / ")}(${e.firstSeen ?? "日付不明"} から保留)`).join("\n") || "- なし"}
 
-掲載してよければ \`node scripts/review.mjs approve <id>\`、不要なら \`reject <id>\` を実行してください。
+管理者用ページ(\`npm run admin\`)の「判断待ち」で、公式情報を確かめて「掲載」か「却下」を選んでください(すぐにサイトに反映します。コマンドなら \`node scripts/review.mjs approve <id>\` / \`reject <id>\`)。
 
 ## 取り下げたもの(${withdrawn.length}件)
 ${withdrawn.map((e) => `${li(e)}\n  - 理由: ${e.withdrawnReason}`).join("\n") || "- なし"}

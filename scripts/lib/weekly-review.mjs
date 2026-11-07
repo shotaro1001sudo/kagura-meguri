@@ -80,7 +80,7 @@ export function decideActions(m, prev) {
   const c = m.collect, l = m.listing, s = m.social;
   if (c.daysAgo == null || c.daysAgo > TARGETS.collectStaleDays) add("collect-stale", "人", `週次の自動収集が ${c.date || "未実行"} から動いていません。Actions の weekly-collect を確認する`);
   if (c.errors > 0) add("collect-errors", "人", `収集元で ${c.errors} 件のエラー。週次収集の Issue のログを確認し、壊れた収集元を直すか止める`);
-  if (c.held > TARGETS.heldMax) add("held", "人", `保留が ${c.held} 件(目安 ${TARGETS.heldMax} 件以下)。管理ページ(npm run admin)で、掲載か却下を決める`);
+  if (c.held > TARGETS.heldMax) add("held", "人", `保留が ${c.held} 件(目安 ${TARGETS.heldMax} 件以下)。管理者用ページ(npm run admin)の「判断待ち」で、掲載か却下を決める`);
   const bulk = Object.entries(c.heldReasons).find(([r, n]) => /多すぎる/.test(r) && n > 0);
   if (bulk) add("held-bulk", "Claude", `「${bulk[0]}」で ${bulk[1]} 件が保留。年度の切り替えなら、公式日程と照らして一括で掲載する`);
   if (c.sourceReviews > 0) add("source-reviews", "Claude", `確認待ちの収集元が ${c.sourceReviews} 件。公式ページを確かめ、自動掲載に回せるものは収集元に加える`);
@@ -172,7 +172,7 @@ export function renderReview(m, prev, actions, carried = []) {
     "",
     "## このPCで見るもの(数字は公開しない)",
     "",
-    "- [ ] 検索・アクセスの分析レポート(月曜 9:00 の定期タスク「週次の検索・アクセス分析」が作る `analytics/` の最新ファイル)の改善案を、Claude に頼むか見送るか決める <!-- manual-analytics -->",
+    "- [ ] 検索・アクセスの分析レポート(月曜 9:00 の定期タスク「週次の検索・アクセス分析」が作る `analytics/` の最新ファイル)の改善案を、管理者用ページの「判断待ち」で、Claude に頼むか見送るか決める <!-- manual-analytics -->",
     "- [ ] note: NOTE-LOG.md(このPC)の「時刻判明」「食い違い」メモがあれば、データを直す <!-- manual-note -->",
     "",
     "気づいたことは、この Issue にコメントで残してください。次の週の振り返りで、チェックの付いていない項目は持ち越されます。",
