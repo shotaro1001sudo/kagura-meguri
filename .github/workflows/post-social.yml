@@ -23,7 +23,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: 24 }
       # 秘密情報(Secrets)は、この手順だけに渡す。手動実行の既定は試運転
-      - run: node scripts/post-social.mjs
+      - id: post
+        run: node scripts/post-social.mjs
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
@@ -36,6 +37,14 @@ jobs:
           git commit -m "chore(auto): SNS予約投稿の記録 $(date -u +%F)"
           git pull --rebase --autostash
           git push
+      # APIキーの期限が近い・過ぎたら、Issueで知らせる(同じ題の Issue が開いていれば、立て直さない)
+      - if: ${{ always() && steps.post.outputs.key_notice != '' }}
+        env: { GH_TOKEN: "${{ github.token }}", NOTICE: "${{ steps.post.outputs.key_notice }}" }
+        run: |
+          title="BufferのAPIキーを更新してください"
+          if [ -z "$(gh issue list --state open --search "$title in:title" --json number --jq '.[].number')" ]; then
+            gh issue create --title "$title" --body "$NOTICE"
+          fi
       - if: ${{ failure() }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |

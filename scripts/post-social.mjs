@@ -7,7 +7,7 @@
 // BUFFER_API_KEY が空、または DRY_RUN=true のときは、送らずに、予定の文面と時刻だけを表示する(記録もしない)。
 // 投稿済みの記録: data/social-posted.json(同じ開催・同じ枠を、二度入れないため)
 // テスト用の切り替え: EVENTS_FILE / POSTED_FILE / POST_NOW(日本時間の日付 YYYY-MM-DD)
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { planDay } from "./lib/x-post.mjs";
 
@@ -24,6 +24,8 @@ async function gql(key, query, variables = {}) {
     signal: AbortSignal.timeout(20000),
   });
   const body = await res.json().catch(() => ({}));
+  const unauthorized = res.status === 401 || body.errors?.some((e) => e.extensions?.code === "UNAUTHORIZED");
+  if (unauthorized) throw new Error("Buffer API が認証を拒否しました。APIキーの期限切れ、または取り消しの可能性があります。新しいキーを発行し、Secrets の BUFFER_API_KEY を更新してください");
   if (!res.ok || body.errors?.length) throw new Error(`Buffer API エラー: HTTP ${res.status} ${JSON.stringify(body.errors ?? body).slice(0, 300)}`);
   return body.data;
 }
@@ -55,6 +57,17 @@ export const createPostQuery = ({ text, channelId, dueAt }) => `mutation {
   }
 }`;
 
+export const KEY_NOTICE_DAYS = 14;
+/** APIキーの期限(config.json の social.bufferKeyExpires, YYYY-MM-DD)が近い・過ぎたときの知らせ。なければ "" */
+export function keyExpiryNotice(expires, todayJst) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(expires ?? "")) return "";
+  const days = Math.round((Date.parse(`${expires}T00:00:00Z`) - Date.parse(`${todayJst}T00:00:00Z`)) / 86400e3);
+  if (days > KEY_NOTICE_DAYS) return "";
+  return days < 0
+    ? `BufferのAPIキーの期限(${expires})が過ぎています。新しいキーを発行し、Secrets の BUFFER_API_KEY と config.json の social.bufferKeyExpires を更新してください`
+    : `BufferのAPIキーの期限(${expires})まで、あと${days}日です。新しいキーを発行し、Secrets の BUFFER_API_KEY と config.json の social.bufferKeyExpires を更新してください`;
+}
+
 async function main() {
   const cfg = readJson("config.json", {});
   const social = cfg.social ?? {};
@@ -66,6 +79,11 @@ async function main() {
   const key = (process.env.BUFFER_API_KEY ?? "").trim();
   const live = process.env.DRY_RUN !== "true" && !!key;
   if (!live) console.log("【試運転】BUFFER_API_KEY が未設定、または DRY_RUN のため、Buffer には入れず、文面だけ表示します");
+  const notice = keyExpiryNotice(social.bufferKeyExpires, today);
+  if (notice) {
+    console.log(notice);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `key_notice=${notice}\n`); // ワークフローが Issue で知らせる
+  }
 
   const now = process.env.POST_NOW ? Date.parse(`${today}T00:00:00+09:00`) : Date.now();
   const plan = planDay({ events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now });

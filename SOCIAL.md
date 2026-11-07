@@ -23,10 +23,18 @@
 
 ## はじめの設定(運営者)
 
-1. Buffer で **Settings → API**(https://publish.buffer.com/settings/api)を開き、APIキーを発行する。
+1. Buffer で **Settings → API**(https://publish.buffer.com/settings/api)を開き、APIキーを発行する(期限は、選べるいちばん長いものに。下の「APIキーの期限」を参照)。
 2. GitHub のリポジトリ → **Settings → Secrets and variables → Actions** に、`BUFFER_API_KEY` という名前で登録する。
 3. **Actions → post-social → Run workflow** を、`dry_run` にチェックを入れたまま実行し、ログで文面を確かめる。
 4. 問題なければ、翌朝5時から自動で予約が入ります。すぐ入れたいときは、`dry_run` のチェックを外して実行します。
+
+### APIキーの期限
+
+Buffer のAPIキーには期限があります。発行するときは、選べるいちばん長い期限にしてください。発行したら、[config.json](config.json) の `social.bufferKeyExpires` に期限の日付(`2027-11-08` の形)を入れます。
+
+- 期限の14日前から、「BufferのAPIキーを更新してください」という Issue が立ちます(開いている間は、毎日は立てません)。
+- 更新は、新しいキーを発行 → Secrets の `BUFFER_API_KEY` を上書き → `bufferKeyExpires` を新しい日付に → Issue を閉じる、の順です。
+- 日付を入れ忘れても、期限が切れた日の実行が「認証を拒否しました」というエラーで止まり、Issue が立ちます。
 
 Buffer に X のチャンネルが1つだけなら、自動で見つけます。複数あるときは、[config.json](config.json) の `social.bufferChannelId` にチャンネルのIDを入れます(エラーのログに、候補のIDが出ます)。
 

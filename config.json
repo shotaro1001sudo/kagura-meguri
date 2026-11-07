@@ -54,6 +54,7 @@
     "intervalHours": 4,
     "perDay": 6,
     "eventSlots": [0, 3],
-    "bufferChannelId": ""
+    "bufferChannelId": "",
+    "bufferKeyExpires": ""
   }
 }

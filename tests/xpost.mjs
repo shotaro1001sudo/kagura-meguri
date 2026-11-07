@@ -1,6 +1,6 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
 import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
-import { createPostQuery } from "../scripts/post-social.mjs";
+import { createPostQuery, keyExpiryNotice } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
   section("SNS投稿: 選び方・文面・時刻");
@@ -45,4 +45,6 @@ export function xpostTests({ ok, section }) {
 
   const q = createPostQuery({ text: '改行\nと"引用"', channelId: "ch1", dueAt: slots[0] });
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");
+  ok(keyExpiryNotice("", "2026-11-08") === "" && keyExpiryNotice("2026-12-31", "2026-11-08") === "", "APIキーの期限が未設定・まだ先なら、知らせない");
+  ok(keyExpiryNotice("2026-11-22", "2026-11-08").includes("あと14日") && keyExpiryNotice("2026-11-07", "2026-11-08").includes("過ぎています"), "期限の14日前から・過ぎたあとは、知らせる");
 }
