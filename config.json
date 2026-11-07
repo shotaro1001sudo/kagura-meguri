@@ -55,6 +55,6 @@
     "perDay": 6,
     "eventSlots": [0, 3],
     "bufferChannelId": "",
-    "bufferKeyExpires": ""
+    "bufferKeyExpires": "2027-11-07"
   }
 }
