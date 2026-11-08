@@ -1,6 +1,10 @@
 {
-  "updated": "2026-11-07",
-  "status": "none",
+  "updated": "2026-11-09",
+  "status": "no_data",
   "samples": 0,
+  "period": {
+    "days": 35,
+    "settleDays": 2
+  },
   "themes": {}
 }

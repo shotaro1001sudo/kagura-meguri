@@ -1,70 +1,69 @@
 {
-  "updated": "2026-11-07",
+  "updated": "2026-11-09",
   "metrics": {
-    "date": "2026-11-07",
+    "date": "2026-11-09",
     "listing": {
-      "upcoming14": 37,
-      "upcoming30": 66,
-      "upcoming60": 88,
+      "upcoming14": 32,
+      "upcoming30": 55,
+      "upcoming60": 78,
       "byRegion30": {
-        "北海道・東北": 1,
-        "関東": 10,
+        "北海道・東北": 0,
+        "関東": 6,
         "中部": 9,
-        "近畿": 1,
-        "中国": 19,
-        "四国": 8,
-        "九州・沖縄": 18
+        "近畿": 0,
+        "中国": 16,
+        "四国": 7,
+        "九州・沖縄": 17
       },
-      "emptyRegions30": [],
+      "emptyRegions30": [
+        "北海道・東北",
+        "近畿"
+      ],
       "timeUnknown14": [
-        "2026-11-07 保呂羽山の霜月神楽",
         "2026-11-15 芸北神楽研究発表大会",
         "2026-11-15 雲の上の神楽大会",
-        "2026-11-21 本郷神楽祭り"
+        "2026-11-22 神話の高千穂神楽まつり",
+        "2026-11-23 八王子よみがえりフェスタ神楽"
       ]
     },
     "collect": {
-      "date": "2026-11-04",
-      "daysAgo": 3,
-      "published": 0,
-      "held": 25,
+      "date": "2026-11-09",
+      "daysAgo": 0,
+      "published": 1,
+      "held": 0,
       "withdrawn": 0,
       "errors": 0,
-      "heldReasons": {
-        "名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)": 1,
-        "一度の新規が多すぎる": 21,
-        "開演時刻が10:30と18:00で不一致。雲南市立田井小学校体育館(島根県雲南市吉田町深野90-1)の正確な座標も未確認。時刻と会場位置の公式確認が完了するまで保留。": 1,
-        "場所(市区町村・会場)が不明": 2
-      },
-      "sourceReviews": 11,
+      "heldReasons": {},
+      "sourceReviews": 10,
       "sourcesEnabled": 15,
       "sourcesDisabled": 9
     },
     "social": {
       "last7": {
-        "event": 0,
-        "reading": 0
+        "event": 2,
+        "reading": 4
       },
       "missedEvents": [],
-      "readingsUnposted": 180,
-      "readingDaysLeft": 45
+      "readingsUnposted": 177,
+      "readingDaysLeft": 44,
+      "performance": {
+        "status": "no_data",
+        "reason": "",
+        "samples": 0,
+        "themes": {}
+      }
     }
   },
   "actions": [
     {
-      "key": "held",
-      "owner": "人",
-      "text": "保留が 25 件(目安 10 件以下)。管理ページ(npm run admin)で、掲載か却下を決める"
-    },
-    {
-      "key": "held-bulk",
-      "owner": "Claude",
-      "text": "「一度の新規が多すぎる」で 21 件が保留。年度の切り替えなら、公式日程と照らして一括で掲載する"
-    },
-    {
       "key": "source-reviews",
       "owner": "Claude",
-      "text": "確認待ちの収集元が 11 件。公式ページを確かめ、自動掲載に回せるものは収集元に加える"
+      "text": "確認待ちの収集元が 10 件。公式ページを確かめ、自動掲載に回せるものは収集元に加える"
+    },
+    {
+      "key": "regions-empty",
+      "owner": "Claude",
+      "text": "今後30日の掲載が0件の地方: 北海道・東北・近畿。月次の調査でこの地方を優先する"
     },
     {
       "key": "time-unknown",
@@ -78,10 +77,10 @@
       "近畿"
     ],
     "timeUnknown": [
-      "2026-11-07 保呂羽山の霜月神楽",
       "2026-11-15 芸北神楽研究発表大会",
       "2026-11-15 雲の上の神楽大会",
-      "2026-11-21 本郷神楽祭り"
+      "2026-11-22 神話の高千穂神楽まつり",
+      "2026-11-23 八王子よみがえりフェスタ神楽"
     ],
     "needReadings": false
   },
@@ -95,6 +94,16 @@
       "published": 0,
       "socialEvents": 0,
       "socialReadings": 0
+    },
+    {
+      "date": "2026-11-09",
+      "upcoming14": 32,
+      "upcoming30": 55,
+      "upcoming60": 78,
+      "held": 0,
+      "published": 1,
+      "socialEvents": 2,
+      "socialReadings": 4
     }
   ]
 }
