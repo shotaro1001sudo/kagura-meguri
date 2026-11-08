@@ -17,10 +17,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
-import { fetchFormMails } from "./mail.mjs";
+import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
-import { loadPipeline, saveLead, setStage, pipelineSummary, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
+import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
@@ -32,7 +32,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -87,14 +87,22 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     box.lastFetch = new Date().toISOString();
     const pruned = pruneInbox(box, today());
     saveInbox(root, box);
-    return { added: items.length, pruned };
+    // 営業の相手からの返信(台帳の email から届いたメール)。失敗しても、フォームの読み込みは成功として返す
+    let replies = { added: 0, advanced: [] }, replyError = null;
+    const known = new Set(loadPipeline(root).leads.flatMap((x) => (x.replies ?? []).map((r) => r.messageId)));
+    const targets = loadPipeline(root).leads.filter((x) => x.sentAt && x.stage !== "candidate" && (x.email || x.url || x.formUrl));
+    if (targets.length) {
+      try { replies = recordReplies(root, await fetchReplies({ user: g.user, pass: g.appPassword, leads: targets, knownIds: known }), today()); }
+      catch (err) { replyError = err.code || err.message; }
+    }
+    return { added: items.length, pruned, replies: replies.added, advanced: replies.advanced.length, replyError };
   };
 
   // 定期の更新: GitHub の最新を取り込む → Gmail を読み込む。ほかの保存・公開と重ならないよう、順番に
   const refresh = (why) => serial(async () => {
     const r = { at: new Date(now()).toISOString(), why };
     try { r.git = await sync(root); } catch (err) { r.git = { ok: false, text: err.message }; }
-    if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件`, added: m.added }; }
+    if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件${m.replies ? `・営業の相手からの返信 ${m.replies} 件` : ""}${m.replyError ? `(営業の返信は読み込めませんでした: ${m.replyError})` : ""}`, added: m.added, replies: m.replies }; }
     lastRefresh = r;
     ext = null; // 次に概要を開いたとき、GitHub の実行とサイトを確かめ直す
     return r;
@@ -203,6 +211,13 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       if (r.error) return [r.code, { error: r.error, fields: r.fields }];
       return { lead: r.lead, state: await state() };
     }),
+    // 営業の相手からの返信を、画面で確かめた
+    "POST /api/pipeline/seen": (body) => serial(async () => {
+      const r = markRepliesSeen(root, body.id, today());
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+
     "POST /api/pipeline/stage": (body) => serial(async () => {
       const r = setStage(root, body.id, body.stage, today(), body.note, body.nextAt);
       if (r.error) return [r.code, { error: r.error }];

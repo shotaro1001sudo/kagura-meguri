@@ -132,6 +132,73 @@ export function setStage(root, id, stage, today, note = "", nextAt) {
   return { lead };
 }
 
+/**
+ * Gmail で見つけた相手からのメールを、台帳に記録する(管理者用ページが Gmail を読み込むたびに)。
+ * 自動返信でない返信が来て、段階が「送信済み」なら「返信あり」に進める(記録に「Gmail で返信を確認」と残す)。
+ * まだ画面で確かめていない返信は、lead.replySeenAt より新しいもの。
+ */
+export function recordReplies(root, replies, today) {
+  if (!replies?.length) return { added: 0, advanced: [] };
+  const pl = loadPipeline(root);
+  let added = 0; const advanced = [];
+  for (const r of replies) {
+    const lead = pl.leads.find((y) => y.id === r.leadId);
+    if (!lead) continue;
+    lead.replies ??= [];
+    if (lead.replies.some((y) => y.messageId === r.messageId)) continue;
+    lead.replies.push({ messageId: r.messageId, date: r.date, from: r.from, subject: String(r.subject ?? "").slice(0, 200), snippet: String(r.snippet ?? "").slice(0, 300), ...(r.auto ? { auto: true } : {}) });
+    lead.replies.sort((a, b) => a.date.localeCompare(b.date));
+    added++;
+    if (!r.auto && lead.stage === "sent") {
+      lead.stage = "replied";
+      lead.nextAt = addDays(today, 2);
+      (lead.log ??= []).push({ date: today, stage: "replied", note: "Gmail で返信を確認(自動)" });
+      advanced.push(lead.id);
+    }
+    lead.updatedAt = today;
+  }
+  if (added) { pl.updated = today; savePipeline(root, pl); }
+  return { added, advanced };
+}
+/** 返信を画面で確かめた(「新しい返信」の印を消す) */
+export function markRepliesSeen(root, id, today) {
+  const pl = loadPipeline(root);
+  const lead = pl.leads.find((y) => y.id === id);
+  if (!lead) return { code: 404, error: "相手が見つかりません" };
+  lead.replySeenAt = new Date().toISOString();
+  lead.updatedAt = today;
+  savePipeline(root, pl);
+  return { lead };
+}
+export const unseenReplies = (x) => (x.replies ?? []).filter((r) => !r.auto && (!x.replySeenAt || r.date > x.replySeenAt));
+
+/**
+ * 相手ごとの「状況」と「結果」を、短い文にする(画面の一覧と、週次の分析が使う)。
+ *   status: いまどうなっているか / result: どう終わったか(まだなら「未定」) / attention: 運営者がすぐ見るべきか
+ */
+const md = (d) => (d ? `${+d.slice(5, 7)}/${+d.slice(8, 10)}` : "");
+export function leadSummary(x, today) {
+  const days = (d) => Math.round((Date.parse(today) - Date.parse(d.slice(0, 10))) / DAY);
+  const real = (x.replies ?? []).filter((r) => !r.auto);
+  const autos = (x.replies ?? []).filter((r) => r.auto);
+  const sends = (x.log ?? []).filter((l) => l.stage === "sent").length;
+  const last = [...(x.log ?? [])].reverse().find((l) => l.note && !/台帳に追加|候補として追加/.test(l.note));
+  const unseen = unseenReplies(x).length;
+  const parts = [];
+  if (x.stage === "candidate") parts.push("まだ送っていない", !x.email && !x.formUrl && !x.phone ? "連絡先が未確認" : "");
+  else {
+    if (x.sentAt) parts.push(`${md(x.sentAt)} に送信${sends > 1 ? `(${sends}回)` : ""}`);
+    if (real.length) parts.push(`返信 ${real.length}件(最新 ${md(real.at(-1).date.slice(0, 10))})${unseen ? `・未確認 ${unseen}件` : ""}`);
+    else if (["sent"].includes(x.stage) && x.sentAt) parts.push(`返信なし(${days(x.sentAt)}日)${autos.length ? "・自動返信のみ" : ""}`);
+    if (x.stage === "talking") parts.push("商談中");
+    if (ACTIVE.includes(x.stage) && x.nextAt) parts.push(x.nextAt <= today ? `連絡する日を${days(x.nextAt) ? `${days(x.nextAt)}日過ぎています` : "迎えました"}` : `次に連絡 ${md(x.nextAt)}`);
+  }
+  const result = x.stage === "won" ? `契約${x.monthlyYen ? ` 月${x.monthlyYen.toLocaleString("ja-JP")}円` : ""}(${md(x.wonAt)})`
+    : x.stage === "lost" ? `見送り${last?.note ? `: ${last.note}` : ""}`
+    : "未定";
+  return { status: parts.filter(Boolean).join("・") || STAGES[x.stage], result, lastNote: last?.note ?? "", attention: unseen > 0 || (ACTIVE.includes(x.stage) && !!x.nextAt && x.nextAt <= today) };
+}
+
 /** 月ごとの、提案した数(sentAt の月)と、契約数(その月の末までに契約し、見送りになっていないもの) */
 export function pipelineMonths(leads, today) {
   if (!leads.length) return {};
@@ -174,6 +241,9 @@ export function pipelineSummary(pl, kpis = [], today) {
     week: { from: mon, count: weekCount, guide: weekGuide, short: weekGuide != null && weekCount < weekGuide },
     month: { month: m, pitches: months[m]?.pitches ?? 0, contracts: months[m]?.contracts ?? 0, pitchTarget: tp, contractTarget: tc },
     months, due, count, candidates: count.candidate,
+    // 相手ごとの状況と結果(一覧)と、まだ確かめていない返信のある相手の数
+    rows: leads.map((x) => ({ id: x.id, name: x.name, stage: x.stage, ...leadSummary(x, today) })),
+    unseen: leads.filter((x) => unseenReplies(x).length).length,
     wonMonthlyYen: leads.filter((x) => x.stage === "won" && x.monthlyYen).reduce((a, x) => a + x.monthlyYen, 0),
     replyRate: (() => { const sent = leads.filter((x) => x.sentAt).length; const rep = leads.filter((x) => x.sentAt && x.log?.some((l) => ["replied", "talking", "won"].includes(l.stage))).length; return sent ? { sent, replied: rep } : null; })(),
   };

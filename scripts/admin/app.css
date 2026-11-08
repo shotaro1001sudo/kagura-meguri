@@ -152,3 +152,10 @@ figure.chart{max-width:760px}
 /* 営業: 目安に足りない数・連絡する日が来た相手 */
 .stat.ng b{color:var(--ac)}.chip.due{border-color:var(--ac);color:var(--ac);font-weight:bold}
 .panel pre.draft{font-size:.88rem;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin:4px 0 6px;word-break:break-word}.warn-t{color:var(--ac)}
+
+/* 営業: 宛先ごとの状況と結果、相手からの返信 */
+.scroll-x{overflow-x:auto}
+table.leadsum{min-width:520px;margin:6px 0}table.leadsum td,table.leadsum th{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.leadsum tr.att td{background:color-mix(in srgb,var(--ac) 9%,transparent)}table.leadsum tr.dim td{opacity:.6}
+.lead-sum{margin:6px 0;padding:8px 10px;border-left:3px solid var(--line)}.lead-sum.att{border-left-color:var(--ac)}
+.replies .snip{flex-basis:100%;font-size:.88rem;color:var(--mut, inherit)}

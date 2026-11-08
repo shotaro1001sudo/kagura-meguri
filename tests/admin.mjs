@@ -2,11 +2,11 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
-import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
+import { classify, readFields, readJsonBlock, toItem, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
-import { pipelineSummary, addSuggestedLeads } from "../scripts/admin/pipeline.mjs";
+import { pipelineSummary, addSuggestedLeads, leadSummary } from "../scripts/admin/pipeline.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
@@ -147,12 +147,14 @@ export async function adminTests({ ok, section }) {
   const ovCalls = { runs: 0, site: 0 };
   // コミットと push は、本物のリポジトリに触れないよう、記録するだけの偽物にする
   const published = [];
+  const fakeReplies = { calls: [], next: [] };
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
     siteCheck: async () => { ovCalls.site++; return { ok: true, status: 200, ms: 120, at: "2026-10-10T01:00:00Z" }; },
+    fetchReplies: async ({ leads }) => { fakeReplies.calls.push(leads.map((x) => x.id)); return fakeReplies.next.splice(0); },
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -351,6 +353,25 @@ export async function adminTests({ ok, section }) {
     led = JSON.parse(read(plPath)).leads;
     ok(r.status === 200 && led[0].sentAt === "2026-10-10" && led[0].nextAt === "2026-10-17" && led[0].log.at(-1).note === "メールで送付", "送ったら、送った日と、7日後の「次に連絡する日」と記録を残す");
     st = r.json.state;
+    {
+      // 営業の相手からの返信: Gmail の読み込みで見つけ、送信済みなら「返信あり」に進める。自動返信は進めない
+      fakeReplies.next.push({ leadId: "L-001", messageId: "<auto@x>", date: "2026-10-10T01:00:00.000Z", from: "dan@example.jp", subject: "自動返信: 受け付けました", snippet: "", auto: true });
+      let m = await req("/api/fetch-mail", { body: {} });
+      led = JSON.parse(read(plPath)).leads;
+      ok(m.status === 200 && m.json.replies === 1 && led[0].stage === "sent" && fakeReplies.calls.at(-1).join() === "L-001", "Gmail の読み込みで、送った相手からのメールを探す(自動返信は記録するが、段階は進めない)");
+      fakeReplies.next.push({ leadId: "L-001", messageId: "<r1@x>", date: "2026-10-10T02:00:00.000Z", from: "dan@example.jp", subject: "Re: ご相談", snippet: "前向きに検討します" });
+      m = await req("/api/fetch-mail", { body: {} });
+      led = JSON.parse(read(plPath)).leads;
+      const ps = m.json.state.pipeline.summary;
+      ok(led[0].stage === "replied" && led[0].replies.length === 2 && led[0].log.at(-1).note.includes("Gmail") && ps.unseen === 1 && ps.rows[0].status.includes("返信 1件") && ps.rows[0].result === "未定" && ps.rows[0].attention,
+        "返信が届いたら「返信あり」に進め、宛先ごとのまとめに返信の件数・未確認・結果(未定)を出す");
+      fakeReplies.next.push({ leadId: "L-001", messageId: "<r1@x>", date: "2026-10-10T02:00:00.000Z", from: "dan@example.jp", subject: "Re: ご相談" });
+      await req("/api/fetch-mail", { body: {} });
+      ok(JSON.parse(read(plPath)).leads[0].replies.length === 2, "同じメールは二度記録しない");
+      m = await req("/api/pipeline/seen", { body: { id: "L-001" } });
+      ok(m.status === 200 && m.json.state.pipeline.summary.unseen === 0 && (await req("/api/pipeline/seen", { body: { id: "L-999" } })).status === 404, "「返信を確かめた」で、新しい返信の印が消える");
+      await req("/api/pipeline/stage", { body: { id: "L-001", stage: "sent" } });
+    }
     ok(st.pipeline.summary.month.pitches === 1 && st.pipeline.summary.week.count === 1 && st.plan.actuals.months["2026-10"].pitches === 1, "送った数は、今週・今月の提案と、KPI の実績(提案した相手の数)に入る");
     r = await req("/api/pipeline/stage", { body: { id: "L-001", stage: "won", note: "月3000円" } });
     led = JSON.parse(read(plPath)).leads;
@@ -363,6 +384,19 @@ export async function adminTests({ ok, section }) {
       ok(s2.due.length === 1 && s2.due[0].id === "L-1" && s2.due[0].late === 3 && s2.candidates === 1, "連絡する日が来た(過ぎた)やりとり中の相手だけを、遅れた日数つきで出す");
       ok(s2.month.pitchTarget.month === "2026-12" && s2.week.guide === 4 && s2.week.count === 0 && s2.week.short === true, "今月の目標がなければ次の目標の月を使い、1週の目安(15件÷31日×7 → 4件)に足りないかを出す");
       ok(s2.months["2026-10"].pitches === 1 && s2.months["2026-11"].pitches === 1, "提案した数は、最初に送った日の月で数える");
+      const sum = (x) => leadSummary(x, "2026-11-12");
+      ok(sum({ stage: "sent", sentAt: "2026-11-02", nextAt: "2026-11-09", log: [{ stage: "sent" }] }).status === "11/2 に送信・返信なし(10日)・連絡する日を3日過ぎています"
+        && sum({ stage: "candidate" }).status === "まだ送っていない・連絡先が未確認"
+        && sum({ stage: "won", sentAt: "2026-10-01", wonAt: "2026-10-20", monthlyYen: 5000 }).result === "契約 月5,000円(10/20)"
+        && sum({ stage: "lost", log: [{ stage: "candidate", note: "台帳に追加" }, { stage: "lost", note: "予算がない" }] }).result === "見送り: 予算がない"
+        && sum({ stage: "sent", sentAt: "2026-11-10", nextAt: "2026-11-17", replies: [{ date: "2026-11-11T00:00:00Z", auto: true }] }).status.includes("自動返信のみ"),
+        "宛先ごとの状況(送った日・返信・連絡する日)と結果(契約の月額・見送りの理由・未定)を、短い文にする");
+      ok(leadDomain("info@kagura.example.jp") === "kagura.example.jp" && leadDomain("someone@gmail.com") === "" && isAutoReply({ "auto-submitted": "auto-replied" }, "") && isAutoReply({}, "【自動返信】お問い合わせを受け付けました") && !isAutoReply({ "auto-submitted": "no" }, "Re: ご案内")
+        && isAutoReply({}, "お問い合わせありがとうございます。", "この度は、お問い合わせ頂き、誠にありがとうございました。 下記送信内容にて受付いたしました。") && !isAutoReply({}, "Re: 協賛枠のご案内", "ご連絡ありがとうございます。協賛について詳しく伺えますか。" + "x".repeat(400) + "> 下記送信内容にて受付いたしました"),
+        "返信は、独自ドメインなら同じドメインからも拾い(無料メールは本人のアドレスだけ)、自動返信を見分ける");
+      ok(fromLead("info@city.x.lg.jp", { url: "https://kanko.city.x.lg.jp/a" }) && !fromLead("a@lg.jp", { url: "https://kanko.city.x.lg.jp/a" }) && fromLead("staff@kagura.jp", { formUrl: "https://www.kagura.jp/form" })
+        && !fromLead("me@gmail.com", { url: "https://foo.jimdofree.com/" }) && siteDomain("https://ameblo.jp/x") === "" && !fromLead("other@kagura.jp", { email: "dan@gmail.com" }),
+        "フォームで送った相手は、公式サイトのドメイン(とその親)からのメールを返信とみなす(ブログ・SNS・無料メールのドメインは使わない)");
     }
 
     // ---------- スマホから(Tailscale Serve 経由。Host が ts.net の名前になる) ----------

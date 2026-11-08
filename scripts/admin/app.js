@@ -59,7 +59,7 @@ function render() {
   $("#n-decide").textContent = decisions().total || "";
   $("#n-goal").textContent = planOpen().length || "";
   $("#n-tasks").textContent = S.tasks?.attention || S.tasks?.missed || "";
-  $("#n-sales").textContent = S.pipeline?.summary.due.length || "";
+  $("#n-sales").textContent = (S.pipeline?.summary.due.length || 0) + (S.pipeline?.summary.unseen || 0) || "";
   main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, sales: salesView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
@@ -197,6 +197,10 @@ async function copyText(text, msg) {
 async function copyPrompt(text) {
   try { await navigator.clipboard.writeText(text); toast("プロンプト案をコピーしました。Claude に貼り付けてください"); }
   catch { toast("コピーできませんでした。「プロンプト案」を開いて、文を選んでコピーしてください", true); }
+}
+async function seenReplies(x) {
+  try { await call("/api/pipeline/seen", { id: x.id }); toast("返信を確かめた印を付けました。段階は、やりとりに合わせて進めてください"); render(); }
+  catch (err) { toast(err.message, true); }
 }
 async function setAdvice(a, status) {
   let note = "";
@@ -408,12 +412,29 @@ function salesView() {
   const list = leads.filter(inGroup).sort((a, b) => (a.nextAt || "9").localeCompare(b.nextAt || "9") || a.id.localeCompare(b.id));
   const groups = [["candidate", "候補(まだ送っていない)", sm.count.candidate], ["sent", "やりとり中", sm.count.sent + sm.count.replied + sm.count.talking], ["won", "契約", sm.count.won], ["lost", "見送り", sm.count.lost]];
   const dueSet = new Set(sm.due.map((d) => d.id));
+  const rowOf = (id) => (sm.rows || []).find((r) => r.id === id);
+  // Gmail で見つけた、相手からのメール(新しいものが上)。まだ確かめていない返信は開いて出す
+  const gmailMsg = (mid) => `https://mail.google.com/mail/?authuser=${encodeURIComponent(S.gmailUser || "")}#search/${encodeURIComponent("rfc822msgid:" + String(mid).replace(/^<|>$/g, ""))}`;
+  const replyBox = (x) => {
+    const rs = (x.replies || []).slice().reverse();
+    if (!rs.length) return "";
+    const unseen = rs.filter((r) => !r.auto && (!x.replySeenAt || r.date > x.replySeenAt));
+    return h("details", { class: "more replies", open: unseen.length ? true : null },
+      h("summary", null, `相手からのメール(${rs.length}件)`, unseen.length ? h("span", { class: "chip due" }, `新しい返信 ${unseen.length}件`) : ""),
+      h("ul", { class: "plan-rows" }, rs.map((r) => h("li", null,
+        h("span", { class: "t" }, r.subject || "(件名なし)"), h("span", { class: "mut" }, `${jpDate(r.date.slice(0, 10))} ・ ${r.from}${r.auto ? " ・ 自動返信" : ""}`),
+        r.snippet ? h("span", { class: "snip" }, r.snippet) : "",
+        ext(gmailMsg(r.messageId), "Gmail で開く")))),
+      unseen.length ? h("div", { class: "bar" }, h("button", { class: "btn small", onclick: () => seenReplies(x) }, "返信を確かめた")) : "");
+  };
   const card = (x) => h("section", { class: "panel decision" + (x.stage === "lost" ? " dim" : "") },
     h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, x.id, " "), x.name), stageBadge(x.stage)),
     h("p", { class: "chips" }, h("span", { class: "chip" }, x.kind), h("span", { class: "chip" }, `${x.offer} ${P.offers[x.offer] || ""}`),
       x.monthlyYen ? h("span", { class: "chip" }, `月 ${yen(x.monthlyYen)}`) : "",
       x.source === "weekly-analytics" && x.stage === "candidate" ? h("span", { class: "chip" }, `週次の分析が追加(${jpDate(x.createdAt)})`) : "",
       x.nextAt && !["won", "lost", "candidate"].includes(x.stage) ? h("span", { class: "chip" + (dueSet.has(x.id) ? " due" : "") }, `次に連絡する日 ${jpDate(x.nextAt)}${dueSet.has(x.id) ? "(来ています)" : ""}`) : ""),
+    (() => { const r = rowOf(x.id); return r ? h("p", { class: "lead-sum" + (r.attention ? " att" : "") }, h("b", null, "状況: "), r.status, h("br"), h("b", null, "結果: "), r.result) : ""; })(),
+    replyBox(x),
     h("dl", { class: "kv" },
       x.contact ? [h("dt", null, "宛先・窓口"), h("dd", null, x.contact)] : "",
       x.email ? [h("dt", null, "メール"), h("dd", null, x.email)] : "",
@@ -451,6 +472,16 @@ function salesView() {
         h("div", { class: "stat" }, h("b", null, tgt(mo.contractTarget, mo.contracts, "件")), h("span", null, "契約"), tNote(mo.contractTarget)),
         h("div", { class: "stat" }, h("b", null, yen(sm.wonMonthlyYen)), h("span", null, "契約の月額の合計"))),
       h("p", { class: "mut small" }, `返信率: ${sm.replyRate ? `${sm.replyRate.replied} / ${sm.replyRate.sent}件` : "まだ送っていません"} ・ 1週の目安は、提案の月の目標を週に割ったものです。提案した数・契約数は「目標・収益」の KPI に自動で入ります(手入力があれば、手入力を優先)。`)),
+    sm.unseen ? [h("h3", { class: "sec-h" }, "新しい返信が届いています", h("span", { class: "pill" }, String(sm.unseen))),
+      h("ul", { class: "plan-rows" }, leads.filter((x) => (x.replies || []).some((r) => !r.auto && (!x.replySeenAt || r.date > x.replySeenAt))).map((x) => { const last = x.replies.filter((r) => !r.auto).at(-1);
+        return h("li", null, h("span", { class: "t" }, x.name), h("span", { class: "mut" }, `${jpDate(last.date.slice(0, 10))} 「${last.subject || "(件名なし)"}」`),
+          h("button", { class: "btn small", onclick: () => { view.salesSt = "sent"; render(); } }, "やりとり中を開く")); }))] : "",
+    (sm.rows || []).length ? h("details", { class: "more panel", open: true }, h("summary", null, `宛先ごとの状況と結果(${sm.rows.length}件)`),
+      h("div", { class: "scroll-x" }, h("table", { class: "leadsum" },
+        h("thead", null, h("tr", null, h("th", null, "相手"), h("th", null, "段階"), h("th", null, "状況"), h("th", null, "結果"))),
+        h("tbody", null, sm.rows.slice().sort((a, b) => order.indexOf(a.stage) - order.indexOf(b.stage) || a.id.localeCompare(b.id)).map((r) =>
+          h("tr", { class: (r.attention ? "att" : "") + (r.stage === "lost" ? " dim" : "") }, h("td", null, h("span", { class: "mut" }, r.id, " "), r.name), h("td", null, stageBadge(r.stage)), h("td", null, r.status), h("td", null, r.result)))))),
+      h("p", { class: "mut small" }, "色が付いた行は、新しい返信があるか、連絡する日が来た相手です。返信は、管理者用ページが Gmail を読み込むときに、台帳のメールアドレス(独自ドメインなら同じドメイン)から届いたメールを探して記録します。自動返信は「返信あり」に数えません。")) : "",
     sm.due.length ? [h("h3", { class: "sec-h" }, "連絡する日が来た相手", h("span", { class: "pill" }, String(sm.due.length))),
       h("ul", { class: "plan-rows" }, sm.due.map((d) => { const x = leads.find((y) => y.id === d.id); return h("li", null, h("span", { class: "t" }, d.name), stageBadge(d.stage), h("span", { class: "mut" }, d.late ? `${d.late}日過ぎ` : "今日"),
         (NEXT_STAGE[x.stage] || []).slice(0, 1).map(([st, label]) => h("button", { class: "btn small", onclick: () => moveLead(x, st) }, label)),
@@ -733,6 +764,7 @@ function todoChips() {
     { n: S.pipeline?.leads.filter((x) => x.stage === "candidate" && x.source === "weekly-analytics").length || 0, title: "分析が足した営業の候補(まだ送っていない)", go: ["sales"] },
     { n: dc.plan.length, title: "KPI・収益化の案", go: ["goal"] },
     { n: manualMissing ? 1 : 0, title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, go: ["goal"] },
+    { n: S.pipeline?.summary.unseen || 0, title: "営業の相手から届いた新しい返信", go: ["sales"] },
     { n: S.pipeline?.summary.due.length || 0, title: "連絡する日が来た営業の相手", go: ["sales"] },
     { n: S.pipeline?.summary.week.short ? S.pipeline.summary.week.guide - S.pipeline.summary.week.count : 0, title: "今週の提案が目安に足りない(件)", go: ["sales"] },
     { n: S.tasks?.attention || S.tasks?.missed || 0, title: "確かめたい予定タスク", go: ["tasks"] },
@@ -886,7 +918,7 @@ async function republish() {
 
 async function fetchMail() {
   const b = $("#fetch"); b.disabled = true; b.textContent = "読み込んでいます…";
-  try { const r = await call("/api/fetch-mail", {}); toast(`新しく ${r.added} 件を読み込みました${r.pruned ? `(保存期間を過ぎた ${r.pruned} 件を削除)` : ""}`); render(); }
+  try { const r = await call("/api/fetch-mail", {}); toast(`新しく ${r.added} 件を読み込みました${r.replies ? `。営業の相手からの返信 ${r.replies} 件(「営業」タブ)` : ""}${r.pruned ? `(保存期間を過ぎた ${r.pruned} 件を削除)` : ""}${r.replyError ? `。営業の返信は読み込めませんでした(${r.replyError})` : ""}`, !!r.replyError); render(); }
   catch (err) { toast(err.message, true); b.disabled = false; b.textContent = "新しい申請・問い合わせを読み込む"; }
 }
 

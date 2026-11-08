@@ -89,6 +89,86 @@ export function toItem(mail, site) {
   return item;
 }
 
+// 返信の差出人を、相手のアドレスそのものか、同じドメイン(独自ドメインのときだけ)で見分ける。無料のメールのドメインは、別人の可能性が高いので使わない
+const FREE_MAIL = /^(gmail\.com|googlemail\.com|yahoo\.co\.jp|ymail\.ne\.jp|outlook\.(com|jp)|hotmail\.(com|co\.jp)|live\.(jp|com)|icloud\.com|me\.com|docomo\.ne\.jp|ezweb\.ne\.jp|au\.com|softbank\.ne\.jp|i\.softbank\.jp|nifty\.com|biglobe\.ne\.jp|ocn\.ne\.jp|so-net\.ne\.jp|excite\.co\.jp|aol\.com)$/i;
+export const leadDomain = (email) => { const d = String(email ?? "").toLowerCase().split("@")[1] ?? ""; return d && !FREE_MAIL.test(d) ? d : ""; };
+// フォームで送った相手は、メールアドレスが分からないので、公式サイトのドメインから届いたメールを返信とみなす。
+// 誰でも使えるサービス(ブログ・SNS・ホームページ作成サービス)のドメインは使わない
+const SHARED_HOST = /(^|.)(facebook.com|instagram.com|x.com|twitter.com|ameblo.jp|ameba.jp|fc2.com|jimdofree.com|jimdo.com|wixsite.com|wix.com|wordpress.com|hatenablog.(com|jp)|note.com|google.com|sites.google.com|peraichi.com|goope.jp|livedoor.(jp|com|blog)|seesaa.net|blogspot.com|youtube.com|line.me|lin.ee|tiktok.com|studio.site|webnode.jp|crayonsite.(com|net)|shopinfo.jp|digibook.net|com.jp)$/i;
+export const siteDomain = (url) => {
+  let host = "";
+  try { host = new URL(url).hostname.toLowerCase().replace(/^www./, ""); } catch { return ""; }
+  return host && host.includes(".") && !SHARED_HOST.test(host) && !FREE_MAIL.test(host) ? host : "";
+};
+// 差出人のドメインが、公式サイトのドメインと同じか、その親(ラベルが3つ以上。例 kanko.city.x.lg.jp → city.x.lg.jp)か
+export const sameOrg = (fromDomain, host) => !!fromDomain && !!host && (fromDomain === host || (host.endsWith("." + fromDomain) && fromDomain.split(".").length >= 3) || (fromDomain.endsWith("." + host) && host.split(".").length >= 2));
+/** 相手からのメールか(アドレスそのもの / 独自ドメインのメール / 公式サイトのドメイン) */
+export function fromLead(from, lead) {
+  const a = String(from ?? "").toLowerCase(), d = a.split("@")[1] ?? "";
+  if (!d) return false;
+  if (lead.email && a === lead.email.toLowerCase()) return true;
+  const ed = leadDomain(lead.email);
+  if (ed && (d === ed || d.endsWith("." + ed))) return true;
+  return [lead.url, lead.formUrl].map(siteDomain).some((h) => sameOrg(d, h));
+}
+/** 自動返信(不在のお知らせ・受付の自動送信)か */
+export function isAutoReply(headers = {}, subject = "", text = "") {
+  const h = (k) => String(headers[k] ?? "").toLowerCase();
+  if (h("auto-submitted") && h("auto-submitted") !== "no") return true;
+  if (h("x-autoreply") || h("x-autorespond") || /auto_reply|auto-reply/.test(h("x-auto-response-suppress") + h("precedence"))) return true;
+  if (/自動返信|自動応答|自動送信|不在|out of office|auto(matic)? ?reply|autoreply/i.test(subject)) return true;
+  // フォームの受付の確認(見出しに「自動」と書かれないものが多い)。本文の始めのほうだけを見る(返信の引用で誤らないように)
+  const head = String(text).slice(0, 400);
+  return /(下記|以下)の?(送信|お問い?合わせ|お申し?込み|ご連絡)?内容(にて|で)受け?付|受付(いた)?しました|受け付けました|このメールは(送信専用|自動)|自動(的に)?(送信|配信)され|改めて担当(者)?(より|から)/.test(head);
+}
+/**
+ * Gmail から、営業の相手(台帳の email)が送ってきたメールを探す。相手ごとに、最初に送った日より後の分だけ。
+ * leads: [{ id, email, sentAt }]。返すのは [{ leadId, messageId, date, from, subject, snippet, auto }](本文は先頭の 300 字だけ)
+ */
+export async function fetchLeadReplies({ user, pass, leads, knownIds = new Set(), host = "imap.gmail.com", port = 993 }) {
+  const targets = leads.filter((x) => x.sentAt && (x.email || siteDomain(x.url) || siteDomain(x.formUrl)));
+  if (!targets.length) return [];
+  const { ImapFlow } = await import("imapflow");
+  const { simpleParser } = await import("mailparser");
+  const client = new ImapFlow({ host, port, secure: true, auth: { user, pass }, logger: false });
+  await client.connect();
+  const out = [];
+  try {
+    const boxes = await client.list();
+    const all = boxes.find((b) => b.specialUse === "\\All")?.path ?? "INBOX";
+    const lock = await client.getMailboxLock(all, { readOnly: true });
+    try {
+      for (const x of targets) {
+        const since = new Date(Date.parse(x.sentAt + "T00:00:00+09:00"));
+        // 探す言葉: メールアドレス(独自ドメインならドメイン)と、公式サイトのドメインの末尾3つ(親のドメインからのメールも拾う)
+        const terms = new Set();
+        if (x.email) terms.add(leadDomain(x.email) ? "@" + leadDomain(x.email) : x.email);
+        for (const hst of [siteDomain(x.url), siteDomain(x.formUrl)].filter(Boolean)) terms.add(hst.split(".").slice(-3).join("."));
+        const uidSet = new Set();
+        for (const t of terms) for (const u of (await client.search({ from: t, since }, { uid: true })) || []) uidSet.add(u);
+        const uids = [...uidSet];
+        if (!uids.length) continue;
+        const fresh = [];
+        for await (const m of client.fetch(uids, { envelope: true }, { uid: true })) {
+          const mid = m.envelope?.messageId;
+          if (mid && knownIds.has(mid)) continue;
+          fresh.push(m.uid);
+        }
+        if (!fresh.length) continue;
+        for await (const m of client.fetch(fresh, { source: true }, { uid: true })) {
+          const p = await simpleParser(m.source);
+          const from = p.from?.value?.[0]?.address?.toLowerCase() ?? "";
+          if (!fromLead(from, x) || from === user.toLowerCase()) continue;
+          const headers = Object.fromEntries([...(p.headers ?? new Map())].map(([k, v]) => [k, typeof v === "string" ? v : v?.value ?? JSON.stringify(v)]));
+          out.push({ leadId: x.id, messageId: p.messageId ?? `uid-${m.uid}`, date: (p.date ?? new Date()).toISOString(), from, subject: (p.subject ?? "").slice(0, 200),
+            snippet: String(p.text ?? "").replace(/\s+/g, " ").trim().slice(0, 300), auto: isAutoReply(headers, p.subject ?? "", p.text ?? "") });
+        }
+      }
+    } finally { lock.release(); }
+  } finally { await client.logout().catch(() => {}); }
+  return out;
+}
+
 /**
  * Gmail から、まだ読み込んでいないフォームの通知メールを取得する。
  * 「すべてのメール」を探すので、受信トレイから移動・アーカイブしたメールも対象。直近 400 日分。
