@@ -26,6 +26,8 @@ export function weekendTests({ ok, section, build }) {
   const sat = { weekdays: [6], months: [1, 2, 3, 4, 5, 6, 7, 8, 12] };
   ok(!regularOn(sat, "2026-10-10") && regularOn(sat, "2026-12-05") && !regularOn(sat, "2026-12-06"), "定期公演: 曜日と、公演する月で判定する(期間外の月は、出さない)");
   ok(!regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-23") && regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-22"), "定期公演: 休演日は、出さない");
+  { const prog = { weekdays: [0], program: [{ date: "2026-11-13", troupe: "a" }, { date: "2026-11-15", troupe: "b" }], until: "2026-11-14" };
+    ok(regularOn(prog, "2026-11-13") && !regularOn(prog, "2026-11-08") && !regularOn(prog, "2026-11-15"), "定期公演: 公式の日程表(program)があれば、その日付だけ(曜日の決まりより優先・until より後は出さない)(SEO-20261107-5)"); }
   ok(!regularOn({ weekdays: [6], until: "2026-10-01" }, "2026-10-10") && !regularOn({ schedule: "毎週土曜" }, "2026-10-10"), "定期公演: 終了後と、曜日のデータがないものは、出さない(日付を推測しない)");
 
   section("今週末・今月: ページ(2026年10月9日 金曜 = 3連休の前日)");
@@ -67,6 +69,6 @@ export function weekendTests({ ok, section, build }) {
     ok(r.status !== 0 && r.stderr.includes(msg), `定期公演の ${field} が不正なら、ビルドを止める`, r.stderr);
   }
   const real = JSON.parse(read("data/regular.json").replace(/^﻿/, ""));
-  ok(real.every((r) => Array.isArray(r.weekdays)) && real.every((r) => !/毎週(月|火|水|木|金|土|日)曜/.test(r.schedule) || r.weekdays.length === 1 && "日月火水木金土"[r.weekdays[0]] === r.schedule.match(/毎週(.)曜/)[1]) && real.filter((r) => /毎晩|毎日/.test(r.schedule)).every((r) => r.weekdays.length === 7), "本番の定期公演: 曜日のデータが、schedule の文章(毎週○曜・毎晩)と一致している");
+  ok(real.every((r) => Array.isArray(r.weekdays) || Array.isArray(r.program)) && real.every((r) => !/毎週(月|火|水|木|金|土|日)曜/.test(r.schedule) || r.weekdays.length === 1 && "日月火水木金土"[r.weekdays[0]] === r.schedule.match(/毎週(.)曜/)[1]) && real.filter((r) => /毎晩|毎日/.test(r.schedule)).every((r) => r.weekdays.length === 7), "本番の定期公演: 曜日のデータが、schedule の文章(毎週○曜・毎晩)と一致している");
   for (const d of [`${D}-a`, `${D}-b`, `${D}-bad`, T]) rmSync(d, { recursive: true, force: true });
 }

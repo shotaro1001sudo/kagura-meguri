@@ -92,6 +92,7 @@ function validateCommon(rows, ids) {
     const ints = (v, lo, hi) => Array.isArray(v) && v.length > 0 && v.every((n) => Number.isInteger(n) && n >= lo && n <= hi);
     if (r.weekdays != null && !ints(r.weekdays, 0, 6)) errs.push(`[${r.id}] weekdays は、曜日の番号(0=日曜〜6=土曜)の配列にしてください`);
     if (r.months != null && !ints(r.months, 1, 12)) errs.push(`[${r.id}] months は、月(1〜12)の配列にしてください`);
+    if (r.program != null && !(Array.isArray(r.program) && r.program.length && r.program.every((p) => /^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? "") && typeof p.troupe === "string" && p.troupe))) errs.push(`[${r.id}] program は [{ date: "YYYY-MM-DD", time, troupe, hall }] の配列にしてください`);
     if (r.closedDates != null && !(Array.isArray(r.closedDates) && r.closedDates.every((d) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)))) errs.push(`[${r.id}] closedDates は "MM-DD" の配列にしてください`);
   }
   if (errs.length) { console.error("データエラー:\n" + errs.map((x) => "  " + x).join("\n")); process.exit(1); }
@@ -895,15 +896,27 @@ ${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_S
 }
 
 // ---------- 詳細ページ(定期公演) ----------
+// 公式の日ごとの日程表(program)がある公演: 今日以降の公演日を表で出す
+const programTable = (r) => {
+  const rows = (r.program ?? []).filter((p) => p.date >= today);
+  if (!rows.length) return "";
+  const label = (d) => { const [y, m, dd] = d.split("-").map(Number); return `${y !== +today.slice(0, 4) ? y + "年" : ""}${m}月${dd}日(${"日月火水木金土"[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()]}${holidayName(d) ? "・祝" : ""})`; };
+  return `<section class="program" aria-labelledby="program-h"><h2 id="program-h">公演日程(${esc(r.programSource ?? "公式の日程表")})</h2>
+<div class="tablewrap"><table class="program-table"><thead><tr><th scope="col">日付</th><th scope="col">時間</th><th scope="col">出演</th><th scope="col">会場</th></tr></thead><tbody>
+${rows.map((p) => `<tr><td>${label(p.date)}</td><td>${esc(p.time ?? "")}</td><td>${esc(p.troupe)}</td><td>${esc(p.hall ?? "")}</td></tr>`).join("")}
+</tbody></table></div>${r.programNote ? `<p class="meta annotation">${esc(r.programNote)}</p>` : ""}</section>`;
+};
 for (const r of regular) {
   const row = (th, v) => (v ? `<tr><th>${th}</th><td>${esc(v)}</td></tr>` : "");
   write(`dist/regular/${r.id}.html`, layout({
-    title: `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
+    // seoTitle: 検索語に合わせたタイトル(なければ、名前と公演日時から作る)
+    title: r.seoTitle ? `${r.seoTitle} | ${cfg.siteName}` : `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
     desc: padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}</div>
 <div class="desc-lead">${descParas(r.description)}</div>
+${programTable(r)}
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
 <div class="d-side">${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}

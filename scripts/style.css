@@ -545,6 +545,8 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .schedule-hub{max-width:680px;margin:18px 0 8px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card)}.schedule-hub p{margin:0 0 10px}
 /* 町ごとに分けた開催予定(花祭など。SEO-20261107-2) */
 .town-group h3{margin-top:24px}
+/* 公式の日ごとの日程表がある定期公演(神楽門前湯治村など。SEO-20261107-5) */
+.program{max-width:680px;margin:28px 0 8px}.program h2{margin:0 0 8px}.program .tablewrap{overflow-x:auto}.program-table{border-collapse:collapse;width:100%;min-width:22em;font-size:var(--fs-s)}.program-table th,.program-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.program-table th{color:var(--mut);font-weight:400;letter-spacing:.06em}.program-table td:first-child{white-space:nowrap}
 .detail{max-width:680px;margin:8px 0 4px}.detail h2{margin-top:36px}.detail dt{font-weight:500;margin-top:12px}.detail dd{margin:2px 0 0}.detail ul{padding-left:1.4em}.detail li{margin-bottom:.6em}
 .venuelist{list-style:none;margin:0;padding:0}.venuelist li{padding:10px 0;border-top:1px solid var(--line)}.venuelist li:last-child{border-bottom:1px solid var(--line)}
 .venuelist a{color:var(--fg)}.venuelist b{font-weight:500}
