@@ -44,6 +44,16 @@ export function sponsorTests({ ok, section, OUT }) {
   ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。ページごとの数字は相談の際に伝えると書いてある");
   ok($("#menu").length === 1 && $('a[href="#menu"]').length === 1 && $(".sp-menu .sp-plan").length >= 2 && $(".sp-menu .sp-plan").get().every((x) => $(x).find("h3").text() && $(x).find(".price").text() && $(x).find("dt").text().includes("載る場所")), "メニューは、名前・料金・載る場所を並べて比べられる。冒頭からメニューへ飛べる");
   ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .pr").text() === "PR" && $(".sp-sample figcaption").text().includes("見本"), "協賛枠の見え方の見本(リンクなし・「見本」と書く)");
+  {
+    const cfgP = JSON.parse(read("config.json")).sponsorPrices ?? {};
+    const prices = $(".sp-menu .sp-plan").map((_, x) => [[$(x).find("h3").text(), $(x).find(".price").text()]]).get();
+    const priceOf = (h) => (prices.find(([t]) => t.startsWith(h)) ?? [, ""])[1];
+    const yen = (n) => n.toLocaleString("ja-JP") + "円";
+    ok(priceOf("協賛枠") === `月額${yen(cfgP.monthly)}(税込)` && priceOf("記事広告") === `1本${yen(cfgP.article)}(税込)` && text.includes("銀行振込の前払い") && !text.includes("お見積もりします"),
+      "協賛枠と記事広告の料金は、config.json の sponsorPrices のとおりに出し、支払いは前払いと書く(お見積もりにしない)", JSON.stringify(prices));
+    const est = cheerio.load(`<main>${sponsorHtml({ esc: (s) => s, siteName: "神楽めぐり", prices: {} })}</main>`);
+    ok(est(".sp-menu .price").map((_, x) => est(x).text()).get().slice(0, 2).join() === "お見積もり,お見積もり" && est("main").text().includes("お見積もりします"), "料金を決めていないときは、「お見積もり」と書く");
+  }
   ok(text.includes("協賛枠(月ごと)") && text.includes("記事広告(お申し込みごと)") && text.includes("取材") && text.includes("道の駅"), "メニュー: 月ごとの協賛枠と、1回ごとの記事広告(取材記事)。道の駅にも案内");
   ok(text.includes("毎週・毎晩の定期公演") && text.includes("編集部が取材して書き"), "言葉の統一: 「毎週・毎晩の定期公演」、書き手は「編集部」");
 

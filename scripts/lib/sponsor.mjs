@@ -19,11 +19,17 @@ const jpShort = (d) => d.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, "$1月$2日");
  * @param {{ esc: (s:string)=>string, siteName: string,
  *   pref?: { name: string, href: string }, kagura?: { name: string, href: string }, ev?: { name: string, href: string }, reg?: { name: string, href: string },
  *   plans?: { name: string, priceText: string, includes: string[] }[],
+ *   prices?: { monthly?: number, article?: number },   協賛枠(月額)と記事広告(1本)の料金。税込。無いものは「お見積もり」
  *   facts?: { events: number, prefs: number, kaguras: number, regular: number },
  *   stats?: { updated: string, search?: { from: string, to: string, impressions: number, clicks: number, impressions7?: number, clicks7?: number }, analytics?: { from: string, to: string, pageviews: number, users: number } } | null,
  *   topPages?: { name: string, href: string }[] }} x
  */
-export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], facts, stats, topPages = [] }) {
+export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], prices = {}, facts, stats, topPages = [] }) {
+  const yen = (n) => `${Number(n).toLocaleString("ja-JP")}円`;
+  const ok = (n) => Number.isFinite(n) && n > 0;
+  const monthlyText = ok(prices.monthly) ? `月額${yen(prices.monthly)}(税込)` : "お見積もり";
+  const articleText = ok(prices.article) ? `1本${yen(prices.article)}(税込)` : "お見積もり";
+  const priced = ok(prices.monthly) && ok(prices.article);
   const eg = (x) => (x ? `<span class="eg">例: <a href="${x.href}">${esc(x.name)}</a></span>` : "");
   const s = stats?.search, a = stats?.analytics;
   const tile = (label, value, unit, note = "") => `<li><span class="k">${label}</span><span class="v">${value}<small>${unit}</small></span>${note ? `<span class="n">${note}</span>` : ""}</li>`;
@@ -96,19 +102,19 @@ ${topHtml}
 <li class="sp-plan">
 <p class="tag">観光協会・宿・お店の方へ</p>
 <h3>協賛枠(月ごと)</h3>
-<p class="price">お見積もり</p>
+<p class="price">${esc(monthlyText)}</p>
 <dl><dt>載る場所</dt><dd>県・神楽の種類・開催・定期公演のページから、地域や神楽を決めて選べます</dd><dt>内容</dt><dd>見出し・ひとこと・リンク。「PR」と提供者の名前を表示</dd><dt>期間</dt><dd>月ごと。秋祭りの時期だけなど、続けて載せることもできます</dd></dl>
 </li>
 <li class="sp-plan">
 <p class="tag">じっくり紹介したい方へ</p>
 <h3>記事広告(お申し込みごと)</h3>
-<p class="price">お見積もり</p>
+<p class="price">${esc(articleText)}</p>
 <dl><dt>載る場所</dt><dd>記事のページ。協賛枠から記事へご案内します</dd><dt>内容</dt><dd>宿や道の駅、地域の観光を、神楽と合わせて楽しめる過ごし方として、編集部が取材して書きます。公開の前に内容をご確認いただきます</dd><dt>表示</dt><dd>「PR記事」と表示します</dd></dl>
 </li>
 ${plans.map(plan).join("")}
 </ul>
 ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体ページを申し込む</a></p>` : ""}
-<p class="sp-src">協賛枠と記事広告の料金は、載せる場所と期間に応じてお見積もりします。</p>
+<p class="sp-src">${priced ? "協賛枠の料金には、選んだ定期公演・開催(または神楽の種類)のページと、その県のページへの掲載を含みます。お支払いは、請求書をお送りして銀行振込の前払いです。協賛枠は月ごとのお申し込みで、やめるときは前の月の末までにお知らせください。" : "協賛枠と記事広告の料金は、載せる場所と期間に応じてお見積もりします。"}</p>
 
 <h2>載る場所と見え方</h2>
 <p>協賛枠は、次のページに、開催情報の一覧より後ろの、別の枠に載ります。</p>
@@ -135,7 +141,7 @@ ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体
 <h2>掲載までの流れ</h2>
 <ol class="steps sp-steps">
 <li><b>ご相談</b><span><a href="/contact.html">お問い合わせ</a>の「ご用件」で「広告・取材などのご相談」を選び、載せたい場所と時期をお知らせください。</span></li>
-<li><b>お見積もり</b><span>載せる場所・期間・料金と、そのページの閲覧数などの数字をお伝えします。</span></li>
+<li><b>${priced ? "お申し込み" : "お見積もり"}</b><span>${priced ? "載せる場所・期間を決めて、請求書をお送りします。載せたいページの閲覧数などの数字も、お伝えします。" : "載せる場所・期間・料金と、そのページの閲覧数などの数字をお伝えします。"}</span></li>
 <li><b>原稿の確認・取材</b><span>載せる文章と画像が、掲載の方針に合っているかを確かめます。記事広告は、取材のうえ編集部が書きます。</span></li>
 <li><b>掲載</b><span>決めた期間だけ載せ、期間が終わったら外します。</span></li>
 </ol>

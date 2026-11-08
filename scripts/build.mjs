@@ -1116,7 +1116,7 @@ doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の
     pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined,
     kagura: kaguraEg ? { name: kaguraEg, href: kaguraHref(kaguraEg) } : undefined,
     ev: upcoming.length ? { name: upcoming[0].name, href: `/events/${upcoming[0].id}.html` } : undefined,
-    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans,
+    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans, prices: cfg.sponsorPrices ?? {},
     facts: { events: upcoming.length, prefs: prefs.length, kaguras: kaguras.length, regular: regular.length },
     stats: statsFresh(mediaStats, today) ? mediaStats : null,
     // よく読まれているページ: 書き出し済みのページの見出しを名前にする(無いページは出さない)
