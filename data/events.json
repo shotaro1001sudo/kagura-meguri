@@ -2379,31 +2379,6 @@
     ]
   },
   {
-    "id": "takachiho-yokagura-8ad096e57c",
-    "name": "高千穂の夜神楽 本組",
-    "kagura": "高千穂神楽",
-    "prefecture": "宮崎県",
-    "city": "高千穂町",
-    "venue": "荒立神社",
-    "start": "2027-01-10T00:00",
-    "timeUnknown": true,
-    "fee": "",
-    "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "description": "",
-    "auto": true,
-    "sourceId": "takachiho-yokagura",
-    "source": "高千穂町観光協会 夜神楽日程表",
-    "sourceUrl": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-    "firstSeen": "2026-11-04",
-    "lastSeen": "2026-11-04",
-    "misses": 0,
-    "status": "pending",
-    "holdReasons": [
-      "町・観光協会とも神事のみの案内。神楽の公開公演として確認できないため保留。",
-      "2026-11-07 再確認(町の日程表PDF 10月29日現在・観光協会の日程表): 町PDF・観光協会とも「神事のみ 10:00〜」。神楽の公開公演ではない。"
-    ]
-  },
-  {
     "id": "npo-hiroshima-3e6e2116d8",
     "name": "深野神楽復活40周年記念共演会",
     "kagura": "石見神楽",
