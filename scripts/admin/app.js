@@ -59,8 +59,7 @@ function render() {
   $("#n-decide").textContent = decisions().total || "";
   $("#n-goal").textContent = planOpen().length || "";
   $("#n-tasks").textContent = S.tasks?.missed || "";
-  $("#n-claude").textContent = jobsToCheck().length || "";
-  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, claude: jobsView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
+  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
 // ---------- 判断待ち(人が決めること) ----------
@@ -102,9 +101,10 @@ function decideView() {
     h("dl", { class: "kv" }, h("dt", null, "対象"), h("dd", null, p.target || ""), h("dt", null, "変える内容"), h("dd", null, p.change || ""),
       p.result ? [h("dt", null, "効果"), h("dd", null, typeof p.result === "string" ? p.result : JSON.stringify(p.result))] : "",
       p.declinedAt ? [h("dt", null, "見送り"), h("dd", null, `${p.declinedAt}${p.declineNote ? " ・ " + p.declineNote : ""}`)] : ""),
+    closed ? "" : promptBox(promptFor("proposal", p)),
     closed ? (p.status === "declined" ? h("div", { class: "bar mt" }, h("button", { class: "btn ghost small", onclick: () => setProposal(p, "proposed") }, "見送りを戻す")) : "")
       : h("div", { class: "bar mt" },
-        jobFor(p.id) ? jobLink(jobFor(p.id)) : h("button", { class: "btn", onclick: () => askClaude(p) }, "Claude に任せる"),
+        h("button", { class: "btn", onclick: () => copyPrompt(promptFor("proposal", p)) }, "プロンプトをコピー"),
         h("button", { class: "btn ghost", onclick: () => setProposal(p, "declined") }, "見送る")));
   const closedProps = d.proposals.filter((p) => !d.openProps.includes(p));
 
@@ -122,7 +122,7 @@ function decideView() {
             S.repo ? h("p", { class: "links" }, link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue を開く")) : ""]
         : allClear("人が行う項目はありません。")] },
     { n: d.openProps.length, body: () => [
-      ...secHead("検索の改善案", d.openProps.length, "やるものは「Claude に任せる」、やらないものは「見送る」。Claude の作業の結果は「Claude に任せる」のタブで見て、公開するかを決めます。",
+      ...secHead("検索の改善案", d.openProps.length, "やるものは、プロンプト案をコピーして Claude に貼り付けます。やらないものは「見送る」。",
         "毎週月曜の分析(このPCの analytics/)が出した案です。コミットに ID が入ると「実施(コミットあり)」になり、効果は翌週以降の分析が判定します。見送ると、次の週から同じ案が出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
       !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
         : [d.openProps.length ? d.openProps.map((p) => prop(p, false)) : allClear("決めていない改善案はありません。"),
@@ -145,10 +145,20 @@ async function rejectEvent(e) {
   try { const r = await call("/api/events/reject", { id: e.id }); published(r, "却下しました"); render(); }
   catch (err) { toast(err.message, true); }
 }
-function askClaude(p) {
-  const note = prompt(`${p.id} を Claude に任せます。\n専用の作業用フォルダで作業し、終わったら「Claude に任せる」のタブで結果を見て、公開するかを決めます。\n\n補足があれば書いてください(空でも構いません)。`, "");
-  if (note === null) return;
-  startJob({ kind: "proposal", id: p.id, note });
+// ---------- プロンプト案(Claude に頼むときの文。管理者用ページは提示とコピーだけ) ----------
+function promptFor(kind, x) {
+  if (kind === "proposal") return `検索の改善案 ${x.id} を実施してください。
+対象: ${x.target || ""}
+変える内容: ${x.change || ""}
+コミットのメッセージに ${x.id} を入れてください。`;
+  return `${x.ask || `収益化の案「${x.title}」を進めてください。`}
+(案の ID: ${x.id}。概要: ${x.summary || ""}。最初の一歩: ${x.firstStep || ""}。気をつけること: ${x.risk || ""})
+コミットのメッセージに ${x.id} を入れてください。`;
+}
+const promptBox = (text) => h("details", { class: "more prompt" }, h("summary", null, "プロンプト案"), h("pre", null, text));
+async function copyPrompt(text) {
+  try { await navigator.clipboard.writeText(text); toast("プロンプト案をコピーしました。Claude に貼り付けてください"); }
+  catch { toast("コピーできませんでした。「プロンプト案」を開いて、文を選んでコピーしてください", true); }
 }
 async function setProposal(p, status) {
   let note = "";
@@ -221,7 +231,7 @@ function goalView() {
 
   const monButtons = (m) => m.status === "proposed"
     ? [h("button", { class: "btn small", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
-    : m.status === "adopted" ? [jobFor(m.id) ? jobLink(jobFor(m.id)) : h("button", { class: "btn small", onclick: () => askMon(m) }, "Claude に任せる"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
+    : m.status === "adopted" ? [h("button", { class: "btn small", onclick: () => copyPrompt(promptFor("mon", m)) }, "プロンプトをコピー"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
     : [h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")];
   const monCard = (m) => h("section", { class: "panel decision" + (m.status === "declined" ? " dim" : "") },
     h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, m.id, " "), m.title), stBadge(m.status)),
@@ -230,6 +240,7 @@ function goalView() {
       m.effort ? h("span", { class: "chip" }, `手間 ${m.effort}`) : ""),
     h("p", null, m.summary || ""),
     h("p", { class: "next" }, h("b", null, "最初の一歩: "), m.firstStep || ""),
+    ["proposed", "adopted"].includes(m.status) ? promptBox(promptFor("mon", m)) : "",
     h("details", { class: "more" }, h("summary", null, "理由・気をつけること"),
       h("dl", { class: "kv" }, h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""), decidedLine(m))),
     h("div", { class: "bar mt" }, monButtons(m)));
@@ -251,7 +262,7 @@ function goalView() {
       g.outlook ? h("details", { class: "more" }, h("summary", null, "見立て・売上の数え方"), h("p", { class: "mut" }, g.outlook), g.definition ? h("p", { class: "mut" }, g.definition) : "") : ""),
     openKpis + openMons ? h("p", { class: "callout" }, `まだ決めていないものが ${openKpis + openMons} 件あります(KPI ${openKpis}・収益化の案 ${openMons})。各カードの「採用する」か「見送る」を押してください。`) : "",
 
-    ...secHead("収益化の案", openMons, "採用したら「Claude に任せる」。結果を見て公開すると「実施済み」になります。人が行う部分(営業・契約など)だけの案は、終えたら「実施済みにする」。",
+    ...secHead("収益化の案", openMons, "採用したら、プロンプト案をコピーして Claude に貼り付けます。終えたら「実施済みにする」。",
       "営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください。採用・見送りは、このPCの analytics/plan.json にだけ保存し、GitHub には送りません。"),
     sorted(p.monetization).map(monCard),
 
@@ -287,128 +298,10 @@ async function setPlan(kind, x, status) {
     await call("/api/plan/item", { kind, id: x.id, status, note });
     toast({ adopted: "採用しました", declined: "見送りにしました", done: "実施済みにしました", proposed: "提案中に戻しました" }[status]);
     render();
-    if (kind === "mon" && status === "adopted") askMon(S.plan.monetization.find((m) => m.id === x.id) || x);
   } catch (err) { toast(err.message, true); }
 }
-function askMon(m) {
-  const note = prompt(`「${m.title}」を Claude に任せますか？\n専用の作業用フォルダで作業し、終わったら「Claude に任せる」のタブで結果を見て、公開するかを決めます。\n\n補足があれば書いてください(空でも構いません)。任せないときは「キャンセル」。`, "");
-  if (note === null) return;
-  startJob({ kind: "mon", id: m.id, note });
-}
-
-// ---------- Claude に任せる(1件ごとに専用の作業用フォルダ。結果を見て、公開するかを決める) ----------
-const ATTN = new Set(["review", "answered", "failed"]), BUSY = new Set(["queued", "running", "publishing"]);
-const jobsToCheck = () => (S.jobs || []).filter((j) => ATTN.has(j.status));
-const jobFor = (id) => (S.jobs || []).find((j) => j.source?.id === id && (ATTN.has(j.status) || BUSY.has(j.status)));
-const jobLink = (j) => h("a", { href: "#", class: "btn ghost small", onclick: goTab("claude") }, `Claude: ${S.jobStatus[j.status] || j.status} →`);
-const JOB_BADGE = { queued: "pending", running: "doing", review: "new", answered: "new", failed: "rejected", publishing: "doing", published: "done", discarded: "ended" };
-async function startJob(body) {
-  try {
-    const r = await call("/api/jobs/start", body);
-    toast(`Claude に任せました: ${r.job.title}\n「Claude に任せる」のタブで、進み具合と結果を見られます。`);
-    pollJobs(); render();
-  } catch (err) { toast(err.message, true); }
-}
-function jobsView() {
-  const c = S.claude || {};
-  const jobs = S.jobs || [];
-  const att = jobs.filter((j) => ATTN.has(j.status)), busy = jobs.filter((j) => BUSY.has(j.status)), old = jobs.filter((j) => !ATTN.has(j.status) && !BUSY.has(j.status));
-  // 頼めるのは、提案(検索の改善案・採用した収益化の案)だけ。自由に書いて頼む欄は置かない
-  const intro = h("p", { class: "lead" }, "検索の改善案(判断待ち)と、採用した収益化の案(目標・収益)の「Claude に任せる」から頼んだ作業が、ここに並びます。1件ごとに専用の作業用フォルダで動くので、ほかの作業や、このPCの作業中のファイルに影響しません。GitHub に送るのは、結果を見て「公開する」を押したときだけです。",
-    " ", h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く"), " ・ ", h("a", { href: "#", onclick: goTab("goal") }, "目標・収益を開く"));
-  const login = !c.exe ? h("p", { class: "warn" }, "このPCで、Claude アプリの Claude Code が見つかりません。Claude デスクトップアプリを入れて、一度開いてください。")
-    : !c.loggedIn ? h("div", { class: "warn" }, h("p", null, "Claude に作業を任せるには、このPCで、最初に1回だけ Claude にログインします(Claude アプリと同じアカウント)。"),
-        h("div", { class: "bar" }, isPc() ? h("button", { class: "btn small", onclick: claudeLogin }, "Claude にログインする") : h("span", { class: "mut small" }, "ログインは PC の画面から行います。"),
-          h("button", { class: "btn ghost small", onclick: claudeCheck }, "ログインを確かめ直す")))
-    : "";
-  return [
-    h("h2", null, "Claude に任せる"),
-    login,
-    intro,
-    ...secHead("確認すること", att.length, "結果を読んで、「公開する」「返事を送る」「やめる」のどれかを選びます。"),
-    att.length ? att.map(jobCard) : allClear("確認することはありません。"),
-    busy.length ? [...secHead("作業中・順番待ち", busy.length), busy.map(jobCard)] : "",
-    old.length ? h("details", { class: "mt" }, h("summary", null, `終わった作業(${old.length}件。30日で消えます)`), old.map(jobCard)) : "",
-  ];
-}
-function jobCard(j) {
-  const last = [...(j.turns || [])].reverse().find((t) => t.who === "claude");
-  const asked = (j.turns || [])[0];
-  const key = "r-" + j.id;
-  const replyBox = j.canReply && ATTN.has(j.status) ? h("form", { class: "mt", onsubmit: async (ev) => {
-    ev.preventDefault();
-    const text = ev.target.elements.text.value.trim();
-    if (!text) return toast("返事を書いてください", true);
-    try { await call("/api/jobs/reply", { id: j.id, text }); view.drafts = { ...(view.drafts || {}), [key]: "" }; toast("返事を送りました。Claude が続きを始めます"); pollJobs(); render(); }
-    catch (err) { toast(err.message, true); }
-  } },
-    h("label", { for: key, class: "small mut" }, j.question ? "質問への返事" : "続けて頼むこと・直してほしいこと"),
-    h("textarea", { id: key, name: "text", rows: 2, class: "full", maxlength: 8000, oninput: (ev) => { view.drafts = { ...(view.drafts || {}), [key]: ev.target.value }; } }, view.drafts?.[key] ?? ""),
-    h("div", { class: "bar mt" }, h("button", { class: "btn small" + (j.question ? "" : " ghost"), type: "submit" }, "返事を送る"))) : "";
-  const pub = j.publish;
-  return h("section", { class: "panel decision job" },
-    h("div", { class: "card-h" }, h("h4", null, j.title), badge(JOB_BADGE[j.status] || "ended", S.jobStatus[j.status] || j.status)),
-    h("p", { class: "mut small" }, `頼んだ日時: ${at(j.createdAt)}${j.endedAt && !BUSY.has(j.status) ? ` ・ 終わった日時: ${at(j.endedAt)}` : ""}`),
-    asked ? h("details", { class: "more" }, h("summary", null, "頼んだ内容・やり取り"), (j.turns || []).map((t) => h("div", { class: "turn " + t.who }, h("small", { class: "mut" }, t.who === "you" ? "あなた" : "Claude", " ・ ", at(t.at)), h("pre", null, t.text)))) : "",
-    BUSY.has(j.status) ? [h("p", { class: "small" }, j.status === "queued" ? "順番を待っています…" : j.status === "publishing" ? "確認のビルドとテストをして、GitHub に送っています…(数分かかります)" : "作業しています…"),
-      j.progress?.length ? h("ul", { class: "runs small" }, j.progress.slice(-8).map((p) => h("li", null, h("span", { class: "nw mut" }, at(p.at), " "), p.text))) : ""] : "",
-    j.question ? h("div", { class: "callout" }, h("b", null, "Claude からの質問"), h("pre", null, j.question))
-      : last && !BUSY.has(j.status) ? h("div", { class: "answer" }, h("b", { class: "small mut" }, "Claude の返事"), h("pre", null, last.text)) : "",
-    j.error && j.status === "failed" ? h("p", { class: "warn small" }, j.error) : "",
-    j.files?.length ? h("details", { class: "more", open: j.status === "review" ? true : null }, h("summary", null, `変えたファイル(${j.files.length}) ・ コミット ${j.commits} 件`),
-      h("ul", { class: "files small" }, j.files.map((f) => { const [st, ...p] = f.split("\t"); return h("li", null, h("span", { class: "mut" }, { A: "追加", M: "変更", D: "削除", R: "名前の変更" }[st[0]] || st, " "), p.join(" → ")); }))) : "",
-    j.dirty ? h("p", { class: "warn small" }, "コミットしていない変更があります。公開する前に、Claude に「コミットして」と返事を送ってください。") : "",
-    j.denied?.length ? h("details", { class: "more" }, h("summary", null, `許可していないため、できなかった操作(${j.denied.length})`), h("ul", { class: "small" }, j.denied.map((d) => h("li", null, d)))) : "",
-    pub && !pub.ok ? h("div", { class: "warn small" }, h("b", null, { build: "サイトを作る確認で、問題が見つかりました", test: "テストで、問題が見つかりました", rebase: "GitHub の最新と重なりました", push: "GitHub に送れませんでした" }[pub.step] || "公開できませんでした"), h("pre", null, (pub.log || "").split("\n").slice(-8).join("\n"))) : "",
-    pub && pub.ok ? h("p", { class: "clear small" }, `✓ GitHub に送りました${pub.commit ? `(${pub.commit})` : ""}。数分後にサイトに反映します。${pub.note || ""}`) : "",
-    replyBox,
-    ATTN.has(j.status) ? h("div", { class: "bar mt" },
-      j.status === "review" ? h("button", { class: "btn", onclick: () => publishJob(j), disabled: j.dirty ? true : null }, "公開する") : "",
-      h("button", { class: "btn ghost", onclick: () => discardJob(j) }, j.status === "review" ? "やめる(変更を捨てる)" : "閉じる")) : "");
-}
-async function publishJob(j) {
-  if (!confirm(`「${j.title}」の変更(コミット ${j.commits} 件)を公開します。\nGitHub の最新に重ね、サイトを作る確認とテストが通れば、GitHub に送ります(数分後にサイトに反映)。よろしいですか？`)) return;
-  toast("確認のビルドとテストをして、公開しています…(数分かかることがあります)");
-  try {
-    const r = await call("/api/jobs/publish", { id: j.id });
-    if (r.publish?.ok) toast(`公開しました。数分後にサイトに反映します${r.publish.synced === false ? "\n(このPCのいつものフォルダは、次の更新のときに最新にします)" : ""}`);
-    else toast(`公開できませんでした。カードに理由を出しました。`, true);
-    render();
-  } catch (err) { toast(err.message, true); }
-}
-async function discardJob(j) {
-  if (j.status === "review" && !confirm(`「${j.title}」の変更を捨てます(GitHub には何も送りません)。よろしいですか？`)) return;
-  try { await call("/api/jobs/discard", { id: j.id }); toast(j.status === "review" ? "変更を捨てました" : "閉じました"); render(); }
-  catch (err) { toast(err.message, true); }
-}
-async function claudeLogin() {
-  try { await call("/api/claude/login", {}); toast("ログインの黒い画面を開きました。ブラウザでログインを終えたら、「ログインを確かめ直す」を押してください。"); }
-  catch (err) { toast(err.message, true); }
-}
-async function claudeCheck() {
-  try { const r = await call("/api/claude"); S.claude = r.claude; toast(r.claude.loggedIn ? "ログインできています" : "まだログインしていません", !r.claude.loggedIn); render(); }
-  catch (err) { toast(err.message, true); }
-}
-// 作業中のものがある間は、数秒おきに進み具合を読む。入力の途中は、画面を描き直さない(書いた文が消えないように)
+// 入力の途中は、画面を描き直さない(書いた文が消えないように)
 const typing = () => { const a = document.activeElement; return !!a && (a.matches("textarea, input, select") || !!a.closest("dialog[open]")); };
-function pollJobs() {
-  if (pollJobs.t) return;
-  pollJobs.t = setTimeout(async () => {
-    pollJobs.t = null;
-    try {
-      const r = await call("/api/jobs");
-      const changed = JSON.stringify(r.jobs) !== JSON.stringify(S.jobs);
-      S.jobs = r.jobs; S.claude = r.claude;
-      if (changed) {
-        // 終わった作業を知らせる
-        if (r.jobs.some((j) => ATTN.has(j.status) && pollJobs.busy?.has(j.id))) toast("Claude の作業が終わりました。「Claude に任せる」のタブで確認してください");
-        if (typing()) $("#n-claude").textContent = jobsToCheck().length || ""; else render();
-      }
-      pollJobs.busy = new Set(r.jobs.filter((j) => BUSY.has(j.status)).map((j) => j.id));
-      if (pollJobs.busy.size) pollJobs();
-    } catch { pollJobs(); }
-  }, document.hidden ? 30e3 : 4e3);
-}
 function editTargets(k) {
   const dlg = $("#dlg"), form = $("#dlg-form");
   const months = Object.keys(k.targets || {}).sort();
@@ -444,8 +337,7 @@ function homeView() {
     { n: inb("submit"), title: "未対応の申請", desc: "投稿フォームからの掲載依頼", go: ["submit", { sub: "open" }] },
     { n: inb("contact"), title: "未対応・対応中の問い合わせ", desc: "お問い合わせフォームのメール", go: ["contact", { con: "open" }] },
     { n: dc.actions.length, title: "振り返りで、人が行うこと", desc: "週次の振り返りの【人】の項目", go: ["decide"] },
-    { n: jobsToCheck().length, title: "Claude の作業の確認", desc: "結果を読んで、公開するか・返事を送るか・やめるかを選ぶ", go: ["claude"] },
-    { n: dc.openProps.length, title: "検索の改善案", desc: "Claude に任せるか、見送るかを選ぶ", go: ["decide"] },
+    { n: dc.openProps.length, title: "検索の改善案", desc: "プロンプト案で Claude に頼むか、見送るかを選ぶ", go: ["decide"] },
     { n: dc.plan.length, title: "KPI・収益化の案", desc: "採用するか、見送るかを選ぶ", go: ["goal"] },
     { n: manualMissing ? 1 : 0, unit: "", title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, desc: "楽天・AdSense・協賛の額を入れる", go: ["goal"] },
     { n: S.tasks?.missed || 0, title: "動いていない予定タスク", desc: "予定の時刻に動いた記録がない。理由を見て直す", go: ["tasks"] },
@@ -781,7 +673,6 @@ document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("cli
 // 状況を読み直す(数時間おき・画面に戻ってきたとき)。入力の途中は描き直さず、終わってから
 async function reload() {
   try { S = await call("/api/state"); view.loadedAt = new Date().toISOString(); } catch { return; }
-  if (S.jobs?.some((j) => BUSY.has(j.status))) pollJobs();
   if (typing()) { reload.later = true; return; }
   render();
 }
@@ -794,7 +685,6 @@ document.addEventListener("focusout", () => setTimeout(() => { if (reload.later 
 document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - Date.parse(view.loadedAt || 0) > 30 * 60e3) reload(); });
 call("/api/state").then((j) => {
   S = j; view.loadedAt = new Date().toISOString(); render();
-  if (S.jobs?.some((x) => BUSY.has(x.status))) pollJobs();
   // サーバーが数時間おきに読み込むので、画面も同じ間隔で読み直す(少し遅らせて、読み込みのあとに)
   const hours = S.refresh?.hours || 3;
   setInterval(reload, hours * 3600e3 + 5 * 60e3);

@@ -95,9 +95,5 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 @media(max-width:600px){main{padding:12px}.top{padding:8px 12px}.top b{font-size:.95rem}.top nav button{padding:6px 8px}table{font-size:.85rem}}
 /* 予定タスク */
 .task h4{font-size:1rem}.task dl.kv{margin:6px 0}.runs{list-style:none;padding:0;margin:6px 0}.runs li{padding:4px 0;border-top:1px solid var(--line)}.runs .badge{margin-right:4px}
-/* Claude に任せる */
-.job pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:inherit}
-.job .answer{border-left:3px solid var(--line);padding:4px 10px;margin:8px 0}
-.job .turn{border-top:1px solid var(--line);padding:6px 0}.job .turn.you pre{color:var(--mut)}
-.files{list-style:none;padding:0;margin:4px 0;word-break:break-all}
-textarea.full{display:block}
+/* プロンプト案 */
+.prompt pre{white-space:pre-wrap;word-break:break-word;margin:4px 0 0;font:inherit;font-size:.88rem;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 10px}

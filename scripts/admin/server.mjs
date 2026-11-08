@@ -2,7 +2,6 @@
 //   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
 //   判断待ち: 自動収集の保留の掲載・却下 / 週次の振り返りの【人】の項目 / 検索の改善案(頼む・見送る)
 //   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
-//   Claude に任せる: 画面から頼んだ作業を、1件ごとの作業用フォルダで Claude Code が行い、人が画面で公開か取りやめを決める(claude.mjs)
 //   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込みを行う(refreshHours。admin.local.json で変えられる)
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
@@ -19,7 +18,6 @@ import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
-import { createJobs, findClaude, cleanEnv, JOB_STATUS } from "./claude.mjs";
 import { loadTasks } from "./tasks.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
@@ -31,7 +29,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, jobsOpts = {}, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now() } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now() } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -41,8 +39,6 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   // 書き込みは1つずつ順番に(位置の取得の途中で、別の保存が重ならないように)
   let queue = Promise.resolve();
   const serial = (fn) => { const p = queue.then(fn); queue = p.catch(() => {}); return p; };
-  // Claude に任せた作業(1件ごとに専用の作業用フォルダ。公開は serial で、開催データの公開と重ならないように)
-  const jobs = createJobs({ root, serial, local: () => loadLocal(root), parallel: loadLocal(root).claude?.parallel ?? 2, ...jobsOpts });
   // 定期の更新の記録
   let lastRefresh = null;
 
@@ -53,7 +49,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
       review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}),
-      jobs: jobs.list(), jobStatus: JOB_STATUS, claude: await jobs.status().catch(() => ({ found: false, loggedIn: false })), refresh: { last: lastRefresh, hours: refreshHours } };
+      refresh: { last: lastRefresh, hours: refreshHours } };
   };
 
   // Gmail から、新しい申請・問い合わせを読み込む(画面のボタンと、定期の更新の両方から)
@@ -79,7 +75,6 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const r = { at: new Date(now()).toISOString(), why };
     try { r.git = await sync(root); } catch (err) { r.git = { ok: false, text: err.message }; }
     if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件`, added: m.added }; }
-    jobs.resetAuth();
     lastRefresh = r;
     return r;
   });
@@ -89,28 +84,6 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     timer = setInterval(() => refresh("定期").catch(() => {}), refreshHours * 3600e3);
     first.unref?.(); timer.unref?.();
   }
-
-  // 頼む文を作る(改善案・収益化の案の内容をそのまま渡す)
-  const askFor = (body) => {
-    const extra = String(body.note ?? "").trim();
-    const add = extra ? `\n\n運営者からの補足: ${extra}` : "";
-    if (body.kind === "proposal") {
-      const p = loadProposals(root).find((x) => x.id === body.id);
-      if (!p) return { error: "改善案が見つかりません", code: 404 };
-      return { title: `検索の改善案 ${p.id}`, source: { kind: "proposal", id: p.id },
-        prompt: `検索の改善案 ${p.id} を実施してください。\n対象: ${p.target || ""}\n変える内容: ${p.change || ""}\nコミットのメッセージに ${p.id} を入れてください。${add}` };
-    }
-    if (body.kind === "mon") {
-      const m = loadPlan(root)?.monetization.find((x) => x.id === body.id);
-      if (!m) return { error: "収益化の案が見つかりません", code: 404 };
-      if (m.status !== "adopted") return { error: "Claude に任せられるのは、採用した案だけです", code: 400 };
-      return { title: `収益化の案 ${m.id} ${m.title}`.slice(0, 120), source: { kind: "mon", id: m.id },
-        prompt: `${m.ask || `収益化の案「${m.title}」を進めてください。`}\n(案の ID: ${m.id}。概要: ${m.summary || ""}。最初の一歩: ${m.firstStep || ""}。気をつけること: ${m.risk || ""})\nコミットのメッセージに ${m.id} を入れてください。${add}` };
-    }
-    // 頼めるのは提案だけ(自由に書いた文では頼まない)
-    return { error: "Claude に任せられるのは、検索の改善案と、採用した収益化の案だけです", code: 400 };
-  };
-
   // 予定タスク(読むだけ)。読めなくても、ほかの画面は使えるように
   const safeTasks = (o) => { try { return tasks(o); } catch (err) { return { found: true, error: `予定タスクを読めませんでした(${err.message})`, tasks: [] }; } };
 
@@ -134,44 +107,6 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
 
     // いますぐ更新(定期の更新と同じ)
     "POST /api/refresh": async () => ({ refresh: await refresh("手動"), state: await state() }),
-
-    // ---------- Claude に任せる ----------
-    "GET /api/jobs": async () => ({ jobs: jobs.list(), claude: await jobs.status() }),
-    "POST /api/jobs/start": async (body) => {
-      const a = askFor(body);
-      if (a.error) return [a.code, { error: a.error }];
-      const r = jobs.start(a);
-      if (r.error) return [r.code, { error: r.error }];
-      return { job: r.job, state: await state() };
-    },
-    "POST /api/jobs/reply": async (body) => {
-      const r = jobs.reply(body.id, body.text);
-      if (r.error) return [r.code, { error: r.error }];
-      return { job: r.job, state: await state() };
-    },
-    "POST /api/jobs/discard": async (body) => {
-      const r = await jobs.discard(body.id);
-      if (r.error) return [r.code, { error: r.error }];
-      return { job: r.job, state: await state() };
-    },
-    "POST /api/jobs/publish": async (body) => {
-      const r = await jobs.publish(body.id);
-      if (r.error) return [r.code, { error: r.error }];
-      // 収益化の案は、公開できたら「実施済み」に
-      if (r.publish?.ok && r.source?.kind === "mon") setPlanItem(root, { kind: "mon", id: r.source.id, status: "done", note: "Claude の作業を公開" }, today());
-      return { publish: r.publish, job: r.job, state: await state() };
-    },
-    // Claude にログインする画面(黒い画面)を開く。PC の画面からだけ
-    "POST /api/claude/login": async (_b, ctx) => {
-      if (ctx.remote) return [403, { error: "ログインは、PC の画面から行ってください" }];
-      const exe = findClaude(loadLocal(root));
-      if (!exe) return [404, { error: "このPCで、Claude アプリの Claude Code が見つかりません" }];
-      const [cmd, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "Claude にログイン", exe, "auth", "login"]] : [exe, ["auth", "login"]];
-      spawn(cmd, args, { env: cleanEnv(), detached: true, stdio: "ignore" }).on("error", () => {}).unref();
-      jobs.resetAuth();
-      return { opened: true };
-    },
-    "GET /api/claude": async () => ({ claude: await jobs.status(true) }),
 
     // 開催の保存(追加・編集)。inboxId があれば、その申請を「掲載済み」にする
     "POST /api/events/save": (body) => serial(async () => {
@@ -307,7 +242,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   return new Promise((resolve, reject) => {
     const listen = (p) => server.listen(p, "127.0.0.1");
     server.once("error", (err) => { if (err.code === "EADDRINUSE" && port !== 0) { server.once("error", reject); listen(0); } else reject(err); });
-    server.once("listening", () => resolve({ server, token, url: `http://127.0.0.1:${server.address().port}/`, phoneReady, jobs, refresh }));
+    server.once("listening", () => resolve({ server, token, url: `http://127.0.0.1:${server.address().port}/`, phoneReady, refresh }));
     server.on("close", () => { clearInterval(timer); clearTimeout(first); });
     listen(port);
   });

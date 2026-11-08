@@ -109,7 +109,7 @@ export async function adminTests({ ok, section }) {
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
-    refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }), jobsOpts: { auth: async () => ({ found: true, loggedIn: false }), findExe: () => null },
+    refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -272,15 +272,12 @@ export async function adminTests({ ok, section }) {
     ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
     ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「今日やること」に出す(判断待ちの件数と二重に数えない)");
     ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
-    // 定期の更新と、Claude に任せる(画面だけで完結する)
+    // 定期の更新と、提案のプロンプト案(Claude に頼む機能は、画面に置かない)
     const rf = await req("/api/refresh", { body: {} });
     ok(rf.status === 200 && rf.json.refresh.git.text === "最新です" && rf.json.state.refresh.last.why === "手動" && rf.json.state.refresh.hours === 0, "いますぐ更新: GitHub の最新の取り込みの結果を、画面の状態に出す", JSON.stringify(rf.json?.refresh));
-    const st2 = (await req("/api/state")).json;
-    ok(Array.isArray(st2.jobs) && st2.claude.loggedIn === false && st2.jobStatus.review, "画面の状態に、Claude の作業とログインの状態を入れる");
-    ok((await phone("/api/claude/login", { headers: { ...cookie, "x-admin-token": token }, body: {} })).status !== 200, "Claude へのログインは、スマホからは開かない");
-    ok(!/clipboard|頼む文をコピー/.test(js) && js.includes('"Claude に任せる"') && read("scripts/admin/app.html").includes('data-tab="claude"'), "Claude への依頼は、コピーして貼り付けず、画面のボタンから行う");
-    const free = await req("/api/jobs/start", { body: { kind: "free", text: "なんでも" } });
-    ok(free.status === 400 && /改善案/.test(free.json.error) && !/kind: "free"/.test(js) && !js.includes('name: "ask"'), "Claude に頼めるのは提案(改善案・収益化の案)だけ。自由に書いて頼む欄はない", JSON.stringify(free.json));
+    ok(!/\/api\/(jobs|claude)/.test(js) && !read("scripts/admin/app.html").includes('data-tab="claude"') && !existsSync("scripts/admin/claude.mjs"), "管理者用ページには、Claude に作業を頼む機能(タブ・チャット・実行)を置かない");
+    ok(js.includes("function promptFor(") && js.includes('"プロンプトをコピー"') && js.includes('promptBox(promptFor("proposal", p))') && js.includes('promptBox(promptFor("mon", m))'), "検索の改善案と収益化の案は、提案とプロンプト案(コピーのボタンつき)を出すだけ");
+    ok((await req("/api/jobs/start", { body: { kind: "proposal", id: "x" } })).status === 404, "Claude に頼む API はない");
     ok(/setInterval\(reload, hours \* 3600e3/.test(js) && /typing\(\)/.test(js), "画面は数時間おきに状況を読み直す(入力の途中は、描き直さない)");
   } finally {
     server.close();
@@ -326,11 +323,10 @@ export async function adminTests({ ok, section }) {
     ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test.startsWith("npm run test:data && "), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
   } finally { rmSync(T, { recursive: true, force: true }); }
 
-  section("管理者用ページ: Claude に任せる(1件ごとの作業用フォルダ)");
+  section("管理者用ページ: 定期の更新(GitHub の最新の取り込み)");
   {
-    const { createJobs, cleanEnv, DISALLOWED_TOOLS } = await import("../scripts/admin/claude.mjs");
     const { syncMain } = await import("../scripts/admin/publish.mjs");
-    const W = mkdtempSync(join(tmpdir(), "kagura-jobs-"));
+    const W = mkdtempSync(join(tmpdir(), "kagura-sync-"));
     const git = findGit();
     const g = (cwd, ...a) => execFileSync(git, a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }).trim();
     try {
@@ -339,69 +335,8 @@ export async function adminTests({ ok, section }) {
       const H = join(W, "home");
       g(H, "config", "user.email", "t@example.invalid"); g(H, "config", "user.name", "t");
       writeFileSync(join(H, "README.md"), "a\n"); writeFileSync(join(H, ".gitignore"), ".admin/\nnode_modules/\n");
-      mkdirSync(join(H, "node_modules/pkg"), { recursive: true }); writeFileSync(join(H, "node_modules/pkg/keep.txt"), "本体の node_modules");
       g(H, "add", "."); g(H, "commit", "-q", "-m", "init"); g(H, "push", "-q", "-u", "origin", "HEAD:main");
       writeFileSync(join(H, "作業中.txt"), "いつものフォルダの作業中のファイル");
-      // 偽の Claude: 頼まれた文で、作業用フォルダのファイルを書いてコミットする / 「質問」と言うときは、変えずに尋ねる
-      const calls = [];
-      const runner = async ({ args, cwd, input, onLine }) => {
-        calls.push({ args, cwd, input });
-        onLine(JSON.stringify({ type: "system", subtype: "init", session_id: "s-" + calls.length }));
-        if (/質問/.test(input)) { onLine(JSON.stringify({ type: "result", result: "質問: A と B のどちらにしますか？", is_error: false, session_id: "s-1" })); return { code: 0 }; }
-        const name = input.includes("B で") ? "b.txt" : `${calls.length}.txt`;
-        onLine(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "Write", input: { file_path: name } }] } }));
-        writeFileSync(join(cwd, name), input);
-        g(cwd, "add", name); g(cwd, "commit", "-q", "-m", `feat: ${input.split("\n")[0]}`);
-        onLine(JSON.stringify({ type: "result", result: `${name} を足しました`, is_error: false, permission_denials: [{ tool_name: "Bash", tool_input: { command: "git push" } }] }));
-        return { code: 0 };
-      };
-      const order = [];
-      const serial = async (fn) => { order.push("serial"); return fn(); };
-      const J = createJobs({ root: H, git, serial, runner, findExe: () => "claude.exe", auth: async () => ({ found: true, loggedIn: true }), check: async () => ({ ok: true }), parallel: 2 });
-      const a = J.start({ title: "A", prompt: "SEO-20261108-1 をやって", source: { kind: "proposal", id: "SEO-20261108-1" } });
-      const b = J.start({ title: "B", prompt: "別の作業" });
-      ok(J.start({ prompt: "もう一度", source: { kind: "proposal", id: "SEO-20261108-1" } }).code === 409, "同じ案を、作業中に二重に頼まない");
-      await J.idle();
-      const ja = J.list().find((x) => x.id === a.job.id), jb = J.list().find((x) => x.id === b.job.id);
-      ok(ja.status === "review" && jb.status === "review" && ja.commits === 1 && ja.files.length === 1 && jb.files.length === 1, "2件を同時に任せても、それぞれ自分の変更だけを持つ", JSON.stringify([ja.files, jb.files]));
-      ok(calls[0].cwd !== calls[1].cwd && calls.every((c) => c.cwd.startsWith(join(H, ".admin", "work")) && existsSync(join(c.cwd, "README.md"))), "作業ごとに、別の作業用フォルダ(git worktree)で動かす");
-      ok(!existsSync(join(H, "1.txt")) && !existsSync(join(H, "2.txt")) && read(join(H, "作業中.txt")).includes("作業中") && g(H, "rev-parse", "--abbrev-ref", "HEAD") === "main", "いつものフォルダ(作業中のファイル・ブランチ)には触れない");
-      ok(ja.denied.length === 1 && /git push/.test(ja.denied[0]) && DISALLOWED_TOOLS.includes("Bash(git push:*)") && calls[0].args.includes("--disallowedTools"), "Claude には push させない(公開は、人が画面で決める)");
-      ok(!("CLAUDECODE" in cleanEnv({ CLAUDECODE: "1", CLAUDE_CODE_SIMPLE: "1", ANTHROPIC_BASE_URL: "x", PATH: "p" })) && cleanEnv({ PATH: "p" }).PATH === "p", "Claude アプリの中の設定を、子の Claude に引き継がない");
-      // 改行(CRLF)だけを変えたファイルは、コミットしていない変更として数えず、公開の前に元に戻す
-      const bdir = join(H, ".admin", "work", jb.id);
-      writeFileSync(join(bdir, "README.md"), "a\r\n");
-      const J2 = createJobs({ root: H, git, serial, runner, findExe: () => "claude.exe", auth: async () => ({ found: true, loggedIn: true }), check: async () => ({ ok: true }) });
-      await J2.ready();
-      ok(J2.list().find((x) => x.id === jb.id).dirty === false, "改行だけの違いは「コミットしていない変更」にしない");
-      writeFileSync(join(bdir, "README.md"), "a\r\nb\n");
-      const J3 = createJobs({ root: H, git, serial, runner, findExe: () => "claude.exe", auth: async () => ({ found: true, loggedIn: true }), check: async () => ({ ok: true }) });
-      await J3.ready();
-      ok(J3.list().find((x) => x.id === jb.id).dirty === true, "中身の違いは「コミットしていない変更」として止める");
-      writeFileSync(join(bdir, "README.md"), "a\r\n");
-      // 公開: GitHub の最新に重ねてから送る。先に B を公開してから A
-      let p = await J.publish(jb.id);
-      ok(p.publish.ok && g(W, "--git-dir=remote.git", "log", "--format=%s", "main").includes("feat: 別の作業") && !existsSync(join(H, ".admin", "work", jb.id)), "公開すると GitHub に送り、作業用フォルダを片付ける", JSON.stringify(p.publish));
-      ok(existsSync(join(H, "node_modules/pkg/keep.txt")), "作業用フォルダを片付けても、本体の node_modules は消えない");
-      p = await J.publish(ja.id);
-      const log = g(W, "--git-dir=remote.git", "log", "--format=%s", "main");
-      ok(p.publish.ok && log.includes("SEO-20261108-1") && log.includes("別の作業") && order.length === 2, "ほかの作業が先に公開されていても、最新に重ねて送る(公開は順番に)", log);
-      ok(p.publish.synced === true && existsSync(join(H, "1.txt")) && existsSync(join(H, "作業中.txt")), "公開のあと、いつものフォルダも最新にする(作業中のファイルは残す)");
-      // 質問 → 画面から返事 → 同じ作業の続き(--resume)
-      const q = J.start({ title: "Q", prompt: "質問してから進めて" });
-      await J.idle();
-      let jq = J.list().find((x) => x.id === q.job.id);
-      ok(jq.status === "answered" && /A と B/.test(jq.question) && jq.canReply, "Claude が質問で止まったら、質問を出し、返事を待つ", JSON.stringify(jq));
-      ok(["queued", "running"].includes(J.reply(jq.id, "B で進めて").job.status), "返事を送ると、続きを頼む");
-      await J.idle();
-      jq = J.list().find((x) => x.id === q.job.id);
-      const last = calls.at(-1);
-      ok(jq.status === "review" && last.args.includes("--resume") && last.args.includes("s-1") && jq.turns.length === 4, "返事は、同じ作業用フォルダ・同じ会話の続きで動く", JSON.stringify(last.args.slice(-2)));
-      const r = await J.discard(jq.id);
-      ok(r.job.status === "discarded" && !existsSync(join(H, ".admin", "work", jq.id)) && !g(H, "branch", "--list", `admin/${jq.id}`) && !g(W, "--git-dir=remote.git", "log", "--format=%s", "main").includes("B で"), "やめると、作業用フォルダとブランチを消し、GitHub には何も送らない");
-      // 止まった作業は、再起動のあとも「止まった」として残る
-      writeFileSync(join(H, ".admin/jobs.json"), JSON.stringify({ jobs: [{ id: "jx", title: "x", status: "running", createdAt: "2026-11-08T00:00:00Z", turns: [] }] }));
-      ok(createJobs({ root: H, git, runner, findExe: () => null, auth: async () => ({}) }).list()[0].status === "failed", "管理者用ページが止まったときに動いていた作業は、「止まった」として出す");
       // 定期の更新: GitHub の最新を、いつものフォルダに取り込む
       g(W, "clone", "-q", "remote.git", "other"); const O = join(W, "other");
       g(O, "config", "user.email", "t@example.invalid"); g(O, "config", "user.name", "t");
