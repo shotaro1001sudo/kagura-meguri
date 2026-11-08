@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSyn
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
-import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
+import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
 import { pipelineSummary } from "../scripts/admin/pipeline.mjs";
@@ -280,6 +280,27 @@ export async function adminTests({ ok, section }) {
     r = await req("/api/plan/item", { body: { kind: "mon", id: "MON-1", status: "done" } });
     pl = JSON.parse(read(planPath));
     ok(r.status === 200 && pl.monetization[0].status === "done" && !("note" in pl.monetization[0]), "見送りは戻せ、採用した案は実施済みにできる");
+    {
+      const base = { summary: "概要", why: "理由", firstStep: "最初の一歩", expectedYen: [1000, 3000] };
+      const a = addMonetizationProposals(ROOT, [{ ...base, title: "新しい案" }, { ...base, title: pl.monetization[0].title }], "2026-10-11");
+      const p2 = JSON.parse(read(planPath));
+      const nx = p2.monetization.at(-1);
+      ok(a.added.length === 1 && a.skipped.length === 1 && nx.id === "MON-2" && nx.status === "proposed" && nx.proposedAt === "2026-10-11" && nx.ask === "MON-2 を進めて"
+        && p2.monetization[0].status === "done", "週次の分析の新しい収益化の案は、検討中で足す(同じ題名は足さず、既存の案は変えない)");
+      ok(addMonetizationProposals(ROOT, [{ ...base, title: "x", expectedYen: [5, 1] }]).code === 400 && addMonetizationProposals(ROOT, [{ title: "y" }]).code === 400
+        && addMonetizationProposals(ROOT, [1, 2, 3].map((i) => ({ ...base, title: `z${i}` }))).code === 400, "収益化の案は、必要な項目・見込み額の形・1回2件までを確かめる");
+      writeFileSync(planPath, JSON.stringify(pl));
+    }
+    {
+      const R = mkdtempSync(join(tmpdir(), "adm-meas-"));
+      mkdirSync(join(R, "analytics"));
+      writeFileSync(join(R, "analytics/state.json"), JSON.stringify({ proposals: [
+        { id: "MEAS-20261109-1", target: "広告のクリックの開催", change: "affiliate_click に event_id", why: "どの開催で宿が売れるか分かる", owner: "Claude", status: "proposed" },
+        { id: "SEO-20261109-1", target: "検索語", change: "タイトル", baseline: { ctr: 1 }, status: "proposed" }] }));
+      const lp = loadProposals(R);
+      ok(lp[0].kind === "measure" && lp[0].why && lp[0].owner === "Claude" && lp[1].kind === "search" && !("baseline" in lp[1]), "計測の改善案(MEAS-)は、種類・分かるようになること・作業する人を付けて画面に渡す");
+      rmSync(R, { recursive: true, force: true });
+    }
     r = await req("/api/plan/manual", { body: { month: "2026-10", values: { rakuten: 300, adsense: null, contracts: 1 } } });
     pl = JSON.parse(read(planPath));
     ok(r.status === 200 && pl.manual["2026-10"].rakuten === 300 && pl.manual["2026-10"].adsense === null && pl.manual["2026-10"].contracts === 1 && pl.manual["2026-10"].updatedAt === "2026-10-10", "手入力の実績を、月ごとに保存する(空欄は null=未入力。0 にしない)");

@@ -98,8 +98,10 @@ function decideView() {
   const actLinks = { "collect-stale": [`${S.repo}/actions/workflows/collect.yml`, "週次の自動収集の実行記録"], "collect-errors": [`${S.repo}/issues?q=is%3Aopen+週次の自動収集`, "週次の自動収集の Issue"],
     "social-missed": ["https://publish.buffer.com/", "Buffer の予約"], "social-metrics-unavailable": ["https://publish.buffer.com/settings/api", "Buffer の API キー"] };
   const prop = (p, closed) => h("section", { class: "panel decision" },
-    h("div", { class: "card-h" }, h("h4", null, p.id), badge(p.status === "declined" ? "rejected" : p.status === "proposed" ? (d.done.has(p.id) ? "doing" : "new") : "published", p.status === "proposed" && d.done.has(p.id) ? "実施(コミットあり)" : S.proposalStatus[p.status] || p.status)),
+    h("div", { class: "card-h" }, h("h4", null, h("span", { class: "chip" }, p.kind === "measure" ? "計測" : "検索"), " ", p.id), badge(p.status === "declined" ? "rejected" : p.status === "proposed" ? (d.done.has(p.id) ? "doing" : "new") : "published", p.status === "proposed" && d.done.has(p.id) ? "実施(コミットあり)" : S.proposalStatus[p.status] || p.status)),
     h("dl", { class: "kv" }, h("dt", null, "対象"), h("dd", null, p.target || ""), h("dt", null, "変える内容"), h("dd", null, p.change || ""),
+      p.why ? [h("dt", null, p.kind === "measure" ? "分かるようになること" : "理由"), h("dd", null, p.why)] : "",
+      p.owner ? [h("dt", null, "作業する人"), h("dd", null, p.owner)] : "",
       p.result ? [h("dt", null, "効果"), h("dd", null, typeof p.result === "string" ? p.result : JSON.stringify(p.result))] : "",
       p.declinedAt ? [h("dt", null, "見送り"), h("dd", null, `${p.declinedAt}${p.declineNote ? " ・ " + p.declineNote : ""}`)] : ""),
     closed ? "" : promptBox(promptFor("proposal", p)),
@@ -123,8 +125,8 @@ function decideView() {
             S.repo ? h("p", { class: "links" }, link(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りの Issue を開く")) : ""]
         : allClear("人が行う項目はありません。")] },
     { n: d.openProps.length, body: () => [
-      ...secHead("検索の改善案", d.openProps.length, "やるものは、プロンプト案をコピーして Claude に貼り付けます。やらないものは「見送る」。",
-        "毎週月曜の分析(このPCの analytics/)が出した案です。コミットに ID が入ると「実施(コミットあり)」になり、効果は翌週以降の分析が判定します。見送ると、次の週から同じ案が出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
+      ...secHead("検索・計測の改善案", d.openProps.length, "やるものは、プロンプト案をコピーして Claude に貼り付けます。やらないものは「見送る」。",
+        "毎週月曜の分析(このPCの analytics/)が出した案です。「計測」の案は、分析の精度を上げるために、新しく測るとよいものです。コミットに ID が入ると「実施(コミットあり)」になり、効果は翌週以降の分析が判定します。見送ると、次の週から同じ案が出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
       !d.proposals.length ? h("p", { class: "mut" }, "このPCに、検索・アクセスの分析(analytics/state.json)がありません。毎週月曜 9:00 の分析タスクが作ります。")
         : [d.openProps.length ? d.openProps.map((p) => prop(p, false)) : allClear("決めていない改善案はありません。"),
           closedProps.length ? h("details", { class: "mt" }, h("summary", null, `実施・見送りの済んだ案(${closedProps.length}件)`), closedProps.map((p) => prop(p, true))) : ""]] },
@@ -148,6 +150,13 @@ async function rejectEvent(e) {
 }
 // ---------- プロンプト案(Claude に頼むときの文。管理者用ページは提示とコピーだけ) ----------
 function promptFor(kind, x) {
+  if (kind === "proposal" && x.kind === "measure") return `計測の改善案 ${x.id} を実施してください。
+計測したいこと: ${x.target || ""}
+変える内容: ${x.change || ""}
+分かるようになること: ${x.why || ""}
+個人を特定できる情報は送らず、同意(Cookie)の設定とプライバシーポリシーの範囲で計測してください。範囲を超えるなら、先に相談してください。
+Google 側(Apps Script・GA4 の管理画面)の作業が要るなら、手順を書いてください。
+コミットのメッセージに ${x.id} を入れてください。`;
   if (kind === "proposal") return `検索の改善案 ${x.id} を実施してください。
 対象: ${x.target || ""}
 変える内容: ${x.change || ""}
@@ -262,12 +271,13 @@ function goalView() {
     h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, m.id, " "), m.title), stBadge(m.status)),
     h("p", { class: "chips" },
       m.expectedYen ? h("span", { class: "chip" }, `見込み 月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}`) : "",
-      m.effort ? h("span", { class: "chip" }, `手間 ${m.effort}`) : ""),
+      m.effort ? h("span", { class: "chip" }, `手間 ${m.effort}`) : "",
+      m.source === "weekly-analytics" ? h("span", { class: "chip" }, `週次の分析の提案${m.proposedAt ? `(${m.proposedAt})` : ""}`) : ""),
     h("p", null, m.summary || ""),
     h("p", { class: "next" }, h("b", null, "最初の一歩: "), m.firstStep || ""),
     ["proposed", "adopted"].includes(m.status) ? promptBox(promptFor("mon", m)) : "",
     h("details", { class: "more" }, h("summary", null, "理由・気をつけること"),
-      h("dl", { class: "kv" }, h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""), decidedLine(m))),
+      h("dl", { class: "kv" }, h("dt", null, "理由"), h("dd", null, m.why || ""), h("dt", null, "気をつけること"), h("dd", null, m.risk || ""), m.evidence ? [h("dt", null, "根拠"), h("dd", null, m.evidence)] : "", decidedLine(m))),
     h("div", { class: "bar mt" }, monButtons(m)));
 
   const adoptedExp = p.monetization.filter((m) => ["adopted", "done"].includes(m.status) && m.expectedYen).reduce((a, m) => [a[0] + m.expectedYen[0], a[1] + m.expectedYen[1]], [0, 0]);

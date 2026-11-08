@@ -55,10 +55,10 @@ export async function syncMain(root, git = findGit()) {
     : { ok: false, text: `GitHub の新しい変更を取り込めませんでした(このPCに、送っていないコミットか、重なる作業中のファイルがあります)` };
 }
 
-/** 最近のコミットのメッセージに書かれた改善案の ID(SEO-日付-番号)。実施したかの目安に使う(判定は週次の分析タスク) */
+/** 最近のコミットのメッセージに書かれた改善案の ID(検索 SEO-日付-番号、計測 MEAS-日付-番号)。実施したかの目安に使う(判定は週次の分析タスク) */
 export async function mentionedIds(root, git = findGit()) {
   const r = await run(git, ["log", "--since=120.days", "--format=%s%n%b"], { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
-  return r.ok ? [...new Set(r.out.match(/\bSEO-\d{8}-\d+\b/g) ?? [])] : [];
+  return r.ok ? [...new Set(r.out.match(/\b(?:SEO|MEAS)-\d{8}-\d+\b/g) ?? [])] : [];
 }
 
 /** GitHub のリポジトリの画面の URL(Issue・Actions へのリンクに使う)。GitHub 以外なら空 */

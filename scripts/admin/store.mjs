@@ -151,7 +151,9 @@ export function loadReview(root) {
 export const PROPOSAL_STATUS = { proposed: "提案中", implemented: "実施済み", evaluated: "効果を判定済み", declined: "見送り" };
 export function loadProposals(root) {
   const s = readJson(paths(root).analytics, null);
-  return (s?.proposals ?? []).map(({ id, date, target, change, status, implementedAt, result, declinedAt, declineNote }) => ({ id, date, target, change, status, implementedAt, result, declinedAt, declineNote }));
+  // kind: "measure" は計測の改善案(ID は MEAS-…)。why は、その計測で何が分かるようになるか。owner は、誰が作業するか(Claude / 運営者)
+  return (s?.proposals ?? []).map(({ id, date, target, change, status, implementedAt, result, declinedAt, declineNote, kind, why, owner }) => ({ id, date, target, change, status, implementedAt, result, declinedAt, declineNote,
+    kind: kind === "measure" || /^MEAS-/.test(id ?? "") ? "measure" : "search", ...(why ? { why } : {}), ...(owner ? { owner } : {}) }));
 }
 export function setProposalStatus(root, id, status, today, note = "") {
   if (!["declined", "proposed"].includes(status)) return { code: 400, error: "変えられるのは「見送る」と「見送りを戻す」だけです" };
@@ -216,6 +218,41 @@ export function setPlanItem(root, { kind, id, status, note = "", targets }, toda
   plan.updated = today;
   writeJson(p.plan, plan);
   return { item: x };
+}
+/**
+ * 週次の分析が見つけた新しい収益化の案を、「検討中」で plan.json に足す(scripts/admin/propose-mon.mjs から呼ぶ)。
+ * 採用・見送りは運営者が決めるので、ここでは足すだけ。既存の案は変えない。
+ * 同じ題名の案(見送った案も含む)があれば足さない。1回に足せるのは2件まで。
+ */
+const MON_TEXT = { title: 40, summary: 300, why: 200, effort: 40, risk: 100, firstStep: 200, ask: 200, evidence: 300 };
+export function addMonetizationProposals(root, items, today = todayJst()) {
+  const p = paths(root);
+  const plan = readJson(p.plan, null);
+  if (!plan) return { code: 404, error: "analytics/plan.json がありません" };
+  if (!Array.isArray(items) || !items.length) return { code: 400, error: "案がありません" };
+  if (items.length > 2) return { code: 400, error: "1回に足せるのは2件までです" };
+  plan.monetization ??= [];
+  const norm = (s) => String(s ?? "").replace(/\s+/g, "");
+  const added = [], skipped = [];
+  for (const it of items) {
+    const x = {};
+    for (const [k, n] of Object.entries(MON_TEXT)) {
+      const v = typeof it?.[k] === "string" ? it[k].trim() : "";
+      if (v.length > n) return { code: 400, error: `${k} は${n}字以内にしてください` };
+      if (v) x[k] = v;
+    }
+    for (const k of ["title", "summary", "why", "firstStep"]) if (!x[k]) return { code: 400, error: `${k} がありません` };
+    const y = it.expectedYen;
+    if (!Array.isArray(y) || y.length !== 2 || !y.every((v) => Number.isInteger(v) && v >= 0) || y[0] > y[1]) return { code: 400, error: "expectedYen は [下限, 上限] の 0 以上の整数(円/月)にしてください" };
+    if (plan.monetization.some((m) => norm(m.title) === norm(x.title))) { skipped.push(x.title); continue; }
+    const id = `MON-${plan.monetization.reduce((n, m) => Math.max(n, +(m.id?.match(/^MON-(\d+)$/)?.[1] ?? 0)), 0) + 1}`;
+    const item = { id, ...x, expectedYen: y, status: "proposed", proposedAt: today, source: "weekly-analytics" };
+    if (!item.ask) item.ask = `${id} を進めて`;
+    plan.monetization.push(item);
+    added.push(item);
+  }
+  if (added.length) { plan.updated = today; writeJson(p.plan, plan); }
+  return { added, skipped };
 }
 export function setManual(root, month, values, today) {
   const p = paths(root);

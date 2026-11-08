@@ -62,7 +62,7 @@ Claude デスクトップアプリの「定期タスク」で動きます。**�
 
 | 名前 | いつ | やること | 状態(2026-11-07) |
 |---|---|---|---|
-| kagurameguri-weekly-analytics | 毎週月曜 9:00 | Chrome で非公開スプレッドシートの売上(11)・GA4・Search Console を読み、目標(analytics/goal.json)に対する売上の進み具合、前週比・改善案(SEO-ID 付き)・前回の改善の効果を `analytics/weekly-<日付>.md` に。`analytics/state.json`(提案の追跡)と `analytics/focus.json`(次の計画)も更新。要約を通知 | 有効(2026-11-07 登録)。初回は手動の「Run now」で、Chrome の操作を許可しておくとよい |
+| kagurameguri-weekly-analytics | 毎週月曜 9:00 | Chrome で非公開スプレッドシートの売上(11)・GA4・Search Console を読み、目標(analytics/goal.json)に対する売上の進み具合、前週比・改善案(SEO-ID 付き)・前回の改善の効果を `analytics/weekly-<日付>.md` に。`analytics/state.json`(提案の追跡)と `analytics/focus.json`(次の計画)も更新。データが足りず判断できなかったことは、計測の改善案(MEAS-…、週2件まで)として「判断待ち」に出す。根拠のある新しい収益化の案は、`scripts/admin/propose-mon.mjs` で「検討中」として plan.json に足す(週2件まで。採用・見送りは運営者)。要約を通知 | 有効(2026-11-07 登録)。初回は手動の「Run now」で、Chrome の操作を許可しておくとよい |
 | kagura-meguri-daily-note | 2日に1回 18:00 | note 記事を書き、神楽日和(kagurabi_info)で公開。振り返りの focus の地方を優先して題材にする。時刻の判明・データの食い違いを NOTE-LOG.md に記録 | 有効。ただし最後に動いたのは 10/21(PCやアプリが閉じていると動かない) |
 | kagurameguri-monthly-research-2 | 毎月1日 9:00 | 振り返りの focus の地方を優先して掲載候補を調べ、提案する(読むだけ)。自動収集に回せる「収集元の候補」も挙げる | 有効(2026-11-07 登録。初回は 12/1)。番号なしの kagurameguri-monthly-research は、登録前の古い設定フォルダ |
 
