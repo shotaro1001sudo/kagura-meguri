@@ -6,7 +6,7 @@ import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/ma
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
-import { pipelineSummary } from "../scripts/admin/pipeline.mjs";
+import { pipelineSummary, addSuggestedLeads } from "../scripts/admin/pipeline.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
@@ -301,6 +301,28 @@ export async function adminTests({ ok, section }) {
       ok(lp[0].kind === "measure" && lp[0].why && lp[0].owner === "Claude" && lp[1].kind === "search" && !("baseline" in lp[1]), "計測の改善案(MEAS-)は、種類・分かるようになること・作業する人を付けて画面に渡す");
       rmSync(R, { recursive: true, force: true });
     }
+    {
+      // Claude に頼めること(助言)と、分析が足す営業の候補
+      const an0 = JSON.parse(read(join(ROOT, "analytics/state.json")));
+      writeFileSync(join(ROOT, "analytics/state.json"), JSON.stringify({ ...an0, advice: [{ id: "ADV-20261109-1", date: "2026-11-09", kind: "sales", title: "候補を探す", detail: "宿に協賛の案内", ask: "宿の候補を3件探して", status: "proposed" }, { id: "ADV-20261109-2", kind: "weird", title: "x" }] }));
+      let s2 = (await req("/api/state")).json;
+      ok(s2.advice.length === 2 && s2.advice[1].kind === "other" && s2.advice[1].status === "proposed" && s2.adviceKinds.sales === "営業", "Claude に頼めること(助言)を画面に渡す(知らない種類は「その他」)");
+      r = await req("/api/advice/update", { body: { id: "ADV-20261109-1", status: "declined", note: "時期が早い" } });
+      let a1 = JSON.parse(read(join(ROOT, "analytics/state.json"))).advice[0];
+      ok(r.status === 200 && a1.status === "declined" && a1.declineNote === "時期が早い" && a1.declinedAt, "助言を見送ると、日付と理由を残す");
+      await req("/api/advice/update", { body: { id: "ADV-20261109-1", status: "done" } });
+      a1 = JSON.parse(read(join(ROOT, "analytics/state.json"))).advice[0];
+      ok(a1.status === "done" && a1.doneAt && !("declineNote" in a1), "助言を済みにできる(見送りの記録は消える)");
+      ok((await req("/api/advice/update", { body: { id: "ADV-X", status: "done" } })).status === 404 && (await req("/api/advice/update", { body: { id: "ADV-20261109-1", status: "deleted" } })).status === 400, "知らない助言・状態は受け付けない");
+      writeFileSync(join(ROOT, "analytics/state.json"), JSON.stringify(an0));
+      const R2 = mkdtempSync(join(tmpdir(), "adm-lead-"));
+      const sl = addSuggestedLeads(R2, [{ name: "テスト神楽団", kind: "神楽団", offer: "MON-2", url: "https://example.jp/" }, { name: "テスト 神楽団", kind: "神楽団", offer: "MON-1" }, { name: "宿", kind: "宿泊", offer: "MON-2" }], "2026-11-09");
+      const pl2 = JSON.parse(read(join(R2, "analytics/pipeline.json")));
+      ok(sl.added.length === 1 && sl.skipped.length === 1 && sl.errors.length === 1 && pl2.leads[0].stage === "candidate" && pl2.leads[0].source === "weekly-analytics" && pl2.leads[0].log[0].note.includes("週次の分析"),
+        "分析が足す営業の候補は「候補」で入り、同じ名前は足さず、形の正しくないものは足さない");
+      ok(addSuggestedLeads(R2, [1, 2, 3, 4].map((i) => ({ name: `n${i}`, kind: "宿", offer: "MON-2" })), "2026-11-09").code === 400, "営業の候補は1回3件まで");
+      rmSync(R2, { recursive: true, force: true });
+    }
     r = await req("/api/plan/manual", { body: { month: "2026-10", values: { rakuten: 300, adsense: null, contracts: 1 } } });
     pl = JSON.parse(read(planPath));
     ok(r.status === 200 && pl.manual["2026-10"].rakuten === 300 && pl.manual["2026-10"].adsense === null && pl.manual["2026-10"].contracts === 1 && pl.manual["2026-10"].updatedAt === "2026-10-10", "手入力の実績を、月ごとに保存する(空欄は null=未入力。0 にしない)");
@@ -376,7 +398,7 @@ export async function adminTests({ ok, section }) {
     ok(/^\.admin\/$/m.test(read(".gitignore")), "スマホの鍵(.admin/phone.json)は、Git に入らない");
     const js = read("scripts/admin/app.js");
     ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
-    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「判断・対応」に出す(判断待ちの件数と二重に数えない)");
+    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \+ openAdv\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「判断・対応」に出す(判断待ちの件数と二重に数えない)");
     ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
     // 定期の更新と、提案のプロンプト案(Claude に頼む機能は、画面に置かない)
     const rf = await req("/api/refresh", { body: {} });

@@ -73,7 +73,9 @@ function decisions() {
   const openProps = proposals.filter((p) => p.status === "proposed" && !done.has(p.id));
   const actions = S.review?.actions || [];
   const plan = planOpen();
-  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, done, plan, total: pending.length + actions.length + openProps.length };
+  const advice = S.advice || [];
+  const openAdv = advice.filter((a) => a.status === "proposed" && !done.has(a.id));
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, advice, openAdv, done, plan, total: pending.length + actions.length + openProps.length + openAdv.length };
 }
 const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); window.scrollTo(0, 0); };
 // 見出し(件数つき)と、ひとことの説明。長い説明は「詳しく」に畳む
@@ -110,8 +112,28 @@ function decideView() {
         h("button", { class: "btn", onclick: () => copyPrompt(promptFor("proposal", p)) }, "プロンプトをコピー"),
         h("button", { class: "btn ghost", onclick: () => setProposal(p, "declined") }, "見送る")));
   const closedProps = d.proposals.filter((p) => !d.openProps.includes(p));
+  // Claude に頼めること(助言)
+  const adv = (a, closed) => h("section", { class: "panel decision" + (a.status === "declined" ? " dim" : "") },
+    h("div", { class: "card-h" }, h("h4", null, h("span", { class: "chip" }, S.adviceKinds?.[a.kind] || a.kind), " ", a.title),
+      badge(a.status === "declined" ? "rejected" : a.status === "done" || d.done.has(a.id) ? "published" : "new", d.done.has(a.id) && a.status === "proposed" ? "実施(コミットあり)" : S.adviceStatus?.[a.status] || a.status)),
+    a.detail ? h("p", null, a.detail) : "",
+    h("dl", { class: "kv" }, a.why ? [h("dt", null, "理由"), h("dd", null, a.why)] : "", h("dt", null, "ID"), h("dd", null, `${a.id}${a.date ? `(${jpDate(a.date)})` : ""}`),
+      a.doneAt ? [h("dt", null, "済み"), h("dd", null, jpDate(a.doneAt))] : "",
+      a.declinedAt ? [h("dt", null, "見送り"), h("dd", null, `${jpDate(a.declinedAt)}${a.declineNote ? " ・ " + a.declineNote : ""}`)] : ""),
+    closed ? "" : promptBox(promptFor("advice", a)),
+    h("div", { class: "bar mt" }, closed
+      ? h("button", { class: "btn ghost small", onclick: () => setAdvice(a, "proposed") }, "提案中に戻す")
+      : [h("button", { class: "btn", onclick: () => copyPrompt(promptFor("advice", a)) }, "プロンプトをコピー"),
+        h("button", { class: "btn ghost", onclick: () => setAdvice(a, "done") }, "済みにする"),
+        h("button", { class: "btn ghost", onclick: () => setAdvice(a, "declined") }, "見送る")]));
+  const closedAdv = d.advice.filter((a) => !d.openAdv.includes(a));
 
   const groups = [
+    { n: d.openAdv.length, body: () => [
+      ...secHead("Claude に頼めること", d.openAdv.length, "やるものは、プロンプト案をコピーして Claude に貼り付けます。終わったら「済みにする」、やらないものは「見送る」。",
+        "毎週月曜の分析が、営業の候補・文案、掲載の穴、目標の見直し、記事の題材など、Claude が進められることを出します(週に5件まで)。見送ると、同じ助言は出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
+      d.openAdv.length ? d.openAdv.map((a) => adv(a, false)) : allClear("いま頼めることはありません。"),
+      closedAdv.length ? h("details", { class: "mt" }, h("summary", null, `済み・見送りの助言(${closedAdv.length}件)`), closedAdv.map((a) => adv(a, true))) : ""] },
     { n: d.upcoming.length, body: () => [
       ...secHead("保留中の開催", d.upcoming.length, "公式情報で日時・会場を確かめて、「掲載」か「却下」を選びます。どちらも、すぐにサイトに反映します。",
         "週次の自動収集で、自動の検査に通らなかった開催です。却下したものは data/rejected.json に記録され、自動収集で取り直しません。"),
@@ -150,6 +172,9 @@ async function rejectEvent(e) {
 }
 // ---------- プロンプト案(Claude に頼むときの文。管理者用ページは提示とコピーだけ) ----------
 function promptFor(kind, x) {
+  if (kind === "advice") return `${x.ask || x.title}
+(助言の ID: ${x.id}。${x.detail ? `内容: ${x.detail}。` : ""}${x.why ? `理由: ${x.why}` : ""})
+ファイルを変えるときは、コミットのメッセージに ${x.id} を入れてください。`;
   if (kind === "proposal" && x.kind === "measure") return `計測の改善案 ${x.id} を実施してください。
 計測したいこと: ${x.target || ""}
 変える内容: ${x.change || ""}
@@ -172,6 +197,12 @@ async function copyText(text, msg) {
 async function copyPrompt(text) {
   try { await navigator.clipboard.writeText(text); toast("プロンプト案をコピーしました。Claude に貼り付けてください"); }
   catch { toast("コピーできませんでした。「プロンプト案」を開いて、文を選んでコピーしてください", true); }
+}
+async function setAdvice(a, status) {
+  let note = "";
+  if (status === "declined") { const v = prompt(`「${a.title}」を見送ります。理由があれば書いてください(空でも構いません)。`, ""); if (v === null) return; note = v.trim(); }
+  try { await call("/api/advice/update", { id: a.id, status, note }); toast({ done: "済みにしました", declined: "見送りにしました", proposed: "提案中に戻しました" }[status]); render(); }
+  catch (err) { toast(err.message, true); }
 }
 async function setProposal(p, status) {
   let note = "";
@@ -381,6 +412,7 @@ function salesView() {
     h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, x.id, " "), x.name), stageBadge(x.stage)),
     h("p", { class: "chips" }, h("span", { class: "chip" }, x.kind), h("span", { class: "chip" }, `${x.offer} ${P.offers[x.offer] || ""}`),
       x.monthlyYen ? h("span", { class: "chip" }, `月 ${yen(x.monthlyYen)}`) : "",
+      x.source === "weekly-analytics" && x.stage === "candidate" ? h("span", { class: "chip" }, `週次の分析が追加(${jpDate(x.createdAt)})`) : "",
       x.nextAt && !["won", "lost", "candidate"].includes(x.stage) ? h("span", { class: "chip" + (dueSet.has(x.id) ? " due" : "") }, `次に連絡する日 ${jpDate(x.nextAt)}${dueSet.has(x.id) ? "(来ています)" : ""}`) : ""),
     h("dl", { class: "kv" },
       x.contact ? [h("dt", null, "宛先・窓口"), h("dd", null, x.contact)] : "",
@@ -696,7 +728,9 @@ function todoChips() {
     { n: inb("submit"), title: "未対応の申請", go: ["submit", { sub: "open" }] },
     { n: inb("contact"), title: "未対応・対応中の問い合わせ", go: ["contact", { con: "open" }] },
     { n: dc.actions.length, title: "振り返りで、人が行うこと", go: ["decide"] },
-    { n: dc.openProps.length, title: "検索の改善案", go: ["decide"] },
+    { n: dc.openProps.length, title: "検索・計測の改善案", go: ["decide"] },
+    { n: dc.openAdv.length, title: "Claude に頼めること", go: ["decide"] },
+    { n: S.pipeline?.leads.filter((x) => x.stage === "candidate" && x.source === "weekly-analytics").length || 0, title: "分析が足した営業の候補(まだ送っていない)", go: ["sales"] },
     { n: dc.plan.length, title: "KPI・収益化の案", go: ["goal"] },
     { n: manualMissing ? 1 : 0, title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, go: ["goal"] },
     { n: S.pipeline?.summary.due.length || 0, title: "連絡する日が来た営業の相手", go: ["sales"] },

@@ -169,6 +169,30 @@ export function setProposalStatus(root, id, status, today, note = "") {
   return { proposal: x };
 }
 
+// Claude に頼めること(助言)。週次の分析が analytics/state.json の advice に書く(ID は ADV-日付-番号)。
+// 営業の候補・文案、掲載の穴、KPI の見直し、記事の題材など、運営者が「頼む」だけで Claude が進められるもの。
+// 運営者は画面で「済みにする」「見送る」(と、その取り消し)を選ぶ。中身は分析が書き、画面からは変えない
+export const ADVICE_KINDS = { sales: "営業", listing: "掲載", revenue: "収益", kpi: "目標・KPI", content: "記事・SNS", ops: "運営", other: "その他" };
+export const ADVICE_STATUS = { proposed: "提案中", done: "済み", declined: "見送り" };
+export function loadAdvice(root) {
+  const s = readJson(paths(root).analytics, null);
+  return (s?.advice ?? []).filter((x) => x && x.id && x.title).map(({ id, date, kind, title, detail, why, ask, status, doneAt, declinedAt, declineNote }) =>
+    ({ id, date, kind: kind in ADVICE_KINDS ? kind : "other", title, detail, why, ask, status: status in ADVICE_STATUS ? status : "proposed", doneAt, declinedAt, declineNote }));
+}
+export function setAdviceStatus(root, id, status, today, note = "") {
+  if (!(status in ADVICE_STATUS)) return { code: 400, error: "その状態にはできません" };
+  const p = paths(root);
+  const s = readJson(p.analytics, null);
+  const x = s?.advice?.find((y) => y.id === id);
+  if (!x) return { code: 404, error: "助言が見つかりません" };
+  x.status = status;
+  delete x.doneAt; delete x.declinedAt; delete x.declineNote;
+  if (status === "done") x.doneAt = today;
+  if (status === "declined") { x.declinedAt = today; if (note) x.declineNote = String(note).slice(0, 300); }
+  writeJson(p.analytics, s);
+  return { advice: x };
+}
+
 // 最終目標・KPI・収益化の案(analytics/plan.json。このPCだけ・git に入らない)。運営者が採用・見送り・目標の変更・実績の入力をする
 // 実績は、週次の分析タスクが analytics/state.json の kpi に書く(自動の分)。手入力の分は plan.json の manual
 export const PLAN_STATUS = { proposed: "検討中", adopted: "採用", declined: "見送り", done: "実施済み" };

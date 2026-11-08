@@ -81,6 +81,31 @@ export function saveLead(root, input, today) {
 }
 
 /**
+ * 週次の分析が見つけた営業の候補を、「候補」として台帳に足す(scripts/admin/propose-lead.mjs から呼ぶ)。
+ * 1回に3件まで。同じ名前の相手(見送りも含む)がすでにあれば足さない。送るのは、運営者が確かめてから。
+ */
+export function addSuggestedLeads(root, items, today) {
+  if (!Array.isArray(items) || !items.length) return { code: 400, error: "候補がありません" };
+  if (items.length > 3) return { code: 400, error: "1回に足せるのは3件までです" };
+  const norm = (s) => String(s ?? "").replace(/[\s　]+/g, "");
+  const added = [], skipped = [], errors = [];
+  for (const it of items) {
+    if (!it || typeof it !== "object") { errors.push({ error: "形が正しくありません" }); continue; }
+    if (loadPipeline(root).leads.some((y) => norm(y.name) === norm(it.name))) { skipped.push(it.name); continue; }
+    const r = saveLead(root, { ...it, id: undefined }, today);
+    if (r.error) { errors.push({ name: it.name, error: r.error, fields: r.fields }); continue; }
+    // 分析が足した印(画面に出す)
+    const pl = loadPipeline(root);
+    const lead = pl.leads.find((y) => y.id === r.lead.id);
+    lead.source = "weekly-analytics";
+    lead.log[0].note = "週次の分析が候補として追加";
+    savePipeline(root, pl);
+    added.push(lead);
+  }
+  return { added, skipped, errors };
+}
+
+/**
  * 段階を変える。記録(log)に日付とメモを残す。
  * 送信済みにした最初の日を sentAt(提案した数は、この日の月で数える)、契約にした日を wonAt に残す。
  * 送信済み・返信ありにしたとき、連絡する日が空なら、FOLLOW_DAYS 日後を入れる。契約・見送りでは、連絡する日を消す。

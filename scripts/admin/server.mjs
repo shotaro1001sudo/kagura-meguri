@@ -16,7 +16,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
@@ -61,7 +61,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
-      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
+      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       refresh: { last: lastRefresh, hours: refreshHours } };
   };
@@ -174,6 +174,13 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     // 検索の改善案を見送る / 見送りを戻す(analytics/state.json。このPCだけ。push しない)
     "POST /api/proposals/update": (body) => serial(async () => {
       const r = setProposalStatus(root, body.id, body.status, today(), body.note);
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+
+    // Claude に頼めること(助言): 済みにする / 見送る / 戻す(analytics/state.json。このPCだけ。push しない)
+    "POST /api/advice/update": (body) => serial(async () => {
+      const r = setAdviceStatus(root, body.id, body.status, today(), body.note);
       if (r.error) return [r.code, { error: r.error }];
       return { state: await state() };
     }),
