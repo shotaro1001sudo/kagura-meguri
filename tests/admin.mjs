@@ -6,6 +6,7 @@ import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/ma
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron } from "../scripts/admin/tasks.mjs";
+import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
@@ -104,12 +105,15 @@ export async function adminTests({ ok, section }) {
   copyFileSync("config.json", join(ROOT, "config.json"));
   writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(base, null, 2));
   const fakeMail = { calls: 0 };
+  const ovCalls = { runs: 0, site: 0 };
   // コミットと push は、本物のリポジトリに触れないよう、記録するだけの偽物にする
   const published = [];
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
+    runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
+    siteCheck: async () => { ovCalls.site++; return { ok: true, status: 200, ms: 120, at: "2026-10-10T01:00:00Z" }; },
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -127,7 +131,15 @@ export async function adminTests({ ok, section }) {
     ok((await req("/api/inbox/update", { body: { id: "1" }, headers: { origin: "https://evil.example" } })).status === 403, "ほかのサイトから送られた操作は断る");
     ok((await req("/api/events/status", { method: "POST", headers: { "content-type": "text/plain" } })).status === 415, "JSON 以外の送信は断る(フォームからの不正な送信を防ぐ)");
 
-    let r = await req("/api/tasks");
+    // 概要(運営の状況)
+    let r = await req("/api/overview");
+    ok(r.status === 200 && r.json.ops?.signals?.find((x) => x.id === "site")?.state === "ok" && r.json.ops.signals.find((x) => x.id === "deploy")?.url === "https://github.com/o/r/actions/runs/1" && r.json.listing && r.json.traffic && "revenue" in r.json, "概要: 売上・集客・運営の信号・掲載を、1回で返す", JSON.stringify(r.json?.ops?.counts));
+    await req("/api/overview");
+    ok(ovCalls.runs === 1 && ovCalls.site === 1, "概要: GitHub とサイトの確認は、10分は使い回す(開くたびに待たせない)", JSON.stringify(ovCalls));
+    await req("/api/overview?fresh=1");
+    ok(ovCalls.runs === 2 && ovCalls.site === 2, "概要: 「いますぐ確かめる」では、確かめ直す");
+    ok((await req("/api/overview", { headers: { "x-admin-token": "x" } })).status === 403, "概要: 合言葉がなければ出さない(売上・アクセスの数字を守る)");
+    r = await req("/api/tasks");
     ok(r.status === 200 && r.json.missed === 1 && r.json.tasks.find((t) => t.id === "note")?.runs?.length === 1, "予定タスク: 一覧と最近の実行を返す");
     ok((await req("/api/tasks", { headers: { "x-admin-token": "x" } })).status === 403, "予定タスク: 合言葉がなければ出さない");
     r = await req("/api/state");
@@ -270,7 +282,7 @@ export async function adminTests({ ok, section }) {
     ok(/^\.admin\/$/m.test(read(".gitignore")), "スマホの鍵(.admin/phone.json)は、Git に入らない");
     const js = read("scripts/admin/app.js");
     ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
-    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「今日やること」に出す(判断待ちの件数と二重に数えない)");
+    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「判断・対応」に出す(判断待ちの件数と二重に数えない)");
     ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
     // 定期の更新と、提案のプロンプト案(Claude に頼む機能は、画面に置かない)
     const rf = await req("/api/refresh", { body: {} });
@@ -349,6 +361,49 @@ export async function adminTests({ ok, section }) {
     }
   }
 
+  section("管理者用ページ: 概要(運営の状況)の集計");
+  {
+    const days = { "2026-10-26": { sessions: 10, gscClicks: 5, gscImpr: 100, gscPos: 4 }, "2026-10-27": { sessions: 20, gscClicks: 5, gscImpr: 300, gscPos: 8 }, "2026-11-02": { sessions: 7 } };
+    const w = weekBuckets(days, "2026-11-04", 6);
+    ok(w.length === 2 && w[0].from === "2026-10-26" && w[0].sessions === 30 && w[0].gaDays === 2 && w[0].clicks === 10 && w[0].pos === 7 && w[1].to === "2026-11-04" && w[1].gscDays === 0 && w[1].clicks === null,
+      "週ごと: 月曜はじまり。計測前の空の週は出さない。値のない日は数えず(0 にしない)、掲載順位は表示回数で重み付け", JSON.stringify(w));
+    const rw = recentWindows(days, "gsc");
+    ok(rw.cur.to === "2026-10-27" && rw.cur.gscDays === 2 && recentWindows(days, "sessions").cur.to === "2026-11-02" && recentWindows({}, "gsc") === null, "直近7日: 指標ごとに、値のある最後の日で区切る(検索は数日遅れて確定するため)");
+    const p = (v) => pace(v, 31000, "2026-12", "2026-12-10")?.state;
+    ok(p(12000) === "ahead" && p(10000) === "on" && p(5000) === "behind" && pace(null, 100, "2026-12", "2026-12-10") === null && pace(5, null, "2026-12", "2026-12-10") === null && pace(50, 100, "2026-11", "2026-12-10").frac === 1,
+      "月の途中のペース: 目標を経過日数で按分して比べる。実績・目標がなければ判定しない。過ぎた月は月全体で");
+    const rv = revenueOf({ months: { "2026-11": { revenueVc: 300 } } }, { "2026-11": { rakuten: 0, adsense: null } }, "2026-11");
+    ok(rv.value === 300 && rv.missing.join() === "AdSense,協賛・有料プラン" && revenueOf(null, {}, "2026-12").value === null, "売上: 入力済みの分だけ足し、未入力を名前で返す(何もなければ「—」。0 にしない)");
+    const da = deriveActuals({ kpi: { updated: "2026-11-09", months: { "2026-11": { sessions: 999 } } } }, { days, vcMonths: { "2026-10": { orders: 2, pendingYen: 100, approvedYen: 50, billedYen: 0, rejectedYen: 900 } } });
+    ok(da.months["2026-11"].sessions === 999 && da.months["2026-10"].sessions === 30 && da.months["2026-10"].revenueVc === 150 && da.months["2026-10"].conversionsVc === 2,
+      "実績: 週次の分析の値を優先し、日ごとの記録から出せる分(月のセッション・バリューコマースの見込み)を足す。否認の報酬は含めない");
+    const plan = { goal: { title: "売上 月10万円", monthlyRevenueYen: 100000, targetMonth: "2027-03", setAt: "2026-11-07" }, kpis: [{ id: "revenue", targets: { "2026-12": 15000, "2027-03": 100000 } }, { id: "pitches", name: "提案", unit: "件", status: "adopted", targets: { "2026-12": 15 } }], monetization: [], manual: { "2026-12": { pitches: 7 } } };
+    const R = revenueSection(plan, null, "2026-12-15");
+    ok(R.months[0].month === "2026-10" && R.months.at(-1).month === "2027-03" && R.months.find((m) => m.month === "2027-01").future && R.goal.monthsLeft === 3 && R.leading[0].pace.state === "on" && R.now.target === 15000,
+      "売上の推移: 目標を決めた前の月から、目標の月まで。先の月は目標だけ。先行指標にもペースを付ける", JSON.stringify(R.leading[0]));
+    const NOW = Date.parse("2026-11-08T03:00:00Z");
+    const run = (o) => ({ workflowName: "w", status: "completed", conclusion: "success", createdAt: "2026-11-08T00:00:00Z", url: "u", ...o });
+    ok(workflowSignal([run()], "w", 30, NOW).state === "ok" && workflowSignal([run({ conclusion: "failure" }), run({ createdAt: "2026-11-07T00:00:00Z" })], "w", 30, NOW).state === "stop"
+      && workflowSignal([run({ createdAt: "2026-11-01T00:00:00Z" })], "w", 30, NOW).state === "warn" && workflowSignal({ error: "gh が見つかりません" }, "w", 30, NOW).state === "unknown"
+      && workflowSignal([run({ status: "in_progress", conclusion: "" }), run({ createdAt: "2026-11-07T20:00:00Z" })], "w", 30, NOW).state === "ok",
+      "GitHub の実行の信号: 成功=正常 / 最新が失敗=停止 / 予定の間隔を過ぎた=注意 / 読めない=不明 / 実行中は前回の成功で判断");
+    const nl = parseNoteLog("- 2026-11-06 / テーマ1 / A / https://note.com/x/n/1\n- 2026-11-08 / ログイン切れ / 投稿なし / 入力せず終了\n");
+    const nl2 = parseNoteLog("- 2026-11-06 / ログイン切れ / 投稿なし\r\n- 2026-11-07 / テーマ2 / B / https://note.com/x/n/2\r\n");
+    ok(nl.lastPost === "2026-11-06" && nl.problem?.date === "2026-11-08" && nl2.lastPost === "2026-11-07" && nl2.lastPostTitle === "B" && nl2.problem === null, "Note: 最後の投稿日と、その後に止まった記録(ログイン切れなど)を読む。投稿できたら、前の止まった記録は消す");
+    const ev = (id, start, o = {}) => ({ id, name: id, prefecture: "島根県", start, status: "published", checked: "2026-11-01", lat: 1, lng: 1, ...o });
+    const Lg = listingSection({ events: [ev("a", "2026-11-09T18:00"), ev("b", "2026-11-20T18:00", { checked: "2026-08-01", lat: null }), ev("c", "2026-11-01T18:00"), ev("d", "2026-11-10T18:00", { status: "pending" }), ev("e", "2026-11-11T00:00", { timeUnknown: true })],
+      regular: [{}], today: "2026-11-08", now: "2026-11-08T12:00" });
+    ok(Lg.upcoming === 3 && Lg.next7 === 2 && Lg.pending === 1 && Lg.stale === 1 && Lg.noGeo === 1 && Lg.timeUnknown14 === 1 && Lg.regular === 1 && Lg.weeks[0].from === "2026-11-02" && Lg.weeks[1].count === 2 && Lg.regions.find((r) => r.name === "中国").count === 3,
+      "掲載: 終わった開催と保留は数えず、7日・30日以内、確認日が古い・位置なし・時刻未定、週ごと・地方ごとを数える", JSON.stringify({ ...Lg, weeks: Lg.weeks.map((x) => x.count), regions: undefined }));
+    ok(isEnded(ev("x", "2026-11-08T08:00"), "2026-11-08", "2026-11-08T12:00") && !isEnded(ev("y", "2026-11-08T10:00"), "2026-11-08", "2026-11-08T12:00"), "終了の判定は、サイトと同じ(終了時刻がなければ開始から3時間)");
+    const O = opsSection({ runs: [run({ workflowName: "build-and-deploy" })], site: { ok: false, status: 503, at: "x" }, state: { updated: "2026-11-07", snapshot: { health: { successDays7: 7 } } }, series: { days: {} }, tasks: { found: true, tasks: [] }, refresh: { hours: 3 }, pending: null, noteLog: parseNoteLog(""), socialPosted: [], collect: null, expiring: [{ days: -1 }], today: "2026-11-08", nowMs: NOW });
+    ok(O.worst === "stop" && O.signals.find((x) => x.id === "site").state === "stop" && O.signals.find((x) => x.id === "ads").state === "warn" && O.signals.find((x) => x.id === "collect").state === "unknown" && O.counts.stop === 1,
+      "運営の信号: サイトが開けない=停止、期限切れの広告=注意、記録がない=不明。いちばん悪い状態を、概要の上に出す", JSON.stringify(O.counts));
+    const js = read("scripts/admin/app.js");
+    ok(js.includes('"/api/overview"') && js.includes("表で見る") && /role: "img", "aria-label"/.test(js) && js.includes("onfocus: (e) => showTip"), "画面: グラフは、表でも見られ、キーボードでも値が出る(色だけに頼らない)");
+    ok(js.includes('SIG = { stop: ["■", "停止"], warn: ["▲", "注意"], unknown: ["?", "不明"], ok: ["●", "正常"] }'), "画面: 信号は、色に加えて形と文字で示す");
+  }
+
   section("管理者用ページ: デスクトップのショートカット");
   const { pngToIco } = await import("../scripts/admin/shortcut.mjs");
   const png = readFileSync("assets/favicon-48.png"), ico = pngToIco(png);
@@ -363,7 +418,8 @@ export async function adminTests({ ok, section }) {
   const js = read("scripts/admin/app.js");
   ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write/.test(js), "画面: メールの内容を HTML として扱わない(文字として表示)");
   ok(js.includes("https://mail.google.com/mail/?${q}`, \"_blank\", \"noopener,noreferrer\")"), "返信: Gmail の作成画面を、元の画面と切り離して開く");
-  ok(!/\bstyle:|\.style\b/.test(js), "画面: 埋め込みの style を使わない(CSP で止められるため、クラスで指定する)");
+  // CSP(style-src 'self')が止めるのは、HTML に書いた style 属性。スクリプトからの1項目ずつの指定(el.style.width = …)は止められない
+  ok(!/\bstyle:|setAttribute\(\s*["']style|\.style\s*=|cssText/.test(js) && (js.match(/\.style\.\w+\s*=/g) ?? []).every((x) => /\.style\.(width|left|top)\s*=/.test(x)), "画面: 埋め込みの style 属性を使わない(CSP で止められるため、クラスで指定する。グラフの棒の長さと、説明の位置だけは、スクリプトから1項目ずつ指定する)");
   ok(read("scripts/admin/publish.mjs").includes("\"data/rejected.json\"") && /^analytics\/$/m.test(gi), "送るのは開催データと却下の記録まで。検索・アクセスの分析(analytics/)は Git に入れない");
   ok(read("scripts/admin/app.html").includes("data-tab=\"decide\"") && js.includes("decide: decideView") && js.includes("/api/events/reject") && js.includes("approve: !!opts.approve"), "画面: 「判断待ち」のタブから、保留の掲載・却下と、改善案の見送りができる");
   ok(!existsSync("dist-test/admin") && !read("scripts/build.mjs").includes("scripts/admin"), "管理者用ページは、公開サイトには含めない");

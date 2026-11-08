@@ -1,4 +1,5 @@
 import { isSocialEvent, socialEvidenceErrors, socialDuplicate, socialFacts } from '../lib/social-evidence.mjs';
+import { deriveActuals } from "./overview.mjs";
 import { sameEvent } from '../lib/collect-core.mjs';
 // 管理者用ページのデータ: 開催(data/events.json)と、Gmail から読み込んだ申請・問い合わせ(.admin/inbox.json)
 // .admin/ と admin.local.json は、投稿者の名前・メールアドレスやパスワードを含むため、Git には入れない(.gitignore)。
@@ -173,7 +174,9 @@ export function loadPlan(root) {
   const p = readJson(paths(root).plan, null);
   if (!p) return null;
   const s = readJson(paths(root).analytics, null);
-  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals: s?.kpi ?? null, updated: p.updated ?? null };
+  // 実績: 週次の分析の kpi に、日ごとの記録(analytics/series.json)から出せる分を足す(分析の値を優先)
+  const series = readJson(join(root, "analytics", "series.json"), null);
+  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals: deriveActuals(s, series), updated: p.updated ?? null };
 }
 export function setPlanItem(root, { kind, id, status, note = "", targets }, today) {
   const p = paths(root);

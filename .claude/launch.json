@@ -1,8 +1,44 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "site", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs"], "port": 4173 },
-    { "name": "site-test", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs", "dist-test", "4175"], "port": 4175 },
-    { "name": "admin", "runtimeExecutable": "node", "runtimeArgs": ["scripts/admin/server.mjs", "--no-open", "--port=4300"], "port": 4300 }
+    {
+      "name": "site",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "site-test",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve.mjs",
+        "dist-test",
+        "4175"
+      ],
+      "port": 4175
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/admin/server.mjs",
+        "--no-open",
+        "--port=4300"
+      ],
+      "port": 4300
+    },
+    {
+      "name": "admin-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/admin/server.mjs",
+        "--no-open",
+        "--no-refresh",
+        "--port=4301"
+      ],
+      "port": 4301
+    }
   ]
 }

@@ -321,71 +321,272 @@ function editTargets(k) {
   dlg.showModal();
 }
 
-function homeView() {
-  const st = S.events.map(evState);
-  const count = (k) => st.filter(([s]) => s === k).length;
+// ---------- 概要: 運営の状況(数字・グラフ・信号。読むだけ。決めることは各タブで) ----------
+// 1. 売上と目標 2. 集客の推移 3. 運営が止まっていないか 4. 掲載の量と鮮度。データはサーバーの /api/overview(overview.mjs)
+const SVGNS = "http://www.w3.org/2000/svg";
+function sv(tag, attrs, ...kids) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v); else el.setAttribute(k, String(v));
+  }
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false && c !== "") el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const fmtN = (n) => (n == null ? "—" : Math.round(n).toLocaleString("ja-JP"));
+const md = (d) => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+const mShort = (m) => `${+m.slice(5, 7)}月`;
+const valueOf = (v, unit) => (unit === "円" ? yen(v) : unit === "回" || !unit ? fmtN(v) : v == null ? "—" : fmtN(v) + unit);
+// 日付だけ(YYYY-MM-DD)は日付で、時刻つきは「今日 9:30」の形で
+const whenText = (x) => (!x ? "" : x.length === 10 ? `${+x.slice(5, 7)}/${+x.slice(8, 10)}` : at(x));
+function niceMax(v) {
+  if (!(v > 0)) return 1;
+  const p = 10 ** Math.floor(Math.log10(v)), f = v / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+const tickText = (v, unit) => (unit === "円" ? (v >= 10000 ? `${v / 10000}万` : fmtN(v)) : v >= 10000 ? `${Math.round(v / 1000)}K` : fmtN(v));
+
+// ツールチップ(マウスとキーボードの両方。値は表でも見られるので、ここだけに頼らない)
+const tip = h("div", { class: "tip", role: "tooltip" });
+document.body.append(tip);
+function showTip(el, lines) {
+  tip.replaceChildren(...lines.map((l, i) => h(i ? "span" : "b", null, l)));
+  tip.classList.add("on");
+  const anchor = el.parentNode?.querySelector?.(".col") || el; // 棒があれば、棒の上に出す
+  const r = anchor.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  const x = Math.max(8, Math.min(r.left + r.width / 2 - tw / 2, innerWidth - tw - 8));
+  const y = r.top - th - 8 < 8 ? r.bottom + 8 : r.top - th - 8;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => tip.classList.remove("on");
+const tipAttrs = (lines) => ({ tabindex: "0", role: "img", "aria-label": lines.join("、"),
+  onmouseenter: (e) => showTip(e.currentTarget, lines), onfocus: (e) => showTip(e.currentTarget, lines), onmouseleave: hideTip, onblur: hideTip });
+addEventListener("scroll", hideTip, { passive: true });
+
+// 縦の棒(1系列)と、目標の横線。値のそろっていない期間(今月・今週・計測の欠け)は薄い色。最後の値だけ数字を出す
+const colPath = (x, y, w, hgt, r) => `M${x},${y + hgt}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + hgt}Z`;
+function columnChart({ label, items, unit, height = 190, table }) {
+  const subs = items.some((x) => x.sub);
+  const W = 640, L = 48, R = 8, T = 22, B = subs ? 40 : 28, H = height + (subs ? 12 : 0);
+  const vals = items.flatMap((x) => [x.value, x.target]).filter((v) => v != null);
+  const max = niceMax(Math.max(0, ...vals));
+  const y = (v) => T + (H - T - B) * (1 - v / max);
+  const band = (W - L - R) / Math.max(1, items.length), bw = Math.min(24, band * 0.56);
+  const lastIdx = items.reduce((a, x, i) => (x.value != null ? i : a), -1);
+  const grid = [0, max / 2, max].map((v) => [
+    v ? sv("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "grid" }) : "",
+    sv("text", { x: L - 6, y: y(v) + 4, class: "tick", "text-anchor": "end" }, tickText(v, unit))]);
+  const marks = items.map((x, i) => {
+    const cx = L + band * i + band / 2, g = [];
+    if (x.value > 0) { const top = y(x.value), base = y(0); g.push(sv("path", { d: colPath(cx - bw / 2, top, bw, base - top, Math.min(4, base - top)), class: "col" + (x.partial ? " partial" : "") })); }
+    if (x.target != null) g.push(sv("line", { x1: cx - band * 0.38, x2: cx + band * 0.38, y1: y(x.target), y2: y(x.target), class: "tgt" }));
+    if (i === lastIdx) g.push(sv("text", { x: cx, y: y(Math.max(x.value, 0)) - 7, class: "vlab", "text-anchor": "middle" }, valueOf(x.value, unit)));
+    g.push(sv("text", { x: cx, y: H - B + 16, class: "tick", "text-anchor": "middle" }, x.label));
+    if (x.sub) g.push(sv("text", { x: cx, y: H - B + 30, class: "tick", "text-anchor": "middle" }, x.sub));
+    g.push(sv("rect", { x: L + band * i, y: T - 8, width: band, height: H - T - B + 8, class: "hit", ...tipAttrs(x.tip) }));
+    return sv("g", { class: "m" }, g);
+  });
+  const hasT = items.some((x) => x.target != null), hasP = items.some((x) => x.partial);
+  return h("figure", { class: "chart" },
+    h("figcaption", null, label),
+    sv("svg", { viewBox: `0 0 ${W} ${H}`, class: "viz", role: "group", "aria-label": label }, grid, sv("line", { x1: L, x2: W - R, y1: y(0), y2: y(0), class: "axis" }), marks),
+    hasT || hasP ? h("p", { class: "legend" },
+      hasT ? [h("span", { class: "key k-col", "aria-hidden": "true" }), "実績", h("span", { class: "key k-tgt", "aria-hidden": "true" }), "目標"] : "",
+      hasP ? [h("span", { class: "key k-part", "aria-hidden": "true" }), "途中・値のそろっていない期間"] : "") : "",
+    table ? h("details", { class: "more" }, h("summary", null, "表で見る"), h("div", { class: "scroll" }, h("table", { class: "num" },
+      h("thead", null, h("tr", null, table.head.map((c) => h("th", null, c)))), h("tbody", null, table.rows.map((r) => h("tr", null, r.map((c) => h("td", null, c)))))))) : "");
+}
+// 横の棒(数字はすべて棒の横に出す)
+function hbars(items, fmt = fmtN) {
+  const max = Math.max(1, ...items.map((x) => x.value || 0));
+  return h("div", { class: "hbars" }, items.map((x) => {
+    const bar = h("span", { class: "hb" });
+    bar.style.width = `${Math.max(x.value ? 1.5 : 0, (x.value / max) * 100)}%`;
+    return h("div", { class: "hrow" }, h("span", { class: "hl", title: x.label }, x.label, x.note ? h("small", null, x.note) : ""), h("span", { class: "ht" }, bar), h("span", { class: "hv" }, fmt(x.value)));
+  }));
+}
+// 前の期間との比べ(上がるのが良いか、下がるのが良いか)
+function deltaOf(cur, prev, { lowerBetter = false, abs = false, enough = true, rank = false } = {}) {
+  if (cur == null || prev == null || !enough) return h("small", { class: "mut" }, "比べられる前の期間がありません");
+  const d = abs ? cur - prev : prev ? ((cur - prev) / prev) * 100 : null;
+  if (d == null) return h("small", { class: "mut" }, "前の期間が 0");
+  const up = d > 0, good = d === 0 ? null : up !== lowerBetter;
+  // 順位は、数が小さくなるのが「上がる」。矢印は良し悪しの向きに合わせる
+  if (rank) return h("small", { class: "delta " + (good == null ? "" : good ? "good" : "bad") }, d === 0 ? "→ 前の7日と同じ" : `${good ? "▲" : "▼"} ${Math.abs(d).toFixed(1)} ${good ? "上がった" : "下がった"}(前の7日より)`);
+  const txt = abs ? `${up ? "+" : ""}${d.toFixed(1)}` : `${up ? "+" : ""}${Math.round(d)}%`;
+  return h("small", { class: "delta " + (good == null ? "" : good ? "good" : "bad") }, d === 0 ? "→ " : up ? "▲ " : "▼ ", txt, " 前の7日より");
+}
+const tile = (label, value, ...notes) => h("div", { class: "stat" }, h("span", null, label), h("b", null, value), notes);
+const tileLink = (label, value, go, ...notes) => h("a", { href: "#", class: "stat", onclick: goTab(...go) }, h("span", null, label), h("b", null, value), notes);
+const sec = (id, title, lead) => [h("h3", { class: "dash-h", id }, title), lead ? h("p", { class: "mut small lead" }, lead) : ""];
+const PACE = { ahead: ["good", "先行"], on: ["good", "予定どおり"], behind: ["bad", "遅れ"] };
+// 進み具合のメーター: 実績 / 目標(線は、今日までに来ていたい位置)
+function paceMeter(value, target, p) {
+  if (value == null || !target) return h("span", { class: "mut small" }, "—");
+  const fill = h("span", { class: "pm-fill" + (p?.state === "behind" ? " bad" : "") });
+  fill.style.width = `${Math.min(100, (value / target) * 100)}%`;
+  const mark = h("span", { class: "pm-mark", title: "今日までの目安" });
+  mark.style.left = `${Math.min(100, (p?.frac ?? 1) * 100)}%`;
+  return h("span", { class: "pm" }, h("span", { class: "pm-track", role: "img", "aria-label": `目標の ${Math.round((value / target) * 100)}%。今日までの目安は ${Math.round((p?.frac ?? 1) * 100)}%` }, fill, mark),
+    p ? h("small", { class: "delta " + PACE[p.state][0] }, PACE[p.state][1]) : "");
+}
+
+function revenueBlock(R) {
+  const head = sec("dash-revenue", "売上と目標", "広告・アフィリエイトの報酬と、協賛・有料プランの収入の合計。楽天・AdSense・協賛は「目標・収益」で手入力した額です。");
+  if (!R) return [head, h("p", { class: "warn" }, "目標の計画(analytics/plan.json)がありません。")];
+  const n = R.now, g = R.goal;
+  const missing = (m) => (m?.length ? h("small", { class: "mut" }, "未入力: " + m.join("・")) : h("small", { class: "mut" }, "すべて入力済み"));
+  const tiles = h("div", { class: "stats four" },
+    tile("今月の売上(見込み)", yen(n.value), missing(n.missing)),
+    tile("今月の目標", n.target ? yen(n.target) : "なし",
+      n.pace ? h("small", { class: "delta " + PACE[n.pace.state][0] }, `${PACE[n.pace.state][1]}(今日までの目安 ${yen(n.pace.expected)})`)
+        : !n.target && R.nextTarget ? h("small", { class: "mut" }, `${monthLabel(R.nextTarget.month)}から ${yen(R.nextTarget.value)}`) : ""),
+    tile("先月の売上", yen(R.prev.value), missing(R.prev.missing)),
+    tile("最終目標", g.title || "—", h("small", { class: "mut" }, g.targetMonth ? `${monthLabel(g.targetMonth)}まで あと ${g.monthsLeft} か月` : "")));
+  const chart = columnChart({
+    label: "月ごとの売上と目標(円)", unit: "円",
+    items: R.months.map((m) => ({ label: mShort(m.month), sub: m.current ? "今月" : "", value: m.future ? null : m.value, target: m.target, partial: m.current,
+      tip: [m.future ? `目標 ${yen(m.target)}` : `${yen(m.value)}${m.current ? "(途中)" : ""}`, monthLabel(m.month), ...(m.future ? [] : [m.target != null ? `目標 ${yen(m.target)}` : "目標なし"]), ...(!m.future && m.missing.length ? ["未入力: " + m.missing.join("・")] : [])] })),
+    table: { head: ["月", "売上", "目標", "未入力"], rows: R.months.map((m) => [monthLabel(m.month), m.future ? "" : yen(m.value), m.target == null ? "—" : yen(m.target), m.future ? "" : m.missing.join("・")]) },
+  });
+  const parts = h("p", { class: "small mut" }, "今月の内訳: ", n.parts.map((p, i) => [i ? " ・ " : "", `${p.label} ${p.value == null ? "未入力" : yen(p.value)}`]));
+  const lead = h("div", { class: "scroll" }, h("table", { class: "num kpis" },
+    h("thead", null, h("tr", null, ["先行指標", "今月", "今月の目標", "進み具合", "先月"].map((c) => h("th", null, c)))),
+    h("tbody", null, R.leading.map((k) => h("tr", null,
+      h("th", null, k.name),
+      h("td", null, valueOf(k.value, k.unit), k.value != null && k.days ? h("small", { class: "mut" }, ` (${k.days}日分)`) : "", k.value == null ? h("small", { class: "mut" }, " " + k.missing.join("・")) : ""),
+      h("td", null, k.target != null ? valueOf(k.target, k.unit) : k.nextTarget ? h("span", { class: "mut" }, `${mShort(k.nextTarget[0])}から ${valueOf(k.nextTarget[1], k.unit)}`) : "—"),
+      h("td", null, paceMeter(k.value, k.target, k.pace)),
+      h("td", null, valueOf(k.prev, k.unit)))))));
+  return [head, tiles, chart, parts, lead,
+    h("p", { class: "small" }, `採用した収益化の案の見込み: 月 ${yen(R.adopted[0])}〜${yen(R.adopted[1])} ・ `, h("a", { href: "#", onclick: goTab("goal") }, "目標・収益を開く →"))];
+}
+
+function trafficBlock(T) {
+  const head = sec("dash-traffic", "集客の推移", "Search Console(検索)と GA4(サイトの訪問)。数字は週次の分析が、このPCに取り込みます。検索は2〜3日遅れて確定します。");
+  if (!T?.has) return [head, h("p", { class: "warn" }, "日ごとの数字(analytics/series.json)がまだありません。週次の分析のあとに出ます。")];
+  const s = T.sessions, q = T.search;
+  const span = (w) => (w ? `${md(w.cur.from)}〜${md(w.cur.to)}` : "");
+  const enough = (w, k) => !!w && w.cur[k] >= 6 && w.prev[k] >= 6;
+  const tiles = h("div", { class: "stats" },
+    tile("訪問(セッション)", fmtN(s?.cur.sessions), h("small", { class: "mut" }, span(s)), s ? deltaOf(s.cur.sessions, s.prev.sessions, { enough: enough(s, "gaDays") }) : ""),
+    tile("検索のクリック", fmtN(q?.cur.clicks), h("small", { class: "mut" }, span(q)), q ? deltaOf(q.cur.clicks, q.prev.clicks, { enough: enough(q, "gscDays") }) : ""),
+    tile("検索の表示回数", fmtN(q?.cur.impr), h("small", { class: "mut" }, span(q)), q ? deltaOf(q.cur.impr, q.prev.impr, { enough: enough(q, "gscDays") }) : ""),
+    tile("平均掲載順位", q?.cur.pos == null ? "—" : q.cur.pos.toFixed(1) + "位", h("small", { class: "mut" }, "小さいほど上"), q ? deltaOf(q.cur.pos, q.prev.pos, { lowerBetter: true, abs: true, rank: true, enough: enough(q, "gscDays") }) : ""),
+    tile("広告のクリック", fmtN(T.affClicks28?.count), h("small", { class: "mut" }, T.affClicks28 ? `28日間(${md(T.affClicks28.from)}〜${md(T.affClicks28.to)})` : "まだ記録がありません")));
+  const weekly = (k, daysK, unit, label) => { const weeks = T.weeks.slice(Math.max(0, T.weeks.findIndex((w) => w[daysK] > 0))); return columnChart({
+    label, unit,
+    items: weeks.map((w, i) => ({ label: md(w.from), sub: w[daysK] < 7 ? `${w[daysK]}日分` : "", value: w[k], partial: w[daysK] < 7,
+      tip: [`${fmtN(w[k])} ${unit === "回" ? "" : unit}`.trim(), `${md(w.from)}〜${md(w.to)} の週`, `値のある日 ${w[daysK]}/7 日${i === weeks.length - 1 ? "(今週)" : ""}`] })),
+    table: { head: ["週", label.replace(/(週ごとの)/, ""), "値のある日"], rows: weeks.map((w) => [`${md(w.from)}〜${md(w.to)}`, fmtN(w[k]), `${w[daysK]}/7`]) },
+  }); };
+  const page = (p) => { try { return decodeURI(p); } catch { return p; } };
+  const lists = h("div", { class: "cols" },
+    T.pages.length ? h("div", null, h("h4", null, "検索から来たページ(28日・クリック)"), hbars(T.pages.map((p) => ({ label: page(p.key), value: p.clicks, note: `表示 ${fmtN(p.impr)}・${p.pos.toFixed(1)}位` })))) : "",
+    T.queries.length ? h("div", null, h("h4", null, "検索語(28日・クリック)"), hbars(T.queries.map((p) => ({ label: p.key, value: p.clicks, note: `表示 ${fmtN(p.impr)}・${p.pos.toFixed(1)}位` })))) : "",
+    T.sources.length ? h("div", null, h("h4", null, "どこから来たか(28日・セッション)"), hbars(T.sources.map((p) => ({ label: p.key, value: p.sessions })))) : "");
+  return [head, tiles,
+    h("div", { class: "cols" }, weekly("sessions", "gaDays", "回", "週ごとの訪問(セッション)"), weekly("clicks", "gscDays", "回", "週ごとの検索のクリック")),
+    lists,
+    h("p", { class: "small mut" }, `日ごとの数字: ${T.updated ?? "—"} まで取り込み済み${T.range28 ? ` ・ 28日の内訳: ${T.range28}` : ""}`),
+    T.caveats.length ? h("ul", { class: "small mut caveats" }, T.caveats.map((c) => h("li", null, c))) : ""];
+}
+
+const SIG = { stop: ["■", "停止"], warn: ["▲", "注意"], unknown: ["?", "不明"], ok: ["●", "正常"] };
+function opsBlock(O) {
+  const head = sec("dash-ops", "運営が止まっていないか", "自動の仕組みが、予定どおり動いているか。GitHub の実行とサイトの表示は、10分ごとに確かめ直します。");
+  if (!O) return head;
+  const order = { stop: 0, warn: 1, unknown: 2, ok: 3 };
+  const sigs = [...O.signals].sort((a, b) => order[a.state] - order[b.state]);
+  const sum = h("p", { class: "sigsum" }, ["stop", "warn", "unknown", "ok"].map((k) => h("span", { class: "s-" + k }, h("i", { "aria-hidden": "true" }, SIG[k][0]), ` ${SIG[k][1]} ${O.counts[k]}`)),
+    h("button", { class: "btn ghost small", onclick: () => loadOverview(true) }, "いますぐ確かめる"));
+  return [head, sum, h("ul", { class: "sigs" }, sigs.map((x) => h("li", { class: "sig s-" + x.state },
+    h("span", { class: "si" }, h("i", { "aria-hidden": "true" }, SIG[x.state][0]), " ", SIG[x.state][1]),
+    h("span", { class: "sn" }, h("b", null, x.label), h("small", null, x.schedule)),
+    h("span", { class: "sd" }, x.detail, x.last ? h("small", { class: "mut" }, ` ・ 最終 ${whenText(x.last)}`) : "", x.url ? [" ", ext(x.url, "記録")] : ""))))];
+}
+
+function listingBlock(Lg) {
+  const head = sec("dash-listing", "掲載の量と鮮度", "サイトに載っている開催の数と、確かめてからの日数。数字を押すと、その一覧を開きます。");
+  if (!Lg) return head;
+  const tiles = h("div", { class: "stats four" },
+    tileLink("これからの開催", fmtN(Lg.upcoming), ["events", { evFilter: "upcoming" }], h("small", { class: "mut" }, `うち自動収集 ${fmtN(Lg.auto)}`)),
+    tile("7日以内", fmtN(Lg.next7)), tile("30日以内", fmtN(Lg.next30)), tile("定期公演", fmtN(Lg.regular)),
+    tileLink("保留中", fmtN(Lg.pending), ["decide"], h("small", { class: "mut" }, "掲載か却下を決める")),
+    tileLink("確認日が60日を過ぎた", fmtN(Lg.stale), ["events", { evFilter: "stale" }], h("small", { class: "mut" }, "公式情報で確かめ直す")),
+    tile("時刻未定(14日以内)", fmtN(Lg.timeUnknown14)), tile("地図の位置なし", fmtN(Lg.noGeo)));
+  const chart = columnChart({ label: "これからの開催(週ごと・開始日)", unit: "件",
+    items: Lg.weeks.map((w, i) => ({ label: md(w.from), sub: i === 0 ? "今週" : "", value: w.count, tip: [`${w.count} 件`, `${md(w.from)}〜${md(w.to)} の週`] })),
+    table: { head: ["週", "開催"], rows: Lg.weeks.map((w) => [`${md(w.from)}〜${md(w.to)}`, String(w.count)]) } });
+  const c = Lg.collect;
+  return [head, tiles, h("div", { class: "cols" }, chart, h("div", null, h("h4", null, "地方ごと(30日以内)"), hbars(Lg.regions.map((r) => ({ label: r.name, value: r.count }))))),
+    c ? h("p", { class: "small" }, `前回の自動収集(${whenText(c.date)}): 新しく掲載 ${fmtN(c.published)} 件 ・ 保留 ${fmtN(c.held)} 件 ・ エラー ${fmtN(c.errors)} 件`) : "",
+    Lg.expiring.length ? [h("h4", null, "期限が近い広告リンク"), h("ul", { class: "small" }, Lg.expiring.map((o) => h("li", null, `${o.title}: ${o.expiresAt}${o.days < 0 ? "(切れて、表示が止まっています)" : `(あと ${o.days} 日)`}`)))] : ""];
+}
+
+// やることの帯: 件数のあるものだけ。決めるのは各タブで
+function todoChips() {
   const inb = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
-  const old = staleEvents().length;
   const dc = decisions();
-  const unpublished = !!(S.pending && (S.pending.uncommitted || S.pending.unpushed));
   const prevMonth = S.plan ? addMonth(curMonth(), -1) : null;
   const manualMissing = S.plan && prevMonth >= (S.plan.goal?.setAt || "").slice(0, 7) && ["rakuten", "adsense", "direct"].some((k) => S.plan.manual?.[prevMonth]?.[k] == null);
-  // 今日やること: 件数・ひとこと・行き先。0 件のものは、下に「済み」として1行にまとめる
   const todos = [
-    { n: unpublished ? 1 : 0, unit: "", title: "サイトに反映していない変更", desc: "保存はできています。もう一度、公開してください。", btn: h("button", { class: "btn", id: "repub", onclick: republish }, "もう一度公開する"), urgent: true },
-    { n: dc.upcoming.length + dc.past.length, title: "保留中の開催", desc: "公式情報を確かめて、掲載か却下を選ぶ", go: ["decide"] },
-    { n: inb("submit"), title: "未対応の申請", desc: "投稿フォームからの掲載依頼", go: ["submit", { sub: "open" }] },
-    { n: inb("contact"), title: "未対応・対応中の問い合わせ", desc: "お問い合わせフォームのメール", go: ["contact", { con: "open" }] },
-    { n: dc.actions.length, title: "振り返りで、人が行うこと", desc: "週次の振り返りの【人】の項目", go: ["decide"] },
-    { n: dc.openProps.length, title: "検索の改善案", desc: "プロンプト案で Claude に頼むか、見送るかを選ぶ", go: ["decide"] },
-    { n: dc.plan.length, title: "KPI・収益化の案", desc: "採用するか、見送るかを選ぶ", go: ["goal"] },
-    { n: manualMissing ? 1 : 0, unit: "", title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, desc: "楽天・AdSense・協賛の額を入れる", go: ["goal"] },
-    { n: S.tasks?.missed || 0, title: "動いていない予定タスク", desc: "予定の時刻に動いた記録がない。理由を見て直す", go: ["tasks"] },
-    { n: old, title: "確認日から60日を過ぎた開催", desc: "公式情報で、変更がないか確かめる", go: ["events", { evFilter: "stale" }] },
-  ];
-  const row = (t) => h("li", { class: "todo" + (t.urgent ? " urgent" : "") },
-    h("span", { class: "todo-n" }, t.unit === "" ? "!" : String(t.n)),
-    h("span", { class: "todo-t" }, h("b", null, t.title), h("small", null, t.desc)),
-    t.btn || h("a", { href: "#", class: "btn small", onclick: goTab(...t.go) }, "開く"));
-  const open = todos.filter((t) => t.n), done = todos.filter((t) => !t.n && t.unit !== "");
-  const g = S.plan?.goal;
-  const rev = S.plan ? actual("revenue", curMonth()) : null;
-  const target = S.plan?.kpis.find((k) => k.id === "revenue")?.targets?.[curMonth()];
-  const stat = (n, label, go) => h("a", { href: "#", class: "stat", onclick: goTab(...go) }, h("b", null, String(n)), h("span", null, label));
-  const rf = S.refresh || {}, lr = rf.last;
+    { n: dc.upcoming.length + dc.past.length, title: "保留中の開催", go: ["decide"] },
+    { n: inb("submit"), title: "未対応の申請", go: ["submit", { sub: "open" }] },
+    { n: inb("contact"), title: "未対応・対応中の問い合わせ", go: ["contact", { con: "open" }] },
+    { n: dc.actions.length, title: "振り返りで、人が行うこと", go: ["decide"] },
+    { n: dc.openProps.length, title: "検索の改善案", go: ["decide"] },
+    { n: dc.plan.length, title: "KPI・収益化の案", go: ["goal"] },
+    { n: manualMissing ? 1 : 0, title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, go: ["goal"] },
+    { n: S.tasks?.missed || 0, title: "動いていない予定タスク", go: ["tasks"] },
+    { n: staleEvents().length, title: "確認日から60日を過ぎた開催", go: ["events", { evFilter: "stale" }] },
+  ].filter((t) => t.n);
+  const unpublished = !!(S.pending && (S.pending.uncommitted || S.pending.unpushed));
   return [
-    h("h2", null, "今日やること"),
-    h("div", { class: "bar small mut" },
-      h("span", null, `画面の更新: ${at(view.loadedAt)}`, rf.hours ? ` ・ ${rf.hours}時間おきに、GitHub の最新と Gmail を自動で読み込みます` : ""),
+    unpublished ? h("p", { class: "callout" }, "サイトに反映していない変更があります(保存はできています)。 ", h("button", { class: "btn small", id: "repub", onclick: republish }, "もう一度公開する")) : "",
+    h("div", { class: "todo-strip" }, h("span", { class: "mut small" }, "判断・対応:"),
+      todos.length ? todos.map((t) => h("a", { href: "#", class: "tchip", onclick: goTab(...t.go) }, h("b", null, String(t.n)), " ", t.title)) : h("span", { class: "clear" }, "✓ いま決めることはありません")),
+  ];
+}
+
+async function loadOverview(fresh) {
+  view.ovState = "loading";
+  if (fresh && view.tab === "home") render();
+  try { view.ov = await call("/api/overview" + (fresh ? "?fresh=1" : "")); view.ovError = ""; }
+  catch (err) { view.ovError = err.message; }
+  view.ovState = "done";
+  if (view.tab === "home" && !typing()) render();
+}
+
+function homeView() {
+  if (!view.ov && view.ovState !== "loading") loadOverview();
+  const O = view.ov, rf = S.refresh || {};
+  const nav = h("nav", { class: "jump small", "aria-label": "概要の中の移動" }, [["dash-revenue", "売上と目標"], ["dash-traffic", "集客"], ["dash-ops", "運営の信号"], ["dash-listing", "掲載"]].map(([id, t]) =>
+    h("a", { href: "#" + id, onclick: (ev) => { ev.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); } }, t)));
+  return [
+    h("div", { class: "dash-top" }, h("h2", null, "運営の状況"),
+      h("span", { class: "mut small" }, `画面: ${at(view.loadedAt)}`, O ? ` ・ 集計: ${at(O.generatedAt)}` : "", rf.hours ? ` ・ ${rf.hours}時間おきに自動で更新` : ""),
       h("button", { class: "btn ghost small", id: "refresh", onclick: refreshNow }, "いますぐ更新")),
-    lr ? h("p", { class: "small mut" }, `前回の自動の読み込み: ${at(lr.at)} ・ ${[lr.git?.text, lr.mail?.text].filter(Boolean).join(" ・ ")}`) : "",
-    lr && (lr.git?.ok === false || lr.mail?.ok === false) ? h("p", { class: "warn small" }, [lr.git, lr.mail].filter((x) => x && x.ok === false).map((x) => x.text).join("\n")) : "",
-    open.length ? h("ul", { class: "todos" }, open.map(row)) : allClear("いまやることはありません。"),
-    done.length ? h("p", { class: "mut small" }, "✓ 済み: ", done.map((t) => t.title).join("・")) : "",
+    todoChips(),
+    O && O.ops.worst !== "ok" ? h("p", { class: "callout sig-alert s-" + O.ops.worst }, h("i", { "aria-hidden": "true" }, SIG[O.ops.worst][0]), " ",
+      `運営の信号に「${SIG[O.ops.worst][1]}」があります: `, O.ops.signals.filter((x) => x.state === O.ops.worst).map((x) => x.label).join("・"), " ", h("a", { href: "#dash-ops", onclick: (ev) => { ev.preventDefault(); document.getElementById("dash-ops")?.scrollIntoView({ behavior: "smooth" }); } }, "見る")) : "",
+    nav,
+    view.ovError ? h("p", { class: "warn" }, `運営の状況を読めませんでした(${view.ovError})。 `, h("button", { class: "btn ghost small", onclick: () => loadOverview(true) }, "もう一度")) : "",
+    !O ? h("p", { class: "mut" }, "運営の状況を集めています…(GitHub とサイトを確かめるので、数秒かかります)") : [
+      revenueBlock(O.revenue), trafficBlock(O.traffic), opsBlock(O.ops), listingBlock(O.listing)],
 
-    g ? [h("h3", null, "目標の進み具合"),
-      h("a", { href: "#", class: "panel goal-mini", onclick: goTab("goal") },
-        h("span", null, h("small", null, "最終目標"), h("b", null, g.title || "")),
-        h("span", null, h("small", null, "今月の売上"), h("b", null, num(rev.v, "円")), rev.missing.length ? h("small", { class: "mut" }, "未入力あり") : ""),
-        h("span", null, h("small", null, "今月の目標"), h("b", null, num(target ?? null, "円"))),
-        h("span", { class: "go" }, "目標・収益を開く →"))] : "",
-
-    h("h3", null, "サイトの開催"),
-    h("div", { class: "stats" },
-      stat(count("published"), "掲載中", ["events", { evFilter: "upcoming" }]),
-      stat(count("ended"), "終了", ["events", { evFilter: "ended" }]),
-      stat(count("withdrawn"), "取り下げ", ["events", { evFilter: "withdrawn" }])),
-
-    h("h3", null, "Gmail から読み込む"),
+    h("h3", { class: "dash-h" }, "そのほか"),
     S.mailReady
       ? h("div", { class: "bar" }, h("button", { class: "btn ghost", id: "fetch", onclick: fetchMail }, "新しい申請・問い合わせを読み込む"),
           h("span", { class: "mut" }, S.lastFetch ? `前回: ${new Date(S.lastFetch).toLocaleString("ja-JP")}` : "まだ読み込んでいません"))
       : h("div", { class: "warn" }, h("p", null, "Gmail の設定がまだありません。リポジトリの ADMIN.md の手順で、admin.local.json を作ってください(GitHub には上がりません)。設定後、この画面を開き直します。")),
-    isPc() ? [h("h3", null, "スマホで開く"), phoneBox()] : "",
-    h("details", { class: "more mt" }, h("summary", null, "公開のしくみ"),
-      h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載と、保留の掲載・却下は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。KPI・収益化の案・問い合わせのメモは、このPCだけに保存し、GitHub には送りません。")),
+    isPc() ? [h("h4", null, "スマホで開く"), phoneBox()] : "",
+    h("details", { class: "more mt" }, h("summary", null, "公開のしくみ・数字の出どころ"),
+      h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載と、保留の掲載・却下は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。KPI・収益化の案・問い合わせのメモは、このPCだけに保存し、GitHub には送りません。"),
+      h("p", { class: "mut" }, "売上と集客の数字は、週次の分析(毎週月曜・このPCの予定タスク)が非公開のスプレッドシートから analytics/ に取り込んだものです。公開のサイトや GitHub には出しません。")),
   ];
 }
+
 // ---------- 予定タスク(Claude アプリのスケジュール済みタスク。読むだけ) ----------
 const RUN = { completed: ["done", "完了"], blocked: ["doing", "止まった"], failed: ["new", "失敗"], error: ["new", "失敗"], running: ["pending", "実行中"] };
 const at = (iso) => {
@@ -673,12 +874,13 @@ document.querySelectorAll("#tabs button").forEach((b) => b.addEventListener("cli
 // 状況を読み直す(数時間おき・画面に戻ってきたとき)。入力の途中は描き直さず、終わってから
 async function reload() {
   try { S = await call("/api/state"); view.loadedAt = new Date().toISOString(); } catch { return; }
+  if (view.tab === "home") loadOverview(); else view.ov = null; // 概要は、開いたときに集め直す
   if (typing()) { reload.later = true; return; }
   render();
 }
 async function refreshNow() {
   const b = $("#refresh"); if (b) { b.disabled = true; b.textContent = "読み込んでいます…"; }
-  try { const r = await call("/api/refresh", {}); view.loadedAt = new Date().toISOString(); toast([r.refresh.git?.text, r.refresh.mail?.text].filter(Boolean).join("\n") || "更新しました"); render(); }
+  try { const r = await call("/api/refresh", {}); view.loadedAt = new Date().toISOString(); toast([r.refresh.git?.text, r.refresh.mail?.text].filter(Boolean).join("\n") || "更新しました"); render(); loadOverview(true); }
   catch (err) { toast(err.message, true); if (b) { b.disabled = false; b.textContent = "いますぐ更新"; } }
 }
 document.addEventListener("focusout", () => setTimeout(() => { if (reload.later && !typing()) { reload.later = false; render(); } }, 0));

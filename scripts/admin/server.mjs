@@ -2,6 +2,7 @@
 //   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
 //   判断待ち: 自動収集の保留の掲載・却下 / 週次の振り返りの【人】の項目 / 検索の改善案(頼む・見送る)
 //   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
+//   概要: 運営の状況(売上と目標・集客の推移・運営の信号・掲載の量と鮮度)を数字と信号で(読むだけ。overview.mjs)
 //   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込みを行う(refreshHours。admin.local.json で変えられる)
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
@@ -19,6 +20,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pr
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
+import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -29,7 +31,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now() } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -41,6 +43,17 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   const serial = (fn) => { const p = queue.then(fn); queue = p.catch(() => {}); return p; };
   // 定期の更新の記録
   let lastRefresh = null;
+  // 概要の、外への確認(GitHub の実行・サイトの表示)は時間がかかるので、10分は使い回す(更新のときは取り直す)
+  let ext = null;
+  const EXT_TTL = 10 * 60e3;
+  const overview = async (force) => {
+    if (force || !ext || now() - ext.at > EXT_TTL) {
+      const [r, sc] = await Promise.all([Promise.resolve().then(() => runs(root)).catch((err) => ({ error: err.message })), Promise.resolve().then(() => siteCheck(cfg.baseUrl)).catch(() => null)]);
+      ext = { at: now(), runs: r, site: sc };
+    }
+    return buildOverview(root, { today: today(), nowMs: now(), runs: ext.runs, site: ext.site, tasks: safeTasks({}), refresh: { last: lastRefresh, hours: refreshHours },
+      pending: await pending(root).catch(() => null), plan: loadPlan(root) });
+  };
 
   const state = async () => {
     const box = loadInbox(root);
@@ -76,6 +89,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     try { r.git = await sync(root); } catch (err) { r.git = { ok: false, text: err.message }; }
     if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件`, added: m.added }; }
     lastRefresh = r;
+    ext = null; // 次に概要を開いたとき、GitHub の実行とサイトを確かめ直す
     return r;
   });
   let timer = null, first = null;
@@ -92,6 +106,9 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
 
   const api = {
     "GET /api/state": () => state(),
+
+    // 概要(運営の状況)。?fresh=1 で、GitHub の実行とサイトの表示を確かめ直す
+    "GET /api/overview": (_b, ctx) => overview(ctx.url.searchParams.get("fresh") === "1"),
 
     // 予定タスクの一覧と、最近の実行の結果(タブを開いたときだけ。セッションの記録を読むため)
     "GET /api/tasks": () => safeTasks({ runs: true }),
@@ -234,7 +251,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       try { body = JSON.parse(raw || "{}"); } catch { return json(400, { error: "JSON が正しくありません" }); }
     }
     try {
-      const out = await handler(body, { remote });
+      const out = await handler(body, { remote, url });
       if (Array.isArray(out)) json(out[0], out[1]); else json(200, out);
     } catch (err) { console.error(err); json(500, { error: `処理に失敗しました: ${err.message}` }); }
   });
@@ -276,7 +293,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const running = `http://127.0.0.1:${port}/`;
   const already = await fetch(running, { signal: AbortSignal.timeout(1500) }).then((r) => r.text()).then((t) => t.includes("管理者用ページ")).catch(() => false);
   if (already) { open(running); console.log(`起動済みの管理者用ページを開きました: ${running}`); process.exit(0); }
-  const { url } = await startAdmin({ port, root: join(HERE, "..", "..") });
+  // --no-refresh: 定期の更新(GitHub の取り込み・Gmail の読み込み)をしない。確かめるための2つ目の起動用
+  const { url } = await startAdmin({ port, root: join(HERE, "..", ".."), ...(process.argv.includes("--no-refresh") ? { refreshHours: 0 } : {}) });
   console.log(`管理者用ページ: ${url}\n(この画面を閉じるか、Ctrl+C で終了します。スマホから開くときは、この画面を閉じずに、PC を起動したままにします)`);
   open(url);
 }
