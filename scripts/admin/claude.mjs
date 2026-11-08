@@ -209,16 +209,23 @@ export function createJobs({ root, serial = (fn) => fn(), git = findGit(), local
     j.commits = Number((await g(j.dir, "rev-list", "--count", `${j.base}..HEAD`)).out) || 0;
     const files = (await g(j.dir, "diff", "--name-status", `${j.base}..HEAD`)).out;
     j.files = files ? files.split("\n").slice(0, 80) : [];
-    const st = (await g(j.dir, "status", "--porcelain")).out;
-    j.dirty = st.split("\n").some((l) => l && !/ node_modules\/?$/.test(l));
+    // 改行(CRLF/LF)だけの違いは、変更として数えない(Windows では、テストのために改行を直すことがあるため)
+    const st = (await g(j.dir, "status", "--porcelain")).out.split("\n").filter((l) => l && !/ node_modules\/?$/.test(l));
+    const untracked = st.some((l) => l.startsWith("??"));
+    const content = !(await g(j.dir, "diff", "HEAD", "--ignore-cr-at-eol", "--quiet")).ok;
+    j.dirty = untracked || content;
+    j.eolOnly = !j.dirty && st.length > 0;
   }
+  // 起動したとき、確認待ちの作業を確かめ直す(前の版で、改行だけの違いを変更と数えていた分を直す)
+  const recheck = Promise.all(jobs.filter((j) => j.status === "review").map((j) => inspect(j).catch(() => {}))).then(() => save());
 
   return {
+    ready: () => recheck,
     list, status,
     resetAuth: () => { authCache = null; },
     exe: () => findExe(local()),
-    /** 新しく頼む。source: どこから頼んだか({ kind: "proposal"|"mon"|"free", id }) */
-    start({ title, prompt, source = { kind: "free" } }) {
+    /** 新しく頼む。source: どこから頼んだか({ kind: "proposal"|"mon", id }) */
+    start({ title, prompt, source = { kind: "proposal" } }) {
       const text = String(prompt ?? "").trim();
       if (!text) return { code: 400, error: "頼む内容が空です" };
       if (text.length > 8000) return { code: 400, error: "頼む内容が長すぎます(8000字まで)" };
@@ -264,9 +271,12 @@ export function createJobs({ root, serial = (fn) => fn(), git = findGit(), local
       const j = find(id);
       if (!j) return Promise.resolve({ code: 404, error: "作業が見つかりません" });
       if (j.status !== "review") return Promise.resolve({ code: 400, error: "公開できるのは、確認待ち(変更あり)の作業だけです" });
-      if (j.dirty) return Promise.resolve({ code: 400, error: "コミットしていない変更があります。Claude に「コミットして」と返事を送ってください" });
       j.status = "publishing"; save();
       return serial(async () => {
+        // 公開の前に、もう一度確かめる。改行だけの違いは、元に戻してから重ねる
+        await inspect(j);
+        if (j.dirty) { j.status = "review"; save(); return { code: 400, error: "コミットしていない変更があります。Claude に「コミットして」と返事を送ってください" }; }
+        if (j.eolOnly) { await g(j.dir, "reset", "-q"); await g(j.dir, "checkout", "--", "."); j.eolOnly = false; }
         const fail = (step, log) => { j.status = "review"; j.publish = { ok: false, step, log: String(log).slice(-2000), at: now() }; save(); return { publish: j.publish, job: view(j) }; };
         await g(j.dir, "fetch", "-q", "origin");
         const rb = await g(j.dir, "rebase", "origin/main");

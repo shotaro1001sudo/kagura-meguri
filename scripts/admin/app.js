@@ -313,19 +313,9 @@ function jobsView() {
   const c = S.claude || {};
   const jobs = S.jobs || [];
   const att = jobs.filter((j) => ATTN.has(j.status)), busy = jobs.filter((j) => BUSY.has(j.status)), old = jobs.filter((j) => !ATTN.has(j.status) && !BUSY.has(j.status));
-  const draft = (k) => view.drafts?.[k] ?? "";
-  const keep = (k) => (ev) => { view.drafts = { ...(view.drafts || {}), [k]: ev.target.value }; };
-  const form = h("form", { class: "panel", onsubmit: async (ev) => {
-    ev.preventDefault();
-    const text = form.elements.ask.value.trim();
-    if (!text) return toast("頼む内容を書いてください", true);
-    await startJob({ kind: "free", text });
-    view.drafts = { ...(view.drafts || {}), new: "" }; render();
-  } },
-    h("label", { for: "ask", class: "small mut" }, "Claude に頼むこと(サイトの文・ページ・仕組みの変更、調べものなど)"),
-    h("textarea", { id: "ask", name: "ask", rows: 4, class: "full", maxlength: 8000, placeholder: "例: 島根県の開催一覧のページに、初めての人向けの見方の説明を足して", oninput: keep("new") }, draft("new")),
-    h("div", { class: "bar mt" }, h("button", { class: "btn", type: "submit", disabled: c.loggedIn ? null : true }, "Claude に任せる"),
-      h("span", { class: "mut small" }, "1件ごとに専用の作業用フォルダで動くので、ほかの作業や、このPCの作業中のファイルに影響しません。GitHub に送るのは、結果を見て「公開する」を押したときだけです。")));
+  // 頼めるのは、提案(検索の改善案・採用した収益化の案)だけ。自由に書いて頼む欄は置かない
+  const intro = h("p", { class: "lead" }, "検索の改善案(判断待ち)と、採用した収益化の案(目標・収益)の「Claude に任せる」から頼んだ作業が、ここに並びます。1件ごとに専用の作業用フォルダで動くので、ほかの作業や、このPCの作業中のファイルに影響しません。GitHub に送るのは、結果を見て「公開する」を押したときだけです。",
+    " ", h("a", { href: "#", onclick: goTab("decide") }, "判断待ちを開く"), " ・ ", h("a", { href: "#", onclick: goTab("goal") }, "目標・収益を開く"));
   const login = !c.exe ? h("p", { class: "warn" }, "このPCで、Claude アプリの Claude Code が見つかりません。Claude デスクトップアプリを入れて、一度開いてください。")
     : !c.loggedIn ? h("div", { class: "warn" }, h("p", null, "Claude に作業を任せるには、このPCで、最初に1回だけ Claude にログインします(Claude アプリと同じアカウント)。"),
         h("div", { class: "bar" }, isPc() ? h("button", { class: "btn small", onclick: claudeLogin }, "Claude にログインする") : h("span", { class: "mut small" }, "ログインは PC の画面から行います。"),
@@ -334,7 +324,7 @@ function jobsView() {
   return [
     h("h2", null, "Claude に任せる"),
     login,
-    form,
+    intro,
     ...secHead("確認すること", att.length, "結果を読んで、「公開する」「返事を送る」「やめる」のどれかを選びます。"),
     att.length ? att.map(jobCard) : allClear("確認することはありません。"),
     busy.length ? [...secHead("作業中・順番待ち", busy.length), busy.map(jobCard)] : "",

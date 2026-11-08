@@ -90,7 +90,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     first.unref?.(); timer.unref?.();
   }
 
-  // 頼む文を作る(改善案・収益化の案は、内容をそのまま渡す。自由に頼むときは、書いた文のまま)
+  // 頼む文を作る(改善案・収益化の案の内容をそのまま渡す)
   const askFor = (body) => {
     const extra = String(body.note ?? "").trim();
     const add = extra ? `\n\n運営者からの補足: ${extra}` : "";
@@ -107,7 +107,8 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       return { title: `収益化の案 ${m.id} ${m.title}`.slice(0, 120), source: { kind: "mon", id: m.id },
         prompt: `${m.ask || `収益化の案「${m.title}」を進めてください。`}\n(案の ID: ${m.id}。概要: ${m.summary || ""}。最初の一歩: ${m.firstStep || ""}。気をつけること: ${m.risk || ""})\nコミットのメッセージに ${m.id} を入れてください。${add}` };
     }
-    return { title: body.title, prompt: body.text, source: { kind: "free" } };
+    // 頼めるのは提案だけ(自由に書いた文では頼まない)
+    return { error: "Claude に任せられるのは、検索の改善案と、採用した収益化の案だけです", code: 400 };
   };
 
   // 予定タスク(読むだけ)。読めなくても、ほかの画面は使えるように

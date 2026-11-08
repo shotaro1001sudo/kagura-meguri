@@ -278,7 +278,9 @@ export async function adminTests({ ok, section }) {
     const st2 = (await req("/api/state")).json;
     ok(Array.isArray(st2.jobs) && st2.claude.loggedIn === false && st2.jobStatus.review, "画面の状態に、Claude の作業とログインの状態を入れる");
     ok((await phone("/api/claude/login", { headers: { ...cookie, "x-admin-token": token }, body: {} })).status !== 200, "Claude へのログインは、スマホからは開かない");
-    ok(!/clipboard|頼む文をコピー/.test(js) && js.includes('"Claude に任せる"') && read("scripts/admin/app.html").includes('data-tab="claude"'), "Claude への依頼は、コピーして貼り付けず、画面のボタンと入力欄から行う");
+    ok(!/clipboard|頼む文をコピー/.test(js) && js.includes('"Claude に任せる"') && read("scripts/admin/app.html").includes('data-tab="claude"'), "Claude への依頼は、コピーして貼り付けず、画面のボタンから行う");
+    const free = await req("/api/jobs/start", { body: { kind: "free", text: "なんでも" } });
+    ok(free.status === 400 && /改善案/.test(free.json.error) && !/kind: "free"/.test(js) && !js.includes('name: "ask"'), "Claude に頼めるのは提案(改善案・収益化の案)だけ。自由に書いて頼む欄はない", JSON.stringify(free.json));
     ok(/setInterval\(reload, hours \* 3600e3/.test(js) && /typing\(\)/.test(js), "画面は数時間おきに状況を読み直す(入力の途中は、描き直さない)");
   } finally {
     server.close();
@@ -366,6 +368,17 @@ export async function adminTests({ ok, section }) {
       ok(!existsSync(join(H, "1.txt")) && !existsSync(join(H, "2.txt")) && read(join(H, "作業中.txt")).includes("作業中") && g(H, "rev-parse", "--abbrev-ref", "HEAD") === "main", "いつものフォルダ(作業中のファイル・ブランチ)には触れない");
       ok(ja.denied.length === 1 && /git push/.test(ja.denied[0]) && DISALLOWED_TOOLS.includes("Bash(git push:*)") && calls[0].args.includes("--disallowedTools"), "Claude には push させない(公開は、人が画面で決める)");
       ok(!("CLAUDECODE" in cleanEnv({ CLAUDECODE: "1", CLAUDE_CODE_SIMPLE: "1", ANTHROPIC_BASE_URL: "x", PATH: "p" })) && cleanEnv({ PATH: "p" }).PATH === "p", "Claude アプリの中の設定を、子の Claude に引き継がない");
+      // 改行(CRLF)だけを変えたファイルは、コミットしていない変更として数えず、公開の前に元に戻す
+      const bdir = join(H, ".admin", "work", jb.id);
+      writeFileSync(join(bdir, "README.md"), "a\r\n");
+      const J2 = createJobs({ root: H, git, serial, runner, findExe: () => "claude.exe", auth: async () => ({ found: true, loggedIn: true }), check: async () => ({ ok: true }) });
+      await J2.ready();
+      ok(J2.list().find((x) => x.id === jb.id).dirty === false, "改行だけの違いは「コミットしていない変更」にしない");
+      writeFileSync(join(bdir, "README.md"), "a\r\nb\n");
+      const J3 = createJobs({ root: H, git, serial, runner, findExe: () => "claude.exe", auth: async () => ({ found: true, loggedIn: true }), check: async () => ({ ok: true }) });
+      await J3.ready();
+      ok(J3.list().find((x) => x.id === jb.id).dirty === true, "中身の違いは「コミットしていない変更」として止める");
+      writeFileSync(join(bdir, "README.md"), "a\r\n");
       // 公開: GitHub の最新に重ねてから送る。先に B を公開してから A
       let p = await J.publish(jb.id);
       ok(p.publish.ok && g(W, "--git-dir=remote.git", "log", "--format=%s", "main").includes("feat: 別の作業") && !existsSync(join(H, ".admin", "work", jb.id)), "公開すると GitHub に送り、作業用フォルダを片付ける", JSON.stringify(p.publish));
