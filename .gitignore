@@ -7,3 +7,8 @@ admin.local.json
 analytics/
 # 楽天トラベルの宿(公開のたびに取り直す。料金が古くならないよう、保存しない)
 data/nearby-hotels.json
+
+# Note の投稿タスクの作業用(このPCだけ。記録・下書き・見出しの写真)
+NOTE-LOG.md
+drafts/
+note-images/
