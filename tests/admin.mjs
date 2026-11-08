@@ -324,6 +324,8 @@ export async function adminTests({ ok, section }) {
     p = await publish(A, "data(admin): 再掲載: X", { git, check: false });
     ok(!p.ok && p.step === "push" && /重なりました/.test(p.log) && !existsSync(join(A, ".git/rebase-merge")) && !existsSync(join(A, ".git/rebase-apply")), "内容が重なったときは、送らずに知らせ、取り込みの途中の状態を残さない", p.log?.slice(0, 120));
     ok((await pendingChanges(A, git)).unpushed === 1, "送れなかったコミットは、PC に残り、「もう一度公開する」の対象になる");
+    writeFileSync(join(A, "code.mjs"), "// 作業"); g(A, "add", "code.mjs"); g(A, "commit", "-q", "-m", "code");
+    ok((await pendingChanges(A, git)).unpushed === 1, "開催データを変えていないコミット(コードの変更)は、反映していない変更に数えない");
     p = await publish(A, "x", { git, check: true });
     ok(!p.ok && p.step === "build", "サイトを作れないときは、送らない");
     // サイトは作れても、開催データのテスト(GitHub の公開処理で走る npm test の一部)が落ちるなら、送らない

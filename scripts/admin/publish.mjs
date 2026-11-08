@@ -26,11 +26,14 @@ export function findGit() {
   return std ?? "git";
 }
 
-/** 開催データに、まだサイトへ反映していない変更があるか(未コミット、または未 push) */
+/**
+ * 開催データに、まだサイトへ反映していない変更があるか(未コミット、または未 push)。
+ * 未 push は、開催データを変えたコミットだけを数える(Claude のコードの変更は、プッシュの指示を待つため、ここでは数えない)
+ */
 export async function pendingChanges(root, git = findGit()) {
   const g = (...a) => run(git, a, { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
   const st = await g("status", "--porcelain", "--", ...DATA);
-  const ahead = await g("rev-list", "--count", "@{u}..HEAD");
+  const ahead = await g("rev-list", "--count", "@{u}..HEAD", "--", ...DATA);
   return { uncommitted: st.ok && st.out.length > 0, unpushed: ahead.ok ? Number(ahead.out) || 0 : 0 };
 }
 
