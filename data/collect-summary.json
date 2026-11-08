@@ -1,8 +1,8 @@
 {
-  "date": "2026-11-04",
+  "date": "2026-11-09",
   "autoPublish": true,
-  "published": 0,
-  "held": 25,
+  "published": 1,
+  "held": 0,
   "stillPending": 0,
   "withdrawn": 0,
   "errors": 0,
@@ -13,7 +13,7 @@
       "id": "otaru-matsumae",
       "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
       "reason": "B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。",
-      "digest": "1e1e8b9abb2f5d64369cf32345dd759c5dace50e29f97fa7e78f4b26f7c65299"
+      "digest": "41098ca7e76ac26c4ddf1751fb939001e3a3b07fe2be568f0ece35b67fa47fe9"
     },
     {
       "id": "tanagura-kagura",
@@ -31,7 +31,7 @@
       "id": "toei-hanamatsuri",
       "url": "https://www.toeinavi.jp/column/detail/72/",
       "reason": "A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。",
-      "digest": "f404519ab9c95f1d178e8950eab279b356a00af4b43818579b2481c817ced5d3"
+      "digest": "cf4f8ef659b3644543a235cd52104549683320bb789462a3bac9436a8903e2ae"
     },
     {
       "id": "hamamatsu-kawai-hanamai",
@@ -49,31 +49,25 @@
       "id": "kitahiroshima-kagura",
       "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
       "reason": "B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。",
-      "digest": "495d4b036f2bb3bf5df413cd2b8b1378a38f10c03b599d0049a6af9f2fa049ef"
+      "digest": "f579f4210d08501d46931fa2520f10036ead0a2d9cf60b9d1d2c4c9b2eb9a1e0"
     },
     {
       "id": "iinan-kaguradan",
       "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
       "reason": "B：日付・会場・演目を掲載。11/14一般観覧不可などは公開公演から除外。催事開演と当団出演時刻を区別。",
-      "digest": "b683010fb9f892032b2cfd4a02b369a03002205c0d4e08c619048c052aedbd3a"
+      "digest": "71dca03aa59f7e653349ef488d3de3dc72e474a5346f76e751fcef527f053f13"
     },
     {
       "id": "niyodogawa-tosa-kagura",
       "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
       "reason": "B：池川神社秋季大祭。神楽時間未定と12〜16時が同ページ内で不一致のため要確認。稽古日を公演に混入しない。",
-      "digest": "d95d4c7bf270bfb5a556ff740fe5cfc9229661240483b8075cdd74c25b31cc9a"
+      "digest": "cbf0b2753f635b9582a97e7a976769a5085a2950515e84142b3dc8a57862e748"
     },
     {
       "id": "yufu-shonai-kagura",
       "url": "https://yufuin.gr.jp/news/news-6903/",
       "reason": "B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。",
       "digest": "b1efba1cf01b77e4c9d897d3aaa24bd05f6481e0aa6b13c4eea018b2dcd60f21"
-    },
-    {
-      "id": "toyama-shimotsuki",
-      "url": "https://tohyamago.com/archives/1203",
-      "reason": "C・年度更新待ち：霜月祭案内と2025年日程を確認。2026年開催日程は未確認。翌日未明の時刻・隔年開催を要確認。",
-      "digest": "952d4334d30ea0cce4e7d05cbea4fd0f389f1bd1ceeca93c618e254582ac9b5f"
     }
   ],
   "affiliate": {
@@ -81,216 +75,30 @@
     "expiring": [],
     "counts": {
       "learn_unconfigured": 1,
-      "furusato_unconfigured": 1,
-      "category_disabled": 7
+      "category_disabled": 3,
+      "learn_unmatched": 1
     },
-    "unlinkedTotal": 0,
-    "unlinked": []
+    "unlinkedTotal": 1,
+    "unlinked": [
+      {
+        "id": "takachiho-yokagura-530a848d06",
+        "missing": [
+          "本・グッズ"
+        ]
+      }
+    ]
   },
   "items": {
-    "published": [],
-    "held": [
+    "published": [
       {
-        "name": "かむくら座ミニコンサート2026",
-        "start": "2026-11-22T00:00",
-        "prefecture": "広島県",
-        "city": "安芸高田市",
-        "url": "https://akitakata-kankou.jp/event/21996/",
-        "reason": "名称に、神楽に関する語が見当たらない(神楽以外の催しの疑い)"
-      },
-      {
-        "name": "高千穂の夜神楽 押方（五ヶ村西公民館）",
-        "start": "2026-11-14T00:00",
+        "name": "高千穂の夜神楽 三田井（浅ヶ部公民館）",
+        "start": "2026-12-19T00:00",
         "prefecture": "宮崎県",
         "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 上野（下組公民館）",
-        "start": "2026-11-22T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 上野（玄武公民館）",
-        "start": "2026-11-22T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 下野（下野東公民館）",
-        "start": "2026-11-22T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（上永の内公民館）",
-        "start": "2026-11-28T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 向山（秋元公民館）",
-        "start": "2026-11-28T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 押方(跡取川公民館)",
-        "start": "2026-12-05T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 三田井（下川登公民館）",
-        "start": "2026-12-05T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（五ヶ村公民館）",
-        "start": "2026-12-05T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 押方（下押方公民館）",
-        "start": "2026-12-12T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（野方野公民館）",
-        "start": "2026-12-12T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 河内（田原出張所）",
-        "start": "2027-01-09T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 下田原（高岩公民館）",
-        "start": "2027-01-23T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 上田原（上田原公民館）",
-        "start": "2027-02-06T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（下永の内公民館）",
-        "start": "2026-11-15T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（大野原公民館）",
-        "start": "2026-11-29T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 三田井（上川登公民館）",
-        "start": "2026-12-12T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 三田井（中川登公民館）",
-        "start": "2026-12-13T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 岩戸（上寺公民館）",
-        "start": "2026-12-20T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 向山（尾狩公民館）",
-        "start": "2027-01-16T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "高千穂の夜神楽 本組",
-        "start": "2027-01-10T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
-        "reason": "一度の新規が多すぎる"
-      },
-      {
-        "name": "深野神楽復活40周年記念共演会",
-        "start": "2026-11-22T10:30",
-        "prefecture": "島根県",
-        "city": "雲南市",
-        "url": "https://docs.google.com/forms/d/e/1FAIpQLScYKy1MbVVktxkjXOMtv5QJ80_lCCJli1tkZTZxo9rEMNOcBQ/viewform",
-        "reason": "開演時刻が10:30と18:00で不一致。雲南市立田井小学校体育館(島根県雲南市吉田町深野90-1)の正確な座標も未確認。時刻と会場位置の公式確認が完了するまで保留。"
-      },
-      {
-        "name": "「神謝歳」あさ神楽会",
-        "start": "2026-12-13T10:00",
-        "prefecture": "広島県",
-        "city": "",
-        "url": "https://www.instagram.com/asa4.kgr/",
-        "reason": "場所(市区町村・会場)が不明"
-      },
-      {
-        "name": "あさきた神楽公演 宮崎神楽団",
-        "start": "2027-01-17T00:00",
-        "prefecture": "広島県",
-        "city": "",
-        "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi?year=2027&mon=1#251",
-        "reason": "場所(市区町村・会場)が不明"
+        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/"
       }
     ],
+    "held": [],
     "stillPending": [],
     "withdrawn": []
   }
