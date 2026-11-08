@@ -19,6 +19,7 @@ import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs"
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { sponsorHtml } from "./lib/sponsor.mjs";
+import { sponsorErrors, activeSponsors, sponsorSlot } from "./lib/sponsor-slots.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
@@ -54,6 +55,8 @@ const GOATCOUNTER = "";
 if (process.env.TEST_AFF_OFF) cfg.affiliate = { rakutenAffiliateId: "", valueCommerceSid: "", jalanPid: "", jalanActivityPid: "", amazonTag: "" }; // テスト用(アフィリエイト未設定の状態から確かめる)
 if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: process.env.TEST_AFFILIATE };
 if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: VC.sid, jalanPid: VC.stay }; // テスト用(宿のアフィリエイト)
+const SPONSORS_FILE = process.env.SPONSORS_FILE ?? "data/sponsors.json"; // 協賛枠(PR)。MON-2。契約が決まったものだけを登録する
+const sponsorsData = existsSync(SPONSORS_FILE) ? readJson(SPONSORS_FILE) : [];
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -96,6 +99,7 @@ function validateCommon(rows, ids) {
     if (r.program != null && !(Array.isArray(r.program) && r.program.length && r.program.every((p) => /^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? "") && typeof p.troupe === "string" && p.troupe))) errs.push(`[${r.id}] program は [{ date: "YYYY-MM-DD", time, troupe, hall }] の配列にしてください`);
     if (r.closedDates != null && !(Array.isArray(r.closedDates) && r.closedDates.every((d) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)))) errs.push(`[${r.id}] closedDates は "MM-DD" の配列にしてください`);
   }
+  errs.push(...sponsorErrors(sponsorsData));
   if (errs.length) { console.error("データエラー:\n" + errs.map((x) => "  " + x).join("\n")); process.exit(1); }
 }
 
@@ -326,7 +330,8 @@ const VC_DISCLOSURE = '<p class="vc-disclosure"><strong>広告</strong> この�
 const withAdDisclosure = (html) => {
   if (!html.includes("data-vc-ad=")) return html;
   const $ = cheerio.load(html, { sourceCodeLocationInfo: true }, false);
-  let el = $('a[rel~="sponsored"], [data-vc-ad], .vc-ad, .pr').first();
+  // 協賛枠(PR)はアフィリエイトではないので、注記の位置の目印にしない
+  let el = $('a[rel~="sponsored"], [data-vc-ad], .vc-ad, .pr').filter((_, x) => !$(x).closest(".sponsor-slot").length).first();
   if (!el.length) return VC_DISCLOSURE + html;
   // 本文・右の列の直下(なければページの直下)にある、広告の枠そのものまでさかのぼる
   while (el.parent()[0]?.type === "tag" && !el.parent().is(".d-top, .d-side, .d-rest")) el = el.parent();
@@ -392,7 +397,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 <div class="wrap${wide ? " wide" : ""}"><main id="main">${withAdDisclosure(en ? body : collectNotes(body))}</main>
-${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛について</a></p>
+${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a><a href="/tokushoho.html">特定商取引法に基づく表記</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
@@ -475,6 +480,8 @@ const venueCell = (x, fallback = "未確認") => `${x.venue ? esc(x.venue) : fal
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
 const moreOffers = createMoreOfferIndex(moreOffersData, today);
+const sponsorsNow = activeSponsors(sponsorsData, today);
+const sponsorFor = (page, x) => sponsorSlot(sponsorsNow, page, { prefecture: x.prefecture, kagura: x.kagura, city: x.city, id: x.id }, { esc });
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
 const timeOf = (r) => (r.schedule.match(/\d{1,2}:\d{2}/)?.[0] ?? "99:99").padStart(5, "0");
 const daysBetween = (a, b) => { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; };
@@ -779,7 +786,7 @@ ${kaguraDetail(k, info)}`;
 ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
 ${hub ? `${hubHtml}${aboutHtml}` : ""}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${prSlotHtml(prSlotPartners(partners, plans, { kagura: k }), { esc })}
-${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}
+${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k })}${adSlot(cfg.adsense.slotList)}
 ${hub ? "" : aboutHtml}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
@@ -815,7 +822,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prSlotHtml(prSlotPartners(partners, plans, { prefecture: p }), { esc })}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
+${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prSlotHtml(prSlotPartners(partners, plans, { prefecture: p }), { esc })}${sponsorFor("pref", { prefecture: p })}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
   }));
 }
 
@@ -898,6 +905,7 @@ ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> $
 ${sourceNote(e)}
 ${isUpcoming(e)?`${planningLinks(e,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
+${isUpcoming(e) ? sponsorFor("event", e) : ""}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
   }));
@@ -930,6 +938,7 @@ ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.ur
 ${sourceNote(r)}
 ${planningLinks(r,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
+${sponsorFor("regular", r)}
 ${related(r)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>`,
   }));
@@ -1090,9 +1099,14 @@ doc("/organizers.html", "主催者の方へ", `神楽の主催者・神社・保
   organizersHtml({ esc, siteName: cfg.siteName, formReady: formReady(cfg) }),
   { lead: "神楽の開催情報を、無料で掲載します。", layout: { active: "/organizers.html" } });
 
-// 広告・協賛について(地域の観光協会・宿・お店に、協賛枠とPR記事を案内する。例のリンクは、実在する県・定期公演のページ)
-doc("/sponsor.html", "広告・協賛について", `観光協会・自治体・宿・お店の皆さまへ。${cfg.siteName}の協賛枠とPR記事のご案内です。載せられる場所、掲載の方針、掲載までの流れを説明しています。`,
-  sponsorHtml({ esc, siteName: cfg.siteName, pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined, reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans }),
+// 広告・協賛のご案内(媒体資料。MON-2。地域の観光協会・宿・道の駅に、月額の協賛枠と記事広告を案内する。例のリンクは、実在する県・種類・開催・定期公演のページ)
+const kaguraEg = kaguras.find((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k));
+doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の駅・お店の皆さまへ。${cfg.siteName}の協賛枠(月額)と記事広告(取材記事)のご案内です。神楽を観に出かける方に、地域の情報を届けます。載せる場所、掲載の方針、掲載までの流れを説明しています。`,
+  sponsorHtml({ esc, siteName: cfg.siteName,
+    pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined,
+    kagura: kaguraEg ? { name: kaguraEg, href: kaguraHref(kaguraEg) } : undefined,
+    ev: upcoming.length ? { name: upcoming[0].name, href: `/events/${upcoming[0].id}.html` } : undefined,
+    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans }),
   { lead: "神楽を観に出かける方へ、地域の情報を届けます。" });
 
 // ---------- 団体ページ(有料のプラン・MON-1)・見本・申し込み・特定商取引法に基づく表記 ----------
@@ -1108,7 +1122,7 @@ doc("/sponsor.html", "広告・協賛について", `観光協会・自治体・
       body: `${crumbNav(crumbs)}${hero(esc(p.name), esc(`${p.prefecture}・${p.kagura}`))}${partnerBody(p, linkOpts)}`,
     }));
   }
-  const s = SAMPLE_PARTNER, sCrumbs = [["ホーム", "/"], ["広告・協賛について", "/sponsor.html"], ["団体ページの見本"]];
+  const s = SAMPLE_PARTNER, sCrumbs = [["ホーム", "/"], ["広告・協賛のご案内", "/sponsor.html"], ["団体ページの見本"]];
   write(`dist${partnerHref(s.id)}`, layout({
     title: `団体ページの見本 | ${cfg.siteName}`, desc: "有料の団体ページ(写真・動画・演目の紹介つき)の見本です。", path: partnerHref(s.id), noindex: true, ld: crumbsLd(sCrumbs),
     body: `${crumbNav(sCrumbs)}${hero(esc(s.name), esc(`${s.prefecture}・${s.kagura}`))}${partnerBody(s, { ...linkOpts, sample: true })}<p class="cta-end"><a class="btn" href="/apply.html">団体ページを申し込む</a></p>`,
@@ -1116,7 +1130,7 @@ doc("/sponsor.html", "広告・協賛について", `観光協会・自治体・
 }
 doc("/apply.html", "団体ページのお申し込み", `神楽団・保存会・主催者の皆さまへ。写真・動画・演目の紹介をまとめた団体ページ(月額)のプラン、料金、条件と、お申し込みのフォームです。`,
   `${applyHtml({ esc, plans })}${applyForm(cfg, plans)}`,
-  { lead: "開催情報の掲載は、これまでどおり無料です。", crumbs: [["広告・協賛について", "/sponsor.html"]], layout: { withForm: true } });
+  { lead: "開催情報の掲載は、これまでどおり無料です。", crumbs: [["広告・協賛のご案内", "/sponsor.html"]], layout: { withForm: true } });
 doc("/tokushoho.html", "特定商取引法に基づく表記", `${cfg.siteName}の有料のプラン(団体ページ・PR枠)についての、特定商取引法に基づく表記です。販売事業者、販売価格、お支払いの方法と時期、提供の時期、解約と返金について記載しています。`, tokushohoHtml({ esc, opName: op.name, plans }));
 
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です。運営者と連絡先、サイトの目的、開催情報の集め方と出典の示し方、広告などによる収益について説明しています。`, `
@@ -1137,7 +1151,7 @@ doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です�
 <p>最終更新: ${esc(op.updated)}</p>
 <h2>収益について</h2>
 <p>${cfg.adsense.client || hasAffiliate ? `当サイトは、${[cfg.adsense.client ? "広告" : "", hasAffiliate ? "アフィリエイトプログラム" : ""].filter(Boolean).join("および")}による収益で運営しています。` : "現在、当サイトは広告やアフィリエイトによる収益を得ていません。今後導入する場合は、始める前にこの記載とプライバシーポリシーを更新します。"}</p>
-<p>広告・協賛の掲載をご検討の方は、<a href="/sponsor.html">広告・協賛について</a>をご覧ください。協賛の有無で、開催情報の掲載や並び順は変わりません。</p>
+<p>広告・協賛の掲載をご検討の方は、<a href="/sponsor.html">広告・協賛のご案内</a>をご覧ください。協賛の有無で、開催情報の掲載や並び順は変わりません。</p>
 <p>情報の集め方や免責については、<a href="/disclaimer.html">免責事項・情報の取り扱い</a>をご覧ください。</p>`);
 
 doc("/contact.html", "お問い合わせ", `${cfg.siteName}へのお問い合わせフォームです。掲載中の開催情報の訂正や削除のご依頼、サイトの不具合のご報告などを受け付けています。`, `

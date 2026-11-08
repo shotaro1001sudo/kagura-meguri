@@ -1,0 +1,8 @@
+[
+  { "id": "t-pref", "kind": "monthly", "sponsor": "テスト観光協会", "title": "県のページの協賛", "text": "テスト用のひとこと。", "url": "https://example.jp/pref", "start": "2026-10-01", "end": "2026-10-31", "approved": true, "contractRef": "テスト", "placements": [{ "page": "pref", "prefecture": "島根県" }] },
+  { "id": "t-kagura", "kind": "monthly", "sponsor": "テストの宿", "title": "種類のページの協賛", "url": "https://example.jp/kagura", "start": "2026-10-01", "end": "2026-10-31", "approved": true, "contractRef": "テスト", "placements": [{ "page": "kagura", "kagura": "石見神楽" }] },
+  { "id": "t-event", "kind": "article", "sponsor": "テストの道の駅", "title": "開催のページの記事広告", "url": "/sponsor.html", "start": "2026-10-01", "end": "2026-12-31", "approved": true, "contractRef": "テスト", "placements": [{ "page": "event", "prefecture": "島根県", "kagura": "石見神楽" }] },
+  { "id": "t-regular", "kind": "monthly", "sponsor": "テストのお店", "title": "定期公演のページの協賛", "url": "https://example.jp/regular", "start": "2026-10-01", "end": "2026-10-31", "approved": true, "contractRef": "テスト", "placements": [{ "page": "regular", "id": "r-weekly" }] },
+  { "id": "t-expired", "kind": "monthly", "sponsor": "期間切れ", "title": "期間切れ", "url": "https://example.jp/old", "start": "2026-09-01", "end": "2026-09-30", "approved": true, "contractRef": "テスト", "placements": [{ "page": "pref", "prefecture": "島根県" }] },
+  { "id": "t-unapproved", "kind": "monthly", "sponsor": "未承認", "title": "未承認", "url": "https://example.jp/no", "start": "2026-10-01", "end": "2026-10-31", "approved": false, "placements": [{ "page": "pref", "prefecture": "島根県" }] }
+]
