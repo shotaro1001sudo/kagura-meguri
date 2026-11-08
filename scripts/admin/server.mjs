@@ -170,10 +170,10 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     if (!allowed.includes(req.headers.host) && !remote) return json(421, { error: "このアドレスからは使えません" });
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (remote) {
-      // QR コードのアドレス(/phone?key=…)を開くと、スマホに鍵が入る(90日。https だけ・ほかのサイトからは送られない)
+      // QR コードのアドレス(/phone?key=…)を開くと、スマホに鍵が入る(90日。https だけ・カメラの QR から開いても送られるよう Lax。操作はトークンと Origin で守る)
       if (req.method === "GET" && url.pathname === "/phone") {
         if (!sameKey(url.searchParams.get("key"), phoneKey(root))) return send(403, "text/html; charset=utf-8", phonePage("この QR コードは使えません。PC の管理者用ページで、新しい QR コードを出して読み直してください。"));
-        return send(303, "text/plain; charset=utf-8", "", { location: "/", "set-cookie": `adm_phone=${phoneKey(root)}; Path=/; Max-Age=7776000; HttpOnly; Secure; SameSite=Strict` });
+        return send(303, "text/plain; charset=utf-8", "", { location: "/", "set-cookie": `adm_phone=${phoneKey(root)}; Path=/; Max-Age=7776000; HttpOnly; Secure; SameSite=Lax` });
       }
       if (url.pathname !== "/app.css" && !sameKey(cookieValue(req.headers.cookie, "adm_phone"), phoneKey(root))) { // 見た目(app.css)だけは、案内ページのために鍵なしで出す
         return url.pathname.startsWith("/api/") ? json(401, { error: "このスマホには、まだ鍵がありません。PC の画面の QR コードから開いてください。" })

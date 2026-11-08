@@ -220,7 +220,7 @@ export async function adminTests({ ok, section }) {
     ok((await phone("/phone?key=wrong")).status === 403, "スマホ: 違う鍵の QR コードでは、開けない");
     ph = await phone("/phone?key=" + encodeURIComponent(key));
     const ck = String(ph.headers["set-cookie"] || "");
-    ok(ph.status === 303 && ph.headers.location === "/" && /adm_phone=/.test(ck) && /HttpOnly/.test(ck) && /Secure/.test(ck) && /SameSite=Strict/.test(ck), "スマホ: 正しい QR コードを開くと、鍵を Cookie(HttpOnly・Secure・SameSite=Strict)で入れる", ck);
+    ok(ph.status === 303 && ph.headers.location === "/" && /adm_phone=/.test(ck) && /HttpOnly/.test(ck) && /Secure/.test(ck) && /SameSite=Lax/.test(ck), "スマホ: 正しい QR コードを開くと、鍵を Cookie(HttpOnly・Secure・SameSite=Lax。カメラの QR から開いても送られる)で入れる", ck);
     const cookie = { cookie: "adm_phone=" + key };
     ph = await phone("/", { headers: cookie });
     ok(ph.status === 200 && ph.text.includes(`content="${token}"`), "スマホ: 鍵があれば、PC と同じ画面を開ける");
