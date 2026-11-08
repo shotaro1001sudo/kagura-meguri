@@ -4,11 +4,13 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {JSDOM} from 'jsdom';
 const vendor='assets/vendor/cookieconsent-3.2.1/';
+// Windows の取り出し(core.autocrlf)で CRLF になっても、中身(改行を LF にそろえたもの)で確かめる
+const lf=(b)=>b.toString('latin1').replace(/\r\n/g,'\n');
 for(const [file,hash] of Object.entries({
  'cookieconsent.umd.js':'a5b75180b11975bc4cde2a42f6a0ae285d37f13730574c38c80bd48dc6b301d5',
  'cookieconsent.css':'dd7ad33177579ec69138b107f107ea6bbb2c3e54cfae9c03ca6691e112b4a711',
  LICENSE:'e3cf4e09e007ffede1a8a50aa006b489a5eafd466a2094551a0ac2b308230bfd'
-}))assert.equal(createHash('sha256').update(readFileSync(vendor+file)).digest('hex'),hash);
+}))assert.equal(createHash('sha256').update(lf(readFileSync(vendor+file)),'latin1').digest('hex'),hash);
 const code=readFileSync('scripts/client/consent-manager.js','utf8');
 async function setup({cookie='',js=true,css=true}={}){
  const d=new JSDOM('<!doctype html><link rel="stylesheet" href="/vendor/cookieconsent-3.2.1/cookieconsent.css"><body>',{url:'https://kagurameguri.jp/',runScripts:'outside-only',pretendToBeVisual:true});

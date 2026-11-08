@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'no
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { isSocialPost, socialPlatform, socialFacts, socialEvidenceErrors, socialDuplicate, socialPostKey } from '../scripts/lib/social-evidence.mjs';
 import { reconcile } from '../scripts/lib/collect-core.mjs';
 import { upsertEvent } from '../scripts/admin/store.mjs';
@@ -38,7 +39,7 @@ try {
  writeFileSync(sources,JSON.stringify(['https://x.com/test','https://instagram.com/test','https://facebook.com/test'].map((url,i)=>({id:'sns-'+i,url,termsChecked:checked,enabled:true,adapter:'jsonld'}))));
  writeFileSync(preload,'globalThis.fetch = () => { throw new Error("NETWORK_ATTEMPT"); };');
  writeFileSync(path,'[]');
- const collect=spawnSync(process.execPath,['--import',preload,'scripts/collect.mjs'],{encoding:'utf8',env:{...process.env,EVENTS_FILE:path,SOURCES_FILE:sources,SUMMARY_FILE:summary,REPORT_FILE:join(dir,'report.md'),SOURCE_WATCH_FILE:join(dir,'watch.json'),REJECTED_FILE:join(dir,'rejected.json')}});
+ const collect=spawnSync(process.execPath,['--import',pathToFileURL(preload).href,'scripts/collect.mjs'],{encoding:'utf8',env:{...process.env,EVENTS_FILE:path,SOURCES_FILE:sources,SUMMARY_FILE:summary,REPORT_FILE:join(dir,'report.md'),SOURCE_WATCH_FILE:join(dir,'watch.json'),REJECTED_FILE:join(dir,'rejected.json')}});
  assert.equal(collect.status,0,collect.stderr);assert(!collect.stdout.includes('NETWORK_ATTEMPT'));assert.equal((collect.stdout.match(/SNSの自動取得は無効/g)||[]).length,3);assert.deepEqual(JSON.parse(readFileSync(path)),[]);
  writeFileSync(path,'[]');writeFileSync(input,JSON.stringify({...verified(),description:'投稿全文',image:'photo.jpg',auto:true}));
  let r=run('scripts/import-social.mjs',[input],{EVENTS_FILE:path});assert.equal(r.status,0,r.stderr);

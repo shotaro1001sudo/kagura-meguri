@@ -15,15 +15,17 @@ export function adsensePauseTests({ ok, section, build }) {
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
     entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
   const pages = walk(out).filter(path => path.endsWith(".html"));
-  const controls = readFileSync("scripts/client/cookie-controls.js", "utf8").trim();
-  const vc = readFileSync("scripts/client/valuecommerce-consent.js", "utf8").trim();
+  // Windows の取り出し(CRLF)でも比べられるよう、改行を LF にそろえる
+  const lf = (s) => s.replace(/\r\n/g, "\n");
+  const controls = lf(readFileSync("scripts/client/cookie-controls.js", "utf8")).trim();
+  const vc = lf(readFileSync("scripts/client/valuecommerce-consent.js", "utf8")).trim();
   let vcPages = 0;
   for (const path of pages) {
     const html = readFileSync(path, "utf8"), $ = cheerio.load(html);
     ok(!html.includes("adsbygoogle.js"), path + ": no external AdSense loader (including inline injection)");
     ok($('script[src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"]').length === 1 && $('script[src*="cookiebot"]').length === 0, path + ": local CMP only");
     ok($('script[data-ga4-id][data-require-statistics-consent]').length === 1 && $('script[src*="googletagmanager.com/gtag/js"]').length === 0, path + ": GA4 statistics gate preserved");
-    const scripts = $('script').map((_, node) => $(node).text().trim()).get();
+    const scripts = $("script").map((_, node) => lf($(node).text()).trim()).get();
     ok($('#cookie-settings-open').length === 1 && scripts.includes(controls), path + ": cookie settings and fallback preserved");
     if ($('[data-vc-ad]').length) {
       vcPages++;

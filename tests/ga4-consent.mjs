@@ -60,7 +60,9 @@ export function ga4ConsentTests({ ok, section, build }) {
       ok($('#cookie-settings-open[type="button"]').length===1,path+': Cookie設定入口が1つ');
       ok($('#cookie-reject-optional').length===0&&html.indexOf('id="cookie-controls"')>html.indexOf('</main>'),path+': 上部の独自拒否枠なし・末尾の設定入口');
       ok($('#cookie-settings-status[role="status"][aria-live="polite"]').length===1,path+': 設定表示の状態読み上げ');
-      ok($('script').filter((_,n)=>$(n).text().trim()===readFileSync('scripts/client/cookie-controls.js','utf8').trim()).length===1,path+': Cookie設定コードが1回');
+      // Windows の取り出し(CRLF)でも比べられるよう、改行を LF にそろえる
+      const lf=(s)=>s.replace(/\r\n/g,'\n');
+      ok($('script').filter((_,n)=>lf($(n).text()).trim()===lf(readFileSync('scripts/client/cookie-controls.js','utf8')).trim()).length===1,path+': Cookie設定コードが1回');
       ok($('script[src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"][defer]').length === 1 && $('script[src="/consent-manager.js"][defer]').length === 1, path + ': pinned local CMP');
       ok($('script[src*="cookiebot"]').length === 0, path + ': no old CMP runtime');
       ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"),

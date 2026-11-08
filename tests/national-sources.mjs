@@ -3,6 +3,7 @@ import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 import {parse} from '../scripts/adapters/national-official.mjs';
 import {reconcile} from '../scripts/lib/collect-core.mjs';
 import {fingerprint,recordWatch} from '../scripts/lib/source-watch.mjs';
@@ -62,7 +63,7 @@ try {
   const mock=join(dir,'mock.mjs');
   writeFileSync(mock,`globalThis.fetch=async (url)=>new Response(String(url).endsWith('/robots.txt')?'User-agent: *\\nAllow: /':${JSON.stringify(h)});`);
   const env={...process.env,EVENTS_FILE:files.events,SOURCES_FILE:files.sources,SOURCE_WATCH_FILE:files.watch,REPORT_FILE:files.report,SUMMARY_FILE:files.summary,REJECTED_FILE:files.rejected,COLLECT_DELAY_MS:'0',COLLECT_NOW:'2026-10-30T00:00:00+09:00'};
-  const run=()=>spawnSync(process.execPath,['--import',mock,'scripts/collect.mjs'],{env,encoding:'utf8'});
+  const run=()=>spawnSync(process.execPath,['--import',pathToFileURL(mock).href,'scripts/collect.mjs'],{env,encoding:'utf8'});
   let r=run();assert.equal(r.status,0,r.stderr);
   assert.deepEqual(JSON.parse(readFileSync(files.events)),[existing]); // review never withdraws a public event
   assert.equal(JSON.parse(readFileSync(files.summary)).sourceReviews.length,1);
