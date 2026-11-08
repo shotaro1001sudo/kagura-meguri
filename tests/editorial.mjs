@@ -110,14 +110,15 @@ export function editorialTests({ ok, section, OUT, build }) {
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 
   section("宿泊案内: 時間帯を推測せず検索条件を維持");
+  const plain = (id, start, extra = {}) => mk(id, start, { name: "テスト神楽 奉納", ...extra }); // 夜神楽の名前を外し、時刻だけで推測しないことを確かめる
   const stayCases = [
-    mk("stay-day", "2026-11-03T08:45", { end: "2026-11-03T17:00" }),
-    mk("stay-before-five", "2026-11-03T10:00", { end: "2026-11-03T16:59" }),
-    mk("stay-night", "2026-11-03T20:00", { end: "2026-11-03T21:00" }),
-    mk("stay-unknown", "2026-11-03T00:00", { timeUnknown: true }),
-    mk("stay-no-end", "2026-11-03T18:00"),
-    mk("stay-overnight", "2026-11-03T19:00", { end: "2026-11-04T08:00" }),
-    mk("stay-multiday", "2026-11-03T09:00", { end: "2026-11-05T16:00" }),
+    plain("stay-day", "2026-11-03T08:45", { end: "2026-11-03T17:00" }),
+    plain("stay-before-five", "2026-11-03T10:00", { end: "2026-11-03T16:59" }),
+    plain("stay-night", "2026-11-03T20:00", { end: "2026-11-03T21:00" }),
+    plain("stay-unknown", "2026-11-03T00:00", { timeUnknown: true }),
+    plain("stay-no-end", "2026-11-03T18:00"),
+    plain("stay-overnight", "2026-11-03T19:00", { end: "2026-11-04T08:00" }),
+    plain("stay-multiday", "2026-11-03T09:00", { end: "2026-11-05T16:00" }),
     JSON.parse(read("data/events.json")).find(e => e.id === "shonai-kagura-matsuri-2026"),
   ];
   writeFileSync(F, JSON.stringify(stayCases));
@@ -135,7 +136,25 @@ export function editorialTests({ ok, section, OUT, build }) {
   }
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 
-  const hamada = { weekdays: [6], extra: [{ weekdays: [5], months: [9, 10, 11] }, { dates: ["05-03", "05-04", "05-05"] }], closedDates: ["10-30"] };
+  section("宿泊案内: 公式の名称・説明が夜神楽・夜通しの公演だけ、泊まりの一文を出す (MON-6)");
+  const nightCases = [
+    [plain("yk-name", "2026-11-03T18:00", { name: "テスト地区の夜神楽" }), "夜神楽は"],
+    [plain("yk-desc", "2026-11-03T11:00", { description: "夕方から翌朝にかけて夜通し舞います。" }), "この神楽は"],
+    [plain("yk-flag", "2026-11-03T11:00", { overnightStay: true }), "この神楽は"],
+    [plain("yk-off", "2026-11-03T18:00", { name: "テスト地区の夜神楽", overnightStay: false }), ""],
+    [plain("yk-late-time", "2026-11-03T19:00", { end: "2026-11-04T08:00" }), ""],
+  ];
+  writeFileSync(F, JSON.stringify(nightCases.map(([e]) => e)));
+  const nightBuild = build(F, D, { TEST_AFF_TRAVEL: "1" });
+  ok(nightBuild.status === 0, "夜神楽の宿泊案内をビルド", nightBuild.stderr);
+  if (nightBuild.status === 0) for (const [e, lead] of nightCases) {
+    const $ = page(`events/${e.id}.html`, D), stay = $(".stay"), p = stay.find(".stay-lead");
+    if (lead) ok(p.length === 1 && p.text().startsWith(lead) && p.text().includes("泊まる") && stay.find("h2").text() === "泊まりで観る・会場周辺の宿" && p.next().is(".staylinks") && stay.find("a.stay-btn,.stay-btn>a").length === 2, `${e.id}: 泊まりが前提の一文を、宿のボタンの上に出す`);
+    else ok(p.length === 0 && stay.find("h2").text() === "会場周辺の宿", `${e.id}: 時刻だけ・明示の取り消しでは出さない`);
+  }
+  rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
+
+  const hamada ={ weekdays: [6], extra: [{ weekdays: [5], months: [9, 10, 11] }, { dates: ["05-03", "05-04", "05-05"] }], closedDates: ["10-30"] };
   ok(regularOn(hamada, "2026-10-16") && !regularOn(hamada, "2026-12-18") && regularOn(hamada, "2026-12-19") && regularOn(hamada, "2027-05-04") && !regularOn(hamada, "2026-10-30"), "季節だけの公演日(9〜11月の金曜・5月3〜5日)を数える。休演日は除く");
   const real = JSON.parse(read("data/regular.json")).find((x) => x.id === "hamada-yokagura-shusai");
   ok(real?.extra?.some((x) => x.weekdays?.includes(5) && x.months?.join() === "9,10,11"), "本番データ: 浜田の夜神楽は、9〜11月の金曜日も公演日に入る");
