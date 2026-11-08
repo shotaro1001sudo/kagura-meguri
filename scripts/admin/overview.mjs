@@ -226,16 +226,26 @@ export function opsSection({ runs, site, state, series, tasks, refresh, pending,
   // 計測: 取得の成否(直近7日)と、最新の日の数字があるか
   const health = state?.snapshot?.health;
   const lastGa = Object.keys(series?.days ?? {}).filter((d) => series.days[d].sessions != null).sort().at(-1) ?? null;
+  // 取得が止まった日があっても、分析の時点の直近3日が続けて成功していれば「回復した」とみなす(止まった日の数字は後から取り直される)
+  const winEnd = health?.window?.split("..")[1] ?? state?.updated ?? null;
+  const missing = health?.missingRuns ?? [];
+  const recovered = !!(winEnd && missing.length && missing.every((d) => d <= addDays(winEnd, -3)));
   const meas = !series && !health ? { state: "unknown", detail: "計測の記録(analytics/series.json)がありません" }
-    : health && health.successDays7 < 6 ? { state: "warn", detail: `${state?.updated ?? ""} の分析の時点で、直近7日の取得の成功 ${health.successDays7}/7 日(${health.missingRuns?.length ? "記録なし: " + health.missingRuns.join("・") : ""})` }
+    : health && health.successDays7 < 6 && recovered ? { state: "ok", detail: `${missing.join("・")} は取得が止まっていましたが、その後は毎日成功しています(${state?.updated ?? ""} の分析) ・ 最新の数字 ${lastGa ?? "—"}` }
+    : health && health.successDays7 < 6 ?{ state: "warn", detail: `${state?.updated ?? ""} の分析の時点で、直近7日の取得の成功 ${health.successDays7}/7 日(${health.missingRuns?.length ? "記録なし: " + health.missingRuns.join("・") : ""})` }
     : { state: "ok", detail: `取得の成功 ${health ? health.successDays7 + "/7 日" : "—"} ・ 最新の数字 ${lastGa ?? "—"}` };
   add("measure", "計測(GA4・Search Console)", "毎朝 7 時台(スプレッドシート)", meas, { last: lastGa });
   const age = state?.updated ? daysBetween(state.updated, today) : null;
   add("analysis", "週次の分析", "毎週月曜(このPC)", age == null ? { state: "unknown", detail: "まだ分析の記録がありません" }
     : age <= 8 ? { state: "ok", detail: `前回の分析: ${state.updated}(${age}日前)` } : { state: "warn", detail: `前回の分析から ${age} 日。予定タスクを確かめてください` }, { last: state?.updated });
-  const missed = (tasks?.tasks ?? []).filter((t) => t.missed);
+  // 予定タスク: 予定どおり動かなかった・途中で止まったものを注意に。ブラウザを使うタスクは、予定の時刻に承認が要ることを添える
+  const troubled = (tasks?.tasks ?? []).filter((t) => t.issues?.length || t.missed);
+  const browserTasks = (tasks?.tasks ?? []).filter((t) => t.browser);
+  const browserNote = browserTasks.length ? ` ・ ブラウザを使うので、予定の時刻に承認が要る: ${browserTasks.map((t) => t.title).join("・")}` : "";
   add("tasks", "予定タスク(PC の Claude)", "Note・分析・月次の調査など", !tasks?.found ? { state: "unknown", detail: "予定タスクの記録が見つかりません" }
-    : tasks.error ? { state: "unknown", detail: tasks.error } : missed.length ? { state: "warn", detail: `動いていない: ${missed.map((t) => t.name).join("・")}` } : { state: "ok", detail: `${tasks.tasks.filter((t) => t.enabled).length} 件、予定どおり` });
+    : tasks.error ? { state: "unknown", detail: tasks.error }
+    : troubled.length ? { state: "warn", detail: troubled.map((t) => `${t.title}: ${(t.issues ?? [])[0] ?? "動いていません"}`).join(" / ") + browserNote }
+    : { state: "ok", detail: `${tasks.tasks.filter((t) => t.enabled).length} 件、予定どおり${browserNote}` });
   const note = noteLog ?? {};
   const nAge = note.lastPost ? daysBetween(note.lastPost, today) : null;
   add("note", "Note の投稿", "2日おき(PC の予定タスク)", note.problem ? { state: "warn", detail: `${note.problem.date}: ${note.problem.text}` }

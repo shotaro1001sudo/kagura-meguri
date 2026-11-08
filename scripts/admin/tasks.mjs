@@ -80,19 +80,42 @@ export function describeCron(expr) {
   return `cron: ${expr}`;
 }
 
-// SKILL.md の見出し(--- で囲んだ部分)から、name と description だけを読む
+// ブラウザを操作するタスクか(ブラウザの操作は、予定タスクでも毎回その場での承認が要る。人がいない時刻だと、承認待ちで止まる)
+const BROWSER = /anthropic-skills:(chrome-browser|built-in-browser)|mcp__claude-in-chrome__|mcp__Claude_Browser__/;
+// SKILL.md の見出し(--- で囲んだ部分)から、name と description、ブラウザを使うかを読む
 function front(file) {
   try {
-    const m = readFileSync(file, "utf8").match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    const text = readFileSync(file, "utf8");
+    const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     const get = (k) => m?.[1].match(new RegExp(`^${k}:\\s*(.*)$`, "m"))?.[1].trim() ?? "";
-    return { name: get("name"), description: get("description") };
-  } catch { return { name: "", description: "" }; }
+    return { name: get("name"), description: get("description"), browser: BROWSER.test(text) };
+  } catch { return { name: "", description: "", browser: false }; }
 }
 const iso = (ms) => (ms == null || Number.isNaN(ms) ? null : new Date(ms).toISOString());
 const ms = (v) => (v == null ? null : typeof v === "number" ? v : Date.parse(v));
 
 // 予定の時刻から、これだけ過ぎても動いていなければ「止まっている」とみなす(アプリは数分ずらして動かすため)
 const GRACE = 2 * 3600e3;
+// 動かなかった予定を数える期間
+const LOOKBACK = 14 * 864e5;
+
+/**
+ * 直近の予定(cron)のうち、動いた記録がないものの時刻。
+ * 数え始めは、作った日・アプリが記録している「ここから数える」時刻(止めていた期間を除く)・14日前の遅いほう。
+ * 動いた記録: 予定の時刻の10分前〜2時間後に始まった実行(runStarts)か、lastScheduledFor
+ */
+export function missedSlots(cron, { now, floor = null, runStarts = [], lastScheduledFor = null }) {
+  const out = [];
+  let at = Math.max(floor ?? -Infinity, now - LOOKBACK);
+  for (let i = 0; i < 100; i++) {
+    const slot = cronStep(cron, at, 1);
+    if (slot == null || slot > now - GRACE) break;
+    const ran = runStarts.some((r) => r != null && r >= slot - 10 * 60e3 && r <= slot + GRACE) || (lastScheduledFor != null && Math.abs(lastScheduledFor - slot) < 60e3);
+    if (!ran) out.push(slot);
+    at = slot;
+  }
+  return out;
+}
 
 /**
  * 予定タスクの一覧。runs: true なら、各タスクの最近の実行(セッションの記録)も読む。
@@ -102,7 +125,7 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
   if (!file) return { found: false, tasks: [] };
   let raw;
   try { raw = JSON.parse(readFileSync(file, "utf8")); } catch (err) { return { found: true, error: `予定タスクの記録を読めませんでした(${err.code || err.message})`, tasks: [] }; }
-  const runMap = runs ? loadRuns(dirname(file)) : null;
+  const runMap = loadRuns(dirname(file));
   const tasks = (raw.scheduledTasks || []).map((t) => {
     const fm = t.filePath ? front(t.filePath) : {};
     const created = ms(t.createdAt), last = ms(t.lastRunAt), lastFor = ms(t.lastScheduledFor);
@@ -120,14 +143,30 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
     // 前回の予定の時刻に、動いた記録がない(作る前の予定は数えない)
     const ranSince = Math.max(lastFor ?? -Infinity, last ?? -Infinity);
     const missed = !!(t.enabled && prev != null && prev > (created ?? -Infinity) && !(ranSince >= prev - GRACE));
+    const list = runMap.get(t.id) || [];
+    // 直近14日で、予定どおりに動かなかった回(止めているタスクは数えない)
+    let recentMissed = [];
+    if (t.enabled && t.cronExpression && !error) {
+      const floor = Math.max(created ?? -Infinity, ms(t.missedRunScanFloor) ?? -Infinity);
+      try { recentMissed = missedSlots(t.cronExpression, { now, floor, runStarts: list.map((r) => ms(r.startedAt)), lastScheduledFor: lastFor }); } catch { recentMissed = []; }
+    }
+    const latest = list[0];
+    // 1回だけのタスクで、もう動いたもの(止まっているのではなく、終わったもの)
+    const finished = !t.cronExpression && t.fireAt != null && !t.enabled && last != null;
+    // 気をつけること(予定タスクの画面と、概要の「予定タスク」の信号に出す)
+    const issues = [];
+    if (missed) issues.push(`${fmt(prev)} の予定に、動いた記録がありません`);
+    else if (recentMissed.length) issues.push(`直近14日で、予定どおりに動かなかった回が ${recentMissed.length} 回あります(${recentMissed.slice(-3).map(fmt).join("・")})`);
+    if (t.enabled && latest?.status === "blocked") issues.push(`前回の実行が途中で止まりました${latest.needsAction ? "(人がやること: " + latest.needsAction + ")" : ""}`);
     const out = { id: t.id, title: t.displayName || fm.name || t.id, description: fm.description || "", schedule, enabled: !!t.enabled,
-      nextRun: iso(next), lastRun: iso(last), missed, missedAt: missed ? iso(prev) : null, error };
-    if (runMap) out.runs = (runMap.get(t.id) || []).slice(0, 5);
+      nextRun: iso(next), lastRun: iso(last), missed, missedAt: missed ? iso(prev) : null, error,
+      recentMissed: recentMissed.map(iso), finished, browser: !!(fm.browser && t.enabled), issues };
+    if (runs) out.runs = list.slice(0, 5);
     return out;
   });
   // 有効なものを先に、次回が近い順
   tasks.sort((a, b) => (b.enabled - a.enabled) || (a.nextRun ?? "9").localeCompare(b.nextRun ?? "9"));
-  return { found: true, tasks, missed: tasks.filter((t) => t.missed).length };
+  return { found: true, tasks, missed: tasks.filter((t) => t.missed).length, attention: tasks.filter((t) => t.issues.length).length };
 }
 
 /** タスクが動かしたセッションの記録から、開始時刻・結果・ひとことだけを集める(新しい順) */

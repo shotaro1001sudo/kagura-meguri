@@ -58,7 +58,7 @@ function render() {
   $("#n-submit").textContent = open("submit") || ""; $("#n-contact").textContent = open("contact") || "";
   $("#n-decide").textContent = decisions().total || "";
   $("#n-goal").textContent = planOpen().length || "";
-  $("#n-tasks").textContent = S.tasks?.missed || "";
+  $("#n-tasks").textContent = S.tasks?.attention || S.tasks?.missed || "";
   main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
@@ -560,7 +560,7 @@ function todoChips() {
     { n: dc.openProps.length, title: "検索の改善案", go: ["decide"] },
     { n: dc.plan.length, title: "KPI・収益化の案", go: ["goal"] },
     { n: manualMissing ? 1 : 0, title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, go: ["goal"] },
-    { n: S.tasks?.missed || 0, title: "動いていない予定タスク", go: ["tasks"] },
+    { n: S.tasks?.attention || S.tasks?.missed || 0, title: "確かめたい予定タスク", go: ["tasks"] },
     { n: staleEvents().length, title: "確認日から60日を過ぎた開催", go: ["events", { evFilter: "stale" }] },
   ].filter((t) => t.n);
   const unpublished = !!(S.pending && (S.pending.uncommitted || S.pending.unpushed));
@@ -623,8 +623,10 @@ function tasksView() {
   if (!T.found) return [h("h2", null, "予定タスク"), h("p", { class: "warn" }, "このPCで、Claude デスクトップアプリの予定タスクの記録が見つかりません。")];
   const card = (t) => h("div", { class: "panel task" + (t.enabled ? "" : " dim") },
     h("div", { class: "card-h" }, h("h4", null, t.title),
-      t.missed ? badge("new", "動いていない") : t.enabled ? badge("done", "有効") : badge("ended", "停止中")),
+      t.missed ? badge("new", "動いていない") : t.issues?.length ? badge("new", "要確認") : t.enabled ? badge("done", "有効") : t.finished ? badge("ended", "完了(1回だけ)") : badge("ended", "停止中")),
     t.description ? h("p", { class: "mut small" }, t.description) : "",
+    (t.issues ?? []).filter((x, i) => !(t.missed && i === 0)).map((x) => h("p", { class: "warn small" }, x)),
+    t.browser ? h("p", { class: "small" }, "ブラウザを使うタスクです。ブラウザの操作は、予定タスクでも毎回その場での承認が要るため、予定の時刻に PC の前にいないと、承認待ちのまま止まります。PC の前にいる時刻に予定を合わせてください。") : "",
     h("dl", { class: "kv" },
       h("dt", null, "予定"), h("dd", null, t.schedule),
       h("dt", null, "次回"), h("dd", null, t.nextRun ? at(t.nextRun) + " ごろ" : "—"),
@@ -639,8 +641,9 @@ function tasksView() {
     h("h2", null, "予定タスク"),
     h("p", { class: "lead" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です。PC が起動していて、アプリが開いているときだけ動きます。変更は PC のアプリで行います。"),
     T.error ? h("p", { class: "warn" }, T.error) : "",
-    T.missed ? "" : allClear("止まっている予定タスクはありません。"),
-    T.tasks.map(card),
+    T.missed || T.attention ? "" : allClear("止まっている予定タスクはありません。"),
+    T.tasks.filter((t) => !t.finished).map(card),
+    T.tasks.some((t) => t.finished) ? h("details", { class: "more" }, h("summary", null, `終わった1回だけのタスク(${T.tasks.filter((t) => t.finished).length})`), T.tasks.filter((t) => t.finished).map(card)) : "",
     view.tasksLoaded === "loading" ? h("p", { class: "mut small" }, "最近の実行を読み込んでいます…")
       : h("button", { class: "btn ghost small", onclick: () => { view.tasksLoaded = false; render(); } }, "読み込み直す"),
   ];

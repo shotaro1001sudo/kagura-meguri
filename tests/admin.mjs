@@ -5,7 +5,7 @@ import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
-import { loadTasks, cronStep, describeCron } from "../scripts/admin/tasks.mjs";
+import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
@@ -76,6 +76,44 @@ export async function adminTests({ ok, section }) {
   ok(tk.note.description === "記事を公開する" && tk.note.runs.length === 1 && tk.note.runs[0].status === "blocked" && tk.note.runs[0].needsAction === "Note にログインする", "説明と、最近の実行の結果・人がやることを読む");
   ok(!/SECRET|secret/.test(JSON.stringify(TT)), "指示文・許可した操作・作業フォルダ・会話の中身は、画面に出さない");
   ok(loadTasks({ file: null }).found === false && loadTasks({ file: join(TD, "nothing.json") }).error, "記録が無い・読めないときも、止まらない");
+  // 週次の分析: スプレッドシートを、ブラウザを使わずに読む(Drive のコネクタの .xlsx → JSON)
+  {
+    const { readXlsx, toRecords, loadInput } = await import("../scripts/xlsx-to-json.mjs");
+    const { deflateRawSync } = await import("node:zlib");
+    const entries = {
+      "xl/workbook.xml": '<workbook><sheets><sheet name="12_計測日次" sheetId="1" r:id="rId1"/></sheets></workbook>',
+      "xl/_rels/workbook.xml.rels": '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>',
+      "xl/sharedStrings.xml": "<sst><si><t>date</t></si><si><t>sessions</t></si><si><t>quality</t></si><si><r><t>not_</t></r><r><t>returned &amp; ok</t></r></si></sst>",
+      "xl/styles.xml": '<styleSheet><numFmts><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts><cellXfs><xf numFmtId="0"/><xf numFmtId="164"/></cellXfs></styleSheet>',
+      "xl/worksheets/sheet1.xml": '<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c></row>'
+        + '<row r="2"><c r="A2" s="1"><v>46333</v></c><c r="B2"><v>34</v></c></row><row r="3"><c r="A3" t="inlineStr"><is><t>2026-11-06</t></is></c><c r="C3" t="s"><v>3</v></c></row><row r="4"></row></sheetData></worksheet>',
+    };
+    // 最小の zip(deflate)を組み立てる
+    const parts = [], central = []; let off = 0;
+    for (const [name, text] of Object.entries(entries)) {
+      const nm = Buffer.from(name), raw = Buffer.from(text), data = deflateRawSync(raw);
+      const lh = Buffer.alloc(30); lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(8, 8); lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(raw.length, 22); lh.writeUInt16LE(nm.length, 26);
+      const ch = Buffer.alloc(46); ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(8, 10); ch.writeUInt32LE(data.length, 20); ch.writeUInt32LE(raw.length, 24); ch.writeUInt16LE(nm.length, 28); ch.writeUInt32LE(off, 42);
+      parts.push(lh, nm, data); central.push(ch, nm); off += 30 + nm.length + data.length;
+    }
+    const cd = Buffer.concat(central), end = Buffer.alloc(22);
+    end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(Object.keys(entries).length, 8); end.writeUInt16LE(Object.keys(entries).length, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+    const xlsx = Buffer.concat([...parts, cd, end]);
+    const recs = toRecords(readXlsx(xlsx)["12_計測日次"]);
+    ok(recs.length === 2 && recs[0].date === "2026-11-07" && recs[0].sessions === 34 && recs[0].quality === null && recs[1].sessions === null && recs[1].quality === "not_returned & ok",
+      "週次の分析: スプレッドシートの .xlsx を、見出しつきの行にする(日付の書式は日付に、空のセルは null で 0 にしない、空の行は除く)", JSON.stringify(recs));
+    const saved = join(TD, "tool-result.txt");
+    writeFileSync(saved, JSON.stringify({ content: xlsx.toString("base64"), mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    ok(loadInput(saved).equals(xlsx), "週次の分析: Drive のコネクタの結果を保存したファイル(base64 の JSON)からも読める");
+    const sk = (() => { try { return readFileSync(join(process.env.USERPROFILE || "", ".claude/scheduled-tasks/kagurameguri-weekly-analytics/SKILL.md"), "utf8"); } catch { return null; } })();
+    if (sk) ok(sk.includes("xlsx-to-json.mjs") && !/anthropic-skills:chrome-browser|gviz\/tq/.test(sk), "週次の分析の予定タスクは、ブラウザを使わずに読む(人がいない時刻でも、承認待ちで止まらない)");
+  }
+  // 前回の予定は動いていても、その前に動かなかった回があれば、数えて知らせる(止めていた期間は数えない)
+  const slotsMissed = missedSlots("0 18 */2 * *", { now: J("2026-11-08T10:00"), floor: J("2026-10-30T00:00"), runStarts: [J("2026-11-07T18:05"), J("2026-11-03T18:30")] });
+  ok(slotsMissed.map((x) => new Date(x + 9 * 3600e3).toISOString().slice(0, 10)).join() === "2026-10-31,2026-11-01,2026-11-05", "直近の予定のうち、動いた記録がない回だけを数える(数え始めより前は数えない)", JSON.stringify(slotsMissed));
+  ok(tk.once.finished && !tk.note.finished && tk.note.issues.some((x) => /途中で止まりました.*Note にログインする/.test(x)) && TT.attention >= 1, "1回だけのタスクで動き終えたものは「完了」。前回の実行が途中で止まったものは、人がやることを添えて知らせる", JSON.stringify(tk.note.issues));
+  writeFileSync(join(TD, "note/SKILL.md"), "---\nname: note\ndescription: 記事を公開する\n---\nスキル anthropic-skills:chrome-browser を読む\n");
+  ok(loadTasks({ file: TF, now: NOW }).tasks.find((t) => t.id === "note").browser === true && loadTasks({ file: TF, now: NOW }).tasks.find((t) => t.id === "weekly").browser === false, "ブラウザを使うタスクを見分ける(予定の時刻に、その場での承認が要る)");
 
   section("管理者用ページ: 開催データの保存");
   const base = [{ id: "a-1", name: "A", kagura: "石見神楽", prefecture: "島根県", city: "浜田市", venue: "会館", start: "2026-11-01T18:00", source: "x", checked: "2026-10-01", status: "published", lat: 34.9, lng: 132.1 }];
