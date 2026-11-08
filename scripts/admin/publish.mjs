@@ -34,6 +34,23 @@ export async function pendingChanges(root, git = findGit()) {
   return { uncommitted: st.ok && st.out.length > 0, unpushed: ahead.ok ? Number(ahead.out) || 0 : 0 };
 }
 
+/**
+ * 定期の更新: GitHub の最新(週次の自動収集・振り返り・Claude の作業の公開など)を、いつものフォルダに取り込む。
+ * main にいて、開催データに未コミットの変更がなく、早送りで済むときだけ(作業中のものには触らない)
+ */
+export async function syncMain(root, git = findGit()) {
+  const g = (...a) => run(git, a, { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
+  const f = await g("fetch", "-q", "origin");
+  if (!f.ok) return { ok: false, text: `GitHub に接続できませんでした(${f.out.split("\n")[0].slice(0, 120)})` };
+  if ((await g("symbolic-ref", "--short", "HEAD")).out !== "main") return { ok: false, text: "main 以外のブランチにいるため、取り込みませんでした" };
+  const behind = Number((await g("rev-list", "--count", "HEAD..origin/main")).out) || 0;
+  if (!behind) return { ok: true, text: "最新です" };
+  if ((await g("status", "--porcelain", "--", ...DATA)).out) return { ok: false, text: `GitHub に新しい変更が ${behind} 件ありますが、開催データに送っていない変更があるため、取り込みませんでした(「もう一度公開する」で取り込みます)` };
+  const m = await g("merge", "--ff-only", "-q", "origin/main");
+  return m.ok ? { ok: true, text: `GitHub の新しい変更を ${behind} 件取り込みました`, pulled: behind }
+    : { ok: false, text: `GitHub の新しい変更を取り込めませんでした(このPCに、送っていないコミットか、重なる作業中のファイルがあります)` };
+}
+
 /** 最近のコミットのメッセージに書かれた改善案の ID(SEO-日付-番号)。実施したかの目安に使う(判定は週次の分析タスク) */
 export async function mentionedIds(root, git = findGit()) {
   const r = await run(git, ["log", "--since=120.days", "--format=%s%n%b"], { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
