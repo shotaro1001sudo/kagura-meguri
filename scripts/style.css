@@ -1022,3 +1022,20 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 /* Keep the local consent UI close to the site's paper-and-ink palette. */
 #cc-main { --cc-font-family: system-ui, sans-serif; --cc-bg: #f8f5ee; --cc-primary-color: #302c26; --cc-secondary-color: #514b43; --cc-btn-primary-bg: #4c594b; --cc-btn-primary-hover-bg: #384437; --cc-btn-primary-color: #fff; --cc-btn-primary-border-color: #4c594b; --cc-btn-secondary-bg: #e8e3d9; --cc-btn-secondary-color: #302c26; --cc-btn-secondary-border-color: #d3ccbf; --cc-toggle-on-bg: #4c594b; --cc-cookie-category-block-bg: #eee9df; --cc-modal-border-radius: 10px; }
 #cc-main button { min-height: 44px; }
+
+/* 団体ページ(有料)・PR枠(MON-1): 開催情報のカードと見分けがつくよう、点線の枠と「PR」の印をつける */
+.pr-slot{margin:32px 0;padding:14px 18px;border:1px dashed var(--mut);border-radius:4px}
+.pr-slot-h{margin:0 0 8px;font-size:var(--fs-s);color:var(--mut)}
+.pr-slot ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pr-slot li{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;min-height:44px}
+.pr-slot li a{font-weight:500}.pr-slot li span{font-size:var(--fs-s);color:var(--mut)}
+.pr-slot-note,.meta-s{margin:8px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
+.pr-note{padding:10px 14px;border:1px dashed var(--mut);border-radius:4px;font-size:var(--fs-s);color:var(--mut)}
+.partner-photos{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));margin:20px 0}
+.partner-photos figure{margin:0}.partner-photos img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:4px}
+.partner-photos figcaption{font-size:var(--fs-xs);color:var(--mut);margin-top:4px}
+.ph-sample{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:4px;background:var(--card);color:var(--mut);font-size:var(--fs-s)}
+.partner-reps>div{padding:10px 0;border-top:1px solid var(--line)}.partner-reps dt{font-weight:500}.partner-reps dd{margin:4px 0 0}
+.partner-links li{min-height:44px}
+.ocards.plans li{padding:16px 18px}.plan-price{display:block;font-family:inherit;font-size:var(--fs-s);color:var(--ac);margin-top:2px}
+.tokushoho th{white-space:nowrap;vertical-align:top}

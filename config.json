@@ -27,6 +27,12 @@
     "accessKey": "20ab6985-4c0f-4fc8-a523-17fa2e601df2",
     "providerName": "Web3Forms"
   },
+  "partner": {
+    "plans": [
+      { "id": "page", "name": "団体ページ", "monthly": 3000, "prSlot": false, "includes": ["写真(8枚まで)・動画のリンク・演目の紹介(12件まで)・公式の案内をまとめた、団体だけのページ", "内容の差し替えは月に1度まで"] },
+      { "id": "page_pr", "name": "団体ページ+PR枠", "monthly": 8000, "prSlot": true, "includes": ["団体ページの内容のすべて", "団体の県のページと、神楽の種類のページに「PR」と表示した紹介枠(開催情報の一覧とは別の場所。1つの枠に3団体まで)"] }
+    ]
+  },
   "collect": {
     "autoPublish": true,
     "maxNewPerSource": 15,
@@ -39,9 +45,10 @@
     "history": [
       "2026年10月10日 制定",
       "2026年10月22日 Web3Formsの保存期間・国外処理・再委託先の説明を改定",
-      "2026年11月2日 同意管理を自サイト配信のCookieConsentに変更。保存期間、解析・広告画像の同意と撤回、解析・広告の一時停止を明記"
+      "2026年11月2日 同意管理を自サイト配信のCookieConsentに変更。保存期間、解析・広告画像の同意と撤回、解析・広告の一時停止を明記",
+      "2026年11月8日 団体ページ(有料のプラン)のお申し込みで預かる情報と、利用目的・保管期間を追記"
     ],
-    "updated": "2026年11月2日"
+    "updated": "2026年11月8日"
   },
   "seo": {
     "googleVerification": "KbL9gJRGHY5flHq-yVJ5GBDOgnOC4fS809E8yAwNRrw",

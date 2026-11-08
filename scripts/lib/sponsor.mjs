@@ -5,8 +5,8 @@
 // 中立の方針(掲載は無料・協賛で掲載や並び順を変えない・PRの表示)は、「主催者の方へ」と食い違わないようにする。
 // 例のリンクは、行き先が分かるように、県名・公演名を文字にする。
 
-/** @param {{ esc: (s:string)=>string, siteName: string, pref?: { name: string, href: string }, reg?: { name: string, href: string } }} x */
-export function sponsorHtml({ esc, siteName, pref, reg }) {
+/** @param {{ esc: (s:string)=>string, siteName: string, pref?: { name: string, href: string }, reg?: { name: string, href: string }, plans?: { name: string, priceText: string, includes: string[] }[] }} x */
+export function sponsorHtml({ esc, siteName, pref, reg, plans = [] }) {
   const eg = (x) => (x ? `(例: <a href="${x.href}">${esc(x.name)}</a>)` : "");
   return `
 <p class="olead">${esc(siteName)}は、全国の神楽の開催情報をまとめたサイトです。神楽を観に来る方に、会場の近くの宿やお店、観光の情報を届けませんか。地域の皆さまからの<strong>協賛</strong>を受け付けています。</p>
@@ -30,7 +30,12 @@ export function sponsorHtml({ esc, siteName, pref, reg }) {
 <li><b>PR記事</b>地域の観光や、神楽と合わせて楽しめる過ごし方を紹介する記事です。記事は編集部が書き、公開の前に内容をご確認いただきます。</li>
 </ul>
 <p>料金は、載せる場所と期間に応じてお見積もりします。これまでの閲覧数などは、ご相談の際にお伝えします。</p>
-
+${plans.length ? `
+<h2>神楽団・主催者の方へ: 団体ページ</h2>
+<p>写真・動画・演目の紹介をまとめた、団体だけのページを月額でご用意します(<a href="/partner/sample.html">見本</a>)。</p>
+<ul class="ocards plans">${plans.map((p) => `<li><b>${esc(p.name)}<span class="plan-price">${esc(p.priceText)}</span></b>${p.includes.map(esc).join("。")}。</li>`).join("")}</ul>
+<p class="octa"><a class="btn" href="/apply.html">団体ページを申し込む</a></p>
+` : ""}
 <h2>掲載の方針</h2>
 <ul class="rules">
 <li><strong>開催情報の掲載は、これからも無料</strong>です。協賛の有無で、掲載するかどうか・並び順・本文は変えません。</li>
