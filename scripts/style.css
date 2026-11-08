@@ -339,7 +339,10 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .stay-banner img{display:block;max-width:100%;height:auto}
 /* 横長(468×60)のバナーは、サイドの幅いっぱいに縦に並べる。注意書きは、折りたたんで、ボタンとバナーを先に見せる */
 .d-side .stay-banners{flex-direction:column;gap:8px;margin:12px 0}.d-side .stay-banner{width:100%}.d-side .stay-banner img{width:100%}
-.stay-lead{font-size:var(--fs-s);line-height:1.8}.stay-note{margin:8px 0 4px}.stay-note summary{cursor:pointer;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px}.stay-note[open] summary{margin-bottom:2px}
+.stay-lead{font-size:var(--fs-s);line-height:1.8}
+.hotels{margin:12px 0}.hotels-h,.hotels-note{font-size:var(--fs-xs);color:var(--mut)}.hotel-cards{list-style:none;margin:6px 0;padding:0;display:grid;gap:8px}
+.hotel-card{display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:3px;text-decoration:none;color:inherit}.hotel-card:hover,.hotel-card:focus-visible{border-color:var(--ac2)}
+.hotel-card img{flex:none;width:96px;height:72px;object-fit:cover;border-radius:2px;background:var(--line)}.hotel-body{display:flex;flex-direction:column;gap:2px;min-width:0}.hotel-body b{font-size:var(--fs-s);line-height:1.4}.hotel-price{font-weight:600}.hotel-review,.hotel-body small{font-size:var(--fs-xs);color:var(--mut)}.stay-note{margin:8px 0 4px}.stay-note summary{cursor:pointer;font-size:var(--fs-xs);color:var(--mut);padding:6px 0;min-height:32px}.stay-note[open] summary{margin-bottom:2px}
 .d-side .stay{padding:16px}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */

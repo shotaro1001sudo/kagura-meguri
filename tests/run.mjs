@@ -1,6 +1,7 @@
 import './analytics-session-sync.mjs';
 import './analytics-session-report.mjs';
 import './consent-manager-test.mjs';
+import './nearby-hotels.mjs';
 import { goatcounterPauseTests } from "./goatcounter-pause.mjs";
 import { adsensePauseTests } from "./adsense-pause.mjs";
 import { rakutenStayIssuedTests } from "./rakuten-stay-issued.mjs";

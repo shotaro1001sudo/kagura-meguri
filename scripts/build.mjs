@@ -26,6 +26,8 @@ import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
 import { VC, vcEnabled, vcTag } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
+import { overnightKagura } from "./lib/overnight.mjs";
+import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, features, traditions, quizEngine, QUIZ_CHECKED } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
@@ -213,13 +215,9 @@ const stayLinks = (e, day, place) => {
   const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
   return btns ? `<p class="staylinks">${btns}</p>` : "";
 };
-/** 夜通し・深夜まで続く神楽か。公式の名称・説明の言葉だけで判断し、開始・終了の時刻からは推測しない。データの overnightStay(true/false)で上書きできる */
-const overnightKagura = (e) => {
-  if (e.overnightStay === false) return "";
-  if (/夜神楽/.test(`${e.name ?? ""} ${e.kagura ?? ""}`)) return "yokagura";
-  if (e.overnightStay === true || /夜通し|徹夜|翌朝まで|翌朝にかけて/.test(e.description ?? "")) return "overnight";
-  return "";
-};
+// 会場の近くの宿(楽天トラベルの施設検索 API。公開のたびに scripts/fetch-hotels.mjs が取る。無い・古いときは出さない)
+const HOTELS_FILE = process.env.NEARBY_HOTELS_FILE ?? "data/nearby-hotels.json";
+const nearbyHotels = rakutenOn && existsSync(HOTELS_FILE) ? loadHotels(readFileSync(HOTELS_FILE, "utf8"), nowJst) : null;
 /** 開催ページの「会場近くの宿」: 開催日の1泊で、会場の市区町村の宿を探す(これからの開催だけ) */
 function stayBlock(e) {
   if (e.stayLinks === false || (!rakutenOn && !jalanOn)) return "";
@@ -230,7 +228,7 @@ function stayBlock(e) {
   // 例外(MON-6、2026-11-08 運営者の依頼): 公式の名称・説明に「夜神楽」「夜通し」などがある公演だけ、泊まりが前提になることを一文で伝える
   const links = stayLinks(e, day, place), night = overnightKagura(e);
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
-${night ? `<p class="stay-lead">${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。帰りの交通が限られるため、会場の近くに泊まる予定で計画すると安心です。</p>\n` : ""}${links}
+${night ? `<p class="stay-lead">${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。帰りの交通が限られるため、会場の近くに泊まる予定で計画すると安心です。</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
 <details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }

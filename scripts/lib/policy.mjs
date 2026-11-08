@@ -27,6 +27,7 @@ export function externalServices(ctx) {
   const aff = ctx.cfg.affiliate ?? {};
   const imageInfo = "通信時の接続元IPアドレス、要求する画像のURL、ブラウザが送るヘッダー情報(ブラウザの種類、設定に応じた参照元情報など)";
   if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天アフィリエイト(サービス提供: 楽天グループ株式会社／画像配信先: hbb.afl.rakuten.co.jp、ba.afl.rakuten.co.jp)", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき(リンクを押す前にも発生します)" });
+  if (ctx.hasAffil && aff.rakutenAffiliateId) rows.push({ name: "楽天トラベル(サービス提供: 楽天グループ株式会社／宿の写真の配信先: img.travel.rakuten.co.jp)", purpose: "当サイト側：会場近くの宿の写真の表示", sent: imageInfo, when: "夜神楽などの開催ページで、宿の写真をブラウザが読み込むとき(リンクを押す前にも発生します)" });
   if (vcActive(ctx.cfg)) rows.push({ name: "バリューコマース アフィリエイト(サービス提供: バリューコマース株式会社／画像配信先: ad.jp.ap.valuecommerce.com)", purpose: "当サイト側：広告画像の取得・表示", sent: imageInfo, when: "掲載された外部広告画像をブラウザが読み込むとき(リンクを押す前にも発生します)" });
   if (ctx.hasAds) rows.push({ name: "Google AdSense(Google LLC)", purpose: "広告の配信", sent: "IPアドレス、Cookie等の識別子、ブラウザの種類、閲覧履歴に基づく情報", when: "広告を表示するページ" });
   if (ctx.hasGC) rows.push({ name: "GoatCounter(アクセス解析)", purpose: "アクセス状況の把握(集計した件数だけ)", sent: "閲覧したページのURL、参照元、ブラウザとOSの種類、画面の幅、言語、IPアドレス(国の推定と、再訪問の判定に一時的に使い、保存されない)", when: "すべてのページ" });

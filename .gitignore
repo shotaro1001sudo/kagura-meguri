@@ -5,3 +5,5 @@ tests/.tmp*/
 .admin/
 admin.local.json
 analytics/
+# 楽天トラベルの宿(公開のたびに取り直す。料金が古くならないよう、保存しない)
+data/nearby-hotels.json

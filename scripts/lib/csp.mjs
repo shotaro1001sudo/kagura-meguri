@@ -34,6 +34,8 @@ export function cspFor(html, cfg) {
   for (const h of BANNER_IMG_HOSTS) if (html.includes(`src="${h}/`)) d["img-src"].push(h);
   if (html.includes('src="https://hbb.afl.rakuten.co.jp/')) d["img-src"].push("https://ba.afl.rakuten.co.jp"); // 画像の転送先(バナー)
   if (html.includes('src="https://hbb.afl.rakuten.co.jp/hgb/')) d["img-src"].push("https://thumbnail.image.rakuten.co.jp"); // 画像の転送先(商品画像)
+  // 会場近くの宿の写真(楽天トラベルの施設検索 API の画像)があるページだけ許可する(MON-6)
+  if (html.includes('src="https://img.travel.rakuten.co.jp/')) d["img-src"].push("https://img.travel.rakuten.co.jp");
   if (ads) {
     // AdSense は動的にスクリプト・iframe を読み込むため、ここだけ緩める(広告を入れる場合のみ)
     d["script-src"].push("'unsafe-inline'", "'unsafe-eval'", "https://pagead2.googlesyndication.com", "https://*.googlesyndication.com", "https://*.google.com", "https://*.doubleclick.net", "https://www.googletagservices.com", "https://partner.googleadservices.com", "https://adservice.google.com");

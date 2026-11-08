@@ -145,14 +145,33 @@ export function editorialTests({ ok, section, OUT, build }) {
     [plain("yk-late-time", "2026-11-03T19:00", { end: "2026-11-04T08:00" }), ""],
   ];
   writeFileSync(F, JSON.stringify(nightCases.map(([e]) => e)));
-  const nightBuild = build(F, D, { TEST_AFF_TRAVEL: "1" });
+  const H = "tests/.tmp-nearby-hotels.json", hotel = (no, extra = {}) => ({ no, name: `テスト旅館${no}`, url: `https://hb.afl.rakuten.co.jp/hgc/test/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2FHOTEL%2F${no}%2F`, image: `https://img.travel.rakuten.co.jp/image/tr/api/hs/test${no}.jpg`, minCharge: 8800, access: "会場から車で5分", review: 4.25, ...extra });
+  const hotelsFor = (fetchedAt) => JSON.stringify({ fetchedAt, byEvent: { "yk-name": [hotel(1), hotel(2), hotel(3, { url: "https://travel.rakuten.co.jp/HOTEL/3/" }), hotel(4)], "yk-off": [hotel(5)], "yk-late-time": [hotel(6)] } });
+  writeFileSync(H, hotelsFor("2026-10-08T03:00"));
+  const nightBuild = build(F, D, { TEST_AFF_TRAVEL: "1", NEARBY_HOTELS_FILE: H });
   ok(nightBuild.status === 0, "夜神楽の宿泊案内をビルド", nightBuild.stderr);
-  if (nightBuild.status === 0) for (const [e, lead] of nightCases) {
-    const $ = page(`events/${e.id}.html`, D), stay = $(".stay"), p = stay.find(".stay-lead");
-    if (lead) ok(p.length === 1 && p.text().startsWith(lead) && p.text().includes("泊まる") && stay.find("h2").text() === "泊まりで観る・会場周辺の宿" && p.next().is(".staylinks") && stay.find("a.stay-btn,.stay-btn>a").length === 2, `${e.id}: 泊まりが前提の一文を、宿のボタンの上に出す`);
-    else ok(p.length === 0 && stay.find("h2").text() === "会場周辺の宿", `${e.id}: 時刻だけ・明示の取り消しでは出さない`);
+  if (nightBuild.status === 0) {
+    for (const [e, lead] of nightCases) {
+      const $ = page(`events/${e.id}.html`, D), stay = $(".stay"), p = stay.find(".stay-lead");
+      if (lead) ok(p.length === 1 && p.text().startsWith(lead) && p.text().includes("泊まる") && stay.find("h2").text() === "泊まりで観る・会場周辺の宿" && p.nextAll(".staylinks").length === 1 && stay.find("a.stay-btn,.stay-btn>a").length === 2, `${e.id}: 泊まりが前提の一文を、宿のボタンの上に出す`);
+      else ok(p.length === 0 && stay.find("h2").text() === "会場周辺の宿" && stay.find(".hotel-card").length === 0, `${e.id}: 時刻だけ・明示の取り消しでは、一文も宿のカードも出さない`);
+    }
+    const $ = page("events/yk-name.html", D), cards = $(".stay .hotel-card"), html = read(join(D, "events/yk-name.html"));
+    ok(cards.length === 3 && cards.toArray().every((a) => $(a).attr("href").startsWith("https://hb.afl.rakuten.co.jp/") && $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank" && $(a).attr("data-goatcounter-click") === "stay-hotel/yk-name"), "宿のカード: 楽天アフィリエイトのリンクだけ・最大3件・PR の属性", cards.length);
+    ok(cards.first().find("img").attr("src").startsWith("https://img.travel.rakuten.co.jp/") && cards.first().text().includes("8,800円〜") && cards.first().text().includes("評価 4.3") && $(".stay .hotels").text().includes("10月8日時点") && $(".stay .hotels a[href='https://webservice.rakuten.co.jp/']").text() === "Supported by Rakuten Developers", "宿のカード: 写真・料金(取得日つき)・評価・クレジット");
+    ok($(".stay .hotels").nextAll(".staylinks").length === 1 && $(".stay .pr").length === 1, "宿のカードは検索リンクの上、PR 表示はそのまま");
+    ok(/img-src[^;]*https:\/\/img\.travel\.rakuten\.co\.jp/.test(html) && !/img-src[^;]*img\.travel\.rakuten/.test(read(join(D, "events/yk-desc.html"))), "CSP: 宿の写真があるページだけ、楽天トラベルの画像を許可");
+    ok(page("privacy.html", D)("main").text().includes("img.travel.rakuten.co.jp"), "プライバシーポリシー: 宿の写真の配信先を書く");
   }
-  rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
+  rmSync(D, { recursive: true, force: true });
+  writeFileSync(H, hotelsFor("2026-10-01T03:00"));
+  const staleBuild = build(F, D, { TEST_AFF_TRAVEL: "1", NEARBY_HOTELS_FILE: H });
+  ok(staleBuild.status === 0 && page("events/yk-name.html", D)(".hotel-card").length === 0 && page("events/yk-name.html", D)(".stay-lead").length === 1, "宿のデータが4日以上前なら、カードを出さない(料金が古いため)", staleBuild.stderr);
+  rmSync(D, { recursive: true, force: true });
+  writeFileSync(H, hotelsFor("2026-10-08T03:00"));
+  const offBuild = build(F, D, { NEARBY_HOTELS_FILE: H });
+  ok(offBuild.status === 0 && page("events/yk-name.html", D)(".hotel-card").length === 0, "楽天アフィリエイトが無効なら、宿のカードを出さない", offBuild.stderr);
+  rmSync(F, { force: true }); rmSync(H, { force: true }); rmSync(D, { recursive: true, force: true });
 
   const hamada ={ weekdays: [6], extra: [{ weekdays: [5], months: [9, 10, 11] }, { dates: ["05-03", "05-04", "05-05"] }], closedDates: ["10-30"] };
   ok(regularOn(hamada, "2026-10-16") && !regularOn(hamada, "2026-12-18") && regularOn(hamada, "2026-12-19") && regularOn(hamada, "2027-05-04") && !regularOn(hamada, "2026-10-30"), "季節だけの公演日(9〜11月の金曜・5月3〜5日)を数える。休演日は除く");
