@@ -5,7 +5,7 @@ import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
-import { publish, pendingChanges, findGit } from "../scripts/admin/publish.mjs";
+import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -239,6 +239,13 @@ export async function adminTests({ ok, section }) {
     ok((await pendingChanges(A, git)).unpushed === 1, "送れなかったコミットは、PC に残り、「もう一度公開する」の対象になる");
     p = await publish(A, "x", { git, check: true });
     ok(!p.ok && p.step === "build", "サイトを作れないときは、送らない");
+    // サイトは作れても、開催データのテスト(GitHub の公開処理で走る npm test の一部)が落ちるなら、送らない
+    mkdirSync(join(A, "scripts")); writeFileSync(join(A, "scripts/build.mjs"), "");
+    mkdirSync(join(A, "tests")); writeFileSync(join(A, "tests/held-review.mjs"), "console.error('保留の判断と合わない'); process.exit(1);");
+    const before = g(A, "rev-parse", "HEAD");
+    p = await publish(A, "x", { git, check: true });
+    ok(!p.ok && p.step === "test" && p.log.includes("tests/held-review.mjs") && p.log.includes("保留の判断と合わない") && g(A, "rev-parse", "HEAD") === before, "開催データのテストが落ちるときは、コミットも送信もせず、どのテストかを知らせる", JSON.stringify(p));
+    ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test.startsWith("npm run test:data && "), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
   } finally { rmSync(T, { recursive: true, force: true }); }
 
   section("管理者用ページ: デスクトップのショートカット");
