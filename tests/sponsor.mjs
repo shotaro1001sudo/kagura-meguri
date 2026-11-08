@@ -25,6 +25,8 @@ export function sponsorTests({ ok, section, OUT }) {
   // 数字(閲覧数・件数など)を、ページに書かない。例のリンクの名前(公演名)は除いて調べる
   const $m = cheerio.load($("main").html());
   $m("a").filter((_, a) => /^\/(pref|kagura|events|regular)\//.test($m(a).attr("href"))).remove();
+  // 団体ページのプラン(MON-1)の料金は、閲覧数などとちがい、載せてよい数字なので除く
+  $m("ul.plans").remove();
   ok(!/[0-9０-９]/.test($m.root().text()), "数字を書いていない(閲覧数などは、問い合わせた方にだけ伝える)", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
   ok(!/\d[\d,]*\s*(PV|ページビュー|人|回|万)/.test(text) && !/読者の(多く|大半|ほとんど)/.test(text), "閲覧数などの数字や、確かめていない読者の傾向を書いていない");
   ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。数字は相談の際に伝えると書いてある");
