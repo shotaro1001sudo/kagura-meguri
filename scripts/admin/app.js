@@ -59,7 +59,8 @@ function render() {
   $("#n-decide").textContent = decisions().total || "";
   $("#n-goal").textContent = planOpen().length || "";
   $("#n-tasks").textContent = S.tasks?.attention || S.tasks?.missed || "";
-  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
+  $("#n-sales").textContent = S.pipeline?.summary.due.length || "";
+  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, sales: salesView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
 // ---------- 判断待ち(人が決めること) ----------
@@ -189,7 +190,7 @@ function actual(id, m) {
     for (const [k, v] of Object.entries(parts)) { if (v == null) missing.push(k); else { sum += v; any = true; } }
     return { v: any ? sum : null, missing };
   }
-  if (id === "contracts" || id === "pitches") return { v: man[id] ?? null, missing: man[id] == null ? ["手入力"] : [] };
+  if (id === "contracts" || id === "pitches") { const v = man[id] ?? a[id] ?? null; return { v, missing: v == null ? ["営業の台帳・手入力"] : [] }; }
   if (id === "conversions") return { v: a.conversionsVc ?? null, missing: ["楽天(数えていません)"] };
   return { v: a[id] ?? null, missing: a[id] == null ? ["週次の分析"] : [] };
 }
@@ -339,6 +340,114 @@ function editTargets(k) {
     for (const m of months) targets[m] = Number(form.elements[m].value);
     try { await call("/api/plan/item", { kind: "kpi", id: k.id, targets }); dlg.close(); toast("目標の数を保存しました"); render(); }
     catch (err) { toast(err.message, true); }
+  };
+  dlg.showModal();
+}
+
+// ---------- 営業(analytics/pipeline.json。このPCだけ・GitHub に送らない) ----------
+// 協賛・有料プラン・送客の提案先を、候補 → 送信済み → 返信あり → 商談中 → 契約 / 見送り で記録する。
+// 「提案した相手の数」「有償の契約数」の KPI は、ここから月ごとに数える(目標・収益の手入力があれば、そちらを優先)
+// 段階を進めるボタン: 今の段階 → [次の段階, ボタンの文]
+const NEXT_STAGE = { candidate: [["sent", "送った"]], sent: [["replied", "返信があった"], ["sent", "もう一度送った"]], replied: [["talking", "商談に進んだ"], ["won", "契約した"]], talking: [["won", "契約した"]], won: [], lost: [["candidate", "候補に戻す"]] };
+function salesView() {
+  const P = S.pipeline;
+  if (!P) return [h("h2", null, "営業")];
+  const sm = P.summary, leads = P.leads;
+  const stageBadge = (st) => badge({ candidate: "new", sent: "doing", replied: "doing", talking: "doing", won: "published", lost: "rejected" }[st] || "new", P.stages[st] || st);
+  const tgt = (t, v, unit) => (t ? `${v} / ${t.value}${unit}` : `${v}${unit}`);
+  const tNote = (t) => (t && t.month !== sm.month.month ? h("small", { class: "mut" }, `目標は${monthLabel(t.month)}の分`) : "");
+  const order = ["candidate", "sent", "replied", "talking", "won", "lost"];
+  const valid = order.includes(view.salesSt);
+  const cur = valid ? view.salesSt : sm.due.length || sm.count.sent + sm.count.replied + sm.count.talking ? "sent" : "candidate";
+  // 「送信済み」の欄には、やりとりの途中(返信あり・商談中)も入れる
+  const inGroup = (x) => (cur === "sent" ? ["sent", "replied", "talking"].includes(x.stage) : x.stage === cur);
+  const list = leads.filter(inGroup).sort((a, b) => (a.nextAt || "9").localeCompare(b.nextAt || "9") || a.id.localeCompare(b.id));
+  const groups = [["candidate", "候補(まだ送っていない)", sm.count.candidate], ["sent", "やりとり中", sm.count.sent + sm.count.replied + sm.count.talking], ["won", "契約", sm.count.won], ["lost", "見送り", sm.count.lost]];
+  const dueSet = new Set(sm.due.map((d) => d.id));
+  const card = (x) => h("section", { class: "panel decision" + (x.stage === "lost" ? " dim" : "") },
+    h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, x.id, " "), x.name), stageBadge(x.stage)),
+    h("p", { class: "chips" }, h("span", { class: "chip" }, x.kind), h("span", { class: "chip" }, `${x.offer} ${P.offers[x.offer] || ""}`),
+      x.monthlyYen ? h("span", { class: "chip" }, `月 ${yen(x.monthlyYen)}`) : "",
+      x.nextAt && !["won", "lost", "candidate"].includes(x.stage) ? h("span", { class: "chip" + (dueSet.has(x.id) ? " due" : "") }, `次に連絡する日 ${jpDate(x.nextAt)}${dueSet.has(x.id) ? "(来ています)" : ""}`) : ""),
+    h("dl", { class: "kv" },
+      x.contact ? [h("dt", null, "宛先・窓口"), h("dd", null, x.contact)] : "",
+      x.url ? [h("dt", null, "連絡先・出典"), h("dd", null, ext(x.url))] : "",
+      x.sentAt ? [h("dt", null, "最初に送った日"), h("dd", null, jpDate(x.sentAt))] : "",
+      x.wonAt ? [h("dt", null, "契約した日"), h("dd", null, jpDate(x.wonAt))] : "",
+      x.memo ? [h("dt", null, "メモ"), h("dd", null, x.memo)] : ""),
+    x.log?.length ? h("details", { class: "more" }, h("summary", null, `記録(${x.log.length})`),
+      h("ul", { class: "plan-rows" }, x.log.slice().reverse().map((l) => h("li", null, h("span", { class: "t" }, jpDate(l.date)), stageBadge(l.stage), h("span", { class: "mut" }, l.note || ""))))) : "",
+    h("div", { class: "bar mt" },
+      (NEXT_STAGE[x.stage] || []).map(([st, label], i) => h("button", { class: "btn small" + (i ? " ghost" : ""), onclick: () => moveLead(x, st) }, label)),
+      ["sent", "replied", "talking"].includes(x.stage) ? h("button", { class: "btn ghost small", onclick: () => moveLead(x, x.stage, true) }, "連絡する日を変える") : "",
+      h("button", { class: "btn ghost small", onclick: () => editLead(x) }, "編集"),
+      !["lost", "won"].includes(x.stage) ? h("button", { class: "btn ghost small", onclick: () => moveLead(x, "lost") }, "見送り") : "",
+      x.stage === "won" ? h("button", { class: "btn ghost small", onclick: () => moveLead(x, "lost") }, "契約が終わった") : ""));
+
+  const wk = sm.week, mo = sm.month;
+  return [
+    h("h2", null, "営業"),
+    h("section", { class: "panel goal" },
+      h("div", { class: "stats" },
+        h("div", { class: "stat" + (wk.short ? " ng" : "") }, h("b", null, wk.guide == null ? String(wk.count) : `${wk.count} / ${wk.guide}`), h("span", null, `今週の提案(${+wk.from.slice(5, 7)}/${+wk.from.slice(8, 10)}〜)`), wk.short ? h("small", { class: "mut" }, `目安まで あと${wk.guide - wk.count}件`) : ""),
+        h("div", { class: "stat" }, h("b", null, tgt(mo.pitchTarget, mo.pitches, "件")), h("span", null, "今月の提案"), tNote(mo.pitchTarget)),
+        h("div", { class: "stat" }, h("b", null, tgt(mo.contractTarget, mo.contracts, "件")), h("span", null, "契約"), tNote(mo.contractTarget)),
+        h("div", { class: "stat" }, h("b", null, yen(sm.wonMonthlyYen)), h("span", null, "契約の月額の合計"))),
+      h("p", { class: "mut small" }, `返信率: ${sm.replyRate ? `${sm.replyRate.replied} / ${sm.replyRate.sent}件` : "まだ送っていません"} ・ 1週の目安は、提案の月の目標を週に割ったものです。提案した数・契約数は「目標・収益」の KPI に自動で入ります(手入力があれば、手入力を優先)。`)),
+    sm.due.length ? [h("h3", { class: "sec-h" }, "連絡する日が来た相手", h("span", { class: "pill" }, String(sm.due.length))),
+      h("ul", { class: "plan-rows" }, sm.due.map((d) => { const x = leads.find((y) => y.id === d.id); return h("li", null, h("span", { class: "t" }, d.name), stageBadge(d.stage), h("span", { class: "mut" }, d.late ? `${d.late}日過ぎ` : "今日"),
+        (NEXT_STAGE[x.stage] || []).slice(0, 1).map(([st, label]) => h("button", { class: "btn small", onclick: () => moveLead(x, st) }, label)),
+        h("button", { class: "btn ghost small", onclick: () => moveLead(x, x.stage, true) }, "日を延ばす")); }))] : "",
+    h("div", { class: "bar mt" }, h("button", { class: "btn", onclick: () => editLead(null) }, "相手を追加")),
+    h("div", { class: "seg", role: "group", "aria-label": "段階で切り替える" }, groups.map(([st, text, n]) =>
+      h("button", { type: "button", class: "seg-b", "aria-pressed": String(st === cur), onclick: () => { view.salesSt = st; render(); } }, text, h("span", { class: "cnt" }, String(n))))),
+    list.length ? list.map(card) : h("p", { class: "mut" }, "この段階の相手はいません。"),
+    h("p", { class: "mut small" }, "台帳は、このPCの analytics/pipeline.json にだけ保存し、GitHub には送りません。相手への連絡・条件・契約は運営者が行います。毎週月曜の分析も、この台帳を読んで提案のペースと連絡の漏れを報告します。"),
+  ];
+}
+// 段階を変える。メモ(と、やりとり中なら次に連絡する日)を聞く
+async function moveLead(x, stage, onlyDate) {
+  const P = S.pipeline;
+  let note = "", nextAt;
+  if (onlyDate || ["replied", "talking"].includes(stage)) {
+    const def = new Date(Date.parse(S.today) + P.followDays * 864e5).toISOString().slice(0, 10);
+    const v = prompt(`「${x.name}」に次に連絡する日(YYYY-MM-DD)`, onlyDate && x.nextAt > S.today ? x.nextAt : def);
+    if (v === null) return;
+    nextAt = v.trim();
+  }
+  if (!onlyDate) {
+    const v = prompt(`「${x.name}」を「${P.stages[stage]}」にします。メモがあれば書いてください(空でも構いません)。`, "");
+    if (v === null) return;
+    note = v.trim();
+  } else note = "連絡する日を変更";
+  try { await call("/api/pipeline/stage", { id: x.id, stage, note, nextAt }); toast(onlyDate ? "連絡する日を変えました" : `「${P.stages[stage]}」にしました`); render(); }
+  catch (err) { toast(err.message, true); }
+}
+function editLead(x) {
+  const P = S.pipeline, dlg = $("#dlg"), form = $("#dlg-form");
+  const v = x || { kind: P.kinds[0], offer: "MON-1" };
+  const field = (name, label, input) => h("div", { class: "f" }, h("label", { for: "ld-" + name }, label), input, h("small", { class: "err", id: "err-" + name }));
+  form.replaceChildren(
+    h("h2", null, x ? `相手を編集: ${x.name}` : "相手を追加"),
+    h("div", { class: "grid" },
+      field("name", "相手の名前(団体・施設)", h("input", { id: "ld-name", name: "name", required: true, maxlength: 80, value: v.name || "" })),
+      field("kind", "種類", h("select", { id: "ld-kind", name: "kind" }, P.kinds.map((k) => h("option", { value: k, selected: k === v.kind }, k)))),
+      field("offer", "提案の中身", h("select", { id: "ld-offer", name: "offer" }, Object.entries(P.offers).map(([k, t]) => h("option", { value: k, selected: k === v.offer }, `${k === "other" ? "" : k + " "}${t}`)))),
+      field("contact", "宛先・窓口", h("input", { id: "ld-contact", name: "contact", maxlength: 200, value: v.contact || "" })),
+      field("url", "連絡先・出典の URL", h("input", { id: "ld-url", name: "url", type: "url", maxlength: 300, value: v.url || "" })),
+      field("monthlyYen", "契約の月額(円・決まったら)", h("input", { id: "ld-monthlyYen", name: "monthlyYen", type: "number", min: "0", step: "1", value: v.monthlyYen ?? "" })),
+      x && ["sent", "replied", "talking"].includes(x.stage) ? field("nextAt", "次に連絡する日", h("input", { id: "ld-nextAt", name: "nextAt", type: "date", value: v.nextAt || "" })) : ""),
+    field("memo", "メモ", h("textarea", { id: "ld-memo", name: "memo", rows: 3, class: "full", maxlength: 1000 }, v.memo || "")),
+    h("div", { class: "bar mt" }, h("button", { class: "btn", value: "save" }, "保存する"), h("button", { class: "btn ghost", value: "cancel", formnovalidate: true }, "やめる")));
+  form.onsubmit = async (ev) => {
+    if (ev.submitter?.value !== "save") return;
+    ev.preventDefault();
+    const f = form.elements, val = (k) => (f[k] ? f[k].value : "");
+    const lead = { id: x?.id, name: val("name"), kind: val("kind"), offer: val("offer"), contact: val("contact"), url: val("url"), memo: val("memo"), nextAt: x ? val("nextAt") || x.nextAt || "" : "",
+      monthlyYen: val("monthlyYen") === "" ? null : Number(val("monthlyYen")) };
+    form.querySelectorAll(".err").forEach((e) => (e.textContent = ""));
+    try { await call("/api/pipeline/save", { lead }); dlg.close(); toast(x ? "保存しました" : "台帳に追加しました"); render(); }
+    catch (err) { for (const [k, m] of Object.entries(err.fields || {})) { const e = $("#err-" + k); if (e) e.textContent = m; } toast(err.message, true); }
   };
   dlg.showModal();
 }
@@ -560,6 +669,8 @@ function todoChips() {
     { n: dc.openProps.length, title: "検索の改善案", go: ["decide"] },
     { n: dc.plan.length, title: "KPI・収益化の案", go: ["goal"] },
     { n: manualMissing ? 1 : 0, title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, go: ["goal"] },
+    { n: S.pipeline?.summary.due.length || 0, title: "連絡する日が来た営業の相手", go: ["sales"] },
+    { n: S.pipeline?.summary.week.short ? S.pipeline.summary.week.guide - S.pipeline.summary.week.count : 0, title: "今週の提案が目安に足りない(件)", go: ["sales"] },
     { n: S.tasks?.attention || S.tasks?.missed || 0, title: "確かめたい予定タスク", go: ["tasks"] },
     { n: staleEvents().length, title: "確認日から60日を過ぎた開催", go: ["events", { evFilter: "stale" }] },
   ].filter((t) => t.n);

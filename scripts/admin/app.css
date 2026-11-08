@@ -149,3 +149,5 @@ figure.chart{max-width:760px}
 .plan-rows{list-style:none;padding:0;margin:0 0 8px;border-top:1px solid var(--line)}
 .plan-rows li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 2px;border-bottom:1px solid var(--line)}
 .plan-rows .t{flex:1 1 220px;font-weight:bold}
+/* 営業: 目安に足りない数・連絡する日が来た相手 */
+.stat.ng b{color:var(--ac)}.chip.due{border-color:var(--ac);color:var(--ac);font-weight:bold}

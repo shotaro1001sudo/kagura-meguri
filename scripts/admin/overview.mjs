@@ -78,7 +78,7 @@ export function revenueOf(actuals, manual, m) {
 function kpiActual(id, actuals, manual, m) {
   const a = actuals?.months?.[m] ?? {}, man = manual?.[m] ?? {};
   if (id === "revenue") { const r = revenueOf(actuals, manual, m); return { value: r.value, missing: r.missing }; }
-  if (id === "contracts" || id === "pitches") return { value: man[id] ?? null, missing: man[id] == null ? ["手入力"] : [] };
+  if (id === "contracts" || id === "pitches") { const v = man[id] ?? a[id] ?? null; return { value: v, missing: v == null ? ["営業の台帳・手入力"] : [] }; }
   if (id === "conversions") return { value: a.conversionsVc ?? null, missing: ["楽天(数えていません)"] };
   return { value: a[id] ?? null, missing: a[id] == null ? ["週次の分析"] : [] };
 }
@@ -300,7 +300,7 @@ export function buildOverview(root, { today, nowMs = Date.now(), now, runs, site
   const regular = Array.isArray(rg) ? rg : rg.regular ?? [];
   const collect = readJson(root, "data/collect-summary.json");
   const listing = listingSection({ events, regular, collect, more: readJson(root, "data/more-offers.json"), planning: readJson(root, "data/visitor-planning.json"), affiliate: cfg.affiliate ?? {}, today, now });
-  const actuals = deriveActuals(state, series);
+  const actuals = plan?.actuals ?? deriveActuals(state, series); // loadPlan の実績(営業の台帳の数を含む)を優先
   return {
     generatedAt: new Date(nowMs).toISOString(), today,
     revenue: plan ? revenueSection({ ...plan, manual: plan.manual ?? {} }, actuals, today) : null,

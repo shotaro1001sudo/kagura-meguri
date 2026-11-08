@@ -6,6 +6,7 @@ import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/ma
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
+import { pipelineSummary } from "../scripts/admin/pipeline.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
@@ -286,6 +287,34 @@ export async function adminTests({ ok, section }) {
       && (await req("/api/plan/manual", { body: { month: "2026-10", values: { password: 1 } } })).status === 400, "手入力は、正しい月・決まった項目・0 以上の数だけ受け付ける");
     ok(JSON.parse(read(join(ROOT, "analytics/state.json"))).kpi.months["2026-10"].revenueVc === 120, "画面の操作は、週次の分析が書く実績(state.json の kpi)を変えない");
     ok(published.length === n, "目標・KPI・収益化の操作は、このPCだけの記録なので、push しない");
+
+    // ---------- 営業の台帳(analytics/pipeline.json) ----------
+    const plPath = join(ROOT, "analytics/pipeline.json");
+    st = (await req("/api/state")).json;
+    ok(st.pipeline.leads.length === 0 && st.pipeline.summary.week.count === 0 && st.pipeline.stages.won === "契約", "台帳がないときは、空の台帳として画面に渡す");
+    r = await req("/api/pipeline/save", { body: { lead: { name: "テスト神楽団", kind: "神楽団", offer: "MON-1", contact: "団の窓口", url: "https://example.jp/dan" } } });
+    let led = JSON.parse(read(plPath)).leads;
+    ok(r.status === 200 && led[0].id === "L-001" && led[0].stage === "candidate" && led[0].createdAt === "2026-10-10", "相手を、候補として台帳に追加する(ID は L-001 から)");
+    ok((await req("/api/pipeline/save", { body: { lead: { name: "テスト神楽団", kind: "神楽団", offer: "MON-1" } } })).status === 400
+      && (await req("/api/pipeline/save", { body: { lead: { name: "X", kind: "宇宙人", offer: "MON-1" } } })).status === 400
+      && (await req("/api/pipeline/save", { body: { lead: { name: "X", kind: "宿", offer: "MON-1", monthlyYen: -1 } } })).status === 400, "同じ相手・同じ提案の重複、決まっていない種類、負の金額は受け付けない");
+    r = await req("/api/pipeline/stage", { body: { id: "L-001", stage: "sent", note: "メールで送付" } });
+    led = JSON.parse(read(plPath)).leads;
+    ok(r.status === 200 && led[0].sentAt === "2026-10-10" && led[0].nextAt === "2026-10-17" && led[0].log.at(-1).note === "メールで送付", "送ったら、送った日と、7日後の「次に連絡する日」と記録を残す");
+    st = r.json.state;
+    ok(st.pipeline.summary.month.pitches === 1 && st.pipeline.summary.week.count === 1 && st.plan.actuals.months["2026-10"].pitches === 1, "送った数は、今週・今月の提案と、KPI の実績(提案した相手の数)に入る");
+    r = await req("/api/pipeline/stage", { body: { id: "L-001", stage: "won", note: "月3000円" } });
+    led = JSON.parse(read(plPath)).leads;
+    ok(r.status === 200 && led[0].wonAt === "2026-10-10" && !led[0].nextAt && r.json.state.plan.actuals.months["2026-10"].contracts === 1, "契約したら、契約日を残して連絡する日を消し、契約数の実績に入る");
+    ok((await req("/api/pipeline/stage", { body: { id: "L-001", stage: "paid" } })).status === 400 && (await req("/api/pipeline/stage", { body: { id: "L-999", stage: "sent" } })).status === 404, "不明な段階・相手は受け付けない");
+    ok(published.length === n && /^analytics\/$/m.test(read(".gitignore")), "営業の台帳は、このPCだけの記録なので、push しない(analytics/ は Git に入らない)");
+    {
+      const s2 = pipelineSummary({ leads: [{ id: "L-1", name: "A", stage: "sent", sentAt: "2026-11-02", nextAt: "2026-11-09" }, { id: "L-2", name: "B", stage: "replied", sentAt: "2026-10-20", nextAt: "2026-11-20" }, { id: "L-3", name: "C", stage: "candidate", createdAt: "2026-10-01" }] },
+        [{ id: "pitches", status: "adopted", targets: { "2026-12": 15 } }], "2026-11-12");
+      ok(s2.due.length === 1 && s2.due[0].id === "L-1" && s2.due[0].late === 3 && s2.candidates === 1, "連絡する日が来た(過ぎた)やりとり中の相手だけを、遅れた日数つきで出す");
+      ok(s2.month.pitchTarget.month === "2026-12" && s2.week.guide === 4 && s2.week.count === 0 && s2.week.short === true, "今月の目標がなければ次の目標の月を使い、1週の目安(15件÷31日×7 → 4件)に足りないかを出す");
+      ok(s2.months["2026-10"].pitches === 1 && s2.months["2026-11"].pitches === 1, "提案した数は、最初に送った日の月で数える");
+    }
 
     // ---------- スマホから(Tailscale Serve 経由。Host が ts.net の名前になる) ----------
     // fetch は Host を変えられないので、http.request で送る

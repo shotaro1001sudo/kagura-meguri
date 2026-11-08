@@ -1,5 +1,7 @@
 import { isSocialEvent, socialEvidenceErrors, socialDuplicate, socialFacts } from '../lib/social-evidence.mjs';
 import { deriveActuals } from "./overview.mjs";
+import { loadPipeline, pipelineMonths } from "./pipeline.mjs";
+const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 import { sameEvent } from '../lib/collect-core.mjs';
 // 管理者用ページのデータ: 開催(data/events.json)と、Gmail から読み込んだ申請・問い合わせ(.admin/inbox.json)
 // .admin/ と admin.local.json は、投稿者の名前・メールアドレスやパスワードを含むため、Git には入れない(.gitignore)。
@@ -170,13 +172,20 @@ export function setProposalStatus(root, id, status, today, note = "") {
 export const PLAN_STATUS = { proposed: "検討中", adopted: "採用", declined: "見送り", done: "実施済み" };
 export const MANUAL_FIELDS = { rakuten: "楽天の報酬(円)", adsense: "AdSense の収益(円)", direct: "協賛・有料プランの収入(円)", contracts: "有償の契約数(件)", pitches: "提案した相手の数(件)" };
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
-export function loadPlan(root) {
+export function loadPlan(root, today = todayJst()) {
   const p = readJson(paths(root).plan, null);
   if (!p) return null;
   const s = readJson(paths(root).analytics, null);
   // 実績: 週次の分析の kpi に、日ごとの記録(analytics/series.json)から出せる分を足す(分析の値を優先)
   const series = readJson(join(root, "analytics", "series.json"), null);
-  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals: deriveActuals(s, series), updated: p.updated ?? null };
+  let actuals = deriveActuals(s, series);
+  // 提案した数・契約数は、営業の台帳(analytics/pipeline.json)から月ごとに数える(手入力があれば、画面と概要は手入力を優先)
+  const pm = pipelineMonths(loadPipeline(root).leads, today);
+  if (Object.keys(pm).length) {
+    actuals = actuals ?? { updated: null, months: {} };
+    for (const [m, v] of Object.entries(pm)) actuals.months[m] = { ...(actuals.months[m] ?? {}), pitches: v.pitches, contracts: v.contracts };
+  }
+  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals, updated: p.updated ?? null };
 }
 export function setPlanItem(root, { kind, id, status, note = "", targets }, today) {
   const p = paths(root);

@@ -20,6 +20,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pr
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
+import { loadPipeline, saveLead, setStage, pipelineSummary, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
@@ -52,7 +53,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       ext = { at: now(), runs: r, site: sc };
     }
     return buildOverview(root, { today: today(), nowMs: now(), runs: ext.runs, site: ext.site, tasks: safeTasks({}), refresh: { last: lastRefresh, hours: refreshHours },
-      pending: await pending(root).catch(() => null), plan: loadPlan(root) });
+      pending: await pending(root).catch(() => null), plan: loadPlan(root, today()) });
   };
 
   const state = async () => {
@@ -61,8 +62,14 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
       review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
-      plan: loadPlan(root), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}),
+      plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       refresh: { last: lastRefresh, hours: refreshHours } };
+  };
+
+  // 営業の台帳(analytics/pipeline.json)。KPI の目標は plan.json から
+  const pipelineState = () => {
+    const pl = loadPipeline(root);
+    return { leads: pl.leads, updated: pl.updated, stages: STAGES, kinds: KINDS, offers: OFFERS, followDays: FOLLOW_DAYS, summary: pipelineSummary(pl, loadPlan(root, today())?.kpis ?? [], today()) };
   };
 
   // Gmail から、新しい申請・問い合わせを読み込む(画面のボタンと、定期の更新の両方から)
@@ -181,6 +188,18 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       const r = setManual(root, body.month, body.values, today());
       if (r.error) return [r.code, { error: r.error }];
       return { state: await state() };
+    }),
+
+    // 営業の台帳: 相手の追加・編集 / 段階を変える(analytics/pipeline.json。このPCだけ。push しない)
+    "POST /api/pipeline/save": (body) => serial(async () => {
+      const r = saveLead(root, body.lead ?? {}, today());
+      if (r.error) return [r.code, { error: r.error, fields: r.fields }];
+      return { lead: r.lead, state: await state() };
+    }),
+    "POST /api/pipeline/stage": (body) => serial(async () => {
+      const r = setStage(root, body.id, body.stage, today(), body.note, body.nextAt);
+      if (r.error) return [r.code, { error: r.error }];
+      return { lead: r.lead, state: await state() };
     }),
 
     // スマホで開く: QR コード(鍵入りのアドレス)と、鍵の作り直し。PC の画面からだけ(スマホからは 403)
