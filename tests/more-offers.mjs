@@ -45,13 +45,16 @@ export function moreOffersTests({ ok, section }) {
   const withImg = cheerio.load(learnBlock({ ...settings, offers: [{ ...book, imageUrl: img }] }, { kagura: "石見神楽" }, today, "kagura_learn"));
   ok(withImg(".pick.has-img a img").attr("src") === img && withImg(".pick.has-img a img").attr("alt") === "" && withImg(".pick.has-img a span").text() === book.title, "画像つきの紹介: 画像と題名が1つのリンク(画像は飾りとして代替テキストなし)");
   const data = JSON.parse(readFileSync("data/more-offers.json", "utf8"));
-  ok(data.offers.every((o) => validMoreOffer(o, today) || o.enabled !== true), "本番データ: 有効にしたものは、検査に通る");
+  // 本番データは、いちばん新しい確認日の時点で確かめる(テストの today より後に確かめた広告もある)
+  const dataToday = data.offers.map((o) => o.verifiedAt).filter(Boolean).sort().at(-1);
+  ok(data.offers.every((o) => validMoreOffer(o, dataToday) || o.enabled !== true), "本番データ: 有効にしたものは、検査に通る");
   for (const kagura of ["高千穂神楽", "広島神楽", "*", ""]) {
     ok(!moreOffersFor(data, "learn", { kagura }, today).some(o => o.id === "sanin-kagura-photobook"), `山陰写真集を対象外の種類に出さない: ${kagura}`);
   }
   // 本・DVD(learn)は運営者の判断で止めている(2026-10-30)。照合の決まりは、カテゴリを有効にした写しで確かめる
   ok(data.categories.learn.enabled === false && !moreOffersFor(data, "learn", { kagura: "石見神楽" }, today).length, "本番データ: 本・DVDの広告は止めている(運営者の判断)");
-  ok(data.categories.furusato.enabled === false && !moreOffersFor(data, "furusato", { prefecture: "広島県", city: "山県郡北広島町" }, today).length, "本番データ: ふるさと納税の広告は止めている(運営者の判断)");
+  // ふるさと納税は、年末の寄付の時期に合わせて出す(MON-4、2026-11-08 運営者の判断)。期限は年末まで
+  ok(data.categories.furusato.enabled === true && moreOffersFor(data, "furusato", { prefecture: "広島県", city: "山県郡北広島町" }, dataToday).length > 0 && data.offers.filter((o) => o.category === "furusato" && o.enabled).every((o) => o.expiresAt <= "2026-12-31"), "本番データ: ふるさと納税の広告は出し、期限は年末まで(MON-4)");
   const learnOn = { ...data, categories: { ...data.categories, learn: { enabled: true } } };
   for (const kagura of ["石見神楽", "出雲神楽", "隠岐神楽", "伯耆神楽"]) {
     ok(moreOffersFor(learnOn, "learn", { kagura }, today).some(o => o.id === "sanin-kagura-photobook"), `山陰写真集を掲載対象の種類に出す(有効にしたとき): ${kagura}`);
