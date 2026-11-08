@@ -205,13 +205,34 @@ function goalView() {
   const months = [...new Set(p.kpis.flatMap((k) => Object.keys(k.targets || {})))].sort();
   const cols = [addMonth(now, -1), now, ...months.filter((m) => m > now)];
   const stBadge = (st) => badge({ proposed: "new", adopted: "published", declined: "rejected", done: "done" }[st] || "new", S.planStatus[st] || st);
-  const order = { proposed: 0, adopted: 1, done: 2, declined: 3 };
-  const sorted = (list) => [...list].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  // 状態ごとに切り替えて見る(検討中・採用・実施済み・見送り)。決め終えたもの(実施済み・見送り)は、1行で短く出す
+  const PLAN_GROUPS = [["proposed", "検討中", "まだ決めていない案です。「採用する」か「見送る」を押してください。"], ["adopted", "採用", "採用して、これから行う・行っている案です。"],
+    ["done", "実施済み", "やり終えた案です。"], ["declined", "見送り(却下)", "見送った案です。理由を書いたものは、横に出ます。"]];
+  const statusGroups = (key, list, card, short) => {
+    const groups = PLAN_GROUPS.filter(([st]) => !(key === "kpiSt" && st === "done")); // KPI に「実施済み」はない
+    const count = (st) => list.filter((x) => x.status === st).length;
+    const valid = groups.some(([st]) => st === view[key]);
+    const cur = valid ? view[key] : count("proposed") ? "proposed" : "adopted";
+    const [, label, lead] = groups.find(([st]) => st === cur);
+    const items = list.filter((x) => x.status === cur);
+    return [
+      h("div", { class: "seg", role: "group", "aria-label": "状態で切り替える" }, groups.map(([st, text]) =>
+        h("button", { type: "button", class: "seg-b", "aria-pressed": String(st === cur), onclick: () => { view[key] = st; render(); } }, text, h("span", { class: "cnt" }, String(count(st)))))),
+      h("p", { class: "mut seg-lead" }, lead),
+      items.length ? (["done", "declined"].includes(cur) ? h("ul", { class: "plan-rows" }, items.map(short)) : items.map(card))
+        : h("p", { class: "mut" }, `「${label}」のものはありません。`),
+    ];
+  };
+  const shortRow = (x, title, extra) => h("li", null,
+    h("span", { class: "t" }, title),
+    extra || "",
+    h("span", { class: "mut" }, [x.decidedAt, x.note].filter(Boolean).join(" ・ ")),
+    h("button", { class: "btn ghost small", onclick: () => setPlan(x.title ? "mon" : "kpi", x, "proposed") }, "検討中に戻す"));
 
   const kpiButtons = (k) => k.status === "proposed"
     ? [h("button", { class: "btn small", onclick: () => setPlan("kpi", k, "adopted") }, "採用する"), h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "declined") }, "見送る")]
-    : k.status === "adopted" ? [h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")]
-    : [h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "提案中に戻す")];
+    : k.status === "adopted" ? [h("button", { class: "btn ghost small", onclick: () => editTargets(k) }, "目標の数を変える"), h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "検討中に戻す")]
+    : [h("button", { class: "btn ghost small", onclick: () => setPlan("kpi", k, "proposed") }, "検討中に戻す")];
   const kpiCard = (k) => h("section", { class: "panel decision" + (k.status === "declined" ? " dim" : "") },
     h("div", { class: "card-h" }, h("h4", null, k.kind === "KGI" ? h("span", { class: "kgi" }, "最終目標") : "", k.name), stBadge(k.status)),
     h("p", { class: "mut" }, k.why || ""),
@@ -231,8 +252,8 @@ function goalView() {
 
   const monButtons = (m) => m.status === "proposed"
     ? [h("button", { class: "btn small", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
-    : m.status === "adopted" ? [h("button", { class: "btn small", onclick: () => copyPrompt(promptFor("mon", m)) }, "プロンプトをコピー"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")]
-    : [h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "提案中に戻す")];
+    : m.status === "adopted" ? [h("button", { class: "btn small", onclick: () => copyPrompt(promptFor("mon", m)) }, "プロンプトをコピー"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "done") }, "実施済みにする"), h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "検討中に戻す")]
+    : [h("button", { class: "btn ghost small", onclick: () => setPlan("mon", m, "proposed") }, "検討中に戻す")];
   const monCard = (m) => h("section", { class: "panel decision" + (m.status === "declined" ? " dim" : "") },
     h("div", { class: "card-h" }, h("h4", null, h("span", { class: "mut" }, m.id, " "), m.title), stBadge(m.status)),
     h("p", { class: "chips" },
@@ -264,11 +285,12 @@ function goalView() {
 
     ...secHead("収益化の案", openMons, "採用したら、プロンプト案をコピーして Claude に貼り付けます。終えたら「実施済みにする」。",
       "営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください。採用・見送りは、このPCの analytics/plan.json にだけ保存し、GitHub には送りません。"),
-    sorted(p.monetization).map(monCard),
+    statusGroups("monSt", p.monetization, monCard, (m) => shortRow(m, [h("span", { class: "mut" }, m.id, " "), m.title],
+      m.expectedYen ? h("span", { class: "chip" }, `見込み 月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}`) : "")),
 
     ...secHead("KPI", openKpis, "月ごとの目標と実績です。実績の * は、まだ含まれていない分があるもの(数字にマウスを置くと出ます)。",
       "バリューコマースの報酬・セッション・広告のクリックは、毎週月曜の分析が自動で入れます。楽天・AdSense・協賛と、契約・提案の数は、下の「実績を入れる」で入れます。目標の数は、採用の前でも後でも変えられます。"),
-    sorted(p.kpis).map(kpiCard),
+    statusGroups("kpiSt", p.kpis, kpiCard, (k) => shortRow(k, k.name)),
 
     ...secHead("実績を入れる", null, "自動で取れない分を、月ごとに入れます。空欄は「未入力」として扱い、0 とはみなしません。"),
     manualForm(),
@@ -296,7 +318,7 @@ async function setPlan(kind, x, status) {
   if (status === "declined") { const v = prompt(`「${x.name || x.title}」を見送ります。理由があれば書いてください(空でも構いません)。`, ""); if (v === null) return; note = v.trim(); }
   try {
     await call("/api/plan/item", { kind, id: x.id, status, note });
-    toast({ adopted: "採用しました", declined: "見送りにしました", done: "実施済みにしました", proposed: "提案中に戻しました" }[status]);
+    toast({ adopted: "採用しました", declined: "見送りにしました", done: "実施済みにしました", proposed: "検討中に戻しました" }[status]);
     render();
   } catch (err) { toast(err.message, true); }
 }

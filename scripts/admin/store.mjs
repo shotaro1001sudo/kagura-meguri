@@ -167,7 +167,7 @@ export function setProposalStatus(root, id, status, today, note = "") {
 
 // 最終目標・KPI・収益化の案(analytics/plan.json。このPCだけ・git に入らない)。運営者が採用・見送り・目標の変更・実績の入力をする
 // 実績は、週次の分析タスクが analytics/state.json の kpi に書く(自動の分)。手入力の分は plan.json の manual
-export const PLAN_STATUS = { proposed: "提案中", adopted: "採用", declined: "見送り", done: "実施済み" };
+export const PLAN_STATUS = { proposed: "検討中", adopted: "採用", declined: "見送り", done: "実施済み" };
 export const MANUAL_FIELDS = { rakuten: "楽天の報酬(円)", adsense: "AdSense の収益(円)", direct: "協賛・有料プランの収入(円)", contracts: "有償の契約数(件)", pitches: "提案した相手の数(件)" };
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 export function loadPlan(root) {

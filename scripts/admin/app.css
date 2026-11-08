@@ -139,3 +139,13 @@ table.kpis{min-width:560px;margin:8px 0}table.kpis tbody th{color:var(--fg)}
 .sigsum i,.si i,.sig-alert i{font-style:normal}
 figure.chart{max-width:760px}
 .stats.four{grid-template-columns:repeat(4,minmax(0,1fr))}@media(max-width:700px){.stats.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* 目標・収益: 状態で切り替える(検討中・採用・実施済み・見送り) */
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.seg-b{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:4px 14px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer}
+.seg-b .cnt{font-weight:bold;font-variant-numeric:tabular-nums}
+.seg-b[aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:var(--onac)}
+.seg-b:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.seg-lead{margin:4px 0 10px}
+.plan-rows{list-style:none;padding:0;margin:0 0 8px;border-top:1px solid var(--line)}
+.plan-rows li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.plan-rows .t{flex:1 1 220px;font-weight:bold}

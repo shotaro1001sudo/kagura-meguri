@@ -403,6 +403,8 @@ export async function adminTests({ ok, section }) {
       "運営の信号: サイトが開けない=停止、期限切れの広告=注意、記録がない=不明。いちばん悪い状態を、概要の上に出す", JSON.stringify(O.counts));
     const js = read("scripts/admin/app.js");
     ok(js.includes('"/api/overview"') && js.includes("表で見る") && /role: "img", "aria-label"/.test(js) && js.includes("onfocus: (e) => showTip"), "画面: グラフは、表でも見られ、キーボードでも値が出る(色だけに頼らない)");
+    ok(js.includes('["proposed", "検討中"') && js.includes('["declined", "見送り(却下)"') && js.includes('"aria-pressed": String(st === cur)') && js.includes('statusGroups("monSt"') && js.includes('statusGroups("kpiSt"'),
+      "目標・収益: 収益化の案と KPI は、検討中・採用・実施済み・見送りを件数つきで切り替えて見る(一覧に混ぜない)");
     ok(js.includes('SIG = { stop: ["■", "停止"], warn: ["▲", "注意"], unknown: ["?", "不明"], ok: ["●", "正常"] }'), "画面: 信号は、色に加えて形と文字で示す");
   }
 
