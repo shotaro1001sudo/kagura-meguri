@@ -16,7 +16,9 @@ export const FOLLOW_DAYS = 7;
 
 const DAY = 864e5;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const LIMITS = { name: 80, contact: 200, url: 300, memo: 1000, note: 300 };
+const LIMITS = { name: 80, contact: 200, url: 300, email: 120, formUrl: 300, phone: 40, subject: 120, body: 4000, memo: 1000, note: 300 };
+// 相手ごとの連絡先(メール・フォーム・電話)と、送る文案(件名・本文)も、ここに持つ。送るのは運営者(画面は Gmail の作成画面を開くだけ)
+const TEXT_FIELDS = ["name", "kind", "offer", "contact", "url", "email", "formUrl", "phone", "subject", "body", "memo", "nextAt"];
 const file = (root) => join(root, "analytics", "pipeline.json");
 const addDays = (d, k) => new Date(Date.parse(d + "T00:00:00Z") + k * DAY).toISOString().slice(0, 10);
 const mondayOf = (d) => addDays(d, -((new Date(d + "T00:00:00Z").getUTCDay() + 6) % 7));
@@ -44,6 +46,9 @@ export function validateLead(x) {
   if (!KINDS.includes(x.kind)) errs.kind = "種類を選んでください";
   if (!(x.offer in OFFERS)) errs.offer = "提案の中身を選んでください";
   if (x.url && !/^https?:\/\/[^\s]+$/.test(x.url)) errs.url = "http(s):// で始まるURLを入力してください";
+  if (x.formUrl && !/^https?:\/\/[^\s]+$/.test(x.formUrl)) errs.formUrl = "http(s):// で始まるURLを入力してください";
+  if (x.email && !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(x.email)) errs.email = "メールアドレスの形が正しくありません(1件だけ)";
+  if (x.phone && !/^[0-9()\-\s]+$/.test(x.phone)) errs.phone = "半角の数字とハイフンで入力してください";
   if (x.nextAt && !DATE.test(x.nextAt)) errs.nextAt = "日付の形式が正しくありません";
   if (x.monthlyYen != null && (typeof x.monthlyYen !== "number" || !Number.isFinite(x.monthlyYen) || x.monthlyYen < 0)) errs.monthlyYen = "0 以上の数で入れてください(空欄は未定)";
   for (const [k, n] of Object.entries(LIMITS)) if (String(x[k] ?? "").length > n) errs[k] = `${n}字以内にしてください`;
@@ -54,7 +59,7 @@ export function validateLead(x) {
 export function saveLead(root, input, today) {
   const pl = loadPipeline(root);
   const s = (k) => (typeof input[k] === "string" ? input[k].trim() : "");
-  const x = { name: s("name"), kind: s("kind"), offer: s("offer"), contact: s("contact"), url: s("url"), memo: s("memo"), nextAt: s("nextAt"),
+  const x = { ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, s(k)])), body: typeof input.body === "string" ? input.body.replace(/\r\n/g, "\n").trim() : "",
     monthlyYen: input.monthlyYen === "" || input.monthlyYen == null ? null : input.monthlyYen };
   const errs = validateLead(x);
   if (Object.keys(errs).length) return { code: 400, error: "入力内容を確認してください", fields: errs };
@@ -67,7 +72,7 @@ export function saveLead(root, input, today) {
     lead = { id: nextId(pl.leads), stage: "candidate", createdAt: today, log: [{ date: today, stage: "candidate", note: "台帳に追加" }] };
     pl.leads.push(lead);
   }
-  for (const k of ["name", "kind", "offer", "contact", "url", "memo", "nextAt"]) { if (x[k]) lead[k] = x[k]; else delete lead[k]; }
+  for (const k of TEXT_FIELDS) { if (x[k]) lead[k] = x[k]; else delete lead[k]; }
   if (x.monthlyYen != null) lead.monthlyYen = x.monthlyYen; else delete lead.monthlyYen;
   lead.updatedAt = today;
   pl.updated = today;

@@ -298,6 +298,12 @@ export async function adminTests({ ok, section }) {
     ok((await req("/api/pipeline/save", { body: { lead: { name: "テスト神楽団", kind: "神楽団", offer: "MON-1" } } })).status === 400
       && (await req("/api/pipeline/save", { body: { lead: { name: "X", kind: "宇宙人", offer: "MON-1" } } })).status === 400
       && (await req("/api/pipeline/save", { body: { lead: { name: "X", kind: "宿", offer: "MON-1", monthlyYen: -1 } } })).status === 400, "同じ相手・同じ提案の重複、決まっていない種類、負の金額は受け付けない");
+    r = await req("/api/pipeline/save", { body: { lead: { id: "L-001", name: "テスト神楽団", kind: "神楽団", offer: "MON-1", email: "dan@example.jp", formUrl: "https://example.jp/form", phone: "0123-45-6789", subject: "ご相談", body: "1行目\r\n2行目" } } });
+    led = JSON.parse(read(plPath)).leads;
+    ok(r.status === 200 && led[0].email === "dan@example.jp" && led[0].formUrl === "https://example.jp/form" && led[0].body === "1行目\n2行目" && led[0].stage === "candidate", "連絡先(メール・フォーム・電話)と文案(件名・本文)を保存する(段階は変えない)");
+    ok((await req("/api/pipeline/save", { body: { lead: { id: "L-001", name: "テスト神楽団", kind: "神楽団", offer: "MON-1", email: "a@b.jp, c@d.jp" } } })).status === 400
+      && (await req("/api/pipeline/save", { body: { lead: { id: "L-001", name: "テスト神楽団", kind: "神楽団", offer: "MON-1", formUrl: "javascript:alert(1)" } } })).status === 400, "メールアドレスは1件だけ、フォームは http(s) の URL だけ受け付ける");
+    ok(read("scripts/admin/app.js").includes("function composeLead(x)") && !/sendMail|smtp/i.test(read("scripts/admin/pipeline.mjs")), "文案は Gmail の作成画面で開くだけで、管理者用ページからは送らない");
     r = await req("/api/pipeline/stage", { body: { id: "L-001", stage: "sent", note: "メールで送付" } });
     led = JSON.parse(read(plPath)).leads;
     ok(r.status === 200 && led[0].sentAt === "2026-10-10" && led[0].nextAt === "2026-10-17" && led[0].log.at(-1).note === "メールで送付", "送ったら、送った日と、7日後の「次に連絡する日」と記録を残す");

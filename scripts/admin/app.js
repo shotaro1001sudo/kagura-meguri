@@ -157,6 +157,9 @@ function promptFor(kind, x) {
 コミットのメッセージに ${x.id} を入れてください。`;
 }
 const promptBox = (text) => h("details", { class: "more prompt" }, h("summary", null, "プロンプト案"), h("pre", null, text));
+async function copyText(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("コピーできませんでした。文を選んでコピーしてください", true); }
+}
 async function copyPrompt(text) {
   try { await navigator.clipboard.writeText(text); toast("プロンプト案をコピーしました。Claude に貼り付けてください"); }
   catch { toast("コピーできませんでした。「プロンプト案」を開いて、文を選んでコピーしてください", true); }
@@ -371,10 +374,22 @@ function salesView() {
       x.nextAt && !["won", "lost", "candidate"].includes(x.stage) ? h("span", { class: "chip" + (dueSet.has(x.id) ? " due" : "") }, `次に連絡する日 ${jpDate(x.nextAt)}${dueSet.has(x.id) ? "(来ています)" : ""}`) : ""),
     h("dl", { class: "kv" },
       x.contact ? [h("dt", null, "宛先・窓口"), h("dd", null, x.contact)] : "",
-      x.url ? [h("dt", null, "連絡先・出典"), h("dd", null, ext(x.url))] : "",
+      x.email ? [h("dt", null, "メール"), h("dd", null, x.email)] : "",
+      x.formUrl ? [h("dt", null, "問い合わせフォーム"), h("dd", null, ext(x.formUrl))] : "",
+      x.phone ? [h("dt", null, "電話"), h("dd", null, x.phone)] : "",
+      !x.email && !x.formUrl && !x.phone ? [h("dt", null, "連絡先"), h("dd", { class: "warn-t" }, "未確認(「編集」で入れる)")] : "",
+      x.url ? [h("dt", null, "出典"), h("dd", null, ext(x.url))] : "",
       x.sentAt ? [h("dt", null, "最初に送った日"), h("dd", null, jpDate(x.sentAt))] : "",
       x.wonAt ? [h("dt", null, "契約した日"), h("dd", null, jpDate(x.wonAt))] : "",
       x.memo ? [h("dt", null, "メモ"), h("dd", null, x.memo)] : ""),
+    x.body ? h("details", { class: "more", open: x.stage === "candidate" ? true : null }, h("summary", null, "送る文案"),
+      h("p", null, h("b", null, "件名: "), x.subject || ""),
+      h("pre", { class: "draft" }, x.body),
+      h("div", { class: "bar" },
+        x.email ? h("button", { class: "btn small", onclick: () => composeLead(x) }, "Gmail の作成画面で開く") : "",
+        h("button", { class: "btn ghost small", onclick: () => copyText(`${x.subject ? "件名: " + x.subject + "\n\n" : ""}${x.body}`, "文案をコピーしました") }, x.email ? "文案をコピー" : "文案をコピー(フォームに貼る)"),
+        x.formUrl ? h("a", { class: "btn ghost small", href: x.formUrl, target: "_blank", rel: "noopener noreferrer" }, "フォームを開く") : ""),
+      h("p", { class: "mut small" }, "送るのは運営者です。送ったら「送った」を押してください。")) : "",
     x.log?.length ? h("details", { class: "more" }, h("summary", null, `記録(${x.log.length})`),
       h("ul", { class: "plan-rows" }, x.log.slice().reverse().map((l) => h("li", null, h("span", { class: "t" }, jpDate(l.date)), stageBadge(l.stage), h("span", { class: "mut" }, l.note || ""))))) : "",
     h("div", { class: "bar mt" },
@@ -434,16 +449,21 @@ function editLead(x) {
       field("kind", "種類", h("select", { id: "ld-kind", name: "kind" }, P.kinds.map((k) => h("option", { value: k, selected: k === v.kind }, k)))),
       field("offer", "提案の中身", h("select", { id: "ld-offer", name: "offer" }, Object.entries(P.offers).map(([k, t]) => h("option", { value: k, selected: k === v.offer }, `${k === "other" ? "" : k + " "}${t}`)))),
       field("contact", "宛先・窓口", h("input", { id: "ld-contact", name: "contact", maxlength: 200, value: v.contact || "" })),
-      field("url", "連絡先・出典の URL", h("input", { id: "ld-url", name: "url", type: "url", maxlength: 300, value: v.url || "" })),
+      field("email", "メールアドレス(公式に載っているもの)", h("input", { id: "ld-email", name: "email", type: "email", maxlength: 120, value: v.email || "" })),
+      field("formUrl", "問い合わせフォームの URL", h("input", { id: "ld-formUrl", name: "formUrl", type: "url", maxlength: 300, value: v.formUrl || "" })),
+      field("phone", "電話", h("input", { id: "ld-phone", name: "phone", type: "tel", maxlength: 40, value: v.phone || "" })),
+      field("url", "出典の URL", h("input", { id: "ld-url", name: "url", type: "url", maxlength: 300, value: v.url || "" })),
       field("monthlyYen", "契約の月額(円・決まったら)", h("input", { id: "ld-monthlyYen", name: "monthlyYen", type: "number", min: "0", step: "1", value: v.monthlyYen ?? "" })),
       x && ["sent", "replied", "talking"].includes(x.stage) ? field("nextAt", "次に連絡する日", h("input", { id: "ld-nextAt", name: "nextAt", type: "date", value: v.nextAt || "" })) : ""),
+    field("subject", "文案の件名", h("input", { id: "ld-subject", name: "subject", class: "full", maxlength: 120, value: v.subject || "" })),
+    field("body", "文案の本文", h("textarea", { id: "ld-body", name: "body", rows: 12, class: "full", maxlength: 4000 }, v.body || "")),
     field("memo", "メモ", h("textarea", { id: "ld-memo", name: "memo", rows: 3, class: "full", maxlength: 1000 }, v.memo || "")),
     h("div", { class: "bar mt" }, h("button", { class: "btn", value: "save" }, "保存する"), h("button", { class: "btn ghost", value: "cancel", formnovalidate: true }, "やめる")));
   form.onsubmit = async (ev) => {
     if (ev.submitter?.value !== "save") return;
     ev.preventDefault();
     const f = form.elements, val = (k) => (f[k] ? f[k].value : "");
-    const lead = { id: x?.id, name: val("name"), kind: val("kind"), offer: val("offer"), contact: val("contact"), url: val("url"), memo: val("memo"), nextAt: x ? val("nextAt") || x.nextAt || "" : "",
+    const lead = { id: x?.id, name: val("name"), kind: val("kind"), offer: val("offer"), contact: val("contact"), url: val("url"), email: val("email"), formUrl: val("formUrl"), phone: val("phone"), subject: val("subject"), body: val("body"), memo: val("memo"), nextAt: x ? val("nextAt") || x.nextAt || "" : "",
       monthlyYen: val("monthlyYen") === "" ? null : Number(val("monthlyYen")) };
     form.querySelectorAll(".err").forEach((e) => (e.textContent = ""));
     try { await call("/api/pipeline/save", { lead }); dlg.close(); toast(x ? "保存しました" : "台帳に追加しました"); render(); }
@@ -995,6 +1015,15 @@ function replies(x, ev) {
   ];
 }
 // 返信は Gmail の作成画面で開く(差出人は、Gmail で既定にした編集部アドレス)。Gmail の設定がなければ、メールアプリで開く
+// 営業の文案を、Gmail の作成画面で開く(送信はしない。差出人は Gmail で既定にした編集部アドレス)
+function composeLead(x) {
+  if (S.gmailUser) {
+    const q = new URLSearchParams({ view: "cm", fs: "1", authuser: S.gmailUser, to: x.email, su: x.subject || "", body: x.body || "" });
+    window.open(`https://mail.google.com/mail/?${q}`, "_blank", "noopener,noreferrer");
+    return;
+  }
+  h("a", { href: `mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(x.subject || "")}&body=${encodeURIComponent(x.body || "")}` }).click();
+}
 function mail(x, body) {
   const subject = "Re: " + x.subject;
   if (S.gmailUser) {

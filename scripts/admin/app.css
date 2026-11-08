@@ -151,3 +151,4 @@ figure.chart{max-width:760px}
 .plan-rows .t{flex:1 1 220px;font-weight:bold}
 /* 営業: 目安に足りない数・連絡する日が来た相手 */
 .stat.ng b{color:var(--ac)}.chip.due{border-color:var(--ac);color:var(--ac);font-weight:bold}
+.panel pre.draft{font-size:.88rem;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin:4px 0 6px;word-break:break-word}.warn-t{color:var(--ac)}
