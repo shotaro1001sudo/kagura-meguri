@@ -1048,3 +1048,25 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 .partner-links li{min-height:44px}
 .ocards.plans li{padding:16px 18px}.plan-price{display:block;font-family:inherit;font-size:var(--fs-s);color:var(--ac);margin-top:2px}
 .tokushoho th{white-space:nowrap;vertical-align:top}
+/* 広告・協賛のご案内(/sponsor.html): 数字で見る・メニューの比べ・見え方の見本 */
+.sp-stats{margin:44px 0 0;padding:4px 22px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.prose .sp-stats h2{margin:22px 0 4px}.prose .sp-stats h3{margin:22px 0 10px;font-size:var(--fs-s);color:var(--mut);letter-spacing:.08em}
+.prose .sp-tiles{list-style:none;padding:0;margin:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
+.prose .sp-tiles li{margin:0;padding:12px 14px;border-radius:var(--radius-s);background:var(--bg);display:flex;flex-direction:column;gap:2px}
+.sp-tiles .k{font-size:var(--fs-xs);color:var(--mut);line-height:1.6}
+.sp-tiles .v{font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);line-height:1.3;font-variant-numeric:tabular-nums}
+.sp-tiles .v small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:3px}
+.sp-tiles .n{font-size:var(--fs-2xs);color:var(--mut);line-height:1.6}
+.prose .sp-src{margin:10px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
+.prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0 0 6px;break-inside:avoid}
+.prose .sp-menu{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.prose .sp-plan .tag{margin:0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}
+.prose .sp-plan h3{margin:4px 0 2px;font-size:var(--fs-l)}
+.prose .sp-plan .price{margin:0 0 10px;color:var(--ac);font-weight:500}
+.sp-plan dl{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-s);line-height:1.75}
+.sp-plan dt{font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}.sp-plan dd{margin:0 0 8px}
+.ocards .eg{display:block;margin-top:4px;font-size:var(--fs-xs);color:var(--mut)}
+.sp-sample{margin:18px 0 0}.sp-sample figcaption{font-size:var(--fs-xs);color:var(--mut)}.sp-sample .sponsor-slot{margin:6px 0 0}
+.sp-sample .sp-title{font-weight:500;color:var(--ac);text-decoration:underline;text-underline-offset:3px}
+@media(min-width:641px){.sp-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-steps li:nth-child(2n):after{display:none}}

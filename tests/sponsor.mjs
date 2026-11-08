@@ -1,10 +1,12 @@
-// 「広告・協賛のご案内」のテスト: 書いてある「載せる場所」が実在するか、数字を書いていないか、中立の方針が他のページと食い違わないか
+// 「広告・協賛のご案内」のテスト: 書いてある「載せる場所」が実在するか、数字は「数字で見る」の概数と料金だけか、中立の方針が他のページと食い違わないか
 // 協賛枠(PR)のテスト: データの検査、期間・承認・置き場所の判定、PR の表示・sponsored、開催情報と分かれていること(MON-2)
 import { readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import * as cheerio from "cheerio";
 import { sponsorErrors, activeSponsors, sponsorSlot, SPONSOR_MAX_PER_PAGE } from "../scripts/lib/sponsor-slots.mjs";
+import { roundDown2, approx, computeMediaStats, mediaStatsErrors, statsFresh } from "../scripts/lib/media-stats.mjs";
+import { sponsorHtml } from "../scripts/lib/sponsor.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -22,14 +24,26 @@ export function sponsorTests({ ok, section, OUT }) {
   const egs = $("main a").filter((_, a) => /^\/(pref|kagura|events|regular)\/.+\.html$/.test($(a).attr("href"))).map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
   const titleOf = (h) => cheerio.load(read(fileOf(h)))("h1").text();
   ok(["/pref/", "/kagura/", "/events/", "/regular/"].every((d) => egs.some(([h]) => h.startsWith(d))) && egs.every(([h, t]) => t && titleOf(h).includes(t)), "載せられる場所の例が、県・種類・開催・定期公演のページにつながり、リンクの文字が行き先の名前になっている", egs.map(([h, t]) => `${t}→${titleOf(h)}`).join(", "));
-  // 数字(閲覧数・件数など)を、ページに書かない。例のリンクの名前(公演名)は除いて調べる
+  // 数字は「数字で見る」(.sp-stats)と、メニューの料金(.sp-menu)だけに置く。例のリンクの名前(公演名)は除いて調べる
   const $m = cheerio.load($("main").html());
   $m("a").filter((_, a) => /^\/(pref|kagura|events|regular)\//.test($m(a).attr("href"))).remove();
-  // 団体ページのプラン(MON-1)の料金は、閲覧数などとちがい、載せてよい数字なので除く
-  $m("ul.plans").remove();
-  ok(!/[0-9０-９]/.test($m.root().text()), "数字を書いていない(閲覧数などは、問い合わせた方にだけ伝える)", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
-  ok(!/\d[\d,]*\s*(PV|ページビュー|人|回|万)/.test(text) && !/読者の(多く|大半|ほとんど)/.test(text), "閲覧数などの数字や、確かめていない読者の傾向を書いていない");
-  ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。数字は相談の際に伝えると書いてある");
+  $m(".sp-stats, .sp-menu").remove();
+  ok(!/[0-9０-９]/.test($m.root().text()), "数字は「数字で見る」とメニューの料金の中だけ", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
+  ok(!/読者の(多く|大半|ほとんど)/.test(text), "確かめていない読者の傾向を書いていない");
+  // 数字で見る: 掲載の件数は実数、アクセスは概数(約)と期間・出典つき。丸めていない数字を出さない
+  const st = $(".sp-stats");
+  const tiles = st.find(".sp-tiles li").map((_, li) => [[$(li).find(".k").text(), $(li).find(".v").text()]]).get();
+  const tv = (k) => (tiles.find(([x]) => x.includes(k)) ?? [, ""])[1];
+  ok(/^\d+件$/.test(tv("これからの開催")) && /^\d+都道府県$/.test(tv("都道府県")) && /^\d+種類$/.test(tv("神楽の種類")) && /^\d+か所$/.test(tv("定期公演")), "掲載している情報: 開催・都道府県・神楽の種類・定期公演の件数", JSON.stringify(tiles));
+  ok(tv("検索結果に表示") === "約2.3万回" && tv("検索から訪れた") === "約1,900回" && tv("閲覧数") === "約5,200回" && st.text().includes("うち直近1週間で約8,100回"), "アクセス: 概数(約)で、直近1週間も添える", JSON.stringify(tiles));
+  ok(st.find(".sp-tiles .v").get().every((v) => /^約/.test($(v).text()) || /^\d+\D+$/.test($(v).text())) && !/23000|1900|5200/.test(st.text()), "アクセスの数字は、すべて「約」つきの概数");
+  ok(st.text().includes("Google Search Console(9月8日〜10月5日)") && st.text().includes("Googleアナリティクス(9月10日〜10月7日)") && st.text().includes("2026年10月8日更新") && st.text().includes("計測に同意した方の分だけ"), "出典・集計期間・更新日・閲覧数の計り方を書く");
+  const tops = st.find(".sp-top a").map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
+  ok(tops.map(([h]) => h).join() === "/pref/島根県.html,/kagura/石見神楽.html" && tops.every(([h, t]) => t && titleOf(h) === t), "よく読まれているページ: 名前は行き先の見出し。無いページは出さない", JSON.stringify(tops));
+  ok(st.text().includes("ご相談の際にお伝えします"), "ページごとの数字は、相談の際に伝えると書く");
+  ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。ページごとの数字は相談の際に伝えると書いてある");
+  ok($("#menu").length === 1 && $('a[href="#menu"]').length === 1 && $(".sp-menu .sp-plan").length >= 2 && $(".sp-menu .sp-plan").get().every((x) => $(x).find("h3").text() && $(x).find(".price").text() && $(x).find("dt").text().includes("載る場所")), "メニューは、名前・料金・載る場所を並べて比べられる。冒頭からメニューへ飛べる");
+  ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .pr").text() === "PR" && $(".sp-sample figcaption").text().includes("見本"), "協賛枠の見え方の見本(リンクなし・「見本」と書く)");
   ok(text.includes("協賛枠(月ごと)") && text.includes("記事広告(お申し込みごと)") && text.includes("取材") && text.includes("道の駅"), "メニュー: 月ごとの協賛枠と、1回ごとの記事広告(取材記事)。道の駅にも案内");
   ok(text.includes("毎週・毎晩の定期公演") && text.includes("編集部が取材して書き"), "言葉の統一: 「毎週・毎晩の定期公演」、書き手は「編集部」");
 
@@ -50,6 +64,29 @@ export function sponsorTests({ ok, section, OUT }) {
   ok(home('.top nav a[href="/sponsor.html"]').length === 0, "メインメニューには入れない(読者向けの探し方と分ける)");
 
   sponsorSlotTests({ ok, section, OUT });
+  mediaStatsTests({ ok, section });
+}
+
+function mediaStatsTests({ ok, section }) {
+  section("協賛のページのアクセス数(概数)");
+  ok(roundDown2(4876) === 4800 && roundDown2(19234) === 19000 && roundDown2(87) === 87 && roundDown2(0) === 0 && roundDown2(105) === 100, "上から2桁で切り捨てる(多く見せない)");
+  ok(approx(23000) === "約2.3万" && approx(20000) === "約2万" && approx(4800) === "約4,800", "「約2.3万」「約4,800」の形");
+  // 28日のうち24日以上の値があるときだけ載せる
+  const day = (i) => new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10);
+  const days = {};
+  for (let i = 0; i < 28; i++) days[day(i)] = { gscImpr: 1000 + i, gscClicks: 101 };
+  for (let i = 0; i < 20; i++) Object.assign(days[day(i + 8)], { pv: 333, users: 100 });
+  const s = computeMediaStats({ days }, { snapshot: { gscPages28: { "/": [99, 1], "/a.html": [5, 9], "/b.html": [7, 1] } } }, "2026-10-30");
+  ok(s.search?.impressions === 28000 && s.search.clicks === 2800 && s.search.from === "2026-10-01" && s.search.to === "2026-10-28" && s.search.impressions7 === 7100, "検索: 直近28日と直近7日を、丸めて出す", JSON.stringify(s.search));
+  ok(!s.analytics, "閲覧数: 値のある日が24日に満たなければ載せない(欠けた期間で見せない)");
+  ok(s.topPages.join() === "/b.html,/a.html", "よく読まれているページ: 検索から訪れた数の順。トップページは除く。数字は持たない");
+  ok(mediaStatsErrors(s).length === 0 && mediaStatsErrors({ ...s, search: { ...s.search, impressions: 28378 } }).length > 0 && mediaStatsErrors({ ...s, raw: 1 }).length > 0, "丸めていない数字・知らない項目があれば、ビルドを止める");
+  const live = existsSync("data/media-stats.json") ? JSON.parse(read("data/media-stats.json")) : null;
+  ok(mediaStatsErrors(live).length === 0, "data/media-stats.json が正しい形(丸めた概数だけ)", mediaStatsErrors(live).join(" / "));
+  ok(statsFresh(s, "2026-12-20") && !statsFresh(s, "2027-01-10") && !statsFresh(null, "2026-10-30"), "集計が60日より古ければ、ページに出さない");
+  const html = sponsorHtml({ esc: String, siteName: "神楽めぐり", stats: null, facts: { events: 3, prefs: 2, kaguras: 2, regular: 1 } });
+  const $ = cheerio.load(html);
+  ok($(".sp-stats .sp-tiles").length === 1 && !$(".sp-stats").text().includes("約") && $(".sp-stats").text().includes("ご相談の際に"), "アクセスの集計が無いときは、件数だけ出して、数字は相談の際に伝えると書く");
 }
 
 function sponsorSlotTests({ ok, section, OUT }) {

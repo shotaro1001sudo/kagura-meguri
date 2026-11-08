@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // 却下した保留(rejected.json)も送る(週次の自動収集が、GitHub 上で同じものを取り直さないように)
-const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json"];
+// 協賛のページのアクセスの概数(media-stats.json。週次の分析タスクが scripts/media-stats.mjs で作る。丸めた数字だけ)も、ここから公開する
+const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "data/media-stats.json"];
 
 // 公開前に走らせる、開催データを確かめるテスト(package.json の test:data と同じもの)。
 // GitHub の公開処理は npm test(この6本 + tests/run.mjs)が通らないと公開しないので、データで落ちるものはここで止める。

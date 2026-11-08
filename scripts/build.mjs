@@ -20,6 +20,7 @@ import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_C
 import { organizersHtml } from "./lib/organizers.mjs";
 import { sponsorHtml } from "./lib/sponsor.mjs";
 import { sponsorErrors, activeSponsors, sponsorSlot } from "./lib/sponsor-slots.mjs";
+import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
@@ -59,6 +60,8 @@ if (process.env.TEST_AFFILIATE) cfg.affiliate = { ...cfg.affiliate, amazonTag: p
 if (process.env.TEST_AFF_TRAVEL) cfg.affiliate = { ...cfg.affiliate, rakutenAffiliateId: "test.rakuten", valueCommerceSid: VC.sid, jalanPid: VC.stay }; // テスト用(宿のアフィリエイト)
 const SPONSORS_FILE = process.env.SPONSORS_FILE ?? "data/sponsors.json"; // 協賛枠(PR)。MON-2。契約が決まったものだけを登録する
 const sponsorsData = existsSync(SPONSORS_FILE) ? readJson(SPONSORS_FILE) : [];
+const MEDIA_STATS_FILE = process.env.MEDIA_STATS_FILE ?? "data/media-stats.json"; // 協賛のページに載せるアクセスの概数。node scripts/media-stats.mjs が作る
+const mediaStats = existsSync(MEDIA_STATS_FILE) ? readJson(MEDIA_STATS_FILE) : null;
 const rawEvents = readJson(EVENTS_FILE).filter((e) => e.status === "published");
 const rawRegular = (existsSync(REGULAR_FILE) ? readJson(REGULAR_FILE) : []).filter((r) => r.status === "published");
 
@@ -102,6 +105,7 @@ function validateCommon(rows, ids) {
     if (r.closedDates != null && !(Array.isArray(r.closedDates) && r.closedDates.every((d) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)))) errs.push(`[${r.id}] closedDates は "MM-DD" の配列にしてください`);
   }
   errs.push(...sponsorErrors(sponsorsData));
+  errs.push(...mediaStatsErrors(mediaStats));
   if (errs.length) { console.error("データエラー:\n" + errs.map((x) => "  " + x).join("\n")); process.exit(1); }
 }
 
@@ -1112,7 +1116,15 @@ doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の
     pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined,
     kagura: kaguraEg ? { name: kaguraEg, href: kaguraHref(kaguraEg) } : undefined,
     ev: upcoming.length ? { name: upcoming[0].name, href: `/events/${upcoming[0].id}.html` } : undefined,
-    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans }),
+    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans,
+    facts: { events: upcoming.length, prefs: prefs.length, kaguras: kaguras.length, regular: regular.length },
+    stats: statsFresh(mediaStats, today) ? mediaStats : null,
+    // よく読まれているページ: 書き出し済みのページの見出しを名前にする(無いページは出さない)
+    topPages: (statsFresh(mediaStats, today) ? mediaStats.topPages ?? [] : []).map((href) => {
+      const f = `${OUT}${href.endsWith("/") ? href + "index.html" : href}`;
+      const h1 = existsSync(f) ? (readFileSync(f, "utf8").match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim() : "";
+      return h1 ? { name: h1, href } : null;
+    }).filter(Boolean) }),
   { lead: "神楽を観に出かける方へ、地域の情報を届けます。" });
 
 // ---------- 団体ページ(有料のプラン・MON-1)・見本・申し込み・特定商取引法に基づく表記 ----------
