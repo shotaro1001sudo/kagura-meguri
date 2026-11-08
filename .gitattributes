@@ -1,3 +1,1 @@
-# テストやハッシュの検証は LF が前提。Windows の autocrlf でも作業フォルダを LF にそろえる
-* text=auto eol=lf
 *.cmd text eol=crlf
