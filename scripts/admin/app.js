@@ -58,7 +58,8 @@ function render() {
   $("#n-submit").textContent = open("submit") || ""; $("#n-contact").textContent = open("contact") || "";
   $("#n-decide").textContent = decisions().total || "";
   $("#n-goal").textContent = planOpen().length || "";
-  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
+  $("#n-tasks").textContent = S.tasks?.missed || "";
+  main.replaceChildren(...({ home: homeView, decide: decideView, goal: goalView, tasks: tasksView, events: eventsView, submit: () => inboxView("submit"), contact: () => inboxView("contact") }[view.tab])().flat(Infinity).filter((x) => x != null && x !== ""));
 }
 
 // ---------- 判断待ち(人が決めること) ----------
@@ -330,6 +331,7 @@ function homeView() {
     { n: dc.openProps.length, title: "検索の改善案", desc: "Claude に頼むか、見送るかを選ぶ", go: ["decide"] },
     { n: dc.plan.length, title: "KPI・収益化の案", desc: "採用するか、見送るかを選ぶ", go: ["goal"] },
     { n: manualMissing ? 1 : 0, unit: "", title: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, desc: "楽天・AdSense・協賛の額を入れる", go: ["goal"] },
+    { n: S.tasks?.missed || 0, title: "動いていない予定タスク", desc: "予定の時刻に動いた記録がない。理由を見て直す", go: ["tasks"] },
     { n: old, title: "確認日から60日を過ぎた開催", desc: "公式情報で、変更がないか確かめる", go: ["events", { evFilter: "stale" }] },
   ];
   const row = (t) => h("li", { class: "todo" + (t.urgent ? " urgent" : "") },
@@ -369,6 +371,49 @@ function homeView() {
       h("p", { class: "mut" }, "開催の追加・編集・取り下げ・再掲載と、保留の掲載・却下は、保存と同時に、コミットして GitHub に送ります(数分後にサイトに反映)。送る前に、サイトを作れるかを確かめます。終了した開催は、サイトの一覧・地図・カレンダーから自動で外れ、ページは「終了しました」として残ります。KPI・収益化の案・問い合わせのメモは、このPCだけに保存し、GitHub には送りません。")),
   ];
 }
+// ---------- 予定タスク(Claude アプリのスケジュール済みタスク。読むだけ) ----------
+const RUN = { completed: ["done", "完了"], blocked: ["doing", "止まった"], failed: ["new", "失敗"], error: ["new", "失敗"], running: ["pending", "実行中"] };
+const at = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso), diff = Math.round((new Date(d.toDateString()) - new Date(new Date().toDateString())) / 864e5);
+  const rel = { "-1": "昨日", 0: "今日", 1: "明日" }[diff];
+  return `${rel ? rel + " " : `${d.getMonth() + 1}/${d.getDate()}(${WD[d.getDay()]}) `}${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+function tasksView() {
+  if (!view.tasksLoaded) loadTaskRuns();
+  const T = view.tasksData || S.tasks || { tasks: [] };
+  if (!T.found) return [h("h2", null, "予定タスク"), h("p", { class: "warn" }, "このPCで、Claude デスクトップアプリの予定タスクの記録が見つかりません。")];
+  const card = (t) => h("div", { class: "panel task" + (t.enabled ? "" : " dim") },
+    h("div", { class: "card-h" }, h("h4", null, t.title),
+      t.missed ? badge("new", "動いていない") : t.enabled ? badge("done", "有効") : badge("ended", "停止中")),
+    t.description ? h("p", { class: "mut small" }, t.description) : "",
+    h("dl", { class: "kv" },
+      h("dt", null, "予定"), h("dd", null, t.schedule),
+      h("dt", null, "次回"), h("dd", null, t.nextRun ? at(t.nextRun) + " ごろ" : "—"),
+      h("dt", null, "前回"), h("dd", null, at(t.lastRun))),
+    t.missed ? h("p", { class: "warn small" }, `${at(t.missedAt)} の予定に、動いた記録がありません。その時刻にPCが切れていたか、アプリが閉じていた可能性があります。下の「最近の実行」の理由も見てください。`) : "",
+    t.error ? h("p", { class: "warn small" }, t.error) : "",
+    t.runs?.length ? h("details", { class: "more", open: t.missed || t.runs[0].needsAction ? true : null }, h("summary", null, `最近の実行(${t.runs.length})`),
+      h("ul", { class: "runs" }, t.runs.map((r) => h("li", null,
+        h("span", { class: "nw" }, at(r.startedAt), " "), badge(...(RUN[r.status] || ["ended", r.status])), " ", r.summary || h("span", { class: "mut" }, "(ひとことなし)"),
+        r.needsAction ? h("div", { class: "small" }, "→ 人がやること: ", r.needsAction) : "")))) : "");
+  return [
+    h("h2", null, "予定タスク"),
+    h("p", { class: "lead" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です。PC が起動していて、アプリが開いているときだけ動きます。変更は PC のアプリで行います。"),
+    T.error ? h("p", { class: "warn" }, T.error) : "",
+    T.missed ? "" : allClear("止まっている予定タスクはありません。"),
+    T.tasks.map(card),
+    view.tasksLoaded === "loading" ? h("p", { class: "mut small" }, "最近の実行を読み込んでいます…")
+      : h("button", { class: "btn ghost small", onclick: () => { view.tasksLoaded = false; render(); } }, "読み込み直す"),
+  ];
+}
+async function loadTaskRuns() {
+  view.tasksLoaded = "loading";
+  try { view.tasksData = await call("/api/tasks"); S.tasks = view.tasksData; } catch (err) { toast(err.message, true); }
+  view.tasksLoaded = true;
+  if (view.tab === "tasks") render();
+}
+
 // ---------- スマホで開く(Tailscale 経由。PC の画面だけに出す) ----------
 const isPc = () => ["127.0.0.1", "localhost"].includes(location.hostname);
 function phoneBox() {

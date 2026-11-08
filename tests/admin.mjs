@@ -5,6 +5,7 @@ import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
+import { loadTasks, cronStep, describeCron } from "../scripts/admin/tasks.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
 import { execFileSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
@@ -47,6 +48,34 @@ export async function adminTests({ ok, section }) {
   const con = toItem({ subject: `【${SITE}】お問い合わせ: 掲載内容の訂正`, text: "■ご用件: 掲載内容の訂正\n■お名前: 山田\n■メールアドレス: y@example.net\n■内容: 日付が違います", date: new Date("2026-10-09T01:00:00Z"), messageId: "<c1@x>", from: { value: [{ address: "notify@web3forms.com" }] } }, SITE);
   ok(con.kind === "contact" && con.topic === "掲載内容の訂正" && con.message === "日付が違います" && con.email === "y@example.net", "問い合わせの用件・内容・返信先を読む(返信先の見出しがなくても、本文から)");
 
+  section("管理者用ページ: 予定タスク(読むだけ)");
+  const TD = mkdtempSync(join(tmpdir(), "adm-tasks-"));
+  const J = (s) => Date.parse(s + "+09:00"); // 日本時間で書く
+  mkdirSync(join(TD, "note"));
+  writeFileSync(join(TD, "note/SKILL.md"), "---\nname: note\ndescription: 記事を公開する\n---\n秘密の指示文 SECRET-PROMPT\n");
+  const TF = join(TD, "scheduled-tasks.json");
+  writeFileSync(TF, JSON.stringify({ scheduledTasks: [
+    { id: "note", displayName: "Note投稿", cronExpression: "0 18 */2 * *", enabled: true, filePath: join(TD, "note/SKILL.md"), createdAt: J("2026-10-01T00:00"), lastRunAt: "2026-10-21T11:59:00Z", lastScheduledFor: "2026-10-21T09:00:00Z", cwd: "C:\\secret", approvedPermissions: [{ toolName: "Bash", ruleContent: "SECRET-RULE" }] },
+    { id: "weekly", displayName: "週次", cronExpression: "0 9 * * 1", enabled: true, createdAt: J("2026-11-07T20:00"), lastRunAt: "2026-11-07T13:43:00Z" },
+    { id: "once", displayName: "1回", fireAt: J("2026-10-17T09:00"), enabled: false, lastRunAt: "2026-10-17T03:35:00Z" },
+    { id: "bad", displayName: "壊れた予定", cronExpression: "x y", enabled: true },
+  ] }));
+  writeFileSync(join(TD, "local_a.json"), JSON.stringify({ scheduledTaskId: "note", createdAt: J("2026-10-21T20:59"), postTurnSummary: { status_category: "blocked", status_detail: "ログインしていない", needs_action: "Note にログインする" }, transcript: "SECRET-LOG" }));
+  writeFileSync(join(TD, "local_b.json"), JSON.stringify({ title: "ふつうの会話" }));
+  const NOW = J("2026-11-08T10:00");
+  ok(new Date(cronStep("0 18 */2 * *", NOW)).getTime() === J("2026-11-09T18:00") && cronStep("0 18 */2 * *", NOW - 7200e3, -1) === J("2026-11-07T18:00"), "予定: 「2日に1回 18時」の次回と前回を、日本時間で求める");
+  ok(cronStep("0 9 * * 1", NOW) === J("2026-11-09T09:00") && cronStep("0 9 1 * *", NOW) === J("2026-12-01T09:00") && cronStep("30 23 31 12 *", J("2026-12-31T23:30")) === J("2027-12-31T23:30"), "予定: 毎週・毎月・年をまたぐ次回");
+  ok(describeCron("0 18 */2 * *") === "2日に1回 18:00" && describeCron("0 9 * * 1") === "毎週月曜 9:00" && describeCron("0 9 1 * *") === "毎月1日 9:00" && describeCron("5 4 1-3 * *") === "cron: 5 4 1-3 * *", "予定を、ふつうの日本語で書く");
+  const TT = loadTasks({ file: TF, now: NOW, runs: true });
+  const tk = Object.fromEntries(TT.tasks.map((t) => [t.id, t]));
+  ok(tk.note.missed && tk.note.missedAt === new Date(J("2026-11-07T18:00")).toISOString() && TT.missed === 1, "前回の予定の時刻に動いた記録がなければ「動いていない」とする", JSON.stringify(tk.note));
+  ok(!tk.weekly.missed && tk.weekly.nextRun === new Date(J("2026-11-09T09:00")).toISOString(), "作る前の予定は「動いていない」に数えない");
+  ok(!tk.once.missed && tk.once.nextRun === null && /^1回だけ 2026\/10\/17/.test(tk.once.schedule) && TT.tasks.at(-1).enabled === false, "1回だけのタスクと、停止中のタスク(下にまとめる)");
+  ok(tk.bad.error && !tk.bad.missed, "読めない予定は、エラーとして出し、ほかのタスクは読める");
+  ok(tk.note.description === "記事を公開する" && tk.note.runs.length === 1 && tk.note.runs[0].status === "blocked" && tk.note.runs[0].needsAction === "Note にログインする", "説明と、最近の実行の結果・人がやることを読む");
+  ok(!/SECRET|secret/.test(JSON.stringify(TT)), "指示文・許可した操作・作業フォルダ・会話の中身は、画面に出さない");
+  ok(loadTasks({ file: null }).found === false && loadTasks({ file: join(TD, "nothing.json") }).error, "記録が無い・読めないときも、止まらない");
+
   section("管理者用ページ: 開催データの保存");
   const base = [{ id: "a-1", name: "A", kagura: "石見神楽", prefecture: "島根県", city: "浜田市", venue: "会館", start: "2026-11-01T18:00", source: "x", checked: "2026-10-01", status: "published", lat: 34.9, lng: 132.1 }];
   const good = { id: "b-1", name: "B", kagura: "石見神楽", prefecture: "島根県", city: "益田市", venue: "神社", start: "2026-11-03T18:00", url: "https://example.jp/", source: "観光協会", checked: "2026-10-10" };
@@ -79,7 +108,7 @@ export async function adminTests({ ok, section }) {
   const published = [];
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
-    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net",
+    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
@@ -97,7 +126,12 @@ export async function adminTests({ ok, section }) {
     ok((await req("/api/inbox/update", { body: { id: "1" }, headers: { origin: "https://evil.example" } })).status === 403, "ほかのサイトから送られた操作は断る");
     ok((await req("/api/events/status", { method: "POST", headers: { "content-type": "text/plain" } })).status === 415, "JSON 以外の送信は断る(フォームからの不正な送信を防ぐ)");
 
-    let r = await req("/api/fetch-mail", { body: {} });
+    let r = await req("/api/tasks");
+    ok(r.status === 200 && r.json.missed === 1 && r.json.tasks.find((t) => t.id === "note")?.runs?.length === 1, "予定タスク: 一覧と最近の実行を返す");
+    ok((await req("/api/tasks", { headers: { "x-admin-token": "x" } })).status === 403, "予定タスク: 合言葉がなければ出さない");
+    r = await req("/api/state");
+    ok(r.json.tasks?.missed === 1 && !r.json.tasks.tasks.some((t) => t.runs), "予定タスク: 毎回の状態には、件数と一覧だけ(実行の記録は、タブを開いたときだけ読む)");
+    r = await req("/api/fetch-mail", { body: {} });
     ok(r.status === 400 && /admin\.local\.json/.test(r.json.error) && fakeMail.calls === 0, "Gmail の設定がなければ、設定方法を案内する");
     writeFileSync(join(ROOT, "admin.local.json"), JSON.stringify({ gmail: { user: "u@example.com", appPassword: "x" } }));
     r = await req("/api/fetch-mail", { body: {} });
@@ -228,6 +262,8 @@ export async function adminTests({ ok, section }) {
     ok(ph.status === 200 && JSON.parse(read(planPath)).manual["2026-10"].pitches === 3, "スマホ: 鍵とトークンがあれば、操作もできる(https の ts.net からの送信を受け付ける)");
     ok((await phone("/api/state", { headers: { ...cookie, "x-admin-token": token, origin: "https://evil.example" } })).status === 403, "スマホ: ほかのサイトからの送信は受け付けない");
     ok((await phone("/api/phone", { headers: { ...cookie, "x-admin-token": token } })).status === 403 && (await phone("/api/phone/reset", { headers: { ...cookie, "x-admin-token": token }, body: {} })).status === 403, "スマホ: QR コードの表示と鍵の作り直しは、PC からだけ");
+    ph = await phone("/api/tasks", { headers: { ...cookie, "x-admin-token": token } });
+    ok(ph.status === 200 && (await phone("/api/tasks", { headers: { "x-admin-token": token } })).status === 401, "スマホ: 鍵があれば予定タスクを見られる(鍵がなければ出さない)", ph.status);
     ok((await phone("/", { headers: { host: "pc.other.ts.net" } })).status === 421, "スマホ: 自分の Tailscale の名前以外のアドレスは、受け付けない");
     ok((await req("/api/phone/reset", { body: {} })).status === 200 && (await phone("/", { headers: cookie })).status === 401, "PC で鍵を作り直すと、それまでのスマホは開けなくなる");
     ok(/^\.admin\/$/m.test(read(".gitignore")), "スマホの鍵(.admin/phone.json)は、Git に入らない");

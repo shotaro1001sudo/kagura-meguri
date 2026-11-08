@@ -1,6 +1,7 @@
 // 管理者用ページ(自分のPCだけで使う): npm run admin
 //   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
 //   判断待ち: 自動収集の保留の掲載・却下 / 週次の振り返りの【人】の項目 / 検索の改善案(頼む・見送る)
+//   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
 //   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
@@ -16,6 +17,7 @@ import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl } from "./publish.mjs";
+import { loadTasks } from "./tasks.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -26,7 +28,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -43,14 +45,20 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
       review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
-      plan: loadPlan(root), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS };
+      plan: loadPlan(root), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}) };
   };
+
+  // 予定タスク(読むだけ)。読めなくても、ほかの画面は使えるように
+  const safeTasks = (o) => { try { return tasks(o); } catch (err) { return { found: true, error: `予定タスクを読めませんでした(${err.message})`, tasks: [] }; } };
 
   // 開催データを変えた操作は、そのままコミットして push する(数分後にサイトに反映)
   const release = (what, e) => publisher(root, `data(admin): ${what}: ${e.name}`).catch((err) => ({ ok: false, step: "push", log: err.message }));
 
   const api = {
     "GET /api/state": () => state(),
+
+    // 予定タスクの一覧と、最近の実行の結果(タブを開いたときだけ。セッションの記録を読むため)
+    "GET /api/tasks": () => safeTasks({ runs: true }),
 
     // 反映に失敗したときの、やり直し
     "POST /api/publish": () => serial(async () => ({ publish: await publisher(root, "data(admin): 管理者用ページの変更"), state: await state() })),
