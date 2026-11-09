@@ -24,7 +24,13 @@ export function xpostTests({ ok, section }) {
   };
   const cands = readingCandidates(info, base, "2026-11-13"); // 金曜
   ok(!cands.some((c) => c.id.includes("出典なし")), "出典のない神楽は、読み物にしない");
-  ok(cands.some((c) => c.url === `${base}/kagura/%E7%9F%B3%E8%A6%8B%E7%A5%9E%E6%A5%BD.html?utm_source=x&utm_medium=social`), "神楽の種類ページのURLは、エンコードして計測用の印を付ける");
+  ok(cands.some((c) => c.pageUrl === `${base}/kagura/%E7%9F%B3%E8%A6%8B%E7%A5%9E%E6%A5%BD.html?utm_source=x&utm_medium=social`), "神楽の種類ページのURLは、エンコードして計測用の印を付ける");
+  // URLは、サイトのページ紹介にだけ付ける(全部の投稿にURLが付くと、タイムラインでうるさいため)
+  const kindC = cands.filter((c) => c.theme !== "page"), pageC = cands.filter((c) => c.theme === "page");
+  ok(kindC.length && kindC.every((c) => !c.link && !/https?:\/\//.test(c.text) && c.text.endsWith("#神楽 #石見神楽") === (c.kagura === "石見神楽")), "演目・歴史などの読み物にはURLを付けない(本文とハッシュタグだけ)", kindC.map((c) => c.text).join(" / "));
+  ok(pageC.length && pageC.every((c) => c.link && /\nhttps:\/\/\S+\?utm_source=x&utm_medium=social\n#神楽$/.test(c.text)), "サイトのページ紹介(ガイド・今週末の神楽など)にはURLを付ける");
+  const long = "あ".repeat(60) + "。" + "い".repeat(60) + "。";
+  ok(weightedLength(composeReading({ label: "神楽の歴史", title: "x", body: long, url: "", tags: "#神楽" })) <= 280 && composeReading({ label: "神楽の歴史", title: "x", body: long, url: "", tags: "#神楽" }).includes("い".repeat(60)) && !composeReading({ label: "神楽の歴史", title: "x", body: long, url: "https://kagurameguri.jp/history/", tags: "#神楽" }).includes("い".repeat(60)), "URLがない分、本文を長く出せる");
   ok(cands.some((c) => c.id === "r:page:weekend:2026-11-13") && !readingCandidates(info, base, "2026-11-12").some((c) => c.id.startsWith("r:page:weekend")), "「今週末の神楽」は金曜だけ候補になる");
   ok(pickReadings(cands, [], "2026-11-13", 1)[0]?.id === "r:page:weekend:2026-11-13", "金曜は「今週末の神楽」をいちばん先に出す");
   ok(pickReadings(cands, [], "2026-11-09", 1)[0]?.theme === "program", "月曜は演目の紹介から出す");

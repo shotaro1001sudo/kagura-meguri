@@ -54,7 +54,7 @@ function main() {
   const byId = new Map(cands.map((c) => [c.id, c]));
   const text = (id) => byId.get(id)?.text ?? posted.find((p) => p.id === id)?.id ?? id;
   console.log(JSON.stringify({
-    performance: { status: perf.status, samples: perf.samples, styles: perf.styles ?? {}, slots: perf.slots ?? {}, themes: perf.themes ?? {} },
+    performance: { status: perf.status, samples: perf.samples, styles: perf.styles ?? {}, links: perf.links ?? {}, slots: perf.slots ?? {}, themes: perf.themes ?? {} },
     top: (perf.top ?? []).map((id) => ({ id, text: text(id) })),
     bottom: (perf.bottom ?? []).map((id) => ({ id, text: text(id) })),
     upcoming: plan.filter((p) => p.type === "reading").map((p) => ({ id: p.id, date: p.date, hook: hooks[p.id] ?? "", body: byId.get(p.id)?.body ?? "", title: byId.get(p.id)?.title ?? "" })),

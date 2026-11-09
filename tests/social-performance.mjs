@@ -39,6 +39,11 @@ export function socialPerformanceTests({ ok, section }) {
   ok(few.top.length === 0 && few.bottom.length === 0, "投稿が少ないうちは、上位・下位を出さない");
   const hp = posted.map((p, i) => (i < 4 ? { ...p, style: "hook" } : p));
   ok(summarizePerformance(buffer, hp, today).styles.hook?.n === 4, "書き出しの1行をつけた投稿(style: hook)を、別に数える");
+  // URLあり・なし: 記録に link がない以前の予約はURLあり。開催のお知らせ(常にURLあり)は比べ合わせに入れない
+  ok(perf.links.url?.n === 9 && !perf.links.nourl, "link の記録がない以前の読み物は、URLありとして数える(開催は除く)", JSON.stringify(perf.links));
+  const lp = posted.map((p) => (p.id.startsWith("r:program:") ? { ...p, link: false } : p));
+  const lperf = summarizePerformance(buffer, lp, today);
+  ok(lperf.links.nourl?.n === 4 && lperf.links.url?.n === 5 && lperf.links.nourl.index > lperf.links.url.index, "URLなしの読み物を別に数え、反応率を比べられる", JSON.stringify(lperf.links));
 
   section("SNSの反応の評価(PDCA): 投稿の順番に反映");
   const w = themeWeights(perf);

@@ -103,13 +103,13 @@ async function main() {
   const channelId = live ? (social.bufferChannelId || await findChannel(key)) : "";
   let failed = false;
   for (const p of plan) {
-    console.log(`--- ${jstLabel(p.dueAt)} [${p.type}${p.style === "hook" ? "・書き出しあり" : ""}] ${p.id} ---\n${p.text}\n`);
+    console.log(`--- ${jstLabel(p.dueAt)} [${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.link ? "" : "・URLなし"}] ${p.id} ---\n${p.text}\n`);
     if (!live) continue;
     try {
       const data = await gql(key, createPostQuery({ text: p.text, channelId, dueAt: p.dueAt }));
       const r = data.createPost ?? {};
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
-      posted.push({ id: p.id, type: p.type, style: p.style, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
+      posted.push({ id: p.id, type: p.type, style: p.style, link: p.link, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
       writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n"); // 1件ごとに記録(途中で失敗しても、重複しない)
       console.log(`予約しました: ${r.post.id}`);
     } catch (err) { console.error(err.message); failed = true; break; }

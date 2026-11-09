@@ -51,7 +51,9 @@ export function composeText(e, baseUrl) {
 export function composeReading({ label, title, body, url, tags, hook }) {
   // hook: 週次の分析(Claude)が、反応を見ながら書く1行目(data/social-hooks.json)。あれば先頭に置く
   const head = hook ? [hook, "", `【${label}】${title}`] : [`【${label}】${title}`];
-  const build = (b) => [...head, b, "", url, tags].join("\n");
+  // url がなければ、URLの行を入れない(全部の投稿にURLが付くと、タイムラインでうるさく見えるため。
+  // 読み物は本文だけで読み切れる形にし、URLはサイトのページ紹介と開催のお知らせにだけ付ける)
+  const build = (b) => [...head, b, "", ...(url ? [url] : []), tags].join("\n");
   if (weightedLength(build(body)) <= LIMIT) return build(body);
   const sentences = body.match(/[^。]+。?/g) ?? [body];
   let b = "";
@@ -80,7 +82,8 @@ export function readingCandidates(info, baseUrl, todayJst, hooks = {}) {
   const kindUrl = (k) => `${baseUrl}${encodeURI(`/kagura/${k}.html`)}?${UTM}`;
   for (const [k, x] of Object.entries(info)) {
     if (!x?.source) continue; // 出典のないものは出さない
-    const base = { title: k, url: kindUrl(k), tags: `#神楽 ${tag(k)}`, kagura: k };
+    // 演目・歴史などの読み物にはURLを付けない(本文だけで読み切る)。種類のページは pageUrl に残す(手で使うとき用)
+    const base = { title: k, url: "", pageUrl: kindUrl(k), tags: `#神楽 ${tag(k)}`, kagura: k };
     if (x.intro) out.push({ ...base, id: `r:kind:${k}`, theme: "kind", body: x.intro });
     (x.programs ?? []).forEach((p, i) => out.push({ ...base, id: `r:program:${k}:${i}`, theme: "program", title: `${p.name}(${k})`, body: p.text }));
     (x.history ?? []).forEach((t, i) => out.push({ ...base, id: `r:history:${k}:${i}`, theme: "history", body: t }));
@@ -99,7 +102,7 @@ export function readingCandidates(info, baseUrl, todayJst, hooks = {}) {
   }
   return out.map((c) => {
     const hook = validHook(hooks?.[c.id]) ? hooks[c.id].trim() : "";
-    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", text: composeReading({ label: THEMES[c.theme], ...c, hook }) };
+    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", link: !!c.url, text: composeReading({ label: THEMES[c.theme], ...c, hook }) };
   });
 }
 
@@ -188,8 +191,8 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const cands = readingCandidates(info, baseUrl, todayJst, hooks).filter((c) => !(c.kagura && over.has(c.kagura)));
   const reads = pickReadings(cands, posted, todayJst, readSlots.length, weights);
   const plan = [
-    ...evs.map((e, i) => ({ id: e.id, type: "event", style: "event", dueAt: evSlots[i], text: composeText(e, baseUrl) })),
-    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, dueAt: readSlots[i], text: r.text })),
+    ...evs.map((e, i) => ({ id: e.id, type: "event", style: "event", link: true, dueAt: evSlots[i], text: composeText(e, baseUrl) })),
+    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, link: r.link, dueAt: readSlots[i], text: r.text })),
   ];
   return plan.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
 }

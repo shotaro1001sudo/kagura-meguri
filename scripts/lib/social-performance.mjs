@@ -51,7 +51,8 @@ export function summarizePerformance(buffer, posted, todayJst) {
     if (!views || engagements == null) continue;
     const style = !p ? "manual" : p.style ?? (p.type === "event" ? "event" : "label");
     const hour = String(new Date(at + 9 * 3600e3).getUTCHours()).padStart(2, "0");
-    all.push({ id: p?.id, theme: p ? themeOf(p.id) : null, style, hour, score: engagements / views, views, site: !!p });
+    // URLあり・なし(2026-11-09 から、演目・歴史などの読み物はURLなし)。記録に link がない以前の予約は、すべてURLあり
+    all.push({ id: p?.id, theme: p ? themeOf(p.id) : null, style, hour, link: p ? p.link !== false : null, score: engagements / views, views, site: !!p });
   }
   const rows = all.filter((r) => r.site); // テーマ・時間帯は、このサイトの予約(post-social)で入れた投稿だけ
   const overall = median(rows.map((r) => r.score));
@@ -70,11 +71,13 @@ export function summarizePerformance(buffer, posted, todayJst) {
   // 時間帯(日本時間の投稿の時)と、書き方(label: 【見出し】から / hook: 書き出しの1行あり / event: 開催のお知らせ / manual: 手で入れた投稿)
   const slots = groupIndex(rows, (r) => r.hour);
   const styles = groupIndex(all, (r) => r.style);
+  // URLの有無(読み物だけで比べる。開催のお知らせは常にURLありなので、混ぜると比べられない)
+  const links = groupIndex(rows.filter((r) => r.theme !== "event"), (r) => (r.link ? "url" : "nourl"));
   // 反応率の上位・下位の投稿(IDだけ。週次の分析が、書き出しの1行を書くときの手本・反面教師にする)
   const ranked = [...rows].sort((a, b) => b.score - a.score);
   const top = rows.length >= 2 * TOP_N ? ranked.slice(0, TOP_N).map((r) => r.id) : [];
   const bottom = rows.length >= 2 * TOP_N ? ranked.slice(-TOP_N).reverse().map((r) => r.id) : [];
-  return { updated: todayJst, status: rows.length ? "ok" : "no_data", samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes, slots, styles, top, bottom };
+  return { updated: todayJst, status: rows.length ? "ok" : "no_data", samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes, slots, styles, links, top, bottom };
 }
 
 /** 群ごとの反応率と届きやすさの、群全体に対する倍率(件数と相対値だけ。実数は残さない) */
