@@ -7,7 +7,9 @@ import { join } from "node:path";
 
 // 却下した保留(rejected.json)も送る(週次の自動収集が、GitHub 上で同じものを取り直さないように)
 // 協賛のページのアクセスの概数(media-stats.json。週次の分析タスクが scripts/media-stats.mjs で作る。丸めた数字だけ)も、ここから公開する
-const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "data/media-stats.json"];
+// X投稿の書き出しの1行(social-hooks.json。週次の分析タスクが scripts/social-hooks.mjs で書く)は、定期の更新で自動で公開する(AUTO_DATA)
+export const AUTO_DATA = ["data/social-hooks.json"];
+const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "data/media-stats.json", ...AUTO_DATA];
 
 // 公開前に走らせる、開催データを確かめるテスト(package.json の test:data と同じもの)。
 // GitHub の公開処理は npm test(この6本 + tests/run.mjs)が通らないと公開しないので、データで落ちるものはここで止める。
@@ -55,6 +57,12 @@ export async function syncMain(root, git = findGit()) {
     : { ok: false, text: `GitHub の新しい変更を取り込めませんでした(このPCに、送っていないコミットか、重なる作業中のファイルがあります)` };
 }
 
+/** 自動で公開してよいデータ(AUTO_DATA)に、未コミットの変更があるか */
+export async function autoDataChanged(root, git = findGit()) {
+  const r = await run(git, ["status", "--porcelain", "--", ...AUTO_DATA], { cwd: root });
+  return r.ok && r.out.length > 0;
+}
+
 /** 最近のコミットのメッセージに書かれた改善案の ID(検索 SEO-日付-番号、計測 MEAS-日付-番号)。実施したかの目安に使う(判定は週次の分析タスク) */
 export async function mentionedIds(root, git = findGit()) {
   const r = await run(git, ["log", "--since=120.days", "--format=%s%n%b"], { cwd: root, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
@@ -72,7 +80,7 @@ export async function repoWebUrl(root, git = findGit()) {
  * 開催データをコミットして push する。返り値の ok が false なら、step(build / test / commit / push)と log で理由を示す。
  * データの保存は済んでいるので、失敗しても、あとで「もう一度公開する」でやり直せる。
  */
-export async function publish(root, message, { git = findGit(), check = true } = {}) {
+export async function publish(root, message, { git = findGit(), check = true, only = null } = {}) {
   const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   const g = (...a) => run(git, a, { cwd: root, env });
 
@@ -90,7 +98,7 @@ export async function publish(root, message, { git = findGit(), check = true } =
   }
 
   // 2. 開催データだけをコミット(ほかの作業中のファイルは、巻き込まない)
-  const files = DATA.filter((f) => existsSync(join(root, f)));
+  const files = (only ?? DATA).filter((f) => existsSync(join(root, f)));
   const st = await g("status", "--porcelain", "--", ...files);
   if (!st.ok) return { ok: false, step: "commit", log: st.out };
   if (st.out) {

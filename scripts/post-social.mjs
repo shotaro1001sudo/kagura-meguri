@@ -95,19 +95,21 @@ async function main() {
   const weights = themeWeights(readJson(process.env.PERFORMANCE_FILE ?? "data/social-performance.json", {}));
   if (Object.keys(weights).length) console.log(`テーマの重み(反応の相対値): ${JSON.stringify(weights)}`);
   const days = process.env.POST_DAYS === "1" ? 1 : 2;
-  const plan = planDays({ days, events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights });
+  // 書き出しの1行(週次の分析が、反応を見ながら書く。管理者用ページが自動で公開する)
+  const hooks = readJson(process.env.HOOKS_FILE ?? "data/social-hooks.json", {});
+  const plan = planDays({ days, events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights, hooks });
   if (!plan.length) { console.log(`${today}〜翌日: 予約する投稿はありません(枠はすべて予約済みか、過ぎています)`); return; }
 
   const channelId = live ? (social.bufferChannelId || await findChannel(key)) : "";
   let failed = false;
   for (const p of plan) {
-    console.log(`--- ${jstLabel(p.dueAt)} [${p.type}] ${p.id} ---\n${p.text}\n`);
+    console.log(`--- ${jstLabel(p.dueAt)} [${p.type}${p.style === "hook" ? "・書き出しあり" : ""}] ${p.id} ---\n${p.text}\n`);
     if (!live) continue;
     try {
       const data = await gql(key, createPostQuery({ text: p.text, channelId, dueAt: p.dueAt }));
       const r = data.createPost ?? {};
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
-      posted.push({ id: p.id, type: p.type, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
+      posted.push({ id: p.id, type: p.type, style: p.style, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
       writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n"); // 1件ごとに記録(途中で失敗しても、重複しない)
       console.log(`予約しました: ${r.post.id}`);
     } catch (err) { console.error(err.message); failed = true; break; }

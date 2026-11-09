@@ -1,5 +1,6 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
-import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
+import { mergeHooks } from "../scripts/social-hooks.mjs";
 import { createPostQuery, keyExpiryNotice } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
@@ -55,6 +56,18 @@ export function xpostTests({ ok, section }) {
   ok(morning.length === 0, "朝の起動は、前の晩に予約済みなら何も入れない");
   const recover = planDays({ days: 1, events, info, posted: [], todayJst: "2026-11-02", baseUrl: base, now: Date.parse("2026-11-02T05:15:00+09:00") });
   ok(recover.length === 6 && recover.every((p) => p.date === "2026-11-02"), "前の晩が失敗していたら、朝の起動が今日の枠だけを埋める", String(recover.length));
+
+  section("X投稿の書き出しの1行(反応を見ながら改善)");
+  const hc = readingCandidates(info, base, "2026-11-01", { [readingCandidates(info, base, "2026-11-01")[0].id]: "夜通し、舞が続く。" });
+  ok(hc[0].style === "hook" && hc[0].text.startsWith("夜通し、舞が続く。\n\n【") && hc.slice(1).every((c) => c.style === "label"), "書き出しがあれば1行目に置き、なければこれまでの【見出し】から", hc[0].text.split("\n").slice(0, 3).join("|"));
+  ok(hc.every((c) => weightedLength(c.text) <= 280), "書き出しをつけても、280字に収まる(本文を文の切れ目で削る)");
+  ok(!validHook("#神楽 よかった") && !validHook("https://x.jp") && !validHook("a\nb") && !validHook("あ".repeat(41)) && validHook("素手で湯を打ち、しぶきを広げる。"), "書き出しは4〜40字で、URL・ハッシュタグ・改行を含めない");
+  const bad = readingCandidates(info, base, "2026-11-01", { [hc[0].id]: "#だめ" });
+  ok(bad[0].style === "label", "使えない書き出しは無視して、これまでの書き方で出す");
+  const mh = mergeHooks({ a: "古い" }, { "r:ok": "新しい書き出し", "r:no": "知らないID", "r:bad": "x" }, new Set(["r:ok", "r:bad"]));
+  ok(mh.added.join() === "r:ok" && mh.skipped.length === 2 && mh.hooks.a === "古い" && mh.hooks["r:ok"] === "新しい書き出し", "書き出しを足す: 知らないID・使えない行は理由つきで外し、前の書き出しは残す", JSON.stringify(mh.skipped));
+  const hp = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T00:00:00+09:00"), hooks: { [hc[0].id]: "夜通し、舞が続く。" } });
+  ok(hp.every((p) => ["event", "label", "hook"].includes(p.style)), "予約する投稿に、書き方(style)を記録する(週次の振り返りが書き方ごとの反応を比べる)", hp.map((p) => p.style).join());
 
   const q = createPostQuery({ text: '改行\nと"引用"', channelId: "ch1", dueAt: slots[0] });
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");

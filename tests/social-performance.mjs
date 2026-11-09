@@ -31,6 +31,15 @@ export function socialPerformanceTests({ ok, section }) {
   ok(!JSON.stringify(perf).includes("300") && !/"views"|"engagements"/.test(JSON.stringify(perf)), "結果には、表示回数などの実数を残さない(公開リポジトリのため)");
   ok(summarizePerformance([], posted, today).status === "no_data", "評価できる投稿がなければ no_data");
 
+  section("SNSの反応の評価(PDCA): 時間帯・書き方・上位と下位");
+  ok(perf.slots["07"]?.n === 13 && perf.slots["07"].index === 1, "時間帯(日本時間の時)ごとに、件数と相対値を出す", JSON.stringify(perf.slots));
+  ok(perf.styles.label?.n === 9 && perf.styles.event?.n === 4 && perf.styles.manual?.n === 1 && perf.styles.manual.index === null, "書き方ごと(見出しから / 開催 / 手で入れた投稿)に比べる。手で入れた投稿も、書き方の比べ合わせには使う", JSON.stringify(perf.styles));
+  ok(perf.top.length === 5 && perf.top.slice(0, 4).every((id) => id.startsWith("r:program:")) && perf.bottom.length === 5 && perf.bottom.slice(0, 4).every((id) => id.startsWith("r:history:")), "反応率の上位・下位の投稿を、IDだけで5件ずつ出す", JSON.stringify({ top: perf.top, bottom: perf.bottom }));
+  const few = summarizePerformance(buffer.slice(0, 4), posted, today);
+  ok(few.top.length === 0 && few.bottom.length === 0, "投稿が少ないうちは、上位・下位を出さない");
+  const hp = posted.map((p, i) => (i < 4 ? { ...p, style: "hook" } : p));
+  ok(summarizePerformance(buffer, hp, today).styles.hook?.n === 4, "書き出しの1行をつけた投稿(style: hook)を、別に数える");
+
   section("SNSの反応の評価(PDCA): 投稿の順番に反映");
   const w = themeWeights(perf);
   ok(w.program === 1.5 && w.history === 0.7 && w.event === 2 && !("viewing" in w), "重みは、反応率と届きやすさの平均。様子見のテーマは重みなし", JSON.stringify(w));

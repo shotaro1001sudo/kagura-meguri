@@ -5,6 +5,7 @@
 export const MIN_SAMPLES = 3;   // テーマの評価に使う最小の投稿数(これ未満は「様子見」)
 export const LOOKBACK_DAYS = 35; // 評価に使う期間(反応の集計に1日ほどかかるので、直近2日は除く)
 export const SETTLE_DAYS = 2;
+export const TOP_N = 5;          // 上位・下位として名前を出す投稿の数(投稿が 2×TOP_N 件以上あるときだけ)
 const VIEW_TYPES = ["impressions", "views", "reach"];
 const ENGAGE_TYPES = ["reactions", "reposts", "comments", "shares", "clicks", "linkClicks", "saves"];
 
@@ -41,16 +42,18 @@ export function summarizePerformance(buffer, posted, todayJst) {
   const byBuffer = new Map(posted.filter((p) => p.bufferId).map((p) => [p.bufferId, p]));
   const today = Date.parse(`${todayJst}T00:00:00+09:00`);
   const from = today - LOOKBACK_DAYS * 86400e3, to = today - SETTLE_DAYS * 86400e3;
-  const rows = [];
+  const all = []; // 書き方の比べ合わせには、Buffer で手で入れた投稿(manual)も使う
   for (const b of buffer) {
     const p = byBuffer.get(b.id);
-    if (!p) continue; // このサイトの予約(post-social)で入れた投稿だけ
-    const at = Date.parse(b.dueAt ?? p.dueAt ?? "");
+    const at = Date.parse(b.dueAt ?? p?.dueAt ?? "");
     if (!(at >= from && at < to)) continue;
     const { views, engagements } = readMetrics(b.metrics);
     if (!views || engagements == null) continue;
-    rows.push({ theme: themeOf(p.id), score: engagements / views, views });
+    const style = !p ? "manual" : p.style ?? (p.type === "event" ? "event" : "label");
+    const hour = String(new Date(at + 9 * 3600e3).getUTCHours()).padStart(2, "0");
+    all.push({ id: p?.id, theme: p ? themeOf(p.id) : null, style, hour, score: engagements / views, views, site: !!p });
   }
+  const rows = all.filter((r) => r.site); // テーマ・時間帯は、このサイトの予約(post-social)で入れた投稿だけ
   const overall = median(rows.map((r) => r.score));
   const themes = {};
   for (const t of [...new Set(rows.map((r) => r.theme))].sort()) {
@@ -64,7 +67,27 @@ export function summarizePerformance(buffer, posted, todayJst) {
       reach: rs.length >= MIN_SAMPLES ? round1(reach) : null,
     };
   }
-  return { updated: todayJst, status: rows.length ? "ok" : "no_data", samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes };
+  // 時間帯(日本時間の投稿の時)と、書き方(label: 【見出し】から / hook: 書き出しの1行あり / event: 開催のお知らせ / manual: 手で入れた投稿)
+  const slots = groupIndex(rows, (r) => r.hour);
+  const styles = groupIndex(all, (r) => r.style);
+  // 反応率の上位・下位の投稿(IDだけ。週次の分析が、書き出しの1行を書くときの手本・反面教師にする)
+  const ranked = [...rows].sort((a, b) => b.score - a.score);
+  const top = rows.length >= 2 * TOP_N ? ranked.slice(0, TOP_N).map((r) => r.id) : [];
+  const bottom = rows.length >= 2 * TOP_N ? ranked.slice(-TOP_N).reverse().map((r) => r.id) : [];
+  return { updated: todayJst, status: rows.length ? "ok" : "no_data", samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes, slots, styles, top, bottom };
+}
+
+/** 群ごとの反応率と届きやすさの、群全体に対する倍率(件数と相対値だけ。実数は残さない) */
+function groupIndex(rs, keyOf) {
+  const overall = median(rs.map((r) => r.score));
+  const views = median(rs.map((r) => r.views)) || 1;
+  const out = {};
+  for (const k of [...new Set(rs.map(keyOf))].sort()) {
+    const g = rs.filter((r) => keyOf(r) === k);
+    const okN = g.length >= MIN_SAMPLES;
+    out[k] = { n: g.length, index: okN && overall ? round1(median(g.map((r) => r.score)) / overall) : null, reach: okN ? round1(median(g.map((r) => r.views)) / views) : null };
+  }
+  return out;
 }
 const round1 = (x) => Math.round(x * 10) / 10;
 

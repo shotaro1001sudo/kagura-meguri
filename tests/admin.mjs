@@ -146,10 +146,11 @@ export async function adminTests({ ok, section }) {
   const fakeMail = { calls: 0 };
   const ovCalls = { runs: 0, site: 0 };
   // コミットと push は、本物のリポジトリに触れないよう、記録するだけの偽物にする
-  const published = [];
+  const published = [], publishOpts = [];
+  const autoFlag = { v: false };
   const fakeReplies = { calls: [], next: [] };
   const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
-    publisher: async (root, msg) => { published.push(msg); return { ok: true, commit: "abc1234" }; }, pending: async () => ({ uncommitted: false, unpushed: 0 }),
+    publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
@@ -435,6 +436,12 @@ export async function adminTests({ ok, section }) {
     ok(/total: pending\.length \+ actions\.length \+ openProps\.length \+ openAdv\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「判断・対応」に出す(判断待ちの件数と二重に数えない)");
     ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
     // 定期の更新と、提案のプロンプト案(Claude に頼む機能は、画面に置かない)
+    const rf0 = await req("/api/refresh", { body: {} });
+    ok(!rf0.json.refresh.hooks, "X投稿の書き出しに変更がなければ、公開しない");
+    autoFlag.v = true;
+    const rfh = await req("/api/refresh", { body: {} });
+    autoFlag.v = false;
+    ok(rfh.json.refresh.hooks?.ok && /書き出し/.test(published.at(-1)) && publishOpts.at(-1)?.only?.join() === "data/social-hooks.json" && publishOpts.at(-1)?.check === false, "定期の更新: 週次の分析が書いた X の書き出しだけを、運営者の操作なしで公開する(ほかのデータは巻き込まない)", JSON.stringify(rfh.json?.refresh?.hooks));
     const rf = await req("/api/refresh", { body: {} });
     ok(rf.status === 200 && rf.json.refresh.git.text === "最新です" && rf.json.state.refresh.last.why === "手動" && rf.json.state.refresh.hours === 0, "いますぐ更新: GitHub の最新の取り込みの結果を、画面の状態に出す", JSON.stringify(rf.json?.refresh));
     ok(!/\/api\/(jobs|claude)/.test(js) && !read("scripts/admin/app.html").includes('data-tab="claude"') && !existsSync("scripts/admin/claude.mjs"), "管理者用ページには、Claude に作業を頼む機能(タブ・チャット・実行)を置かない");

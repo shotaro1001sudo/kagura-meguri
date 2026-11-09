@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
 import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
-import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain } from "./publish.mjs";
+import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
@@ -32,7 +32,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -101,6 +101,13 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   // 定期の更新: GitHub の最新を取り込む → Gmail を読み込む。ほかの保存・公開と重ならないよう、順番に
   const refresh = (why) => serial(async () => {
     const r = { at: new Date(now()).toISOString(), why };
+    // 週次の分析が書いた X の書き出しの1行は、運営者の操作なしで公開する(取り込みの前に。未コミットのままだと取り込めないため)
+    try {
+      if (await autoChanged(root)) {
+        const p = await publisher(root, "data(admin): X投稿の書き出しの1行(週次の分析)", { only: AUTO_DATA, check: false });
+        r.hooks = p.ok ? { ok: true, text: "X投稿の書き出しを公開しました" } : { ok: false, text: `X投稿の書き出しを公開できませんでした(${p.step}: ${String(p.log ?? "").split("\n")[0].slice(0, 120)})` };
+      }
+    } catch (err) { r.hooks = { ok: false, text: err.message }; }
     try { r.git = await sync(root); } catch (err) { r.git = { ok: false, text: err.message }; }
     if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件${m.replies ? `・営業の相手からの返信 ${m.replies} 件` : ""}${m.replyError ? `(営業の返信は読み込めませんでした: ${m.replyError})` : ""}`, added: m.added, replies: m.replies }; }
     lastRefresh = r;

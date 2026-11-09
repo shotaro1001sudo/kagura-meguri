@@ -48,8 +48,10 @@ export function composeText(e, baseUrl) {
 }
 
 /** 読み物の文面。本文が長いときは、文の切れ目(。)で収まるところまでにする */
-export function composeReading({ label, title, body, url, tags }) {
-  const build = (b) => [`【${label}】${title}`, b, "", url, tags].join("\n");
+export function composeReading({ label, title, body, url, tags, hook }) {
+  // hook: 週次の分析(Claude)が、反応を見ながら書く1行目(data/social-hooks.json)。あれば先頭に置く
+  const head = hook ? [hook, "", `【${label}】${title}`] : [`【${label}】${title}`];
+  const build = (b) => [...head, b, "", url, tags].join("\n");
   if (weightedLength(build(body)) <= LIMIT) return build(body);
   const sentences = body.match(/[^。]+。?/g) ?? [body];
   let b = "";
@@ -73,7 +75,7 @@ export const THEMES = {
 const DAY_THEME = ["page", "program", "kind", "history", "feature", "page", "viewing"]; // 日〜土(金曜は「今週末の神楽」から)
 
 /** 読み物の候補。data/kagura-info.json(出典つきの紹介文)と、サイトの案内ページから作る */
-export function readingCandidates(info, baseUrl, todayJst) {
+export function readingCandidates(info, baseUrl, todayJst, hooks = {}) {
   const out = [];
   const kindUrl = (k) => `${baseUrl}${encodeURI(`/kagura/${k}.html`)}?${UTM}`;
   for (const [k, x] of Object.entries(info)) {
@@ -95,7 +97,18 @@ export function readingCandidates(info, baseUrl, todayJst) {
     if (weekday(todayJst) === 5) page(`weekend:${todayJst}`, "今週末の神楽", "今週末に各地で観られる神楽を、日付順にまとめました。お出かけ前に、公式情報もご確認ください。", "/weekend.html", true);
     if (Number(todayJst.slice(8, 10)) <= 7 && weekday(todayJst) === 0) page(`month:${todayJst.slice(0, 7)}`, "今月の神楽", "今月、各地で観られる神楽の開催予定をまとめています。", "/this-month.html", true);
   }
-  return out.map((c) => ({ ...c, label: THEMES[c.theme], text: composeReading({ label: THEMES[c.theme], ...c }) }));
+  return out.map((c) => {
+    const hook = validHook(hooks?.[c.id]) ? hooks[c.id].trim() : "";
+    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", text: composeReading({ label: THEMES[c.theme], ...c, hook }) };
+  });
+}
+
+export const HOOK_MAX = 40; // 書き出しの1行の長さの上限(文字数。本文を削りすぎないように)
+/** 書き出しの1行として使えるか(URL・ハッシュタグ・メンション・改行・長すぎるものは使わない) */
+export function validHook(h) {
+  if (typeof h !== "string") return false;
+  const t = h.trim();
+  return t.length >= 4 && t.length <= HOOK_MAX && !/[\n\r#＃@＠]|https?:/.test(t);
 }
 
 // 決まった順で混ぜる(同じ神楽ばかり続かないように)
@@ -138,7 +151,7 @@ export function daySlots(todayJst, { firstSlot = "07:00", intervalHours = 4, per
 }
 
 /** 枠に投稿を割り当てる。開催のお知らせは eventSlots の枠(朝・夕方)へ、残りは読み物 */
-export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now(), weights = {} }) {
+export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now(), weights = {}, hooks = {} }) {
   const slots = daySlots(todayJst, social);
   const taken = new Set(posted.map((p) => p.dueAt).filter(Boolean));
   const open = slots.filter((s) => !taken.has(s) && Date.parse(s) > now + 10 * 60e3); // 予約済み・過ぎた枠は使わない
@@ -147,10 +160,10 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, prefer.length));
   const evSlots = prefer.slice(0, evs.length);
   const readSlots = open.filter((s) => !evSlots.includes(s));
-  const reads = pickReadings(readingCandidates(info, baseUrl, todayJst), posted, todayJst, readSlots.length, weights);
+  const reads = pickReadings(readingCandidates(info, baseUrl, todayJst, hooks), posted, todayJst, readSlots.length, weights);
   const plan = [
-    ...evs.map((e, i) => ({ id: e.id, type: "event", dueAt: evSlots[i], text: composeText(e, baseUrl) })),
-    ...reads.map((r, i) => ({ id: r.id, type: "reading", dueAt: readSlots[i], text: r.text })),
+    ...evs.map((e, i) => ({ id: e.id, type: "event", style: "event", dueAt: evSlots[i], text: composeText(e, baseUrl) })),
+    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, dueAt: readSlots[i], text: r.text })),
   ];
   return plan.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
 }
