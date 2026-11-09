@@ -20,7 +20,7 @@ const monthEnd = (m) => `${m}-${String(new Date(Date.UTC(+m.slice(0, 4), +m.slic
 const writeJson = (p, v) => { if (!existsSync(dirname(p))) mkdirSync(dirname(p), { recursive: true }); writeFileSync(p + ".tmp", JSON.stringify(v, null, 2)); renameSync(p + ".tmp", p); };
 
 export const BILLING_DEFAULTS = { issuerName: "神楽めぐり編集部", issuerEmail: "henshubu@kagurameguri.jp", issuerSite: "https://kagurameguri.jp/", payDays: 10, feeNote: "振込手数料は、お手数ですがご負担ください。", invoiceRegNo: "" };
-const B_LIMITS = { issuerName: 60, issuerEmail: 120, issuerSite: 200, bankName: 40, branchName: 40, accountType: 4, accountNumber: 8, accountHolder: 60, feeNote: 200, invoiceRegNo: 14, note: 300 };
+const B_LIMITS = { issuerName: 60, issuerRep: 40, issuerEmail: 120, issuerSite: 200, bankName: 40, branchName: 40, accountType: 4, accountNumber: 8, accountHolder: 60, feeNote: 200, invoiceRegNo: 14, note: 300 };
 
 export function loadBilling(root) {
   const p = billingFile(root);
@@ -46,9 +46,9 @@ export function saveBilling(root, input) {
   const keys = [...Object.keys(B_LIMITS), "payDays"];
   const x = Object.fromEntries(keys.filter((k) => input[k] !== undefined).map((k) => [k, typeof input[k] === "string" ? input[k].trim() : input[k]]));
   if (x.payDays === "" || x.payDays == null) delete x.payDays; else x.payDays = Number(x.payDays);
-  const errs = validateBilling(x);
+  const next = { ...loadBilling(root), ...x }; // 一部だけの更新も、全体で確かめる
+  const errs = validateBilling(next);
   if (Object.keys(errs).length) return { code: 400, error: "入力を確かめてください", fields: errs };
-  const next = { ...loadBilling(root), ...x };
   writeJson(billingFile(root), next);
   return { billing: next };
 }
@@ -145,6 +145,6 @@ export function invoiceMail(lead, inv, b) {
   const d = (s) => `${+s.slice(0, 4)}年${+s.slice(5, 7)}月${+s.slice(8, 10)}日`;
   return {
     subject: `【${b.issuerName}】請求書のご送付(${inv.item})`,
-    body: `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お申し込みをいただき、ありがとうございます。\n\n下記のとおり、請求書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${inv.item}\n・金額: ${yen(inv.amount)}円(税込)\n・お支払いの期限: ${d(inv.dueAt)}\n\nご入金を確かめたあとに、掲載を始めます。掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${b.issuerName}\n${b.issuerSite}\n${b.issuerEmail}`,
+    body: `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お申し込みをいただき、ありがとうございます。\n\n下記のとおり、請求書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${inv.item}\n・金額: ${yen(inv.amount)}円(税込)\n・お支払いの期限: ${d(inv.dueAt)}\n\nご入金を確かめたあとに、掲載を始めます。掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${b.issuerName}${b.issuerRep ? `\n代表 ${b.issuerRep}` : ""}\n${b.issuerSite}\n${b.issuerEmail}`,
   };
 }

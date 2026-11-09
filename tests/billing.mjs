@@ -51,6 +51,10 @@ export function billingTests({ ok, section }) {
 
     const m = invoiceMail(pl.leads[0], pl.leads[0].invoices[0], loadBilling(root));
     ok(m.subject.includes("請求書") && m.body.includes("5,000円(税込)") && m.body.includes("2026年12月1日") && !m.body.includes("1234567"), "送るメールの文面: 金額と期限を書き、口座番号は本文に書かない(請求書の PDF に書く)");
+    ok(m.body.includes("神楽めぐり編集部\nhttps://"), "代表者名が空欄なら、署名に出さない");
+    saveBilling(root, { issuerRep: "見本 太郎" });
+    const m2 = invoiceMail(pl.leads[0], pl.leads[0].invoices[0], loadBilling(root));
+    ok(m2.body.includes("神楽めぐり編集部\n代表 見本 太郎") && m2.subject.startsWith("【神楽めぐり編集部】"), "代表者名を入れたら、署名に「代表 ○○」を出す(件名は屋号のまま)");
     ok(!/shotaro|gmail\.com/i.test(m.body + JSON.stringify(loadBilling(root))), "差出人に、個人の Gmail を出さない");
     let ignored = false;
     try { execFileSync("git", ["check-ignore", "-q", "analytics/billing.json"]); ignored = true; } catch { ignored = false; }

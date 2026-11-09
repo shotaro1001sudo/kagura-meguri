@@ -561,6 +561,7 @@ function editBilling() {
     h("p", { class: "mut small" }, "請求書に載せる差出人と振込先です。このPCの analytics/billing.json にだけ保存し、GitHub には送りません。"),
     h("div", { class: "grid" },
       dlgField("bl", "issuerName", "差出人(屋号)", inp("issuerName", { required: true, maxlength: 60 })),
+      dlgField("bl", "issuerRep", "代表者名(請求書と署名に出す。空欄なら出さない)", inp("issuerRep", { maxlength: 40 })),
       dlgField("bl", "issuerEmail", "連絡先のメール", inp("issuerEmail", { type: "email", maxlength: 120 })),
       dlgField("bl", "bankName", "銀行名", inp("bankName", { maxlength: 40, placeholder: "例: ○○銀行" })),
       dlgField("bl", "branchName", "支店名", inp("branchName", { maxlength: 40, placeholder: "例: ○○支店" })),
@@ -575,7 +576,7 @@ function editBilling() {
     if (ev.submitter?.value !== "save") return;
     ev.preventDefault();
     const f = form.elements, billing = {};
-    for (const k of ["issuerName", "issuerEmail", "bankName", "branchName", "accountType", "accountNumber", "accountHolder", "invoiceRegNo", "feeNote"]) billing[k] = f[k].value;
+    for (const k of ["issuerName", "issuerRep", "issuerEmail", "bankName", "branchName", "accountType", "accountNumber", "accountHolder", "invoiceRegNo", "feeNote"]) billing[k] = f[k].value;
     billing.payDays = f.payDays.value === "" ? null : Number(f.payDays.value);
     form.querySelectorAll(".err").forEach((e) => (e.textContent = ""));
     try { await call("/api/billing/settings", { billing }); dlg.close(); toast("請求の設定を保存しました"); render(); }
@@ -618,7 +619,7 @@ function showInvoice(x, i) {
     h("div", { class: "inv-meta" }, h("p", null, `請求番号: ${i.no}`), h("p", null, `請求日: ${fullDate(i.issuedAt)}`)),
     h("div", { class: "inv-parties" },
       h("div", null, h("p", { class: "inv-to" }, `${x.name} 御中`), x.contact ? h("p", null, x.contact) : ""),
-      h("div", { class: "inv-from" }, h("p", null, h("b", null, b.issuerName)), h("p", null, b.issuerEmail), h("p", null, b.issuerSite), b.invoiceRegNo ? h("p", null, `登録番号: ${b.invoiceRegNo}`) : "")),
+      h("div", { class: "inv-from" }, h("p", null, h("b", null, b.issuerName)), b.issuerRep ? h("p", null, `代表 ${b.issuerRep}`) : "", h("p", null, b.issuerEmail), h("p", null, b.issuerSite), b.invoiceRegNo ? h("p", null, `登録番号: ${b.invoiceRegNo}`) : "")),
     h("p", null, "下記のとおり、ご請求申し上げます。"),
     h("p", { class: "inv-total" }, "ご請求金額 ", h("b", null, `${i.amount.toLocaleString("ja-JP")}円`), "(税込)"),
     h("table", { class: "inv-table" },
