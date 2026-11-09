@@ -62,6 +62,9 @@ export const createPostQuery = ({ text, channelId, dueAt }) => `mutation {
   }
 }`;
 
+// Buffer の予約件数の上限(無料プランは10件)に当たったときの返事。失敗ではなく、残りは次の起動で埋める
+export const isScheduleLimit = (message) => /scheduled posts limit reached/i.test(String(message ?? ""));
+
 export const KEY_NOTICE_DAYS = 14;
 /** APIキーの期限(config.json の social.bufferKeyExpires, YYYY-MM-DD)が近い・過ぎたときの知らせ。なければ "" */
 export function keyExpiryNotice(expires, todayJst) {
@@ -108,6 +111,11 @@ async function main() {
     try {
       const data = await gql(key, createPostQuery({ text: p.text, channelId, dueAt: p.dueAt }));
       const r = data.createPost ?? {};
+      if (!r.post?.id && isScheduleLimit(r.message)) {
+        // 夜の起動が翌朝まで遅れると、今日の残り+翌日で10件を超えることがある。入らなかった枠は記録せず、次の起動で入れる
+        console.log(`Buffer の予約件数の上限に達したため、ここで止めます(残りは次の起動で入れます): ${r.message}`);
+        break;
+      }
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
       posted.push({ id: p.id, type: p.type, style: p.style, link: p.link, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
       writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n"); // 1件ごとに記録(途中で失敗しても、重複しない)

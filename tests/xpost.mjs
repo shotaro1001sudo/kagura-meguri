@@ -1,7 +1,7 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
 import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura } from "../scripts/lib/x-post.mjs";
 import { mergeHooks } from "../scripts/social-hooks.mjs";
-import { createPostQuery, keyExpiryNotice } from "../scripts/post-social.mjs";
+import { createPostQuery, keyExpiryNotice, isScheduleLimit } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
   section("SNS投稿: 選び方・文面・時刻");
@@ -79,6 +79,7 @@ export function xpostTests({ ok, section }) {
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");
   ok(keyExpiryNotice("", "2026-11-08") === "" && keyExpiryNotice("2026-12-31", "2026-11-08") === "", "APIキーの期限が未設定・まだ先なら、知らせない");
   ok(keyExpiryNotice("2026-11-22", "2026-11-08").includes("あと14日") && keyExpiryNotice("2026-11-07", "2026-11-08").includes("過ぎています"), "期限の14日前から・過ぎたあとは、知らせる");
+  ok(isScheduleLimit("Scheduled posts limit reached. You have 10 scheduled posts out of 10 allowed.") && !isScheduleLimit("Invalid channel") && !isScheduleLimit(undefined), "Buffer の予約上限の返事だけを、上限として扱う");
 
   // 終わったばかりの神楽は、出る時刻で判断して、読み物に使わない(作った時ではなく)
   const hx = { kagura: "保呂羽山の霜月神楽", status: "published" };
