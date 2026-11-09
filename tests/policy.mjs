@@ -69,6 +69,12 @@ export async function policyTests({ ok, section, OUT, build }) {
     if (/document\.cookie|localStorage|indexedDB/.test(s)) bad.push(f);
     for (const k of s.matchAll(/sessionStorage\.(?:get|set)Item\('([^']+)'/g)) keys.add(k[1]);
   }
+  // 別ファイルにしたサイト自身のプログラム(好み診断)も同じように調べる
+  for (const f of ["quiz-app.js"].map((x) => `${OUT}/${x}`)) {
+    const s = read(f);
+    if (/document\.cookie|localStorage|indexedDB/.test(s)) bad.push(f);
+    for (const k of s.matchAll(/sessionStorage\.(?:get|set)Item\('([^']+)'/g)) keys.add(k[1]);
+  }
   ok(bad.length === 0, "Cookie・localStorage・IndexedDB を使っていない(使うなら、ポリシーの更新が必要)", bad.join(","));
   ok([...keys].sort().join() === "intro,km-quiz-offer,lastSend", "保存するのは sessionStorage の intro・km-quiz-offer・lastSend だけ", [...keys].join(","));
   ok(pv.includes("kagura_consent_v1") && pv.includes("182日間") && pv.includes("セッションストレージ") && pv.includes("外部には送られません") && pv.includes("診断の案内") && pv.includes("回答は保存"), "ポリシーに保存する3項目と、診断回答を保存・送信しないことが書かれている");

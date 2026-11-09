@@ -9,6 +9,7 @@ import { reservationLabel } from './lib/reservation.mjs';
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
 // 2026-10-21: event-handoff smoke marker (comment only; no functional or output change).
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import * as cheerio from "cheerio";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, applyForm, formScript, formReady } from "./lib/form.mjs";
@@ -30,7 +31,7 @@ import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
-import { questions, features, traditions, quizEngine, QUIZ_CHECKED } from './lib/quiz.mjs';
+import { questions, features, traditions, quizEngine, QUIZ_CHECKED, evidenceWeight, evidenceText } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
@@ -593,28 +594,37 @@ const quizTraditions = traditions.map(t => {
   const info = kaguraInfo[t.kind];
   if(!info?.source) throw new Error(`quiz: 出典のない種類 ${t.kind}`);
   const evidence = t.evidence.map(([feature,path]) => {
-    const text = path.split('.').reduce((v,k)=>v?.[k],info);
-    if(!features[feature] || typeof text !== 'string' || !text) throw new Error(`quiz: 根拠不足 ${t.kind}/${path}`);
-    return {feature,path,text};
+    const text = evidenceText(info,path);
+    if(!features[feature] || !text) throw new Error(`quiz: 根拠不足 ${t.kind}/${path}`);
+    return {feature,weight:evidenceWeight(path),text};
   });
-  return {kind:t.kind,href:kaguraHref(t.kind),source:info.source,evidence};
+  if(!info.tagline) throw new Error(`quiz: 紹介の一言(tagline)がない ${t.kind}`);
+  return {kind:t.kind,href:kaguras.includes(t.kind)?kaguraHref(t.kind):'',source:info.source,tagline:info.tagline,viewing:(info.viewing??[]).slice(0,2),evidence};
 });
 const quizKindNames = new Set(traditions.map(t=>t.kind));
 const quizEvents = upcoming.filter(e=>quizKindNames.has(e.kagura)).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,timeUnknown:e.timeUnknown,sessions:e.sessions,when:whenOf(e),prefecture:e.prefecture,place:[e.prefecture,e.city].filter(Boolean).join(' '),kind:e.kagura}));
 const quizRegular = regular.filter(r=>quizKindNames.has(r.kagura)).map(r=>({id:r.id,name:r.name,schedule:r.schedule,prefecture:r.prefecture,until:r.until,kind:r.kagura}));
-const quizData = JSON.stringify({questions,features,traditions:quizTraditions,prefectures:REGIONS.flatMap(([,ps])=>ps),events:quizEvents,regular:quizRegular}).replace(/</g,'\\u003c');
+const quizData = JSON.stringify({questions,features,url:`${cfg.baseUrl}/quiz.html`,traditions:quizTraditions,regions:REGIONS,events:quizEvents,regular:quizRegular}).replace(/</g,'\\u003c');
+// 画面のプログラムは別ファイル(ページを軽くする)。中身が変わったら ?v= も変わり、古いキャッシュを使わない
 const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* quizEngine */',quizEngine.toString());
+const quizJsVersion = createHash('sha256').update(quizJs).digest('hex').slice(0,10);
+write('dist/quiz-app.js',quizJs);
 write('dist/quiz.html',layout({
-  title:`あなたが惹かれる神楽はどれ？${questions.length}問の好み診断 | ${cfg.siteName}`,
-  desc:padDesc(`${questions.length}問に答えて、舞の動き・面や衣装・物語・雰囲気から自分の好みを探してみませんか。好みと任意の観覧条件から、神楽の楽しみ方と開催情報をご案内します。登録不要で、回答はブラウザ内だけで計算します。`),
+  title:`あなたに近い神楽はどれ？${questions.length}問の好み診断 | ${cfg.siteName}`,
+  desc:padDesc(`${questions.length}問に答えると、舞のテンポ・面や衣装・物語・湯立てや夜神楽などの好みから、${traditions.length}種類の神楽のうち好みに近いものを、出典つきの理由と一緒にご案内します。地域と日程を選べば、観に行ける公演も探せます。登録不要で、回答はブラウザ内だけで計算します。`),
   path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
-  body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたが惹かれる神楽はどれ？',`${questions.length}問で、好きな舞の雰囲気を探してみませんか。好み${questions.filter(q=>q.type==='preference').length}問と、任意の観覧条件${questions.filter(q=>q.type!=='preference').length}問。分からない項目はそのままで大丈夫です。`)}
+  body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたに近い神楽はどれ？',`${questions.length}問・1分ほどで、${traditions.length}種類の神楽から好みに近いものを探します。好み${questions.filter(q=>q.type==='preference').length}問と、観に行く地域・日程${questions.filter(q=>q.type!=='preference').length}問。分からない項目は「まだ分からない」で大丈夫です。`)}
 <section id="quiz" aria-label="${questions.length}問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>${questions.length}問の診断をはじめる</button>
 <noscript><p>診断にはJavaScriptが必要です。<a href="/calendar.html">公演を探す</a>・<a href="/guide.html">はじめての神楽ガイド</a>もご利用ください。</p></noscript>
 <form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
 <section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
 <p class="meta annotation">登録不要。回答は保存・外部送信しません。</p>
-<script id="quiz-data" type="application/json">${quizData}</script><script>${quizJs}</script>`
+<section class="quiz-about" aria-labelledby="quiz-about-title"><h2 id="quiz-about-title">診断のしくみ</h2>
+<p>各神楽の特徴は、このサイトの解説(出典つき)に書かれていることだけから決めています。たとえば「湯立て」が特徴になるのは、解説に湯立ての記述がある神楽だけです。紹介の中心に書かれた特徴ほど強く数え、特徴の数が多い神楽ほど有利になる、ということがないように比べています。</p>
+<p>結果には、好みと重なった特徴と、その根拠になった解説の本文を示します。点数や一致率は出しません。地域と日程は、好みの順位を変えずに、観に行ける公演を探すためだけに使います。</p>
+<h3>診断の対象(${traditions.length}種類)</h3><div class="taglist">${traditions.map(t=>kaguras.includes(t.kind)?`<a class="tag" href="${kaguraHref(t.kind)}">${esc(t.kind)}</a>`:`<span class="tag">${esc(t.kind)}</span>`).join('')}</div>
+<p class="meta">解説のない神楽は、まだ診断の対象に入っていません。すべての神楽の公演は<a href="/calendar.html">公演カレンダー</a>から探せます。</p></section>
+<script id="quiz-data" type="application/json">${quizData}</script><script defer src="/quiz-app.js?v=${quizJsVersion}"></script>`
 }));
 
 // ---------- 地図 (Leaflet + 国土地理院の淡色地図) ----------
