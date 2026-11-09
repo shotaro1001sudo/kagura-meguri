@@ -200,5 +200,39 @@
       }
     ],
     "reason": "C・年度更新待ち：霜月祭案内と2025年日程を確認。2026年開催日程は未確認。翌日未明の時刻・隔年開催を要確認。"
+  },
+  "iwate-hanakitatoono": {
+    "sourceId": "iwate-hanakitatoono",
+    "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
+    "digest": "65d2af771175230df9de16722bc993f40cc66f8e9c3ecd50bbd68054d0b9ea7b",
+    "checked": "2026-11-09",
+    "changed": "2026-11-09",
+    "reviewedDigest": "65d2af771175230df9de16722bc993f40cc66f8e9c3ecd50bbd68054d0b9ea7b",
+    "pending": false,
+    "pages": [
+      {
+        "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
+        "digest": "2df2b0b1a3b4bfd8da3eed1b241adbc264f5bcdd4c849a3e95e980286d481cc9",
+        "linkCount": 249
+      }
+    ],
+    "reason": "A：表(公演日・名称・内容)から、会場が1つに決まる神楽の行だけ抽出。まつりのパレード等の複数会場の行は除外。"
+  },
+  "kanagawa-minzoku-geino": {
+    "sourceId": "kanagawa-minzoku-geino",
+    "url": "https://www.city.yokohama.lg.jp/kurashi/kyodo-manabi/bunkazai/bunya12000.html",
+    "digest": "80637814f883c31d5c203142d09022b4dfad8d4bf80e585fb9b83be20e24cadf",
+    "checked": "2026-11-09",
+    "changed": "2026-11-09",
+    "reviewedDigest": "80637814f883c31d5c203142d09022b4dfad8d4bf80e585fb9b83be20e24cadf",
+    "pending": false,
+    "pages": [
+      {
+        "url": "https://www.city.yokohama.lg.jp/kurashi/kyodo-manabi/bunkazai/bunya12000.html",
+        "digest": "d6b0b7d67d1e8aa90833bb12dfa4116a903774f1e65c22826e50a154a8049b7a",
+        "linkCount": 163
+      }
+    ],
+    "reason": "B：3か月ごとのPDF(民俗芸能情報)の追加を検出。PDFの各行は自動で読まない。新しい号が出たら、神楽の行を人が確かめて events.json に登録。"
   }
 }

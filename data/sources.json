@@ -223,15 +223,17 @@
         "id": "iwate-hanakitatoono",
         "name": "岩手県 花北・遠野応援隊",
         "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
-        "adapter": "official-watch",
-        "enabled": false,
+        "adapter": "iwate-kagura-table",
+        "enabled": true,
         "nationalExpansion": true,
-        "collectionMode": "review",
+        "collectionMode": "events",
         "requestDelayMs": 5000,
-        "termsChecked": "",
-        "reviewStatus": "接続保留",
-        "reviewReason": "robots取得未確認・詳細リンクに問い合わせ条件あり",
-        "notes": "2026-10-30確認。写真・本文は転載せず、日時・会場の事実のみ利用。更新監視はハッシュとURLのみ保存。画像/PDFの同一URL内の差し替えは検出対象外。A：複数地域の行事一覧。神楽のある催事だけ抽出し、催事全体と神楽出演時間を区別。終了済み・重複除外。"
+        "termsChecked": "2026-11-09",
+        "reviewStatus": "自動公演抽出",
+        "reviewReason": "A：表(公演日・名称・内容)から、会場が1つに決まる神楽の行だけ抽出。まつりのパレード等の複数会場の行は除外。",
+        "notes": "2026-10-30確認。写真・本文は転載せず、日時・会場の事実のみ利用。更新監視はハッシュとURLのみ保存。画像/PDFの同一URL内の差し替えは検出対象外。A：複数地域の行事一覧。神楽のある催事だけ抽出し、催事全体と神楽出演時間を区別。終了済み・重複除外。 2026-11-09再確認: robots.txt で取得可。ページは表(公演日・名称・内容)。岩手県サイトに転載・取得を禁じる利用規約は見当たらない。表から事実(名称・日付・時刻・会場・住所)だけを使い、コメント文は使わない。年は公演日のセルからだけ取る。大償・岳は早池峰神楽、ほかは「岩手の神楽」として登録(系統を推測しない)。 岩手県のリンク方針は「トップページ以外へのリンクは担当課に問い合わせ」のため、掲載する公演の公式リンクはトップページ(linkUrl)にし、出典名でページを示す。",
+        "kagura": "岩手の神楽",
+        "linkUrl": "https://www.pref.iwate.jp/"
     },
     {
         "id": "morioka-odette",
@@ -458,6 +460,20 @@
         "notes": "2026-11-09確認。robots.txt で取得可。写真・本文は転載せず、日時・会場の事実のみ利用。更新監視はハッシュとURLのみ保存。利用規約のページは見当たらない。動画のネット投稿禁止の注記は、掲載文で案内する。2026-11-09 に2027年3月までの5公演を events.json に手で登録済み。"
     },
     {
+        "id": "kanagawa-minzoku-geino",
+        "name": "神奈川県民俗芸能保存協会「民俗芸能情報」(横浜市 文化財ページ)",
+        "url": "https://www.city.yokohama.lg.jp/kurashi/kyodo-manabi/bunkazai/bunya12000.html",
+        "adapter": "official-watch",
+        "enabled": true,
+        "nationalExpansion": true,
+        "collectionMode": "review",
+        "requestDelayMs": 5000,
+        "termsChecked": "2026-11-09",
+        "reviewStatus": "更新監視",
+        "reviewReason": "B：3か月ごとのPDF(民俗芸能情報)の追加を検出。PDFの各行は自動で読まない。新しい号が出たら、神楽の行を人が確かめて events.json に登録。",
+        "notes": "2026-11-09確認。robots.txt なし(404)で取得可。横浜市のページに、神奈川県民俗芸能保存協会が3か月ごとに発行する県内の民俗芸能公演の日程PDFが並ぶ。令和8年10〜12月号までは events.json に手で登録済み。次の号(令和9年1〜3月)が載ったら確認待ちになる。写真・本文は転載せず、日時・会場の事実のみ利用。"
+    },
+    {
         "id": "unnan-kagura",
         "name": "雲南市観光協会(雲南市内神楽団体 神楽公演スケジュール)",
         "adapter": "unnan-kagura",
@@ -470,5 +486,16 @@
         "enabled": true,
         "reviewStatus": "実HTML検証済・有効化済",
         "notes": "2026-11-09 確認。robots.txt は管理画面のみ禁止で取得可。規約ページはなく(プライバシーポリシーのみ)、転載禁止の表記もない。毎月同じURLで「YYYY年M月分」の一覧に書き換わる。取り込むのは名称・日付・時刻・会場・料金・詳細ページのURLだけ(出演団体の説明文などは取り込まない)。年は見出しからだけ取り、「頃」の時刻は時刻未定にする。かっこの地名が雲南市外(奥出雲町・安来市など)ならその市町村で登録。"
+    },
+    {
+        "id": "kankomie-kagura",
+        "name": "観光三重(三重県観光連盟) イベント検索「神楽」",
+        "url": "https://www.kankomie.or.jp/event?q%5Bname_or_title_or_description_cont_all%5D=%E7%A5%9E%E6%A5%BD",
+        "adapter": "kankomie",
+        "enabled": true,
+        "termsChecked": "2026-11-09",
+        "prefecture": "三重県",
+        "requestDelayMs": 5000,
+        "notes": "2026-11-09確認。robots.txt は /banner_click 以外を許可。サイトポリシーは文章・写真の無断転載を禁止 → 名称・日付・会場・住所の事実だけを使い、紹介文・写真は使わない。名称に「神楽」を含む催しの詳細ページ(最大12件)だけを読む。御祈祷・厄除・初詣・初神楽などは除外。時刻は欄にないため時間未定。"
     }
 ]

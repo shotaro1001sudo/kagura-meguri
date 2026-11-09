@@ -7,7 +7,10 @@ import { JSDOM } from 'jsdom';
 import * as cheerio from 'cheerio';
 const read = p => readFileSync(p, 'utf8');
 const rows = JSON.parse(read('data/events.json'));
-const tokyo = rows.filter(e => e.prefecture === '東京都');
+// このテストが確かめるのは、最初に登録した東京都の3件(時間帯が複数ある回と、終了時刻のある回)。後から足した東京都の開催は対象外
+const ORIGINAL = ['ookunitama-torinoichi-20261107', 'ookunitama-torinoichi-20261119', 'okachimachi-furusato-nanbu-20261129'];
+const allTokyo = rows.filter(e => e.prefecture === '東京都');
+const tokyo = allTokyo.filter(e => ORIGINAL.includes(e.id));
 assert.equal(tokyo.length, 3);
 assert.equal(new Set(tokyo.map(e => e.id)).size, 3);
 assert.deepEqual(tokyo.map(e => e.start), ['2026-11-07T15:00', '2026-11-19T15:00', '2026-11-29T17:30']);
@@ -53,7 +56,7 @@ try {
   dom.window.eval(script.textContent);
   await new Promise(r=>setTimeout(r,0));
   const d=dom.window.document;
-  assert.equal(d.querySelectorAll('#results li').length,3);
+  assert.equal(d.querySelectorAll('#results li').length,allTokyo.length);
   assert(d.querySelector('#results').textContent.includes('15:00・17:00・19:00'));
   assert(d.querySelector('#results').textContent.includes('17:30〜18:00'));
   d.querySelector('[data-w="range"]').click();

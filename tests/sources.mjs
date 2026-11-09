@@ -6,6 +6,8 @@ import { parse as parseOita, discover as discoverOita } from "../scripts/adapter
 import { parse as parseHanamaki, urls as hanamakiUrls } from "../scripts/adapters/hanamaki.mjs";
 import { parse as parseUnnan } from "../scripts/adapters/unnan-kagura.mjs";
 import { parse as parseTakachiho } from "../scripts/adapters/takachiho-yokagura.mjs";
+import { parse as parseIwate } from "../scripts/adapters/iwate-kagura-table.mjs";
+import { parse as parseMie, discover as discoverMie } from "../scripts/adapters/kankomie.mjs";
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -26,7 +28,7 @@ export function sourcesTests({ ok, section }) {
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
   ok(staged.filter((s) => !["kagura-kaikan-oita", "hanamaki-hayachine"].includes(s.id)).every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り4候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 6, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会・雲南市観光協会だけを有効化する");
+  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 7, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会・雲南市観光協会・観光三重だけを有効化する");
 
   section("宮崎・高千穂の夜神楽日程表: 会場は神社ではなく神楽宿");
   const tk = allSources.find((s) => s.id === "takachiho-yokagura");
@@ -61,6 +63,41 @@ export function sourcesTests({ ok, section }) {
   ok(ui[3].start === "2027-01-10T11:00" && ui[3].venue === "はなもも体育館(久野多目的施設)" && !ui[3].address, "12月分のページの1月は翌年。地名でないかっこは会場名に残す", JSON.stringify(ui[3]));
   let threw = false; try { parseUnnan(unHtml.replace("（2026年12月分）", ""), un, un.url); } catch { threw = true; }
   ok(threw, "見出しに年月がなければ、年を推測せずに失敗にする");
+
+  section("岩手県 花北・遠野応援隊: 神楽公演情報の表");
+  const iw = allSources.find((s) => s.id === "iwate-hanakitatoono");
+  ok(iw?.adapter === "iwate-kagura-table" && iw.enabled === true && iw.collectionMode === "events" && iw.termsChecked === "2026-11-09" && iw.linkUrl === "https://www.pref.iwate.jp/", "表を自動で読む。公式リンクは県のトップページ(トップ以外へのリンクは問い合わせ事項のため)");
+  const tr = (d, n, b) => `<tr><td>${d}</td><td>${n}</td><td>${b}</td></tr>`;
+  const iwHtml = "<table><tr><th>公演日</th><th>名 称</th><th>内容</th></tr>"
+    + tr("2027年1月2日（土曜）", "大償神楽舞初め", "10時30分～15時 大償神楽 会場：神楽の館（花巻市大迫町内川目第39地割37-2） 交通アクセス：…")
+    + tr("2027年2月7日（日曜）", "菅原神社例大祭", "11時30分～大出早池峰神楽、と平倉神楽 会場：菅原神社（〒028-0663 遠野市附馬牛町下附馬牛5地割50） コメント：岳の人から神楽を習った")
+    + tr("2027年2月14日（日曜）", "鱒沢神楽公演", "開場12時45分 開演13時15分 鱒沢神楽 会場：宮守農村婦人の家（遠野市宮守町上鱒沢8-66）")
+    + tr("2027年3月1日（月曜）～2日（火曜）", "例大祭", "1日 17時30分～宵宮祭 小倉神楽 会場：早池峯神社（遠野市附馬牛町上附馬牛19-81）")
+    + tr("2027年3月6日（土曜）", "遠野まつり", "○郷土芸能パレード 12:05～ 湧水神楽 ○神楽共演会（市役所前）")
+    + tr("2027年3月7日（日曜）", "獅子踊り大会", "10時～ 長野獅子踊り 会場：小友地区センター（遠野市小友町）")
+    + tr("2027年3月8日（月曜）", "石鳩岡神楽舞初め", "13時～ 石鳩岡神楽 ※中止 会場：石鳩岡振興センター（花巻市東和町石鳩岡5区311）") + "</table>";
+  const iwi = parseIwate(iwHtml, iw, iw.url);
+  ok(iwi.length === 4, "会場が1つに決まらない行・神楽の団体がない行・中止の行は載せない", JSON.stringify(iwi.map((x) => x.name)));
+  ok(iwi[0].start === "2027-01-02T10:30" && iwi[0].kagura === "早池峰神楽" && iwi[0].venue === "神楽の館" && iwi[0].city === "花巻市" && iwi[0].url === "https://www.pref.iwate.jp/", "年は公演日のセルから。大償・岳は早池峰神楽", JSON.stringify(iwi[0]));
+  ok(iwi[1].name === "菅原神社例大祭(大出早池峰神楽・平倉神楽)" && iwi[1].kagura === "岩手の神楽" && iwi[1].address === "遠野市附馬牛町下附馬牛5地割50", "名称に神楽がなければ出演団体を添える(コメント文や助詞は拾わない)。郵便番号は住所に入れない", JSON.stringify(iwi[1]));
+  ok(iwi[2].start === "2027-02-14T13:15", "開演の時刻を開場より優先する", iwi[2].start);
+  ok(iwi[3].timeUnknown && iwi[3].start === "2027-03-01T00:00", "複数日の行は時刻を推測しない", JSON.stringify(iwi[3]));
+  let iwThrew = false; try { parseIwate("<table><tr><td>a</td><td>b</td><td>c</td></tr></table>", iw, iw.url); } catch { iwThrew = true; }
+  ok(iwThrew, "「公演日」の表がなければ、0件ではなく失敗にする(ページ構造の変化に気づくため)");
+
+  section("三重・観光三重: イベント検索「神楽」の詳細ページ");
+  const mie = allSources.find((s) => s.id === "kankomie-kagura");
+  ok(mie?.adapter === "kankomie" && mie.enabled === true && mie.termsChecked === "2026-11-09" && mie.requestDelayMs >= 5000, "規約・robots を確かめて有効化(取得間隔5秒)");
+  const card = (id, title, d) => `<a class="d-block h-100 card text-decoration-none" href="/event/${id}"><p class="card-description"><span>${d}</span></p><div class="card-body"><p class="card-text fw-bold text-gray-800">${title}</p></div></a>`;
+  const list = card(35041, "伊勢大神楽", "2026年12月24日(木)") + card(17003, "【多度大社】 新春開運初神楽", "2027年1月1日") + card(35736, "鸕宮神社秋祭", "2026年12月12日");
+  ok(JSON.stringify(discoverMie(list, mie, mie.url)) === JSON.stringify(["https://www.kankomie.or.jp/event/35041"]), "名称に神楽を含む催しだけ詳細を読む(初神楽などの祈祷は除く)");
+  const mrow = (k, v) => `<div class="d-md-flex"><div class="mb-0 p-2 bg-light fw-bold col-md-3">${k}</div><div class="mb-0 p-2 col-md-9">${v}</div></div>`;
+  const detail = (title, period, venue, addr) => `<html><head><title>${title} | イベント | 観光三重(かんこうみえ)</title></head><body><h1>${title}<small>ヨミガナ</small></h1>${mrow("開催期間", period)}${mrow("会場", venue)}${mrow("住所", addr)}</body></html>`;
+  const m1 = parseMie(detail("伊勢大神楽", "2026年12月24日(木)", "増田神社", "桑名市太夫155"), mie, "https://www.kankomie.or.jp/event/35041");
+  ok(m1.length === 1 && m1[0].name === "伊勢大神楽" && m1[0].kagura === "伊勢大神楽" && m1[0].start === "2026-12-24T00:00" && m1[0].timeUnknown && m1[0].city === "桑名市" && m1[0].venue === "増田神社", "名称は title から(読み仮名を含めない)。時刻は推測しない", JSON.stringify(m1));
+  ok(parseMie(detail("獅子神楽", "毎年12月01日", "神社", "鈴鹿市山本町"), mie, "https://www.kankomie.or.jp/event/1").length === 0, "年のない開催期間は読まない");
+  ok(parseMie(detail("鸕宮神社獅子神楽", "御渡祭:2026年12月12日(土)、例大祭:2026年12月20日(日)", "鸕宮神社", "伊賀市"), mie, "https://www.kankomie.or.jp/event/2").length === 0, "日付が複数並び、神楽の日が分からないものは読まない");
+  ok(parseMie(detail("伊勢大神楽", "2026年12月24日(木)", "会館", "愛知県名古屋市"), mie, "https://www.kankomie.or.jp/event/3").length === 0 && parseMie(list, mie, mie.url).length === 0, "県外の会場と、一覧ページそのものは取らない");
 
   section("岩手・花巻観光協会: 月ごとのページから、神楽の催しだけを取り出す");
   const hk = allSources.find((s) => s.id === "hanamaki-hayachine");
