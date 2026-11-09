@@ -20,6 +20,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pr
 import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
+import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
@@ -69,7 +70,10 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
   // 営業の台帳(analytics/pipeline.json)。KPI の目標は plan.json から
   const pipelineState = () => {
     const pl = loadPipeline(root);
-    return { leads: pl.leads, updated: pl.updated, stages: STAGES, kinds: KINDS, offers: OFFERS, followDays: FOLLOW_DAYS, summary: pipelineSummary(pl, loadPlan(root, today())?.kpis ?? [], today()) };
+    const billing = loadBilling(root);
+    return { leads: pl.leads, updated: pl.updated, stages: STAGES, kinds: KINDS, offers: OFFERS, followDays: FOLLOW_DAYS, summary: pipelineSummary(pl, loadPlan(root, today())?.kpis ?? [], today()),
+      // 請求と入金(振込先は analytics/billing.json。このPCだけ)
+      billing, billingReady: billingReady(billing), billingSummary: billingSummary(pl.leads, today()), invoiceStatus: INVOICE_STATUS, renewDays: RENEW_NOTICE_DAYS };
   };
 
   // Gmail から、新しい申請・問い合わせを読み込む(画面のボタンと、定期の更新の両方から)
@@ -229,6 +233,29 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       const r = setStage(root, body.id, body.stage, today(), body.note, body.nextAt);
       if (r.error) return [r.code, { error: r.error }];
       return { lead: r.lead, state: await state() };
+    }),
+
+    // 請求: 振込先などの設定 / 請求書を作る / 入金済み・取り消し / 送るメールの文面
+    "POST /api/billing/settings": (body) => serial(async () => {
+      const r = saveBilling(root, body.billing ?? {});
+      if (r.error) return [r.code, { error: r.error, fields: r.fields }];
+      return { state: await state() };
+    }),
+    "POST /api/billing/invoice": (body) => serial(async () => {
+      const r = addInvoice(root, body.id, body.invoice ?? {}, today());
+      if (r.error) return [r.code, { error: r.error, fields: r.fields }];
+      return { invoice: r.invoice, mail: invoiceMail(r.lead, r.invoice, loadBilling(root)), state: await state() };
+    }),
+    "POST /api/billing/status": (body) => serial(async () => {
+      const r = setInvoiceStatus(root, body.id, body.no, body.status, today(), body.paidAt);
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+    "POST /api/billing/mail": (body) => serial(async () => {
+      const lead = loadPipeline(root).leads.find((y) => y.id === body.id);
+      const inv = lead?.invoices?.find((i) => i.no === body.no);
+      if (!inv) return [404, { error: "請求書が見つかりません" }];
+      return { mail: invoiceMail(lead, inv, loadBilling(root)) };
     }),
 
     // スマホで開く: QR コード(鍵入りのアドレス)と、鍵の作り直し。PC の画面からだけ(スマホからは 403)

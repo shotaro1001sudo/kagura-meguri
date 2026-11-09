@@ -159,3 +159,34 @@ table.leadsum{min-width:520px;margin:6px 0}table.leadsum td,table.leadsum th{tex
 table.leadsum tr.att td{background:color-mix(in srgb,var(--ac) 9%,transparent)}table.leadsum tr.dim td{opacity:.6}
 .lead-sum{margin:6px 0;padding:8px 10px;border-left:3px solid var(--line)}.lead-sum.att{border-left-color:var(--ac)}
 .replies .snip{flex-basis:100%;font-size:.88rem;color:var(--mut, inherit)}
+
+/* 請求書: 画面の上に重ねて出す。印刷(PDF に保存)のときは、請求書だけを白い紙として出す */
+.invoice-view{position:fixed;inset:0;z-index:50;overflow:auto;background:var(--bg);padding:16px}
+.invoice-view .inv-tools{max-width:760px;margin:0 auto 12px;flex-wrap:wrap;align-items:center}
+.invoice-sheet{max-width:760px;margin:0 auto;background:#fff;color:#111;padding:40px 44px;border:1px solid #ccc;font-size:14px;line-height:1.7}
+.invoice-sheet h1{text-align:center;font-size:24px;letter-spacing:.5em;margin:0 0 16px}
+.invoice-sheet h2{font-size:15px;margin:24px 0 6px;border-bottom:1px solid #999}
+.invoice-sheet p{margin:2px 0}
+.inv-meta{text-align:right}
+.inv-parties{display:flex;justify-content:space-between;gap:24px;margin:16px 0}
+.inv-to{font-size:18px;border-bottom:1px solid #111;padding-bottom:2px}
+.inv-from{text-align:right}
+.inv-total{font-size:18px;margin:12px 0!important;padding:8px 0;border-bottom:2px solid #111}
+.inv-total b{font-size:22px}
+.inv-table{width:100%;border-collapse:collapse;margin:12px 0}
+.inv-table th,.inv-table td{border:1px solid #999;padding:6px 8px;text-align:left}
+.inv-table thead th{background:#f0f0f0}
+.inv-table .num{text-align:right;white-space:nowrap}
+.inv-bank{display:grid;grid-template-columns:9em 1fr;gap:2px 8px;margin:0}
+.inv-bank dt{color:#555}
+.inv-bank dd{margin:0}
+.inv-note{font-size:13px;color:#333}
+.inv-void{color:#b00;font-weight:bold;font-size:18px;text-align:center;border:2px solid #b00;margin-top:16px!important}
+@media (max-width:640px){.invoice-sheet{padding:20px 16px}.inv-parties{flex-direction:column}.inv-from{text-align:left}}
+@media print{
+  body>*:not(.invoice-view){display:none!important}
+  .invoice-view{position:static;padding:0;background:#fff;overflow:visible}
+  .invoice-view .inv-tools{display:none}
+  .invoice-sheet{border:0;max-width:none;padding:0}
+  @page{size:A4;margin:18mm}
+}
