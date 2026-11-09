@@ -150,6 +150,29 @@ export function daySlots(todayJst, { firstSlot = "07:00", intervalHours = 4, per
   return Array.from({ length: perDay }, (_, i) => new Date(start + i * intervalHours * 3600e3).toISOString());
 }
 
+export const JUST_OVER_DAYS = 30; // 開催が終わってこの日数のあいだは、その神楽の読み物を出さない(次の開催があれば出す)
+
+/** 開催の終わる時刻(ms)。終わりがなければ、始まりの日の終わり(24時) */
+const endMs = (e) => (e.end ? Date.parse(`${e.end}+09:00`) : Date.parse(`${e.start.slice(0, 10)}T00:00:00+09:00`) + 86400e3);
+
+/**
+ * 「終わったばかり」の神楽: 投稿が出る時刻(untilMs)までに開催が終わり(この JUST_OVER_DAYS 日のうち)、
+ * そのあとの開催がない神楽。予約は前の晩・数日前に作るので、作った時ではなく、出る時で判断する
+ * (例: 11/7〜8 の神楽の紹介を、11/9 に「毎年11月7日から…」と出さない)。
+ */
+export function justOverKagura(events, untilMs) {
+  const over = new Set();
+  const ahead = new Set();
+  for (const e of events ?? []) {
+    if (!e?.kagura || !e.start || e.status !== "published") continue;
+    const end = endMs(e);
+    if (!Number.isFinite(end)) continue;
+    if (end > untilMs) ahead.add(e.kagura);
+    else if (end > untilMs - JUST_OVER_DAYS * 86400e3) over.add(e.kagura);
+  }
+  return new Set([...over].filter((k) => !ahead.has(k)));
+}
+
 /** 枠に投稿を割り当てる。開催のお知らせは eventSlots の枠(朝・夕方)へ、残りは読み物 */
 export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now(), weights = {}, hooks = {} }) {
   const slots = daySlots(todayJst, social);
@@ -160,7 +183,10 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, prefer.length));
   const evSlots = prefer.slice(0, evs.length);
   const readSlots = open.filter((s) => !evSlots.includes(s));
-  const reads = pickReadings(readingCandidates(info, baseUrl, todayJst, hooks), posted, todayJst, readSlots.length, weights);
+  // その日のいちばん遅い枠の時刻で判断する(どの枠に入っても、終わった直後の神楽を紹介しない)
+  const over = justOverKagura(events, Date.parse(slots[slots.length - 1]));
+  const cands = readingCandidates(info, baseUrl, todayJst, hooks).filter((c) => !(c.kagura && over.has(c.kagura)));
+  const reads = pickReadings(cands, posted, todayJst, readSlots.length, weights);
   const plan = [
     ...evs.map((e, i) => ({ id: e.id, type: "event", style: "event", dueAt: evSlots[i], text: composeText(e, baseUrl) })),
     ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, dueAt: readSlots[i], text: r.text })),

@@ -1,5 +1,5 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
-import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura } from "../scripts/lib/x-post.mjs";
 import { mergeHooks } from "../scripts/social-hooks.mjs";
 import { createPostQuery, keyExpiryNotice } from "../scripts/post-social.mjs";
 
@@ -73,4 +73,17 @@ export function xpostTests({ ok, section }) {
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");
   ok(keyExpiryNotice("", "2026-11-08") === "" && keyExpiryNotice("2026-12-31", "2026-11-08") === "", "APIキーの期限が未設定・まだ先なら、知らせない");
   ok(keyExpiryNotice("2026-11-22", "2026-11-08").includes("あと14日") && keyExpiryNotice("2026-11-07", "2026-11-08").includes("過ぎています"), "期限の14日前から・過ぎたあとは、知らせる");
+
+  // 終わったばかりの神楽は、出る時刻で判断して、読み物に使わない(作った時ではなく)
+  const hx = { kagura: "保呂羽山の霜月神楽", status: "published" };
+  const evs2 = [{ id: "h", start: "2026-11-07T00:00", end: "2026-11-08T00:00", ...hx }, { id: "z", start: "2026-12-20T10:00", kagura: "次あり神楽", status: "published" }, { id: "z0", start: "2026-11-01T10:00", kagura: "次あり神楽", status: "published" }];
+  const t9 = Date.parse("2026-11-09T03:00:00+09:00");
+  ok(justOverKagura(evs2, t9).has("保呂羽山の霜月神楽") && !justOverKagura(evs2, t9).has("次あり神楽"), "開催が終わり、次の開催がない神楽を「終わったばかり」とする(次があれば除かない)");
+  ok(!justOverKagura(evs2, Date.parse("2026-11-07T12:00:00+09:00")).has("保呂羽山の霜月神楽") && !justOverKagura(evs2, Date.parse("2026-12-15T00:00:00+09:00")).has("保呂羽山の霜月神楽"), "開催中・終わって30日を過ぎたら、除かない");
+  const info2 = { "保呂羽山の霜月神楽": { source: "s", intro: "毎年11月7日から8日にかけて奉納される。" }, "石見神楽": { source: "s", intro: "石見の神楽。" } };
+  const ids = (pl) => pl.filter((p) => p.type === "reading").map((p) => p.id).join();
+  const before = planDays({ days: 1, events: evs2, info: info2, posted: [], todayJst: "2026-11-06", baseUrl: base, now: Date.parse("2026-11-05T21:15:00+09:00") });
+  const after = planDays({ days: 2, events: evs2, info: info2, posted: [], todayJst: "2026-11-08", baseUrl: base, now: Date.parse("2026-11-08T21:15:00+09:00") });
+  ok(ids(before).includes("r:kind:保呂羽山の霜月神楽"), "開催の前は、その神楽を紹介する", ids(before));
+  ok(!ids(after).includes("保呂羽山") && ids(after).includes("r:kind:石見神楽"), "前の晩に作る翌日分(11/9)にも、11/8 に終わった神楽の紹介を入れない", ids(after));
 }
