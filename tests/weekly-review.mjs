@@ -67,7 +67,9 @@ export function weeklyReviewTests({ ok, section }) {
   ok(/gh issue close "\$n"/.test(collect) && /startswith\("週次の自動収集: 確認が必要な項目があります"\)/.test(collect), "週次収集の確認依頼は、新しいものを立てたら古いものを閉じる");
   const social = YAML.parse(read(".github/workflows/post-social.yml"));
   const [ch, cm] = YAML.parse(collect).on.schedule[0].cron.split(" ").slice(0, 2).reverse().map(Number);
-  const [sh, sm] = social.on.schedule[0].cron.split(" ").slice(0, 2).reverse().map(Number);
-  ok((sh * 60 + sm) - (ch * 60 + cm) >= 60, "SNSの予約は、週次収集の1時間以上あと(収集で増えた開催を使える)", `${ch}:${cm} → ${sh}:${sm}`);
+  const crons = social.on.schedule.map((s) => s.cron.split(" ").slice(0, 2).reverse().map(Number));
+  // 月曜の朝の起動(空き枠の埋め直し)は、週次収集の1時間以上あと。晩の起動(翌日分)は、朝の枠に間に合うよう前の晩
+  ok(crons.some(([h, m]) => (h * 60 + m) - (ch * 60 + cm) >= 60 && h < 22), "SNSの朝の予約は、週次収集の1時間以上あと(収集で増えた開催を使える)", `${ch}:${cm} → ${crons.map((c) => c.join(":")).join(",")}`);
+  ok(crons.some(([h]) => h >= 9 && h <= 14), "SNSの翌日分は、前の晩(日本時間18〜23時)に予約する(起動が遅れても朝7時の枠に間に合う)", crons.map((c) => c.join(":")).join(","));
   ok(/gh issue comment "\$n"/.test(read(".github/workflows/post-social.yml")), "SNSの失敗が続いても、Issue を増やさず追記する");
 }

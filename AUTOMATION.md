@@ -13,7 +13,7 @@ Plan  計画     data/weekly-review.json の focus(掲載が少ない地方・�
   │              → note の題材選び・月次の調査の優先順位に使う
   │            data/social-performance.json(SNSのテーマ別の反応)→ SNSで出す順番に使う
   ▼
-Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 3:00)→ SNS予約(毎日 5:15)→ note(2日に1回)
+Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 3:00)→ SNS予約(毎晩 21:15 に翌日分)→ note(2日に1回)
   │
   ▼
 Check 点検     週次の振り返り(月、収集の直後。GitHub)
@@ -53,7 +53,7 @@ Act   改善     振り返りの Issue に「今週やること」(担当: 人 /
 | 4:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼(先週の確認依頼は閉じる) | [COLLECT.md](COLLECT.md) |
 | 収集の直後(月曜) | weekly-review | SNSの反応を集め(data/social-performance.json)、週次の振り返り。数字の点検と「今週やること」の Issue。data/weekly-review.json を更新 | [weekly-review.yml](.github/workflows/weekly-review.yml) / [SOCIAL.md](SOCIAL.md) |
 | 7:31 ごろ(毎日) | Apps Script(Google 側) | GA4・Search Console の数字を、非公開スプレッドシート(統合管理台帳の 12〜14)に保存 | [docs/analytics-quality.md](docs/analytics-quality.md) |
-| 5:15(毎日) | post-social | その日のX投稿6本(7時から4時間ごと)を Buffer に予約。月曜は収集で増えた開催も対象 | [SOCIAL.md](SOCIAL.md) |
+| 21:15(毎晩)・5:15(毎朝) | post-social | 晩に、翌日のX投稿6本(7時から4時間ごと)を Buffer に予約(GitHub の起動が遅れても朝の枠が飛ばない)。朝は空いた枠だけ埋める | [SOCIAL.md](SOCIAL.md) |
 
 ## Claude の定期タスク(このPC)
 

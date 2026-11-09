@@ -1,4 +1,5 @@
-// その日のSNS投稿(開催のお知らせ+神楽の読み物)を、Buffer の予約投稿に入れる: node scripts/post-social.mjs
+// 今日の残りと翌日のSNS投稿(開催のお知らせ+神楽の読み物)を、Buffer の予約投稿に入れる: node scripts/post-social.mjs
+// (毎晩、翌日分を前もって入れる。朝にも念のため動き、空いた枠だけ埋める)
 //
 // 設定:
 //   BUFFER_API_KEY(GitHub の Secrets に入れる。リポジトリのファイルには、書かない)
@@ -6,10 +7,11 @@
 //   config.json の social … 投稿枠(firstSlot / intervalHours / perDay)と、Buffer のチャンネル(bufferChannelId。空なら X のチャンネルを自動で探す)
 // BUFFER_API_KEY が空、または DRY_RUN=true のときは、送らずに、予定の文面と時刻だけを表示する(記録もしない)。
 // 投稿済みの記録: data/social-posted.json(同じ開催・同じ枠を、二度入れないため)
+// POST_DAYS: 何日分を決めるか(既定 2 = 今日の残りと翌日。朝の念のための起動は 1 = 今日だけ。Buffer の無料プランは予約10件まで)
 // テスト用の切り替え: EVENTS_FILE / POSTED_FILE / POST_NOW(日本時間の日付 YYYY-MM-DD)
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { planDay } from "./lib/x-post.mjs";
+import { planDays } from "./lib/x-post.mjs";
 import { themeWeights } from "./lib/social-performance.mjs";
 
 const API = "https://api.buffer.com";
@@ -92,8 +94,9 @@ async function main() {
   // 反応のよいテーマを先に出す(週次の振り返りが data/social-performance.json を更新する)
   const weights = themeWeights(readJson(process.env.PERFORMANCE_FILE ?? "data/social-performance.json", {}));
   if (Object.keys(weights).length) console.log(`テーマの重み(反応の相対値): ${JSON.stringify(weights)}`);
-  const plan = planDay({ events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights });
-  if (!plan.length) { console.log(`${today}: 予約する投稿はありません`); return; }
+  const days = process.env.POST_DAYS === "1" ? 1 : 2;
+  const plan = planDays({ days, events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights });
+  if (!plan.length) { console.log(`${today}〜翌日: 予約する投稿はありません(枠はすべて予約済みか、過ぎています)`); return; }
 
   const channelId = live ? (social.bufferChannelId || await findChannel(key)) : "";
   let failed = false;
@@ -104,7 +107,7 @@ async function main() {
       const data = await gql(key, createPostQuery({ text: p.text, channelId, dueAt: p.dueAt }));
       const r = data.createPost ?? {};
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
-      posted.push({ id: p.id, type: p.type, dueAt: p.dueAt, bufferId: r.post.id, date: today });
+      posted.push({ id: p.id, type: p.type, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
       writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n"); // 1件ごとに記録(途中で失敗しても、重複しない)
       console.log(`予約しました: ${r.post.id}`);
     } catch (err) { console.error(err.message); failed = true; break; }

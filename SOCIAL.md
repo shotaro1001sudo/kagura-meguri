@@ -1,6 +1,6 @@
 # SNS(X)への自動投稿 ― Buffer の予約投稿
 
-毎朝5時15分(日本時間)に [post-social.yml](.github/workflows/post-social.yml) が動き、その日の投稿6本を **Buffer の予約投稿**に入れます。X への投稿は Buffer が行います。出る前の文面は、Buffer の画面で確認・修正・削除できます。
+毎晩21時15分(日本時間)に [post-social.yml](.github/workflows/post-social.yml) が動き、翌日の投稿6本を **Buffer の予約投稿**に入れます。GitHub の決まった時刻の起動は数時間遅れることがあるので、前の晩に入れておきます。毎朝5時15分にも動き、前の晩が失敗していたときだけ、その日の空いた枠を埋めます(翌日分まで入れると、Buffer の無料プランの予約10件を超えるため)。X への投稿は Buffer が行います。出る前の文面は、Buffer の画面で確認・修正・削除できます。
 
 ## 投稿の時刻と中身
 
@@ -36,7 +36,7 @@
 1. Buffer で **Settings → API**(https://publish.buffer.com/settings/api)を開き、APIキーを発行する(期限は、選べるいちばん長いものに。下の「APIキーの期限」を参照)。
 2. GitHub のリポジトリ → **Settings → Secrets and variables → Actions** に、`BUFFER_API_KEY` という名前で登録する。
 3. **Actions → post-social → Run workflow** を、`dry_run` にチェックを入れたまま実行し、ログで文面を確かめる。
-4. 問題なければ、翌朝5時15分から自動で予約が入ります。すぐ入れたいときは、`dry_run` のチェックを外して実行します。
+4. 問題なければ、その晩21時15分から自動で予約が入ります。すぐ入れたいときは、`dry_run` のチェックを外して実行します。
 
 ### APIキーの期限
 

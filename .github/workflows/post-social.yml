@@ -1,9 +1,13 @@
 name: post-social
-# 毎朝5時15分(日本時間)に、その日の投稿6本(7時から4時間ごと)を Buffer の予約投稿に入れる。
+# 毎晩21時15分(日本時間)に、翌日の投稿6本(7時から4時間ごと)を Buffer の予約投稿に入れる。
+# GitHub の決まった時刻の起動は、混むと数時間遅れるため、前の晩に入れておく(朝7時の枠が飛ばない)。
+# 朝5時15分にも念のため動き、空いている枠(前の晩が失敗・遅れたとき)だけを埋める。
 # 中身: 開催の2週間前〜3日前の神楽(1日2件まで)+神楽の読み物(演目・種類・歴史・見どころ・見学のコツ)。
 # Secrets の BUFFER_API_KEY が未設定なら、文面の表示だけ(試運転)。
 on:
-  schedule: [{ cron: "15 20 * * *" }] # 毎日 5:15 JST(月曜は、4:00 の週次収集で増えた開催も対象になる)
+  schedule:
+    - cron: "15 12 * * *" # 毎晩 21:15 JST: 今日の残りと翌日の枠
+    - cron: "15 20 * * *" # 毎朝 5:15 JST: 空いている枠だけ(予約済みの枠には入れない)
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,6 +31,8 @@ jobs:
         run: node scripts/post-social.mjs
         env:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          # 朝の起動は今日の空き枠だけ(翌日分まで入れると、Buffer の無料プランの予約10件を超える)
+          POST_DAYS: ${{ github.event.schedule == '15 20 * * *' && '1' || '2' }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
       - if: ${{ always() }}
         run: |

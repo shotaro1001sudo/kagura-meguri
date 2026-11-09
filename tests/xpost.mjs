@@ -1,5 +1,5 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
-import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, RERUN_GAP_DAYS } from "../scripts/lib/x-post.mjs";
 import { createPostQuery, keyExpiryNotice } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
@@ -44,6 +44,17 @@ export function xpostTests({ ok, section }) {
   ok(late.length === 4 && late.every((p) => Date.parse(p.dueAt) > Date.parse("2026-11-08T12:00:00+09:00")), "過ぎた枠には入れない", String(late.length));
   const night = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T21:00:00+09:00") });
   ok(night.length === 2 && night.every((p) => p.type === "reading"), "7時・19時が過ぎてから動いたときは、開催のお知らせを夜中に入れず、翌日に回す", night.map((p) => p.type).join());
+
+  // 前の晩(21:15)に、今日の残りと翌日の枠をまとめて決める
+  const eve = planDays({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T21:15:00+09:00") });
+  const tomorrow = eve.filter((p) => p.date === "2026-11-02");
+  ok(eve.length === 8 && tomorrow.length === 6 && tomorrow[0].dueAt === daySlots("2026-11-02")[0], "前の晩に、今日の残り2枠と翌日の6枠(朝7時を含む)を予約する", eve.map((p) => `${p.date}@${p.dueAt}`).join());
+  ok(new Set(eve.map((p) => p.id)).size === eve.length && new Set(eve.map((p) => p.dueAt)).size === eve.length, "2日分で、同じ投稿・同じ枠を重ねない");
+  ok(eve.length <= 10, "Buffer の無料プランの予約上限(10件)を超えない");
+  const morning = planDays({ days: 1, events, info, posted: eve, todayJst: "2026-11-02", baseUrl: base, now: Date.parse("2026-11-02T08:41:00+09:00") });
+  ok(morning.length === 0, "朝の起動は、前の晩に予約済みなら何も入れない");
+  const recover = planDays({ days: 1, events, info, posted: [], todayJst: "2026-11-02", baseUrl: base, now: Date.parse("2026-11-02T05:15:00+09:00") });
+  ok(recover.length === 6 && recover.every((p) => p.date === "2026-11-02"), "前の晩が失敗していたら、朝の起動が今日の枠だけを埋める", String(recover.length));
 
   const q = createPostQuery({ text: '改行\nと"引用"', channelId: "ch1", dueAt: slots[0] });
   ok(q.includes('text: "改行\\nと\\"引用\\""') && q.includes("mode: customScheduled") && q.includes(`dueAt: "${slots[0]}"`), "Buffer への予約は、文字列を正しくエスケープして customScheduled で送る");

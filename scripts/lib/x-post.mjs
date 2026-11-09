@@ -154,3 +154,22 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   ];
   return plan.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
 }
+
+/** 日本時間の日付に n 日足す(YYYY-MM-DD) */
+export const addDaysJst = (ymd, n) => new Date(Date.parse(`${ymd}T00:00:00Z`) + n * 86400e3).toISOString().slice(0, 10);
+
+/**
+ * 今日の残りの枠と、翌日の枠をまとめて決める(前の晩に翌日分を予約しておけば、
+ * GitHub の決まった時刻の起動が数時間遅れても、朝の枠が飛ばない)。
+ * 1日目に選んだ投稿は、2日目を選ぶときに「予約済み」として扱う(同じ読み物・開催を重ねない)。
+ * 各投稿の date は、出る日(日本時間)。
+ */
+export function planDays({ days = 2, todayJst, posted, ...rest }) {
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const day = addDaysJst(todayJst, i);
+    const plan = planDay({ ...rest, todayJst: day, posted: [...posted, ...out] }).map((p) => ({ ...p, date: day }));
+    out.push(...plan);
+  }
+  return out;
+}
