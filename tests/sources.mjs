@@ -4,6 +4,7 @@ import { parse, urls, decode } from "../scripts/adapters/npo-hiroshima.mjs";
 import { reconcile, sameEvent } from "../scripts/lib/collect-core.mjs";
 import { parse as parseOita, discover as discoverOita } from "../scripts/adapters/kagura-kaikan-oita.mjs";
 import { parse as parseHanamaki, urls as hanamakiUrls } from "../scripts/adapters/hanamaki.mjs";
+import { parse as parseUnnan } from "../scripts/adapters/unnan-kagura.mjs";
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -24,7 +25,27 @@ export function sourcesTests({ ok, section }) {
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
   ok(staged.filter((s) => !["kagura-kaikan-oita", "hanamaki-hayachine"].includes(s.id)).every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り4候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 5, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会だけを有効化する");
+  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 6, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会・雲南市観光協会だけを有効化する");
+
+  section("島根・雲南市観光協会: 月ごとの神楽公演スケジュール");
+  const un = allSources.find((s) => s.id === "unnan-kagura");
+  ok(un?.adapter === "unnan-kagura" && un.enabled === true && un.termsChecked === "2026-11-09", "規約・robots を確かめて有効化");
+  const para = (n, d, v, g, t, extra = "") => `<p>&lt;イベント名&gt;　${n}<br />&lt;日　　時&gt;　${d}<br />&lt;会　　場&gt;　${v}<br />&lt;出演団体&gt;　${g}<br />&lt;時　　間&gt;　${t}${extra}</p>`;
+  const unHtml = `<html><head><title>x</title></head><body><h1>【お知らせ】雲南市内神楽団体 神楽公演スケジュール（2026年12月分）</h1>`
+    + para("出雲神楽の夕べ", "12月5日（土）", "古代鉄歌謡館（大東町中湯）", "中野神楽保存会（三刀屋町中野）", "19:00～", '<br /><a href="https://www.unnan-kankou.jp/news/x/">＜詳細はこちら＞</a>')
+    + para("坂本神社例大祭", "12月6日（日）", "坂本神社（大東町薦澤）", "薦沢神楽社中（大東町薦沢）", "15:00頃～")
+    + para("下山佐地区文化祭", "12月13日（日）", "下山佐交流センター（安来市広瀬町）", "薦沢神楽社中（大東町薦沢）", "13:30～", "<br />&lt;料　　金&gt;　500円")
+    + para("桃源郷まつり", "1月10日（日）", "はなもも体育館（久野多目的施設）", "南加茂貴船神楽社中（加茂町南加茂）", "11:00～")
+    + para("関係者のみの奉納", "12月20日（日）", "某神社（大東町）", "某社中", "10:00～ ※非公開")
+    + "</body></html>";
+  const ui = parseUnnan(unHtml, un, un.url);
+  ok(ui.length === 4, "一般公開でないものは除く", JSON.stringify(ui.map((x) => x.name)));
+  ok(ui[0].start === "2026-12-05T19:00" && ui[0].city === "雲南市" && ui[0].address === "大東町中湯" && ui[0].url.endsWith("/news/x/"), "時刻・地名・詳細ページを読む", JSON.stringify(ui[0]));
+  ok(ui[1].timeUnknown && ui[1].start === "2026-12-06T00:00" && ui[1].name.includes("神楽(薦沢神楽社中)"), "「頃」の時刻は推測せず時刻未定。名称に神楽がなければ、出演団体を添える", JSON.stringify(ui[1]));
+  ok(ui[2].city === "安来市" && ui[2].address === "広瀬町" && ui[2].fee === "500円", "雲南市外の会場は、その市町村で登録する", JSON.stringify(ui[2]));
+  ok(ui[3].start === "2027-01-10T11:00" && ui[3].venue === "はなもも体育館(久野多目的施設)" && !ui[3].address, "12月分のページの1月は翌年。地名でないかっこは会場名に残す", JSON.stringify(ui[3]));
+  let threw = false; try { parseUnnan(unHtml.replace("（2026年12月分）", ""), un, un.url); } catch { threw = true; }
+  ok(threw, "見出しに年月がなければ、年を推測せずに失敗にする");
 
   section("岩手・花巻観光協会: 月ごとのページから、神楽の催しだけを取り出す");
   const hk = allSources.find((s) => s.id === "hanamaki-hayachine");
