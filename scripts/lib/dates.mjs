@@ -85,16 +85,18 @@ export function rangeLabel(a, b) {
 /**
  * 定期公演が、その日に行われる予定か(データの weekdays / months / closedDates / until による)。
  * 季節だけ増える公演は extra に書く: [{ "weekdays": [5], "months": [9, 10, 11] }, { "dates": ["05-03", "05-04"] }]
+ * 「毎月第2日曜」のような公演は nth に、その月の何回目の曜日かを書く: { "weekdays": [0], "nth": [2] }(extra の中でも使える)
  * weekdays がない公演は、日付が分からないため、false。
  * 公式が日ごとの日程表を出している公演は program に書く: [{ "date": "2026-11-08", "time": "昼", "troupe": "原田神楽団", "hall": "神楽ドーム" }]
  * program があるときは、その日付だけが公演日(曜日の決まりより優先)。
  */
+const nthOk = (x, s) => !Array.isArray(x.nth) || x.nth.includes(Math.ceil(Number(s.slice(8, 10)) / 7));
 export function regularOn(r, s) {
   if (Array.isArray(r.program)) return r.program.some((p) => p.date === s) && !(r.until && s > r.until);
   const md = s.slice(5), mo = +s.slice(5, 7);
-  const extra = (r.extra ?? []).some((x) => (Array.isArray(x.dates) && x.dates.includes(md)) || (Array.isArray(x.weekdays) && x.weekdays.includes(weekday(s)) && (!Array.isArray(x.months) || x.months.includes(mo))));
+  const extra = (r.extra ?? []).some((x) => (Array.isArray(x.dates) && x.dates.includes(md)) || (Array.isArray(x.weekdays) && x.weekdays.includes(weekday(s)) && nthOk(x, s) && (!Array.isArray(x.months) || x.months.includes(mo))));
   if (extra) return !(r.until && s > r.until) && !(Array.isArray(r.closedDates) && r.closedDates.includes(md));
-  if (!Array.isArray(r.weekdays) || !r.weekdays.includes(weekday(s))) return false;
+  if (!Array.isArray(r.weekdays) || !r.weekdays.includes(weekday(s)) || !nthOk(r, s)) return false;
   if (r.until && s > r.until) return false;
   if (Array.isArray(r.months) && !r.months.includes(+s.slice(5, 7))) return false;
   if (Array.isArray(r.closedDates) && r.closedDates.includes(s.slice(5))) return false;

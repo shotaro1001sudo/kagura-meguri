@@ -25,7 +25,9 @@ export function weekendTests({ ok, section, build }) {
   ok(rangeLabel("2026-10-10", "2026-10-12") === "10月10日(土)〜12日(月・祝)" && rangeLabel("2026-10-31", "2026-11-01") === "10月31日(土)〜11月1日(日)" && rangeLabel("2026-10-12", "2026-10-12") === "10月12日(月・祝)", "期間の表記(祝日・月またぎ・1日だけ)");
   const sat = { weekdays: [6], months: [1, 2, 3, 4, 5, 6, 7, 8, 12] };
   ok(!regularOn(sat, "2026-10-10") && regularOn(sat, "2026-12-05") && !regularOn(sat, "2026-12-06"), "定期公演: 曜日と、公演する月で判定する(期間外の月は、出さない)");
-  ok(!regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-23") && regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-22"), "定期公演: 休演日は、出さない");
+  ok(!regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-23") && regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-22"), "定期公演: 休演日は、出さない");
+  ok(regularOn({ weekdays: [0], nth: [2] }, "2026-11-08") && !regularOn({ weekdays: [0], nth: [2] }, "2026-11-15") && regularOn({ weekdays: [0], nth: [2] }, "2026-12-13") && !regularOn({ weekdays: [0], nth: [2] }, "2026-12-06"), "定期公演: 「毎月第2日曜」を nth で数える");
+  ok(regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-13") && !regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-06") && regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-15"), "定期公演: extra の中でも nth を使える(第2・第4金曜など)");
   { const prog = { weekdays: [0], program: [{ date: "2026-11-13", troupe: "a" }, { date: "2026-11-15", troupe: "b" }], until: "2026-11-14" };
     ok(regularOn(prog, "2026-11-13") && !regularOn(prog, "2026-11-08") && !regularOn(prog, "2026-11-15"), "定期公演: 公式の日程表(program)があれば、その日付だけ(曜日の決まりより優先・until より後は出さない)(SEO-20261107-5)"); }
   ok(!regularOn({ weekdays: [6], until: "2026-10-01" }, "2026-10-10") && !regularOn({ schedule: "毎週土曜" }, "2026-10-10"), "定期公演: 終了後と、曜日のデータがないものは、出さない(日付を推測しない)");

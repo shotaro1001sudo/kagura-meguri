@@ -101,6 +101,7 @@ function validateCommon(rows, ids) {
     const ints = (v, lo, hi) => Array.isArray(v) && v.length > 0 && v.every((n) => Number.isInteger(n) && n >= lo && n <= hi);
     if (r.weekdays != null && !ints(r.weekdays, 0, 6)) errs.push(`[${r.id}] weekdays は、曜日の番号(0=日曜〜6=土曜)の配列にしてください`);
     if (r.months != null && !ints(r.months, 1, 12)) errs.push(`[${r.id}] months は、月(1〜12)の配列にしてください`);
+    if (r.nth != null && !ints(r.nth, 1, 5)) errs.push(`[${r.id}] nth は、その月の何回目の曜日か(1〜5)の配列にしてください`);
     if (r.program != null && !(Array.isArray(r.program) && r.program.length && r.program.every((p) => /^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? "") && typeof p.troupe === "string" && p.troupe))) errs.push(`[${r.id}] program は [{ date: "YYYY-MM-DD", time, troupe, hall }] の配列にしてください`);
     if (r.closedDates != null && !(Array.isArray(r.closedDates) && r.closedDates.every((d) => /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)))) errs.push(`[${r.id}] closedDates は "MM-DD" の配列にしてください`);
   }
