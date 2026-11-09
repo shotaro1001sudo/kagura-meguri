@@ -105,6 +105,10 @@ export function quizTests({ok,section,OUT}) {
   ui=setupQuiz(far);d=ui.d;w=ui.w;d.querySelector('#quiz-start').click();for(const id of ['drama','fast','visual','short','quiet','story','history'])pick(d,id);region(d,w,'地方:四国');pick(d,'unknown');
   ok(d.querySelector('.quiz-alt h4')?.lastChild?.textContent===lower&&d.querySelector('.quiz-alt').textContent.includes('好みの近さは、上の神楽より下がります')&&d.querySelector('.quiz-alt a[href="/events/x1.html"]'),'条件に合う公演がなければ、観られる中で好みに近い種類を(近さが下がると明記して)示す');ui.dom.window.close();
 
+  // いちばん近い神楽の枠: 共通の .quiz-program{padding:8px 0 10px}(左右0)に負けず、枠の内側に左右の余白がある(2026-11-09 スマホで文字が枠線に接していた)
+  const css=readFileSync('scripts/style.css','utf8');
+  ok(/\.quiz-program\.quiz-best\{padding:\d+px [1-9]\d*px/.test(css)&&/max-width:560px\)\{\.quiz-program\.quiz-best\{padding:\d+px [1-9]\d*px/.test(css)&&!/(^|[}\s])\.quiz-best\{padding/.test(css),'いちばん近い神楽の枠は、PCでもスマホでも左右の余白を持つ(共通の指定に上書きされない)');
+
   section('診断案内: 閲覧後の推測・フォーカスを奪わない・1回制限');
   const js=readFileSync('scripts/client/quiz-offer.js','utf8');
   function setup(desktop=true,blockedStorage=false,saved=false) {

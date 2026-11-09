@@ -286,7 +286,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .quiz-chips{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0}
 .quiz-chips li{font-size:var(--fs-xs);padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg)}
 .quiz-chips li:first-child,.quiz-chips li:nth-child(2){border-color:var(--ac);color:var(--ac)}
-.quiz-best{padding:6px 20px 14px;border:1px solid var(--ac);border-radius:4px;background:var(--card)}
+.quiz-program.quiz-best{padding:6px 20px 14px;border:1px solid var(--ac);border-radius:4px;background:var(--card)}
 .quiz-best h4{font-size:var(--fs-2xl);font-family:var(--serif);font-weight:500;letter-spacing:.06em;margin:10px 0 0}
 .quiz-tagline{color:var(--ac2);font-size:var(--fs-s)}
 .quiz-reasons{list-style:none;margin:8px 0;padding:0}
@@ -302,7 +302,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .quiz-share>p{flex-basis:100%;margin:0}
 .quiz-about{max-width:40em;margin:40px 0 0}
 .quiz-about h3{font-size:var(--fs-l);margin:24px 0 8px}
-@media(max-width:560px){.quiz-best{padding:4px 14px 12px}.quiz-best h4{font-size:var(--fs-xl)}}
+@media(max-width:560px){.quiz-program.quiz-best{padding:4px 14px 12px}.quiz-best h4{font-size:var(--fs-xl)}}
 
 /* 今週末・今月への入口(トップ) */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:4px 0 8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
