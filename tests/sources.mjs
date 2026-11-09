@@ -5,6 +5,7 @@ import { reconcile, sameEvent } from "../scripts/lib/collect-core.mjs";
 import { parse as parseOita, discover as discoverOita } from "../scripts/adapters/kagura-kaikan-oita.mjs";
 import { parse as parseHanamaki, urls as hanamakiUrls } from "../scripts/adapters/hanamaki.mjs";
 import { parse as parseUnnan } from "../scripts/adapters/unnan-kagura.mjs";
+import { parse as parseTakachiho } from "../scripts/adapters/takachiho-yokagura.mjs";
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -26,6 +27,20 @@ export function sourcesTests({ ok, section }) {
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
   ok(staged.filter((s) => !["kagura-kaikan-oita", "hanamaki-hayachine"].includes(s.id)).every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り4候補は収集・自動掲載を起動しない");
   ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 6, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会・雲南市観光協会だけを有効化する");
+
+  section("宮崎・高千穂の夜神楽日程表: 会場は神社ではなく神楽宿");
+  const tk = allSources.find((s) => s.id === "takachiho-yokagura");
+  const row = (d, area, shrine, yado) => `<td class="list_item"><ul><li>${d}</li><li>${area}</li><li>${shrine}</li><li>${yado}</li><li>3㎞</li><li>100台</li></ul></td>`;
+  const tkHtml = "<table><tr>" + row("2026年12月19日（土）", "三田井（浅ヶ部公民館）", "磐下大権現神社", "浅ヶ部公民館神事：13：00～舞入れ：15：00～")
+    + row("2026年11月14日（土）", "押方（五ヶ村西公民館）", "中畑神社", "神楽宿：五ヶ村西公民館舞入れ：17：00～神 事：18：00～")
+    + row("2026年12月12日（土）", "三田井（上川登公民館）", "赤石神社", "上川登公民館神事のみ 12：30～")
+    + row("2026年12月12日（土）", "押方（下押方公民館）", "嶽宮神社", "個人宅神事：16：00～舞入れ：15：30～") + "</tr></table>";
+  const tki = parseTakachiho(tkHtml, tk, tk.url);
+  ok(tk.adapter === "takachiho-yokagura" && tki.length === 2, "神事のみ・個人宅の行は掲載しない", JSON.stringify(tki.map((x) => x.name)));
+  ok(tki[0].venue === "浅ヶ部公民館" && tki[1].venue === "五ヶ村西公民館", "会場は4列目の神楽宿(3列目の神社を会場にしない)", JSON.stringify(tki.map((x) => x.venue)));
+  ok(tki[0].start === "2026-12-19T00:00" && tki[0].timeUnknown && tki[0].name === "高千穂の夜神楽 三田井（浅ヶ部公民館）", "名称と日付の読み方は従来どおり(掲載済み・却下済みのIDを変えない)", JSON.stringify(tki[0]));
+  const live = JSON.parse(readFileSync("data/events.json", "utf8")).find((e) => e.id === "takachiho-yokagura-530a848d06");
+  ok(live?.venue === "浅ヶ部公民館" && live.start === "2026-12-19T13:00" && /磐下大権現神社とは場所が異なる/.test(live.description), "本番データ: 12/19 の会場は神楽宿(浅ヶ部公民館)。神事は13:00、舞入れ15:00");
 
   section("島根・雲南市観光協会: 月ごとの神楽公演スケジュール");
   const un = allSources.find((s) => s.id === "unnan-kagura");

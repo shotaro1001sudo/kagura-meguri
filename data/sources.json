@@ -23,7 +23,7 @@
     {
         "id": "takachiho-yokagura",
         "name": "高千穂町観光協会 夜神楽日程表",
-        "adapter": "selectors",
+        "adapter": "takachiho-yokagura",
         "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/",
         "kagura": "高千穂神楽",
         "prefecture": "宮崎県",
@@ -33,10 +33,10 @@
             "item": "td.list_item",
             "name": "li:nth-child(2)",
             "date": "li:nth-child(1)",
-            "place": "li:nth-child(3)"
+            "yado": "li:nth-child(4)"
         },
         "termsChecked": "2026-10-09",
-        "notes": "robots.txt は test 用パスのみ禁止。現在掲載中の日程は令和7年度(2025-26)で、令和8年度の日程は未公開のため0件になる(公開後に自動で拾える)。集落が公表を希望した分のみの掲載。原典は高千穂町役場のページ。夜神楽は見学の事前確認が必要な場合があるため、公式情報への誘導を重視すること。",
+        "notes": "robots.txt は test 用パスのみ禁止。現在掲載中の日程は令和7年度(2025-26)で、令和8年度の日程は未公開のため0件になる(公開後に自動で拾える)。集落が公表を希望した分のみの掲載。原典は高千穂町役場のページ。夜神楽は見学の事前確認が必要な場合があるため、公式情報への誘導を重視すること。 / 2026-11-09: 会場を3列目の神社ではなく、4列目の神楽宿で読むように専用アダプタへ変更(12/19 浅ヶ部公民館を磐下大権現神社と誤って掲載したため)。神事のみ・個人宅は掲載しない。",
         "enabled": true
     },
     {
