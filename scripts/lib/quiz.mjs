@@ -87,7 +87,11 @@ export const traditions = [
   { kind: '鶴岡八幡宮の御神楽', evidence: [['classic', 'tagline'], ['music', 'intro~1'], ['rite', 'intro~0']] },
   { kind: '春日若宮おん祭', evidence: [['rite', 'tagline'], ['classic', 'features.0']] },
 ];
-export const evidenceWeight = (path) => (/^(tagline|intro)(~\d+)?$/.test(path) ? 2 : 1);
+// 解説はあるが、診断の対象にしない神楽と、その理由(週次の点検が「対象外」として扱う)
+export const QUIZ_EXCLUDED = {
+  '安芸高田神楽': '広島神楽(芸北神楽)と重なり、解説が紹介文だけのため',
+};
+export const evidenceWeight =(path) => (/^(tagline|intro)(~\d+)?$/.test(path) ? 2 : 1);
 /** 根拠の本文。path は kagura-info.json のフィールド(例 features.0)。intro~1 は紹介文の2文目、tagline は「地域 ・ 」のあとの部分 */
 export function evidenceText(info, path) {
   const [base, n] = path.split('~');

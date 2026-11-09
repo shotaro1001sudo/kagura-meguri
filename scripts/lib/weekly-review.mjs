@@ -2,6 +2,7 @@
 // 実行は scripts/weekly-review.mjs。仕組みの全体は AUTOMATION.md の「PDCA」。
 import { REGIONS, regionOf } from "./util.mjs";
 import { readingCandidates, WINDOW_MIN, THEMES } from "./x-post.mjs";
+import { QUIZ_STALE_DAYS } from "./quiz-health.mjs";
 
 export const HISTORY_WEEKS = 26;     // 推移として残す週数(約半年)
 export const TARGETS = {
@@ -16,7 +17,7 @@ const dayNum = (ymd) => Math.floor(Date.parse(`${ymd}T00:00:00Z`) / 86400e3);
 const addDays = (ymd, n) => new Date((dayNum(ymd) + n) * 86400e3).toISOString().slice(0, 10);
 
 /** 今週の数字。入力はすべてリポジトリのデータ(公開情報だけ) */
-export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "", performance = null }) {
+export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "", performance = null, quiz = null }) {
   const live = events.filter((e) => e.status === "published");
   const within = (e, from, to) => { const d = e.start.slice(0, 10); return d >= from && d <= to; };
   const up = (n) => live.filter((e) => within(e, todayJst, addDays(todayJst, n)));
@@ -66,6 +67,8 @@ export function reviewMetrics({ events = [], summary = {}, posted = [], info = {
       // 反応の評価(scripts/social-metrics.mjs)。実数はなく、テーマ別の相対値だけ
       performance: { status: performance?.status ?? "none", reason: performance?.reason ?? "", samples: performance?.samples ?? 0, themes: performance?.themes ?? {} },
     },
+    // 好み診断の点検(scripts/lib/quiz-health.mjs)。なければ null
+    quiz,
   };
 }
 
@@ -93,6 +96,16 @@ export function decideActions(m, prev) {
   if (perf.status === "unavailable") add("social-metrics-unavailable", "人", `Buffer から投稿の反応を読めませんでした(${perf.reason || "理由不明"})。APIキーの期限と、反応の読み取り(insightsRead)が使えるかを確認する`);
   for (const [t, v] of Object.entries(perf.themes ?? {})) {
     if (v.index != null && v.index <= WEAK_INDEX) add(`social-weak-${t}`, "Claude", `SNSの「${THEME_LABELS[t] ?? t}」は、反応率が全体の ${v.index} 倍。投稿の順番は自動で後ろに回しました。文面(最初の一文・切り口)を見直す`);
+  }
+  // 好み診断の定期メンテ(推薦の根拠が解説の本文なので、本文の書き換えや解説の追加に合わせて見直す)
+  const q = m.quiz;
+  if (q) {
+    const few = (xs) => xs.slice(0, 5).join("、") + (xs.length > 5 ? ` ほか ${xs.length - 5} 件` : "");
+    if (q.missing.length) add("quiz-evidence-missing", "Claude", `好み診断の根拠が解説に見つかりません(${few(q.missing)})。このままではサイトの組み立てが止まります。scripts/lib/quiz.mjs の根拠の場所を直す`);
+    if (q.changed.length) add("quiz-evidence-changed", "Claude", `好み診断の根拠にしている解説の本文が変わりました(${few(q.changed)})。特徴の当てはめがまだ正しいか見直し、node scripts/quiz-review.mjs --accept で確認済みにする`);
+    if (q.newKinds.length) add("quiz-new-kinds", "Claude", `解説がそろったのに、好み診断の対象外の神楽があります(${few(q.newKinds)})。根拠を付けて scripts/lib/quiz.mjs に加えるか、対象外の理由を QUIZ_EXCLUDED に書く`);
+    if (q.uncovered.length) add("quiz-uncovered", "Claude", `掲載が多いのに解説がなく、好み診断に入れられない神楽: ${q.uncovered.slice(0, 5).map((u) => `${u.kind}(${u.n}件)`).join("、")}。出典つきの解説を data/kagura-info.json に足すと、診断と SNS の読み物に使える`);
+    if (q.checkedDaysAgo > QUIZ_STALE_DAYS) add("quiz-stale", "Claude", `好み診断の全体の見直しから ${q.checkedDaysAgo} 日(目安 ${QUIZ_STALE_DAYS} 日)。質問の分かりやすさ、完了率・シェア(PCの分析で GA4 の quiz_start→quiz_complete)、対象の広げ方を見直し、QUIZ_CHECKED を更新する`);
   }
   if (prev && prev.listing && m.listing.upcoming30 < prev.listing.upcoming30 * 0.7) add("listing-drop", "Claude", `今後30日の掲載が先週の ${prev.listing.upcoming30} 件から ${m.listing.upcoming30} 件へ大きく減少。収集元の取りこぼしを確認する`);
   return a;
@@ -158,6 +171,11 @@ export function renderReview(m, prev, actions, carried = []) {
   ];
   if (l.timeUnknown14.length) lines.push("<details><summary>2週間以内で開始時刻が未定</summary>", "", ...l.timeUnknown14.map((x) => `- ${x}`), "", "</details>", "");
   if (s.missedEvents.length) lines.push("<details><summary>SNSで紹介できなかった開催</summary>", "", ...s.missedEvents.map((x) => `- ${x}`), "", "</details>", "");
+  if (m.quiz) {
+    const q = m.quiz;
+    lines.push("### 好み診断", "", `対象 ${q.kinds} 種類 / 根拠の本文の変更 ${q.changed.length} 件 / 解説があるのに対象外 ${q.newKinds.length} 件 / 全体の見直し ${q.checked}(${q.checkedDaysAgo} 日前)`, "");
+    if (q.noShows.length) lines.push(`いま掲載中の公演がない対象: ${q.noShows.join("、")}(結果の画面では、条件で観られる別の神楽を案内します)`, "");
+  }
   lines.push(...renderPerformance(s.performance));
   lines.push(
     "## Act: 今週やること",

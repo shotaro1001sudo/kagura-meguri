@@ -42,6 +42,24 @@
 
 「1時間ほどで気軽に」を選んだときだけ、各公演に掲載時間枠の確認事項を示す(候補は除外しない)。時刻不明・終了なし・複数回・複数日は所要時間要確認。定期公演は地域と掲載期限のみ確認した参考枠で、希望日の開催や時間への適合を主張しない。該当なしでもカレンダーへ進める。
 
+## 定期メンテ
+
+推薦の根拠は解説の本文なので、本文の書き換え・解説の追加・掲載の変化に合わせて見直す。仕組みは2つ。
+
+**週次の振り返り(GitHub・毎週月曜)**: [scripts/lib/quiz-health.mjs](../scripts/lib/quiz-health.mjs) が点検し、Issue の「今週やること」に【Claude】の項目として出す。Issue には「### 好み診断」の行も載る。
+
+| 点検 | 出る項目(key) | やること |
+|---|---|---|
+| 根拠のフィールドが消えた | quiz-evidence-missing | quiz.mjs の根拠の場所を直す(このままではビルドが止まる) |
+| 根拠の本文が、確認済みから変わった | quiz-evidence-changed | 特徴の当てはめがまだ正しいか見直し、`node scripts/quiz-review.mjs --accept` |
+| 解説(出典・一言紹介・特徴2つ以上)があるのに対象外 | quiz-new-kinds | 根拠を付けて traditions に加えるか、`QUIZ_EXCLUDED` に理由を書く |
+| 今後の掲載が3件以上あるのに解説がない神楽 | quiz-uncovered | 出典つきの解説を kagura-info.json に足す(診断と SNS の読み物に使える) |
+| 全体の見直し(`QUIZ_CHECKED`)から120日超 | quiz-stale | 質問・対象・完了率を見直し、`QUIZ_CHECKED` を更新 |
+
+確認済みの記録は [data/quiz-review.json](../data/quiz-review.json)(根拠の本文の指紋だけ。本文そのものや数字は入らない)。いまの状態は `node scripts/quiz-review.mjs` で見られる。根拠を足したら `--accept` する(テストが、すべての根拠が確認済みに載っているかを確かめる)。
+
+**検索・アクセス分析(このPC・毎週月曜。数字は非公開)**: GA4 の quiz_start・quiz_complete・quiz_event_click・quiz_search_click・quiz_share から、完了率・公演へ進んだ割合・シェア率を出し、前週と比べる。完了率が5割未満の週が2週続く、公演へ進んだ割合が3割未満、などのときに、見直しの助言を出す。
+
 ## 入口
 
 `/quiz.html`、日本語フッターの手動リンク、および公演検索/一覧/詳細の小型モデルレス案内。英語、フォーム、規約類、診断自体には自動案内を置かない。

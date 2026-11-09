@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { questions,features,traditions,quizEngine,evidenceWeight,evidenceText } from '../scripts/lib/quiz.mjs';
+import { quizHealth,acceptBaseline,evidenceHashes,QUIZ_STALE_DAYS } from '../scripts/lib/quiz-health.mjs';
+import { reviewMetrics,decideActions,renderReview } from '../scripts/lib/weekly-review.mjs';
 export function quizTests({ok,section,OUT}) {
   section('診断: 根拠付き推薦・好みの近さ・任意条件');
   const info=JSON.parse(readFileSync('data/kagura-info.json','utf8').replace(/^﻿/,''));
@@ -108,6 +110,32 @@ export function quizTests({ok,section,OUT}) {
   // いちばん近い神楽の枠: 共通の .quiz-program{padding:8px 0 10px}(左右0)に負けず、枠の内側に左右の余白がある(2026-11-09 スマホで文字が枠線に接していた)
   const css=readFileSync('scripts/style.css','utf8');
   ok(/\.quiz-program\.quiz-best\{padding:\d+px [1-9]\d*px/.test(css)&&/max-width:560px\)\{\.quiz-program\.quiz-best\{padding:\d+px [1-9]\d*px/.test(css)&&!/(^|[}\s])\.quiz-best\{padding/.test(css),'いちばん近い神楽の枠は、PCでもスマホでも左右の余白を持つ(共通の指定に上書きされない)');
+
+  section('診断の定期点検(週次の振り返り)');
+  {
+    const base=acceptBaseline(info,'2026-11-09'),today='2026-11-16';
+    const h=quizHealth({info,events:[],regular:[],todayJst:today,baseline:base,checked:'2026-11-09'});
+    ok(h.kinds===19&&!h.missing.length&&!h.changed.length&&!h.newKinds.length&&h.checkedDaysAgo===7,'確認済みのままなら、根拠の変更・欠け・対象外の神楽はない');
+    const saved=JSON.parse(readFileSync('data/quiz-review.json','utf8'));
+    ok(Object.keys(evidenceHashes(info)).every(k=>k in saved.evidence)&&/^\d{4}-\d{2}-\d{2}$/.test(saved.reviewed),'data/quiz-review.json に、いまの根拠がすべて確認済みとして載っている(根拠を足したら --accept する)');
+    const edited=structuredClone(info);edited['広島神楽'].features[0]='書き換えた本文。';delete edited['花祭'].tagline;
+    const h2=quizHealth({info:edited,events:[],regular:[],todayJst:today,baseline:base});
+    ok(h2.changed.includes('広島神楽/features.0')&&h2.missing.some(k=>k.startsWith('花祭/tagline'))&&!h2.changed.some(k=>k.startsWith('花祭/tagline')),'解説の本文が変われば「変更」、消えれば「見つからない」として分けて挙げる');
+    ok(quizHealth({info:edited,events:[],regular:[],todayJst:today,baseline:null}).changed.length===0,'確認済みの記録がなければ、変更は数えない');
+    const more={...info,新しい神楽:{source:'出典',tagline:'県 ・ 一言',features:['特徴1。','特徴2。']},['安芸高田神楽']:{...info['安芸高田神楽'],tagline:'x',features:['a','b']}};
+    ok(quizHealth({info:more,events:[],regular:[],todayJst:today}).newKinds.join()==='新しい神楽','解説がそろったのに対象外の神楽を挙げる(理由つきの対象外 QUIZ_EXCLUDED は除く)');
+    const ev=(id,kagura,start,status='published')=>({id,kagura,start,status});
+    const evs=[ev('a','出雲神楽','2026-11-20'),ev('b','出雲神楽','2026-12-01'),ev('c','出雲神楽','2026-12-05'),ev('d','豊後神楽','2026-12-01'),ev('e','豊後神楽','2026-12-02'),ev('f','豊後神楽','2026-12-03','pending'),ev('g','出雲神楽','2026-11-01'),ev('h','石見神楽','2026-12-01'),ev('i','石見神楽','2026-12-02'),ev('j','石見神楽','2026-12-03')];
+    const h3=quizHealth({info,events:evs,regular:[{kagura:'広島神楽'}],todayJst:today});
+    ok(JSON.stringify(h3.uncovered)==='[{"kind":"出雲神楽","n":3}]','掲載中で今後の開催が3件以上あるのに解説がない神楽だけを挙げる(保留中・終わった開催・解説のある神楽は除く)',JSON.stringify(h3.uncovered));
+    ok(!h3.noShows.includes('石見神楽')&&!h3.noShows.includes('広島神楽')&&h3.noShows.includes('花祭'),'いま掲載中の公演も定期公演もない対象を挙げる');
+    const m=reviewMetrics({events:[],todayJst:today,quiz:{...h3,changed:['石見神楽/features.0'],missing:['花祭/tagline'],newKinds:['新しい神楽'],checkedDaysAgo:QUIZ_STALE_DAYS+1}});
+    const keys=decideActions(m,null).filter(a=>a.key.startsWith('quiz-'));
+    ok(['quiz-evidence-missing','quiz-evidence-changed','quiz-new-kinds','quiz-uncovered','quiz-stale'].every(k=>keys.some(a=>a.key===k))&&keys.every(a=>a.owner==='Claude'),'点検で見つかったことを、Claude の「今週やること」にする');
+    ok(!decideActions(reviewMetrics({events:[],todayJst:today,quiz:h}),null).some(a=>a.key.startsWith('quiz-'))&&!decideActions(reviewMetrics({events:[],todayJst:today}),null).some(a=>a.key.startsWith('quiz-')),'問題がない週・点検の結果がない週は、診断の項目を出さない');
+    const md=renderReview(m,null,[],[]);
+    ok(md.includes('### 好み診断')&&md.includes('対象 19 種類')&&md.includes('いま掲載中の公演がない対象'),'振り返りの Issue に、診断の点検の数字を載せる');
+  }
 
   section('診断案内: 閲覧後の推測・フォーカスを奪わない・1回制限');
   const js=readFileSync('scripts/client/quiz-offer.js','utf8');
