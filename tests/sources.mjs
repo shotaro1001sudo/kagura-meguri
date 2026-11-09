@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { parse, urls, decode } from "../scripts/adapters/npo-hiroshima.mjs";
 import { reconcile, sameEvent } from "../scripts/lib/collect-core.mjs";
 import { parse as parseOita, discover as discoverOita } from "../scripts/adapters/kagura-kaikan-oita.mjs";
+import { parse as parseHanamaki, urls as hanamakiUrls } from "../scripts/adapters/hanamaki.mjs";
 
 const block = (id, date, title, body) => `<a name="${id}"></a><table width=700 bgcolor="#AAAAAA" cellspacing=2 cellpadding=0>
 <tr><td height=20>　 ${date}<font color="#000000">(土)</font>　　<b>${title}</b></td><td align=right></td></tr>
@@ -22,8 +23,23 @@ export function sourcesTests({ ok, section }) {
   const stagedIds = ["hanamaki-hayachine", "kagura-kaikan-oita", "miyazaki-kanko-events", "okayama-kanko-kagura", "hamada-yokagura", "shimane-kagura-calendar"];
   const staged = allSources.filter((s) => stagedIds.includes(s.id));
   ok(staged.length === 6 && new Set(allSources.map((s) => s.id)).size === allSources.length, "6つの公式候補をID重複なく登録");
-  ok(staged.filter((s) => s.id !== "kagura-kaikan-oita").every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り5候補は収集・自動掲載を起動しない");
-  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 4, "既存3情報源と、実HTML検証済の神楽会館だけを有効化する");
+  ok(staged.filter((s) => !["kagura-kaikan-oita", "hanamaki-hayachine"].includes(s.id)).every((s) => s.enabled === false && !s.termsChecked && s.reviewStatus === "候補・未接続"), "未検証の残り4候補は収集・自動掲載を起動しない");
+  ok(allSources.filter((s) => s.enabled !== false && !s.nationalExpansion).length === 5, "既存3情報源と、実HTML検証済の神楽会館・花巻観光協会だけを有効化する");
+
+  section("岩手・花巻観光協会: 月ごとのページから、神楽の催しだけを取り出す");
+  const hk = allSources.find((s) => s.id === "hanamaki-hayachine");
+  ok(hk.adapter === "hanamaki" && hk.enabled === true && hk.termsChecked === "2026-11-09", "規約・robots を確かめて有効化");
+  const hkUrls = hanamakiUrls(hk, new Date("2026-11-30T20:00:00Z")); // 日本時間では12月1日
+  ok(hkUrls.length === 3 && hkUrls[0].endsWith("?m=12") && hkUrls[2].endsWith("?m=2"), "日本時間の今月から3か月ぶん(年をまたぐ)", hkUrls.join(" "));
+  const ev = (day, title, area, place) => `<div class="main-event cf"><img src="x.jpg" alt="${title}" /><p class="day">${day}</p><h3><a href="event_detail.php?id=1&m=">${title}</a></h3><p class="p-bold"><span>${area}</span>${place}</p><p>説明</p></div>`;
+  const hkHtml = ev("2026年12月13日(日)", "おおはさま神楽の日【12月 岳神楽】", "大迫", "花巻市大迫交流活性化センター")
+    + ev("2026年9月19日(土)から11月23日(月祝)まで", "【花巻市総合文化財センター】企画展 早池峰神楽ー研究史からたどるー", "大迫", "花巻市総合文化財センター")
+    + ev("2026年10月31日(土)、11月1日(日)", "キッチンカー祭り全国神楽まつりの陣", "大迫地区", "大迫交流活性化センター")
+    + ev("2026年11月14日(土)", "秋の感謝祭 スイーツフェスタ", "花巻地区", "道の駅石鳥谷");
+  const hkItems = parseHanamaki(hkHtml, hk, "https://www.kanko-hanamaki.ne.jp/event/index.php?m=12");
+  ok(hkItems.length === 1 && hkItems[0].start === "2026-12-13T00:00" && hkItems[0].timeUnknown && hkItems[0].venue === "大迫交流活性化センター" && hkItems[0].prefecture === "岩手県",
+    "神楽の公演だけ(企画展・キッチンカー・神楽以外は除く)。地区名は会場から外し、時刻は未定のまま", JSON.stringify(hkItems));
+  ok(hkItems[0].url.startsWith("https://www.kanko-hanamaki.ne.jp/event/event_detail.php"), "詳細ページを公式情報として使う");
 
   section("大分・神楽会館: 記事投稿日や予約開始日を開催日と誤認しない");
   const oita = allSources.find((s) => s.id === "kagura-kaikan-oita");

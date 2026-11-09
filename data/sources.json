@@ -114,16 +114,26 @@
     },
     {
         "id": "hanamaki-hayachine",
-        "name": "花巻観光協会（早池峰神楽・おおはさま神楽の日）",
-        "adapter": "selectors",
-        "url": "https://www.kanko-hanamaki.ne.jp/event/",
+        "name": "花巻観光協会 イベントカレンダー(早池峰神楽・おおはさま神楽の日)",
+        "adapter": "hanamaki",
+        "url": "https://www.kanko-hanamaki.ne.jp/event/index.php",
         "kagura": "早池峰神楽",
         "prefecture": "岩手県",
         "nameHint": "神楽|早池峰|大償|岳神楽",
-        "enabled": false,
-        "termsChecked": "",
-        "reviewStatus": "候補・未接続",
-        "notes": "2026-10-21 候補確認：公式イベントカレンダーに『おおはさま神楽の日』等。月別ページあり。規約・robots・HTML構造・複数日・イベント詳細へのリンク・収集セレクタ・既存データ重複を検証してから有効化。"
+        "enabled": true,
+        "termsChecked": "2026-11-09",
+        "reviewStatus": "有効化済(一覧の事実のみ)",
+        "notes": "2026-10-21 候補確認：公式イベントカレンダーに『おおはさま神楽の日』等。月別ページあり。規約・robots・HTML構造・複数日・イベント詳細へのリンク・収集セレクタ・既存データ重複を検証してから有効化。 / 2026-11-09 有効化: robots.txt は特定のbotのみ禁止で取得可。プライバシーポリシー以外に規約・転載禁止の表記なし。月ごとのページ(?m=)を今月から3か月読み、名称に「神楽」を含む催しだけを取り込む(企画展・キッチンカーなどの併催は除外)。時刻は一覧にないため時間未定。場所の「大迫」などの地区名は会場から外す。",
+        "city": "花巻市",
+        "months": 3,
+        "filter": "神楽",
+        "selectors": {
+            "item": "div.main-event",
+            "name": "h3 a",
+            "date": "p.day",
+            "place": "p.p-bold",
+            "link": "h3 a"
+        }
     },
     {
         "id": "kagura-kaikan-oita",
