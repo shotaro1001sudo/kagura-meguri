@@ -10,7 +10,7 @@ import {fingerprint,recordWatch} from '../scripts/lib/source-watch.mjs';
 import {strictRobotsAllows} from '../scripts/lib/strict-robots.mjs';
 const sources=JSON.parse(readFileSync('data/sources.json','utf8'));
 const newSources=sources.filter(s=>s.nationalExpansion);
-assert.equal(newSources.length,15);
+assert.equal(newSources.length,17);
 assert.equal(new Set(sources.map(s=>s.id)).size,sources.length);
 assert(newSources.filter(s=>s.enabled).every(s=>s.termsChecked && s.requestDelayMs>=5000));
 assert.equal(newSources.filter(s=>s.enabled && s.collectionMode==='events').length,2);

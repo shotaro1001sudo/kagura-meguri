@@ -418,5 +418,33 @@
         "watchUrls": [
             "https://tohyamago.com/archives/category/information"
         ]
+    },
+    {
+        "id": "masuda-yokagura",
+        "name": "益田市(石見の夜神楽 益田公演)",
+        "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
+        "adapter": "official-watch",
+        "enabled": true,
+        "nationalExpansion": true,
+        "collectionMode": "review",
+        "requestDelayMs": 5000,
+        "termsChecked": "2026-11-09",
+        "reviewStatus": "自動取得・要確認",
+        "reviewReason": "B：令和8年度の年間スケジュールPDF(土曜19:30の定期公演と特別公演)。PDFの差し替え・年度更新を確認し、data/regular.json と特別公演の開催を手で直す。",
+        "notes": "2026-11-09確認。robots.txt で取得可。写真・本文は転載せず、日時・会場の事実のみ利用。更新監視はハッシュとURLのみ保存。市の免責事項に転載・取得の禁止なし。定期公演は data/regular.json(masuda-iwami-yokagura)、特別公演は events.json に手で登録済み。"
+    },
+    {
+        "id": "tsuwano-yokagura",
+        "name": "津和野町観光協会(津和野夜神楽公演)",
+        "url": "https://tsuwano-kanko.net/yokagura2026/",
+        "adapter": "official-watch",
+        "enabled": true,
+        "nationalExpansion": true,
+        "collectionMode": "review",
+        "requestDelayMs": 5000,
+        "termsChecked": "2026-11-09",
+        "reviewStatus": "自動取得・要確認",
+        "reviewReason": "B：月1回(土曜20:00)の通常公演と出演社中。社中の追記・変更と、2027年度のページ(URLの年)を確認する。",
+        "notes": "2026-11-09確認。robots.txt で取得可。写真・本文は転載せず、日時・会場の事実のみ利用。更新監視はハッシュとURLのみ保存。利用規約のページは見当たらない。動画のネット投稿禁止の注記は、掲載文で案内する。2026-11-09 に2027年3月までの5公演を events.json に手で登録済み。"
     }
 ]

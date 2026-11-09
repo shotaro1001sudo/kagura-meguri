@@ -77,3 +77,16 @@
 - 岡山県: 高梁市(備中神楽の定期公演)、岡山後楽園の公式ページ
 - 山口県・九州: 各観光協会や自治体の公式カレンダー
 - 自治体や県の**オープンデータカタログ**にイベント情報があれば、規約が明確なので最優先で使えます。
+
+## 追加調査: 島根(石見)の公式情報(2026年11月9日)
+
+| 収集元 | 内容 | 扱い |
+|---|---|---|
+| [浜田市観光協会 石見神楽公式サイト「上演情報」](https://iwamikagura.jp/staging/) | 公演情報カレンダー(Google カレンダーの埋め込み)に、浜田市内の奉納神楽・定期公演・大会が載る。定期公演会場の一覧もある | **自動収集はしない。** カレンダーの配信元(calendar.google.com)の robots.txt が全体を禁止しているため。月に1回ほど、人がカレンダーを見て `events.json` に手で足す(2026-11-09 に16件を登録) |
+| [益田市「石見の夜神楽益田公演」](https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html) | 年間スケジュールPDF(土曜19:30。9〜11月は休演、12月は26日の特別公演のみ) | `masuda-yokagura`(official-watch)で変更を監視。定期公演は `regular.json`、特別公演は `events.json` |
+| [津和野町観光協会「津和野夜神楽公演」](https://tsuwano-kanko.net/yokagura2026/) | 月1回・土曜20:00の通常公演と出演社中 | `tsuwano-yokagura`(official-watch)で変更を監視。5公演を `events.json` に手で登録 |
+| [島根県観光連盟「石見の神楽在月」](https://www.kankou-shimane.com/kaguraarizuki/archives/1237) | 石見9市町の定期公演・イベントの一覧(スタンプラリーの案内) | 手がかりとして使う(各公演は主催者の公式ページで確かめてから登録)。robots.txt は ClaudeBot を拒否しているため、Claude からの取得は控える |
+| [浜田市観光協会 夜神楽鑑賞公式予約サイト](https://hamada-yokagura.jp/) | 三宮神社の週末公演の日ごとの出演団体・演目 | `regular.json`(hamada-yokagura-shusai)と同じ公演。新しい開催はない |
+| [北広島町 神楽スケジュール](https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html) | 2026年度のPDF | 今後の分は、すでに `events.json` に手で登録済み |
+
+公式の一次情報が確かめられなかったもの(日貫大元神楽フェスティバル、パレットごうつの定期公演、MASCOS HOTEL の神楽ディナー)は、登録していません。
