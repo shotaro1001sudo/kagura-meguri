@@ -33,10 +33,16 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 公開1回の待ちは最長10分(deploy-pages の上限で、延ばせない)。時間切れなら1回だけやり直すので、2回分+余裕
+    timeout-minutes: 25
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
+      # GitHub Pages が混んでいると「ファイル同期中」のまま10分を超え、取り消されることがある(2026-11-10)
       - id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - id: deployment-retry
+        if: ${{ steps.deployment.outcome == 'failure' }}
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

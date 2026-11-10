@@ -257,6 +257,11 @@ export async function collectTests({ ok, section }) {
   const dy = YAML.parse(read(".github/workflows/deploy.yml"));
   const upload = dy.jobs.build.steps.find((s) => /upload-pages-artifact/.test(s.uses ?? ""));
   ok(upload?.with?.path === "dist" && upload.with["include-hidden-files"] === true, "公開の成果物に、「.」で始まるファイル(/.well-known/security.txt)を含める");
+  // GitHub Pages の公開は1回最長10分。混んで時間切れになったら、1回だけやり直す(ジョブの上限は2回分より長く)
+  const [pub, retry] = dy.jobs.deploy.steps.filter((s) => /deploy-pages/.test(s.uses ?? ""));
+  ok(pub?.["continue-on-error"] === true && retry?.if === `\${{ steps.${pub?.id}.outcome == 'failure' }}` && retry.uses === pub.uses && dy.jobs.deploy["timeout-minutes"] > 20,
+    "公開が時間切れなら1回だけやり直し、ジョブの上限は2回分より長い");
+  ok(!!retry && dy.jobs.deploy.environment.url.includes(`steps.${pub?.id}.outputs.page_url`) && dy.jobs.deploy.environment.url.includes(`steps.${retry?.id}.outputs.page_url`), "公開先のURLは、どちらの公開でも取れる");
   const dep = YAML.parse(read(".github/dependabot.yml"));
   ok(dep.updates.length === 2 && dep.updates.every((u) => u.cooldown?.["default-days"] >= 14), "更新の提案(Dependabot)は、公開から14日以上たった版だけにする");
   const wy = YAML.parse(wf);
