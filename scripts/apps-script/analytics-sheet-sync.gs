@@ -10,6 +10,16 @@ const KAGURA_ANALYTICS_SYNC = Object.freeze({
     "/regular/takachiho-jinja-kagura.html","/regular/hiroshima-kagura-teiki-2026.html","/regular/masuda-iwami-yokagura.html",
     "/regular/hamada-yokagura-shusai.html","/regular/gotsu-arifuku-kagura.html","/regular/yunotsu-yokagura.html"],
   FUNNEL_EVENTS: ["official_link_click","affiliate_click","affiliate_view"],
+  // MEAS-20261110-1: sponsored-link breakdowns for every public page (event pages included).
+  // Optional kinds: a failure is recorded in the run note and never breaks GA4/GSC success.
+  OPTIONAL_KINDS: ["aff_page","aff_detail"],
+  AFF_EVENTS: ["affiliate_click","affiliate_view"],
+  // Public route shapes of the static site only. No query strings, no free-form or user paths.
+  AFF_ROUTE: "^/(?:(?:events|regular)/[-a-z0-9]{1,80}\\.html|(?:kagura|pref)/[^/?#\\s]{1,60}\\.html|month/\\d{4}-\\d{2}\\.html|history/(?:[-a-z0-9]{1,40}\\.html)?|(?:index|guide|experiences|weekend|this-month|map|calendar)\\.html)?$",
+  // Values the site itself sends (scripts/client/affiliate.js). "(not set)" = before the GA4
+  // custom dimension was registered, or the parameter was missing; it is not a partner.
+  AFF_PARTNERS: ["jalan","rakuten","amazon","rakuten-ichiba","vc-asoview","vc-jalan-rental","rakuten-rental","rakuten-carshare","vc-jalan-activity","rakuten-books","rakuten-furusato"],
+  AFF_PLACEMENTS: ["event_stay","stay_banner","travel_block","guide_supplies","guide_rental","experience_guide","experience_directory","nearby_experiences","event_experiences","event_rental","regular_experiences","regular_rental","kagura_learn","history_learn","pref_furusato","kagura_furusato","event_learn","event_furusato","regular_learn","regular_furusato"],
   DAILY: "12_計測日次", DETAIL: "13_計測内訳", RUNS: "14_計測実行",
   DAILY_HEADER: ["ID","source","date","timezone","active_users","sessions","PV","engagement_rate","clicks","impressions","CTR","position","quality","fetched_at_JST"],
   DETAIL_HEADER: ["ID","source","breakdown","from","to","timezone","dimension","metrics_json","quality","fetched_at_JST"],
@@ -23,6 +33,8 @@ function kaguraFailure_(code) { const error = new Error(code); error.kaguraCode 
 function kaguraErrorCode_(error) {
   if (/^[A-Z0-9_]+$/.test(error?.kaguraCode || "")) return error.kaguraCode;
   const message = String(error?.message || "");
+  // A GA4 custom dimension (customEvent:*) that is not registered in the property yet.
+  if (/not a valid dimension/i.test(message)) return "GA4_DIMENSION_NOT_REGISTERED";
   if (/not defined|undefined.*Properties/.test(message)) return "SERVICE_NOT_ENABLED";
   if (/403|permission|authoriz|access denied/i.test(message)) return "PERMISSION_OR_API_DISABLED";
   if (/429|quota|rate limit/i.test(message)) return "QUOTA_EXCEEDED";
@@ -124,15 +136,26 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
     ["device",["deviceCategory"],["sessions"]],
     ["page",["pagePath"],["screenPageViews"]],
     ["event",["eventName"],["eventCount"]],
-    ["page_event",["pagePath","eventName"],["eventCount"]]
+    ["page_event",["pagePath","eventName"],["eventCount"]],
+    // MEAS-20261110-1 (optional): which page / which partner and placement the sponsored-link
+    // views and clicks came from. aff_page uses standard dimensions only; aff_detail needs the
+    // event-scoped custom dimensions affiliate_partner and affiliate_placement registered in GA4.
+    ["aff_page",["pagePath","eventName"],["eventCount"]],
+    ["aff_detail",["pagePath","customEvent:affiliate_partner","customEvent:affiliate_placement","eventName"],["eventCount"]]
   ];
-  for(const [kind,dimensions,metrics] of jobs) {
+  const S=KAGURA_ANALYTICS_SYNC;
+  const runJob=([kind,dimensions,metrics])=>{
+    const optional=S.OPTIONAL_KINDS.includes(kind);
     const request={dateRanges:[{startDate:from,endDate:to}],
       dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),limit:KAGURA_ANALYTICS_SYNC.LIMIT,returnPropertyQuota:true,
       orderBys:dimensions.map(dimensionName=>({dimension:{dimensionName}}))};
     if(kind==="page_event") request.dimensionFilter={andGroup:{expressions:[
       {filter:{fieldName:"pagePath",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_PAGES,caseSensitive:true}}},
       {filter:{fieldName:"eventName",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_EVENTS,caseSensitive:true}}}
+    ]}};
+    if(optional) request.dimensionFilter={andGroup:{expressions:[
+      {filter:{fieldName:"pagePath",stringFilter:{matchType:"FULL_REGEXP",value:S.AFF_ROUTE,caseSensitive:true}}},
+      {filter:{fieldName:"eventName",inListFilter:{values:S.AFF_EVENTS,caseSensitive:true}}}
     ]}};
     const report=AnalyticsData.Properties.runReport(request,"properties/"+property);
     const rows=kaguraReportRows_(report,dimensions,metrics,kind==="source"?["engagedSessions","engagementRate"]:[]);
@@ -146,22 +169,50 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
         seen.add(key);
       });
     }
+    if(optional) {
+      // Re-check what the API returned: route shape, known events, known partner/placement
+      // values and no duplicate composite key. Nothing unexpected is saved or logged.
+      const route=new RegExp(S.AFF_ROUTE),seen=new Set(),unset="(not set)";
+      rows.forEach(row=>{
+        const key=JSON.stringify(row.slice(0,dimensions.length));
+        if(typeof row[0]!=="string" || row[0].length>160 || !route.test(row[0]) ||
+          !S.AFF_EVENTS.includes(row[dimensions.length-1]) || seen.has(key)) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+        if(kind==="aff_detail" && ((row[1]!==unset && !S.AFF_PARTNERS.includes(row[1])) ||
+          (row[2]!==unset && !S.AFF_PLACEMENTS.includes(row[2])))) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+        seen.add(key);
+      });
+    }
     if(report.metadata?.timeZone!==zone) throw kaguraFailure_("GA4_TIMEZONE_MISMATCH");
     const quality=["processing/revisions possible; self/debug not certified",
       report.rowCount>rows.length?"truncated":"",rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"limit reached; completeness not guaranteed":"",
       kind==="source"?"metrics=sessions,engagedSessions,engagementRate; schema=2" : "",
       kind==="source"&&rows.some(row=>row.slice(1).includes(null))?"optional_metrics_missing (not zero)":"",
       kind==="page_event"?"fixed public routes only; metrics=eventCount; events are not users or conversions":"",
+      optional?"public route shapes only; sponsored links; consented visits only; metrics=eventCount; events are not users or conversions; missing rows are not zero":"",
+      kind==="aff_detail"?"dimension=[pagePath,affiliate_partner,affiliate_placement,eventName]; (not set)=before custom dimension registration or parameter missing":"",
       report.metadata?.subjectToThresholding?"thresholded":"",
       report.metadata?.samplingMetadatas?.length?"sampled":""].filter(Boolean).join("; ");
-    flags.push(kind+": "+quality+(rows.length?"":"; no_rows"));
+    const out={flag:kind+": "+quality+(rows.length?"":"; no_rows"),details:[],daily:null};
     if(kind==="daily") {
-      observed=rows.map(row=>[String(row[0]).replace(/^(\d{4})(\d{2})(\d{2})$/,"$1-$2-$3"),...row.slice(1)]);
-      if(observed.some(row=>row[4]>1)) throw kaguraFailure_("GA4_METRIC_INVALID");
+      out.daily=rows.map(row=>[String(row[0]).replace(/^(\d{4})(\d{2})(\d{2})$/,"$1-$2-$3"),...row.slice(1)]);
+      if(out.daily.some(row=>row[4]>1)) throw kaguraFailure_("GA4_METRIC_INVALID");
     } else rows.forEach(row=>{
-      const dimension=kind==="page_event"?JSON.stringify(row.slice(0,2)):row[0];
-      details.push(["GA4-"+kind+"-"+to+"-"+dimension,"GA4",kind,from,to,zone,dimension,JSON.stringify(row.slice(dimensions.length)),quality,fetched]);
+      const dimension=dimensions.length>1?JSON.stringify(row.slice(0,dimensions.length)):row[0];
+      out.details.push(["GA4-"+kind+"-"+to+"-"+dimension,"GA4",kind,from,to,zone,dimension,JSON.stringify(row.slice(dimensions.length)),quality,fetched]);
     });
+    return out;
+  };
+  for(const job of jobs) {
+    if(S.OPTIONAL_KINDS.includes(job[0])) {
+      // Optional breakdown: say why it is missing and go on. Its rows are saved only when the
+      // whole job passed, so a failure never leaves partial rows or breaks the GA4 success state.
+      try { const r=runJob(job); details.push(...r.details); flags.push(r.flag); }
+      catch(error) { flags.push(job[0]+": unavailable ("+kaguraErrorCode_(error)+"); optional breakdown not saved; missing is not zero"); }
+      continue;
+    }
+    const r=runJob(job);
+    if(r.daily) observed=r.daily;
+    details.push(...r.details); flags.push(r.flag);
   }
   return {daily:kaguraDailyRows_("GA4",from,to,zone,observed,flags[0],fetched),details,
     status:observed.length?"success":"no_data",note:flags.join(" / ")+"; missing_days="+(KAGURA_ANALYTICS_SYNC.DAYS-observed.length)};
@@ -217,7 +268,7 @@ function checkKaguraAnalyticsSetup() {
     readyForOwnerTest:free&&property&&bound&&typeof AnalyticsData!=="undefined",
     note:"OAuth scopes/API enablement and access still require owner test; no API requests made"};
 }
-/** Max 15 API calls/run with optional session snapshot (10 existing + 5).
+/** Max 17 API calls/run with optional session snapshot (GA4 8 + GSC 4 + 5).
  * Independent same-day guards; <=2 attempts/component/day. No new trigger. */
 function dailyKaguraAnalyticsSync() {
   const props=PropertiesService.getScriptProperties(),ss=SpreadsheetApp.getActiveSpreadsheet();

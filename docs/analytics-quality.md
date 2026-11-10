@@ -296,7 +296,7 @@ URLごとの数値を全体の内訳として加算しない。クリックsessi
 
 ### API予算（以前の10要求から明示的に変更）
 
-- 既存の日次: GA4 6＋GSC 4。期間snapshot: GA4 5。**全部未取得の1実行は最大15要求**。
+- 既存の日次: GA4 6＋GSC 4。期間snapshot: GA4 5。**全部未取得の1実行は最大15要求**。(2026-11-10 に、広告クリックの内訳の追加で最大17要求へ。下の「広告クリックの内訳を全ページで取る」)
 - バッチ化して見かけの回数を小さくすることはしない。GA4の通常消費は6→11レポートへ増える。
 - 既存GA4/GSCとsnapshotそれぞれに同日成功ガード・1日最大2試行。自動再試行なし。
   すべての試行が上限まで必要な最悪ケースは合計30要求/日。手動の無ガード読取関数はこの予算外。
@@ -365,3 +365,52 @@ Googleタグは空のモックへ置換し通信を遮断するため、成功�
 保存、撤回後のreload、キーボード操作、CMP資産欠落時の停止が成功。
 実ローカルCMPを使用し、外部要求32件を遮断、外部へ継続した要求は0件。
 Googleタグはモックであり、本番受信・複数タブのGAセッション割当の証拠にはしない。
+
+## 2026-11-10: 広告クリックの内訳を全ページで取る(MEAS-20261110-1、実GAS未反映)
+
+週次の分析で、広告のクリック(28日で20回)のうち、どのページ・どの広告から出たかが分かるのは固定ページの分だけでした。
+開催ページ(夜神楽・花祭など)の宿の広告が押されているかが分からず、収益の施策(宿の導線・ふるさと納税)の効果を確かめられません。
+`scripts/apps-script/analytics-sheet-sync.gs` に、次の2つの内訳を足します。既存の `page_event`(固定ページ15件)は変えません。
+
+| 13_計測内訳のsource / breakdown | dimension列(JSON配列) | metrics_json | 分かること | GA4側の準備 |
+|---|---|---|---|---|
+| GA4 / aff_page | `[pagePath,eventName]` | `[eventCount]` | 全ページの、広告の表示(affiliate_view)とクリック(affiliate_click) | 不要(標準の項目だけ) |
+| GA4 / aff_detail | `[pagePath,affiliate_partner,affiliate_placement,eventName]` | `[eventCount]` | ページ × 広告主(jalan・rakuten など)× 置き場所(event_stay・kagura_furusato など) | カスタムディメンション2つの登録が要る |
+
+### 取り方と、守っていること
+
+- API側で、`eventName` を `affiliate_click / affiliate_view` に、`pagePath` を公開ページのパスの形(`AFF_ROUTE`。`/events/<id>.html`・`/regular/<id>.html`・`/kagura/<名前>.html`・`/pref/<県>.html`・`/month/<年-月>.html`・`/history/…`・固定ページ)に絞ります。クエリ付きのURL・空白入り・想定外の階層は対象外です。
+- 返ってきた行も、同じパスの形・イベント名・広告主と置き場所の値(サイトが送る値の一覧。`scripts/client/affiliate.js` とテストで照合)・複合キーの重複を確かめ直します。1行でも想定外なら、その内訳は保存せず、実行記録にも値を書きません。
+- 新しく測るものはありません。サイトがすでに送っているイベントとパラメータ(`affiliate_partner`・`affiliate_placement`)を、GA4から読むだけです。フルURL・利用者ID・セッションIDは要求しません。数えるのは、解析に同意した訪問の分だけです(プライバシーポリシーの範囲内)。
+- **この2つは「任意の内訳」です。** 失敗しても GA4・GSC の成功の記録は変えず、日次と既存の内訳はいつもどおり保存します。失敗した内訳は保存せず(古い行も残さない)、`14_計測実行` の GA4 の行の notes に `aff_detail: unavailable (原因コード); optional breakdown not saved; missing is not zero` と残します。
+- 行が無いページは 0 ではありません(イベントが無い・同意が無い・しきい値で伏せられた、のどれかです)。
+- `(not set)` は、カスタムディメンションを登録する前のイベント・値のないイベントです。広告主ではありません。
+
+### API予算(15 → 17要求)
+
+- 日次: GA4 6 → 8、GSC 4。期間snapshot 5。**全部未取得の1実行は最大17要求**(以前は15)。
+- 同日の成功ガード・1日2試行までは変えません。最悪の場合は合計34要求/日(以前は30)。
+- 新しいキー・有料サービス・OAuthスコープの追加はありません。
+
+### 運営者の手順(反映)
+
+1. **Apps Script の貼り替え(これだけで aff_page が取れます)**
+   非公開の統合管理台帳で「拡張機能 → Apps Script」を開き、このスクリプトを入れてあるファイル(`dailyKaguraAnalyticsSync` がある .gs)の中身を、リポジトリの `scripts/apps-script/analytics-sheet-sync.gs` の全文で置き換えて保存します。トリガーや他のファイルは触りません。
+   その日の取得が済んでいれば、新しい内訳は翌朝7時台の取得から入ります(同日は取り直しません)。
+2. **GA4 のカスタムディメンションの登録(aff_detail に必要)**
+   GA4 の「管理 → データの表示 → カスタム定義 → カスタム ディメンションを作成」で、次の2つを作ります。
+   - ディメンション名 `affiliate_partner` / 範囲: イベント / イベント パラメータ: `affiliate_partner`
+   - ディメンション名 `affiliate_placement` / 範囲: イベント / イベント パラメータ: `affiliate_placement`
+   登録の前のイベントには、さかのぼって付きません。登録から28日たつまでは `(not set)` の行が混ざります。
+3. **確かめ方**
+   翌朝、`14_計測実行` の `<日付>-GA4` の行の notes に `aff_page:` と `aff_detail:` が出ていること。
+   `aff_detail: unavailable (GA4_DIMENSION_NOT_REGISTERED)` なら、2 の登録がまだです(ほかの数字には影響しません)。
+   `13_計測内訳` に breakdown が `aff_page`(と `aff_detail`)の行が入っていること。
+
+### 未検証のこと
+
+- 実の GA4 プロパティでの動作(正規表現の絞り込み・カスタムディメンションの組み合わせ・しきい値)は未検証です。ローカルのテスト(`tests/analytics-sync.mjs`)は、API の応答を模した検証です。
+- 未登録のときに API が返すエラーの文面が想定(`not a valid dimension`)と違う場合、原因コードは `UNCLASSIFIED_ERROR` になりますが、動作(その内訳だけ保存しない)は同じです。
+- 反映のあと、週次の分析が7日後に「計測できている / できていない」を判定します。
+
+一次資料: https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FilterExpression / https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#custom_dimensions
