@@ -139,13 +139,34 @@ export function rejectPending(root, id) {
   return { event: e };
 }
 
-/** 週次の振り返り(data/weekly-review.json)のうち、人が行う項目。保留の判断は、開催の欄で別に見せる */
-export function loadReview(root) {
+/** 振り返りの Issue の本文から、チェックを付けた項目の key を拾う(「- [x] … <!-- key -->」の行) */
+export function reviewChecks(body = "") {
+  const keys = [];
+  for (const line of String(body).split(/\r?\n/)) {
+    const m = line.match(/^\s*[-*] \[[xX]\] .*?<!--\s*([\w-]+)\s*-->\s*$/);
+    if (m) keys.push(m[1]);
+  }
+  return keys;
+}
+/** 振り返りの Issue の本文に書かれた、振り返りの日付(「<!-- weekly-review YYYY-MM-DD -->」) */
+export const reviewIssueDate = (body = "") => String(body).match(/<!--\s*weekly-review\s+(\d{4}-\d{2}-\d{2})\s*-->/)?.[1] ?? null;
+
+/**
+ * 週次の振り返り(data/weekly-review.json)のうち、人が行う項目と、Claude に頼む項目。保留の判断は、開催の欄で別に見せる。
+ * issues: GitHub の、開いている振り返りの Issue([{ date, url, checked }])。同じ日付の Issue でチェックを付けた項目は、済みとして外す
+ * (振り返りのデータは週に1回しか作られないので、チェックはここで反映する)
+ */
+export function loadReview(root, issues = null) {
   const r = readJson(paths(root).review, null);
   if (!r) return null;
+  const issue = Array.isArray(issues) ? issues.find((x) => x?.date && x.date === r.updated) ?? null : null;
+  const checked = new Set(issue?.checked ?? []);
+  const human = (r.actions ?? []).filter((a) => a.owner === "人" && a.key !== "held");
+  const claude = (r.actions ?? []).filter((a) => a.owner === "Claude").map(({ key, text, weeks }) => ({ key, text, weeks: weeks ?? 1 }));
   // claude: Claude に頼むと進む項目(「やること」の「Claude に頼む」のいちばん上に、頼む文つきで出す。頼まれるまで進まないので、見えるところに置く)
-  return { updated: r.updated ?? null, actions: (r.actions ?? []).filter((a) => a.owner === "人" && a.key !== "held"),
-    claude: (r.actions ?? []).filter((a) => a.owner === "Claude").map(({ key, text, weeks }) => ({ key, text, weeks: weeks ?? 1 })) };
+  return { updated: r.updated ?? null, actions: human.filter((a) => !checked.has(a.key)), claude: claude.filter((a) => !checked.has(a.key)),
+    done: { actions: human.filter((a) => checked.has(a.key)).map(({ key, text }) => ({ key, text })), claude: claude.filter((a) => checked.has(a.key)) },
+    issueUrl: issue?.url ?? null, issueRead: Array.isArray(issues) };
 }
 
 // 検索の改善案(analytics/state.json。このPCだけ・git に入らない)。運営者が決められるのは「見送る」と「見送りを戻す」だけ

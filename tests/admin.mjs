@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSyn
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
-import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals } from "../scripts/admin/store.mjs";
+import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals, reviewChecks, reviewIssueDate } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
 import { pipelineSummary, addSuggestedLeads, leadSummary } from "../scripts/admin/pipeline.mjs";
@@ -152,7 +152,8 @@ export async function adminTests({ ok, section }) {
   const published = [], publishOpts = [];
   const autoFlag = { v: false };
   const fakeReplies = { calls: [], next: [] };
-  const { server, token, url } = await startAdmin({ root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
+  const fakeIssues = { v: [], calls: 0 };
+  const { server, token, url } = await startAdmin({ reviewIssues: async () => { fakeIssues.calls++; return fakeIssues.v; }, root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
@@ -234,6 +235,21 @@ export async function adminTests({ ok, section }) {
     let st = (await req("/api/state")).json;
     ok(st.review?.actions.map((a) => a.key).join() === "collect-errors", "振り返りからは、人が行う項目だけを出す(保留の判断は、開催の欄で別に出す。Claude の項目は出さない)", JSON.stringify(st.review));
     ok(st.review?.claude.map((a) => `${a.key}:${a.weeks}`).join() === "time-unknown:1", "振り返りの Claude の項目は、「Claude に頼めること」に出すため、別に渡す(何週つづいているかつき)", JSON.stringify(st.review));
+    // 振り返りの Issue でチェックを付けた項目は、済みとして外す(同じ日付の Issue だけ。「最新にする」で読み直す)
+    ok(reviewChecks(["- [x] 【Claude】時刻 <!-- time-unknown -->", "- [ ] 【人】確認 <!-- collect-errors -->", "* [X] 手書き", "- [X] 収集元 <!-- source-reviews -->"].join("\r\n")).join() === "time-unknown,source-reviews"
+      && reviewIssueDate("本文\n<!-- weekly-review 2026-10-12 -->") === "2026-10-12" && reviewIssueDate("なし") === null, "振り返りの Issue: チェックを付けた項目の key と、振り返りの日付を読む");
+    fakeIssues.v = [{ date: "2026-10-05", url: "https://github.com/o/r/issues/1", checked: ["time-unknown", "collect-errors"] }];
+    st = (await req("/api/refresh", { body: {} })).json.state;
+    ok(st.review.claude.length === 1 && st.review.actions.length === 1 && st.review.issueUrl === null, "振り返りの Issue: 日付の違う Issue のチェックは使わない", JSON.stringify(st.review));
+    fakeIssues.v = [{ date: "2026-10-12", url: "https://github.com/o/r/issues/2", checked: ["time-unknown", "collect-errors"] }];
+    const callsBefore = fakeIssues.calls;
+    st = (await req("/api/state")).json;
+    ok(fakeIssues.calls === callsBefore && st.review.claude.length === 1, "振り返りの Issue は、5分は読み直さない(画面を開くたびに GitHub を読まない)");
+    st = (await req("/api/refresh", { body: {} })).json.state;
+    ok(st.review.claude.length === 0 && st.review.actions.length === 0 && st.review.done.claude.map((a) => a.key).join() === "time-unknown" && st.review.done.actions.map((a) => a.key).join() === "collect-errors" && st.review.issueUrl === "https://github.com/o/r/issues/2",
+      "振り返りの Issue でチェックを付けた【Claude】【人】の項目は、やることから外し、済みとして渡す(「最新にする」で読み直す)", JSON.stringify(st.review));
+    fakeIssues.v = [];
+    st = (await req("/api/refresh", { body: {} })).json.state;
     ok(st.proposals.length === 3 && !("baseline" in st.proposals[0]) && st.committedIds.join() === "SEO-20261001-1" && st.repo === "https://github.com/o/r", "改善案・コミットに書かれた ID・リポジトリの場所を、画面に渡す(基準の数字は渡さない)");
 
     r = await req("/api/events/save", { body: { event: { ...held("h-1"), source: "" }, originalId: "h-1", approve: true } });

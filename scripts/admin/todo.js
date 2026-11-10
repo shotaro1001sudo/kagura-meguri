@@ -17,8 +17,10 @@ export function decisions() {
   const advice = S.advice || [];
   const openAdv = advice.filter((a) => a.status === "proposed" && !done.has(a.id));
   // 週次の振り返りの【Claude】の項目(頼まれるまで進まないので、「Claude に頼む」のいちばん上に、頼む文つきで出す)
+  // 振り返りの Issue でチェックを付けた項目は、サーバーが外して、済みとして別に渡す
   const claudeActs = S.review?.claude || [];
-  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, claudeActs, proposals, openProps, advice, openAdv, done };
+  const reviewDone = [...(S.review?.done?.claude || []).map((a) => ({ ...a, owner: "Claude" })), ...(S.review?.done?.actions || []).map((a) => ({ ...a, owner: "人" }))];
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, claudeActs, reviewDone, proposals, openProps, advice, openAdv, done };
 }
 
 // ---------- 頼む文(Claude に頼むときの文。管理者用ページは、出してコピーするだけ) ----------
@@ -120,7 +122,8 @@ ${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
   const reviewCard = !d.claudeActs.length ? "" : h("article", { class: "card" },
     h("div", { class: "card-h" }, h("h3", null, `週次の振り返りの Claude の項目(${d.claudeActs.length}件)`), chip("振り返り"), badge("info", "頼むと進む")),
     h("ul", { class: "reasons" }, d.claudeActs.map((a) => h("li", null, a.text, a.weeks > 1 ? `(${a.weeks} 週つづいています)` : ""))),
-    h("div", { class: "bar" }, copyBtn(reviewAsk)),
+    h("div", { class: "bar" }, copyBtn(reviewAsk), S.review?.issueUrl ? ext(S.review.issueUrl, "振り返りの Issue を開く") : ""),
+    h("p", { class: "mut small" }, S.review?.issueRead === false ? "振り返りの Issue のチェックを読めませんでした(gh を確かめてください)。" : "終わった項目は、振り返りの Issue でチェックを付けると、ここから消えます(反映は数分以内。すぐ見るときは「最新にする」)。"),
     promptBox(reviewAsk));
   return [
     { id: "ops", title: "止まっているものを確かめる", n: tasksBad, lead: "決まった時刻に動くはずの作業に、動いていないものがあります。",
@@ -138,7 +141,7 @@ ${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
       help: "毎週月曜の分析が、営業の候補・文案、掲載の穴、目標の見直し、記事の題材などを、週に5件まで出します。見送ると、同じ助言は出なくなります。この記録はこのPCだけに残ります。",
       body: () => [reviewCard, d.openAdv.map((a) => adviceCard(a, d, false))] },
     { id: "review", title: "振り返りで、自分が行うこと", n: d.actions.length, clear: S.review ? "振り返りで、自分が行う項目はありません。" : null, missing: S.review ? null : "週次の振り返りのデータが、まだありません。",
-      lead: "毎週月曜の振り返りで出た、人が行う項目です。リンク先で確かめ、終えたら、GitHub の振り返りのページでチェックを入れます。",
+      lead: "毎週月曜の振り返りで出た、人が行う項目です。リンク先で確かめ、終えたら、GitHub の振り返りのページでチェックを入れます(チェックを入れると、ここから消えます)。",
       body: () => [h("ul", { class: "acts card" }, d.actions.map((a) => h("li", null, a.text, actLinks[a.key] && S.repo ? [" ", ext(...actLinks[a.key])] : ""))),
         S.repo ? h("p", { class: "small" }, ext(`${S.repo}/issues?q=is%3Aopen+週次の振り返り`, "振り返りのページ(GitHub)を開く")) : ""] },
     { id: "props", title: "検索・計測の改善案を決める", n: d.openProps.length, clear: d.proposals.length ? "決めていない改善案はありません。" : null, missing: d.proposals.length ? null : "検索・アクセスの分析が、まだこのPCにありません(毎週月曜 9:00 の分析が作ります)。",
@@ -179,6 +182,7 @@ export function todoView() {
   const total = open.reduce((a, g) => a + g.n, 0);
   const stale = staleEvents().length;
   const closed = groups.filter((g) => g.closed.length);
+  const closedN = closed.reduce((a, g) => a + g.closed.length, 0) + d.reviewDone.length;
   return [
     signalTiles(),
     total ? h("p", { class: "hero" }, h("b", null, `やることが ${total} 件あります。`), "上から順に進めてください。")
@@ -191,8 +195,11 @@ export function todoView() {
     stale ? h("section", { class: "todo soft", "aria-labelledby": "todo-soft" }, h("div", { class: "todo-h" }, h("h2", { id: "todo-soft" }, "余裕があるときに")),
       linkRows([{ n: stale, label: "確認日から60日を過ぎた開催", note: "公式情報で、変更がないかを確かめ直します", go: ["events", { evFilter: "stale" }] }])) : "",
     rest.length && total ? h("section", { class: "todo done", "aria-label": "いま決めることがないもの" }, rest.map((g) => g.missing ? h("p", { class: "mut small" }, g.missing) : g.clear ? allClear(g.clear) : "")) : "",
-    closed.length ? h("section", { class: "todo done" }, h("details", { class: "more" }, h("summary", null, `済み・見送りにしたもの(${closed.reduce((a, g) => a + g.closed.length, 0)}件)`),
+    closedN ? h("section", { class: "todo done" }, h("details", { class: "more" }, h("summary", null, `済み・見送りにしたもの(${closedN}件)`),
       h("p", { class: "mut small" }, "見送ったものは、ここから戻せます。"),
+      d.reviewDone.length ? h("article", { class: "card" }, h("div", { class: "card-h" }, h("h3", null, `週次の振り返り(${S.review?.updated || ""})で、チェックを付けた項目`), badge("ok", "済み")),
+        h("ul", { class: "reasons" }, d.reviewDone.map((a) => h("li", null, `【${a.owner}】${a.text}`))),
+        S.review?.issueUrl ? h("p", { class: "small" }, ext(S.review.issueUrl, "振り返りの Issue を開く")) : "") : "",
       closed.map((g) => g.id === "claude" ? g.closed.map((a) => adviceCard(a, d, true)) : g.closed.map((p) => proposalCard(p, d, true))))) : "",
   ];
 }

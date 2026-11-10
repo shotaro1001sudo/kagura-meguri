@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { REGIONS, regionOf } from "../lib/util.mjs";
 import { affiliateCoverage } from "../lib/affiliate-coverage.mjs";
+import { reviewChecks, reviewIssueDate } from "./store.mjs";
 
 const DAY = 864e5;
 const readJson = (root, p, fb = null) => { try { return JSON.parse(readFileSync(join(root, p), "utf8")); } catch { return fb; } };
@@ -278,6 +279,17 @@ export async function loadRuns(root) {
   const lists = await Promise.all(WATCHED.map((wf) => ghList(root, wf)));
   const ok = lists.filter(Array.isArray);
   return ok.length ? ok.flat() : lists[0];
+}
+/** 開いている週次の振り返りの Issue(gh)。返すのは [{ date, url, checked }](checked はチェックを付けた項目の key)。読めないときは { error } */
+export function loadReviewIssues(root) {
+  return new Promise((resolve) => {
+    execFile("gh", ["issue", "list", "--state", "open", "--limit", "5", "--search", "週次の振り返り in:title", "--json", "title,body,url"], { cwd: root, timeout: 15000, windowsHide: true }, (err, out) => {
+      if (err) return resolve({ error: err.code === "ENOENT" ? "gh が見つかりません" : "gh の実行に失敗しました" });
+      try {
+        resolve(JSON.parse(out).filter((x) => /^週次の振り返り[(（]/.test(x.title ?? "")).map((x) => ({ date: reviewIssueDate(x.body), url: x.url, checked: reviewChecks(x.body) })).filter((x) => x.date));
+      } catch { resolve({ error: "gh の出力を読めません" }); }
+    });
+  });
 }
 /** 公開サイトのトップを開けるか */
 export async function checkSite(baseUrl) {

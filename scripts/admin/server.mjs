@@ -23,7 +23,7 @@ import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataCh
 import { loadTasks } from "./tasks.mjs";
 import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
-import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
+import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +36,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite, reviewIssues = loadReviewIssues } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -60,12 +60,23 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       pending: await pending(root).catch(() => null), plan: loadPlan(root, today()) });
   };
 
+  // 振り返りの Issue のチェック(GitHub)。画面を開くたびに読むと遅いので、5分は使い回す(「最新にする」・定期の更新で読み直す)
+  let issues = null;
+  const ISSUE_TTL = 5 * 60e3;
+  const reviewIssueList = async () => {
+    if (!issues || now() - issues.at > ISSUE_TTL) {
+      const v = await Promise.resolve().then(() => reviewIssues(root)).catch((err) => ({ error: err.message }));
+      issues = { at: now(), v: Array.isArray(v) ? v : null };
+    }
+    return issues.v;
+  };
+
   const state = async () => {
     const box = loadInbox(root);
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
-      review: loadReview(root), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
+      review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       refresh: { last: lastRefresh, hours: refreshHours } };
   };
@@ -119,6 +130,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件${m.replies ? `・営業の相手からの返信 ${m.replies} 件` : ""}${m.replyError ? `(営業の返信は読み込めませんでした: ${m.replyError})` : ""}`, added: m.added, replies: m.replies }; }
     lastRefresh = r;
     ext = null; // 次に概要を開いたとき、GitHub の実行とサイトを確かめ直す
+    issues = null; // 振り返りの Issue のチェックも、読み直す
     return r;
   });
   let timer = null, first = null;
