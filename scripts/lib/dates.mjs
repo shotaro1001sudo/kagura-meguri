@@ -102,4 +102,27 @@ export function regularOn(r, s) {
   if (Array.isArray(r.closedDates) && r.closedDates.includes(s.slice(5))) return false;
   return true;
 }
+/** 定期公演の、from(その日を含む)以降の公演日を、近い順に最大 limit 件(days 日先まで)。見つからなければ [] */
+export function regularNextDates(r, from, { limit = 1, days = 400 } = {}) {
+  const out = [];
+  for (let i = 0; i < days && out.length < limit; i++) { const d = addDays(from, i); if (regularOn(r, d)) out.push(d); }
+  return out;
+}
+/** 本来の決まり(曜日・第何週)なら公演があるはずの日から、この日数以上あいていたら「休演中」と見せる */
+export const PAUSE_DAYS = 14;
+/** 休演月・休演日を考えない、曜日の決まりだけで見た、from 以降の最初の公演日。日程表(program)の公演・曜日がない公演は from */
+export function regularNominalDate(r, from) {
+  if (Array.isArray(r.program) || !Array.isArray(r.weekdays)) return from;
+  for (let i = 0; i < 62; i++) { const d = addDays(from, i); if (r.weekdays.includes(weekday(d)) && nthOk(r, d)) return d; }
+  return from;
+}
+/**
+ * 定期公演の休演の状態: { next: 次の公演日 or null, paused: 休演中か }。
+ * 毎週の公演が1回休むだけ(次が翌週)・月1回の公演の間(決まりどおり)は、休演中にしない。
+ * 休演月(益田の9〜11月など)で、決まりの日から PAUSE_DAYS 日以上あくときだけ、休演中にする。
+ */
+export function regularStatus(r, today) {
+  const [next = null] = regularNextDates(r, today);
+  return { next, paused: !next || next >= addDays(regularNominalDate(r, today), PAUSE_DAYS) };
+}
 export const isDaily = (r) => Array.isArray(r.weekdays) && r.weekdays.length === 7;

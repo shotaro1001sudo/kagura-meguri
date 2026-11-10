@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
-import { jpHolidays, weekendRange, rangeLabel, regularOn, isRestDay } from "../scripts/lib/dates.mjs";
+import { jpHolidays, weekendRange, rangeLabel, regularOn, isRestDay, regularStatus } from "../scripts/lib/dates.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -25,7 +25,15 @@ export function weekendTests({ ok, section, build }) {
   ok(rangeLabel("2026-10-10", "2026-10-12") === "10月10日(土)〜12日(月・祝)" && rangeLabel("2026-10-31", "2026-11-01") === "10月31日(土)〜11月1日(日)" && rangeLabel("2026-10-12", "2026-10-12") === "10月12日(月・祝)", "期間の表記(祝日・月またぎ・1日だけ)");
   const sat = { weekdays: [6], months: [1, 2, 3, 4, 5, 6, 7, 8, 12] };
   ok(!regularOn(sat, "2026-10-10") && regularOn(sat, "2026-12-05") && !regularOn(sat, "2026-12-06"), "定期公演: 曜日と、公演する月で判定する(期間外の月は、出さない)");
-  ok(!regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-23") && regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-22"), "定期公演: 休演日は、出さない");
+  { // 休演中の表示(SNS・一覧・診断で「毎週土曜」のまま見えて、9〜11月の休演に気づかない、を防ぐ)
+    const masuda = { weekdays: [6], months: [1, 2, 3, 4, 5, 6, 7, 8], extra: [{ dates: ["12-26"] }], closedDates: ["01-02", "01-09", "05-02"] };
+    const st = (r, d) => JSON.stringify(regularStatus(r, d));
+    ok(st(masuda, "2026-11-10") === '{"next":"2026-12-26","paused":true}' && st(masuda, "2026-12-27") === '{"next":"2027-01-16","paused":true}', "休演月の間は休演中。次の公演日は、特別公演(extra)・休演日を数えて出す");
+    ok(st(masuda, "2027-01-11") === '{"next":"2027-01-16","paused":false}' && st(masuda, "2026-04-27") === '{"next":"2026-05-09","paused":false}', "上演の時期に入った・毎週の公演が1回休むだけなら、休演中にしない");
+    ok(st({ weekdays: [0], nth: [2] }, "2026-11-10") === '{"next":"2026-12-13","paused":false}', "月1回の公演の間(決まりどおり)は、休演中にしない");
+    ok(st({ weekdays: [3], until: "2026-12-31" }, "2027-01-01") === '{"next":null,"paused":true}' && st({ program: [{ date: "2026-12-20" }] }, "2026-11-10") === '{"next":"2026-12-20","paused":true}', "公演がもうない・日程表の次の公演が先なら、休演中"); }
+  ok(!regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-23") && regularOn({ weekdays: [0, 1, 2, 3, 4, 5, 6], closedDates: ["11-23"] }, "2026-11-22"), "定期公演: 休演日は、出さない");
+
   ok(regularOn({ weekdays: [0], nth: [2] }, "2026-11-08") && !regularOn({ weekdays: [0], nth: [2] }, "2026-11-15") && regularOn({ weekdays: [0], nth: [2] }, "2026-12-13") && !regularOn({ weekdays: [0], nth: [2] }, "2026-12-06"), "定期公演: 「毎月第2日曜」を nth で数える");
   ok(regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-13") && !regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-06") && regularOn({ weekdays: [0], nth: [1, 3], extra: [{ weekdays: [5], nth: [2, 4] }] }, "2026-11-15"), "定期公演: extra の中でも nth を使える(第2・第4金曜など)");
   { const prog = { weekdays: [0], program: [{ date: "2026-11-13", troupe: "a" }, { date: "2026-11-15", troupe: "b" }], until: "2026-11-14" };

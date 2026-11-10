@@ -102,6 +102,13 @@ export function quizTests({ok,section,OUT}) {
   w.kaguraGa4Allowed=false;const before=calls.length;d.querySelector('#quiz-back').click();pick(d,'drama');ok(calls.length===before,'非許可時には送信しない');ui.dom.window.close();
   const emptyConfig={...config,events:[],regular:[]};ui=setupQuiz(emptyConfig);d=ui.d;d.querySelector('#quiz-start').click();for(const q of questions){if(q.type==='region')d.querySelector('#quiz-next').click();else pick(d,'unknown');}
   ok(d.querySelectorAll('.quiz-program').length===0&&d.querySelector('#quiz-result').textContent.includes('該当するものがありません')&&d.querySelector('#quiz-result a[href="/calendar.html"]')&&d.querySelector('#quiz-result a[href="/guide.html"]')&&!d.querySelector('.quiz-share'),'全不明・0件でも、ガイドと一般検索へ進める(シェアは出さない)');ui.dom.window.close();
+  // 定期公演: 休演の時期(益田の9〜11月など)は外さずに「休演中・次の公演は…」と出す。見出しは「いつでも観に行ける」にしない
+  { const day=(n)=>new Date(Date.now()+9*3600e3+n*864e5).toISOString().slice(0,10),kind=config.traditions[0].kind;
+    const regs=[{id:'r-pause',name:'休演中の公演',schedule:'毎週土曜',prefecture:'島根県',kind,next:[day(45)],nominal:day(3),pauseDays:14},{id:'r-open',name:'上演中の公演',schedule:'毎週土曜',prefecture:'島根県',kind,next:[day(3)],nominal:day(3),pauseDays:14},{id:'r-monthly',name:'月1回の公演',schedule:'毎月第2日曜',prefecture:'島根県',kind,next:[day(25)],nominal:day(25),pauseDays:14}];
+    ui=setupQuiz({...config,events:[],regular:regs});d=ui.d;d.querySelector('#quiz-start').click();for(const q of questions){if(q.type==='region')d.querySelector('#quiz-next').click();else pick(d,'unknown');}
+    const line=(id)=>d.querySelector(`#quiz-result a[href="/regular/${id}.html"]`)?.parentElement,heads=[...d.querySelectorAll('#quiz-result h3')].map(h=>h.textContent),m=+day(45).slice(5,7),dd=+day(45).slice(8,10);
+    ok(line('r-pause')?.querySelector('.quiz-paused')?.textContent.trim().startsWith(`休演中・次の公演は${m}月${dd}日(`)&&!line('r-open')?.querySelector('.quiz-paused')&&!line('r-monthly')?.querySelector('.quiz-paused'),'休演中の定期公演は外さずに「休演中・次の公演は…」と出す(毎週・月1回の決まりどおりなら付けない)');
+    ok(heads.includes('定期公演')&&!heads.some(h=>h.includes('いつでも')),'定期公演の見出しは「いつでも観に行ける」としない');ui.dom.window.close(); }
   // 好みに近い3種類に条件の公演がないとき: 条件で観られる中で好みに近い種類を、近さが下がると明記して示す
   const lower=scored.all[5].kind,far={...config,events:[{id:'x1',name:'テスト公演',start:'2030-01-05T10:00',end:'2030-01-05T12:00',when:'2030年1月5日',prefecture:'高知県',place:'高知県',kind:lower}],regular:[]};
   ui=setupQuiz(far);d=ui.d;w=ui.w;d.querySelector('#quiz-start').click();for(const id of ['drama','fast','visual','short','quiet','story','history'])pick(d,id);region(d,w,'地方:四国');pick(d,'unknown');
