@@ -119,7 +119,7 @@ export function upsertEvent(events, input, originalId, status) {
   return { event: sorted };
 }
 
-// ---------- 人の判断(判断待ちのタブ) ----------
+// ---------- 人の判断(画面の「やること」) ----------
 
 /**
  * 保留中の開催を却下する(scripts/review.mjs reject と同じ扱い)。
@@ -143,7 +143,7 @@ export function rejectPending(root, id) {
 export function loadReview(root) {
   const r = readJson(paths(root).review, null);
   if (!r) return null;
-  // claude: Claude に頼むと進む項目(「判断待ち」の「Claude に頼めること」に、頼む文つきで出す。頼まれるまで進まないので、見えるところに置く)
+  // claude: Claude に頼むと進む項目(「やること」の「Claude に頼む」のいちばん上に、頼む文つきで出す。頼まれるまで進まないので、見えるところに置く)
   return { updated: r.updated ?? null, actions: (r.actions ?? []).filter((a) => a.owner === "人" && a.key !== "held"),
     claude: (r.actions ?? []).filter((a) => a.owner === "Claude").map(({ key, text, weeks }) => ({ key, text, weeks: weeks ?? 1 })) };
 }

@@ -1,16 +1,17 @@
 // 管理者用ページ(自分のPCだけで使う): npm run admin
 //   開催の一覧・編集・取り下げ / 投稿フォームの申請の許可・却下 / 問い合わせの対応状況
-//   判断待ち: 自動収集の保留の掲載・却下 / 週次の振り返りの【人】の項目 / 検索の改善案(頼む・見送る)
+//   やること: 人が決めること・対応することを、全部のメニューから集めて出す(自動収集の保留の掲載・却下 / 週次の振り返りの項目 / 検索の改善案 など)
+//   画面のプログラムは、このフォルダの .js(app.js が起動。メニューごとに todo.js・events.js などに分けてある)。ADMIN.md の「画面のプログラムの置き場所」
 //   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
-//   概要: 運営の状況(売上と目標・集客の推移・運営の信号・掲載の量と鮮度)を数字と信号で(読むだけ。overview.mjs)
+//   運営の状況(売上と目標・集客の推移・運営の信号・掲載の量と鮮度)を数字と信号で(読むだけ。overview.mjs。画面では「目標・収益」「数字」「動いているか」と、「やること」の上の信号に出す)
 //   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込みを行う(refreshHours。admin.local.json で変えられる)
-//   保存するのは data/events.json だけ。コミットと公開(git push)は、これまでどおり別に行う。
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
 // スマホから: Tailscale Serve(自分の端末だけに見える https://<PC>.<tailnet>.ts.net)経由で開ける。
 //            そのアドレスでは、さらにスマホ用の鍵(PC の画面の QR コードで入る Cookie)がないと、画面もデータも出さない(phone.mjs)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { readdirSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -26,7 +27,9 @@ import { buildOverview, loadRuns, checkSite } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.js": ["app.js", "text/javascript; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"] };
+// 画面のファイル。プログラムは、このフォルダの .js(画面ごとに分けたもの)だけを出す(.mjs はサーバー側なので出さない)
+const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.css": ["app.css", "text/css; charset=utf-8"],
+  ...Object.fromEntries(readdirSync(HERE).filter((f) => /^[a-z]+\.js$/.test(f)).map((f) => [`/${f}`, [f, "text/javascript; charset=utf-8"]])) };
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 
@@ -305,7 +308,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       }
       if (url.pathname !== "/app.css" && !sameKey(cookieValue(req.headers.cookie, "adm_phone"), phoneKey(root))) { // 見た目(app.css)だけは、案内ページのために鍵なしで出す
         return url.pathname.startsWith("/api/") ? json(401, { error: "このスマホには、まだ鍵がありません。PC の画面の QR コードから開いてください。" })
-          : send(401, "text/html; charset=utf-8", phonePage("このスマホには、まだ鍵がありません。PC の管理者用ページの概要にある「スマホで開く」の QR コードを、このスマホのカメラで読んでください。"));
+          : send(401, "text/html; charset=utf-8", phonePage("このスマホには、まだ鍵がありません。PC の管理者用ページの「設定」にある「スマホで開く」の QR コードを、このスマホのカメラで読んでください。"));
       }
     }
     if (req.method === "GET" && ASSETS[url.pathname]) {
@@ -343,7 +346,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
 /** スマホに鍵がないときなどの、文字だけの案内ページ */
 function phonePage(message) {
   const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>管理者用ページ | 神楽めぐり</title><link rel="stylesheet" href="/app.css"></head><body><main><h2>神楽めぐり 管理者用ページ</h2><p class="warn">${esc(message)}</p></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>管理者用ページ | 神楽めぐり</title><link rel="stylesheet" href="/app.css"></head><body><main class="solo"><h1>神楽めぐり 管理者用ページ</h1><p class="note n-warn">${esc(message)}</p></main></body></html>`;
 }
 
 /** 緯度経度のない開催に、住所から位置を付ける(scripts/geocode.mjs を、開催データだけに使う) */

@@ -1,4 +1,4 @@
-// 管理者用ページの「概要」: 運営の状況を、数字と信号で1枚にまとめる(読むだけ。何も書き換えない)
+// 管理者用ページの運営の状況: 売上・集客・信号・掲載を、数字と信号でまとめる(読むだけ。何も書き換えない)。画面では「目標・収益」「数字」「動いているか」と、「やること」の上の信号に出す
 //   1. 売上と目標   analytics/plan.json(目標・KPI・手入力の実績)+ analytics/state.json の kpi + analytics/series.json
 //   2. 集客の推移   analytics/series.json(日ごとの GA4・Search Console。週次の分析タスクが更新)と state.json のスナップショット
 //   3. 運営の信号   GitHub Actions の実行(gh)・サイトの表示・計測・週次の分析・予定タスク・Note・自動の読み込み・広告の期限
@@ -256,7 +256,7 @@ export function opsSection({ runs, site, state, series, tasks, refresh, pending,
     : [lr.git, lr.mail].some((x) => x && x.ok === false) ? { state: "warn", detail: [lr.git, lr.mail].filter((x) => x && x.ok === false).map((x) => x.text).join(" ・ "), last: lr.at }
     : { state: "ok", detail: [lr.git?.text, lr.mail?.text].filter(Boolean).join(" ・ "), last: lr.at });
   const unpub = !!(pending && (pending.uncommitted || pending.unpushed));
-  add("pending", "サイトに反映していない変更", "管理者ページの保存のたび", unpub ? { state: "warn", detail: "開催データの保存はできています。概要の「もう一度公開する」で送ってください" } : { state: "ok", detail: "ありません" });
+  add("pending", "サイトに反映していない変更", "管理者ページの保存のたび", unpub ? { state: "warn", detail: "開催データの保存はできています。画面の上の「もう一度公開する」で送ってください" } : { state: "ok", detail: "ありません" });
   const exp = expiring ?? [], gone = exp.filter((o) => o.days < 0), soon = exp.filter((o) => o.days >= 0);
   add("ads", "広告リンクの期限", "期限が切れると、自動で表示が止まる", gone.length ? { state: "warn", detail: `期限切れ ${gone.length} 件(表示が止まっています)${soon.length ? ` ・ 14日以内に切れる ${soon.length} 件` : ""}` }
     : soon.length ? { state: "warn", detail: `14日以内に切れる ${soon.length} 件(最短 ${soon[0].expiresAt})` } : { state: "ok", detail: "14日以内に切れるものはありません" });

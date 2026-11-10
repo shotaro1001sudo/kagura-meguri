@@ -1,5 +1,5 @@
 // 管理者用ページのテスト: メールの読み取り、開催データの保存、サーバーの安全対策
-import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
@@ -16,6 +16,9 @@ import { tmpdir } from "node:os";
 
 const SITE = "神楽めぐり";
 const read = (p) => readFileSync(p, "utf8");
+// 画面のプログラム(scripts/admin/ の .js。画面ごとのファイルに分けてある)を、まとめて読む
+const ADMIN_JS = readdirSync("scripts/admin").filter((f) => /^[a-z]+\.js$/.test(f));
+const adminJs = () => ADMIN_JS.map((f) => read(`scripts/admin/${f}`)).join("\n");
 
 // Web3Forms の通知メールに近い形(HTML だけの本文、返信先は投稿者)
 const submitBody = [
@@ -167,6 +170,10 @@ export async function adminTests({ ok, section }) {
     const html = await page.text();
     ok(page.status === 200 && /script-src 'self'/.test(page.headers.get("content-security-policy")) && page.headers.get("cache-control") === "no-store" && html.includes(`content="${token}"`) && !/<script>/.test(html), "画面: CSP(外部・埋め込みのスクリプトを禁止)・保存しない設定で配信", page.headers.get("content-security-policy"));
     ok(server.address().address === "127.0.0.1", "このPCの中(127.0.0.1)だけで待ち受ける");
+    const asset = async (p) => { const r = await fetch(`http://127.0.0.1:${new URL(url).port}${p}`); return [r.status, r.headers.get("content-type") ?? ""]; };
+    const served = await Promise.all(ADMIN_JS.map((f) => asset("/" + f)));
+    ok(html.includes('<script type="module" src="/app.js">') && served.every(([s, t]) => s === 200 && t.startsWith("text/javascript")) && (await asset("/server.mjs"))[0] === 404 && (await asset("/store.mjs"))[0] === 404 && (await asset("/admin.local.json"))[0] === 404,
+      "画面: 画面ごとに分けたプログラム(.js)を配信し、サーバー側のプログラム(.mjs)や設定は出さない", served.map((x) => x[0]).join());
     const nod = (path, headers) => new Promise((res) => import("node:http").then(({ request }) => { const r = request({ host: "127.0.0.1", port, path, headers }, (x) => res(x.statusCode)); r.end(); }));
     ok((await nod("/", { host: "evil.example:" + port })) === 421, "別の名前(Host)で来た接続は断る(DNS リバインディング対策)");
     ok((await req("/api/state", { headers: { "x-admin-token": "x" } })).status === 403, "合言葉(トークン)が違う操作は断る");
@@ -216,7 +223,7 @@ export async function adminTests({ ok, section }) {
     ok(r.json.state.inbox.find((x) => x.id === conItem.id).memo === "電話で確認中" && r.json.state.inbox.find((x) => x.id === conItem.id).status === "doing", "問い合わせの対応状況とメモを保存する");
     ok(published.length === 3, "問い合わせのメモ・状態や、Gmail の読み込みでは、push しない(開催データが変わらない)");
 
-    // ---------- 判断待ち: 保留の掲載・却下、振り返りの【人】の項目、検索の改善案 ----------
+    // ---------- やること: 保留の掲載・却下、振り返りの【人】の項目、検索の改善案 ----------
     const evPath = join(ROOT, "data/events.json");
     const held = (id, extra = {}) => ({ id, name: "保留 " + id, kagura: "石見神楽", prefecture: "島根県", city: "浜田市", venue: "会館", start: "2026-11-20T18:00", url: "https://example.jp/h", source: "収集元", checked: "2026-10-05", status: "pending", holdReasons: ["一度の新規が多すぎる"], auto: true, sourceId: "s1", ...extra });
     writeFileSync(evPath, JSON.stringify([...JSON.parse(read(evPath)), held("h-1"), held("h-2")], null, 2));
@@ -350,7 +357,7 @@ export async function adminTests({ ok, section }) {
     ok(r.status === 200 && led[0].email === "dan@example.jp" && led[0].formUrl === "https://example.jp/form" && led[0].body === "1行目\n2行目" && led[0].stage === "candidate", "連絡先(メール・フォーム・電話)と文案(件名・本文)を保存する(段階は変えない)");
     ok((await req("/api/pipeline/save", { body: { lead: { id: "L-001", name: "テスト神楽団", kind: "神楽団", offer: "MON-1", email: "a@b.jp, c@d.jp" } } })).status === 400
       && (await req("/api/pipeline/save", { body: { lead: { id: "L-001", name: "テスト神楽団", kind: "神楽団", offer: "MON-1", formUrl: "javascript:alert(1)" } } })).status === 400, "メールアドレスは1件だけ、フォームは http(s) の URL だけ受け付ける");
-    ok(read("scripts/admin/app.js").includes("function composeLead(x)") && !/sendMail|smtp/i.test(read("scripts/admin/pipeline.mjs")), "文案は Gmail の作成画面で開くだけで、管理者用ページからは送らない");
+    ok(adminJs().includes("function composeLead(x)") && !/sendMail|smtp/i.test(read("scripts/admin/pipeline.mjs")), "文案は Gmail の作成画面で開くだけで、管理者用ページからは送らない");
     r = await req("/api/pipeline/stage", { body: { id: "L-001", stage: "sent", note: "メールで送付" } });
     led = JSON.parse(read(plPath)).leads;
     ok(r.status === 200 && led[0].sentAt === "2026-10-10" && led[0].nextAt === "2026-10-17" && led[0].log.at(-1).note === "メールで送付", "送ったら、送った日と、7日後の「次に連絡する日」と記録を残す");
@@ -432,10 +439,11 @@ export async function adminTests({ ok, section }) {
     ok((await phone("/", { headers: { host: "pc.other.ts.net" } })).status === 421, "スマホ: 自分の Tailscale の名前以外のアドレスは、受け付けない");
     ok((await req("/api/phone/reset", { body: {} })).status === 200 && (await phone("/", { headers: cookie })).status === 401, "PC で鍵を作り直すと、それまでのスマホは開けなくなる");
     ok(/^\.admin\/$/m.test(read(".gitignore")), "スマホの鍵(.admin/phone.json)は、Git に入らない");
-    const js = read("scripts/admin/app.js");
-    ok(read("scripts/admin/app.html").includes('data-tab="goal"') && /goal: goalView/.test(js) && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のタブがあり、決めていない件数を出す");
-    ok(/total: pending\.length \+ actions\.length \+ openProps\.length \+ openAdv\.length \}/.test(js) && js.includes('title: "KPI・収益化の案"'), "決めていない KPI・収益化の案は、「目標・収益」のタブの件数と、概要の「判断・対応」に出す(判断待ちの件数と二重に数えない)");
-    ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、概要から開催一覧の「要確認」に移れる");
+    const js = adminJs();
+    ok(read("scripts/admin/app.html").includes('data-tab="goal"') && js.includes('goal: ["目標・収益", goalView]') && /planOpen\(\)\.length/.test(js), "管理者用ページに「目標・収益」のメニューがあり、決めていない件数を出す");
+    ok(js.includes("export const todoCount = () => todoGroups().reduce((a, g) => a + g.n, 0);") && js.includes('setCount("todo", todoCount())') && js.includes('label: "決めていない収益化の案"') && js.includes('label: "決めていない目標の数字"'),
+      "「やること」の件数は、全部のメニューの「人が決めること・対応すること」の合計(決めていない目標の数字・収益化の案も、ここに1回だけ数える)");
+    ok(js.includes('["stale", "要確認(確認日から60日超え)"]') && js.includes('go: ["events", { evFilter: "stale" }]'), "確認日から60日を過ぎた開催は、「やること」から開催の一覧の「要確認」に移れる");
     // 定期の更新と、提案のプロンプト案(Claude に頼む機能は、画面に置かない)
     const rf0 = await req("/api/refresh", { body: {} });
     ok(!rf0.json.refresh.hooks, "X投稿の書き出しに変更がなければ、公開しない");
@@ -446,7 +454,7 @@ export async function adminTests({ ok, section }) {
     const rf = await req("/api/refresh", { body: {} });
     ok(rf.status === 200 && rf.json.refresh.git.text === "最新です" && rf.json.state.refresh.last.why === "手動" && rf.json.state.refresh.hours === 0, "いますぐ更新: GitHub の最新の取り込みの結果を、画面の状態に出す", JSON.stringify(rf.json?.refresh));
     ok(!/\/api\/(jobs|claude)/.test(js) && !read("scripts/admin/app.html").includes('data-tab="claude"') && !existsSync("scripts/admin/claude.mjs"), "管理者用ページには、Claude に作業を頼む機能(タブ・チャット・実行)を置かない");
-    ok(js.includes("function promptFor(") && js.includes('"プロンプトをコピー"') && js.includes('promptBox(promptFor("proposal", p))') && js.includes('promptBox(promptFor("mon", m))'), "検索の改善案と収益化の案は、提案とプロンプト案(コピーのボタンつき)を出すだけ");
+    ok(js.includes("function promptFor(") && js.includes('"頼む文をコピー"') && js.includes('promptBox(promptFor("proposal", p))') && js.includes('promptBox(promptFor("mon", m))'), "検索の改善案と収益化の案は、提案と頼む文(コピーのボタンつき)を出すだけ");
     ok((await req("/api/jobs/start", { body: { kind: "proposal", id: "x" } })).status === 404, "Claude に頼む API はない");
     ok(/setInterval\(reload, hours \* 3600e3/.test(js) && /typing\(\)/.test(js), "画面は数時間おきに状況を読み直す(入力の途中は、描き直さない)");
   } finally {
@@ -559,7 +567,7 @@ export async function adminTests({ ok, section }) {
     const O = opsSection({ runs: [run({ workflowName: "build-and-deploy" })], site: { ok: false, status: 503, at: "x" }, state: { updated: "2026-11-07", snapshot: { health: { successDays7: 7 } } }, series: { days: {} }, tasks: { found: true, tasks: [] }, refresh: { hours: 3 }, pending: null, noteLog: parseNoteLog(""), socialPosted: [], collect: null, expiring: [{ days: -1 }], today: "2026-11-08", nowMs: NOW });
     ok(O.worst === "stop" && O.signals.find((x) => x.id === "site").state === "stop" && O.signals.find((x) => x.id === "ads").state === "warn" && O.signals.find((x) => x.id === "collect").state === "unknown" && O.counts.stop === 1,
       "運営の信号: サイトが開けない=停止、期限切れの広告=注意、記録がない=不明。いちばん悪い状態を、概要の上に出す", JSON.stringify(O.counts));
-    const js = read("scripts/admin/app.js");
+    const js = adminJs();
     ok(js.includes('"/api/overview"') && js.includes("表で見る") && /role: "img", "aria-label"/.test(js) && js.includes("onfocus: (e) => showTip"), "画面: グラフは、表でも見られ、キーボードでも値が出る(色だけに頼らない)");
     ok(js.includes('["proposed", "検討中"') && js.includes('["declined", "見送り(却下)"') && js.includes('"aria-pressed": String(st === cur)') && js.includes('statusGroups("monSt"') && js.includes('statusGroups("kpiSt"'),
       "目標・収益: 収益化の案と KPI は、検討中・採用・実施済み・見送りを件数つきで切り替えて見る(一覧に混ぜない)");
@@ -577,12 +585,25 @@ export async function adminTests({ ok, section }) {
   section("管理者用ページ: 公開しないもの");
   const gi = read(".gitignore");
   ok(/^\.admin\/$/m.test(gi) && /^admin\.local\.json$/m.test(gi), "受信した記録(.admin/)と、Gmail の設定(admin.local.json)は、Git に入れない");
-  const js = read("scripts/admin/app.js");
+  const js = adminJs();
   ok(!/innerHTML|insertAdjacentHTML|outerHTML|document\.write/.test(js), "画面: メールの内容を HTML として扱わない(文字として表示)");
   ok(js.includes("https://mail.google.com/mail/?${q}`, \"_blank\", \"noopener,noreferrer\")"), "返信: Gmail の作成画面を、元の画面と切り離して開く");
   // CSP(style-src 'self')が止めるのは、HTML に書いた style 属性。スクリプトからの1項目ずつの指定(el.style.width = …)は止められない
   ok(!/\bstyle:|setAttribute\(\s*["']style|\.style\s*=|cssText/.test(js) && (js.match(/\.style\.\w+\s*=/g) ?? []).every((x) => /\.style\.(width|left|top)\s*=/.test(x)), "画面: 埋め込みの style 属性を使わない(CSP で止められるため、クラスで指定する。グラフの棒の長さと、説明の位置だけは、スクリプトから1項目ずつ指定する)");
   ok(read("scripts/admin/publish.mjs").includes("\"data/rejected.json\"") && /^analytics\/$/m.test(gi), "送るのは開催データと却下の記録まで。検索・アクセスの分析(analytics/)は Git に入れない");
-  ok(read("scripts/admin/app.html").includes("data-tab=\"decide\"") && js.includes("decide: decideView") && js.includes("/api/events/reject") && js.includes("approve: !!opts.approve"), "画面: 「判断待ち」のタブから、保留の掲載・却下と、改善案の見送りができる");
+  ok(read("scripts/admin/app.html").includes('data-tab="todo"') && js.includes('todo: ["やること", todoView]') && js.includes("/api/events/reject") && js.includes("approve: !!opts.approve") && js.includes('"/api/proposals/update"'), "画面: 「やること」から、保留の掲載・却下と、改善案の見送りができる");
+  // 画面の作り(メニュー・確認の画面・ファイルの分け方)
+  const html = read("scripts/admin/app.html");
+  ok(["todo", "events", "inbox", "sales", "goal", "numbers", "status", "settings"].every((t) => html.includes(`href="#/${t}" data-tab="${t}"`) && js.includes(`${t}: ["`)) && html.includes('<script type="module" src="/app.js">'),
+    "画面: メニューは8つ(やること・開催・受信箱・営業・目標・収益・数字・動いているか・設定)。最初に開くのは「やること」");
+  const imports = [...js.matchAll(/from "\.\/([a-z]+\.js)"/g)].map((m) => m[1]);
+  ok(imports.length > 10 && imports.every((f) => ADMIN_JS.includes(f)) && ADMIN_JS.every((f) => f === "app.js" || imports.includes(f)), "画面: 分けたファイルは、どれも読み込まれ、ないファイルを読み込まない", [...new Set(imports)].join());
+  ok(!/\b(confirm|prompt|alert)\(/.test(js) && js.includes("export const confirmBox") && js.includes('["noundo", "週次の自動収集でも、取り直さなくなります') && js.includes('["undo", "「開催」の「取り下げ」の一覧から、「再掲載」で戻せます。"]'),
+    "画面: 掲載・却下・取り下げなどは、ブラウザ標準の確認ではなく、専用の確認の画面で「サイトに出るか・戻せるか」を示す");
+  ok(js.includes("undoToast(") && js.includes('label: "元に戻す"') && js.includes("{ bad: true, keep: true }"), "画面: 見送り・済みには「元に戻す」が付き、公開に失敗した知らせは、閉じるまで消えない");
+  ok(js.includes("週次の振り返りの Claude の項目(") && js.includes("body: () => [reviewCard, d.openAdv.map("), "画面: 週次の振り返りの Claude の項目は、「Claude に頼む」のいちばん上に、頼む文つきで出る");
+  ok(js.includes("dlg.oncancel = dlg.onclose = () => finish(null)") && js.includes("finish(Object.fromEntries("), "画面: 確認の画面の結果は、押したときにその場で返す(画面が隠れていても、止まらない)");
+  const css = read("scripts/admin/app.css");
+  ok(css.includes("@media(prefers-color-scheme:dark)") && css.includes(":focus-visible{outline:3px solid var(--ac)") && css.includes(".tabbar{display:grid") && css.includes("prefers-reduced-motion"), "見た目: 明暗の両方・キーボードの枠・スマホの下のメニュー・動きを減らす設定に対応する");
   ok(!existsSync("dist-test/admin") && !read("scripts/build.mjs").includes("scripts/admin"), "管理者用ページは、公開サイトには含めない");
 }
