@@ -226,6 +226,7 @@ export async function adminTests({ ok, section }) {
     writeFileSync(join(ROOT, "analytics/state.json"), JSON.stringify({ updated: "2026-10-12", snapshot: { keep: true }, proposals: [prop("SEO-20261001-1", "proposed"), prop("SEO-20261001-2", "proposed"), prop("SEO-20261001-3", "implemented")] }));
     let st = (await req("/api/state")).json;
     ok(st.review?.actions.map((a) => a.key).join() === "collect-errors", "振り返りからは、人が行う項目だけを出す(保留の判断は、開催の欄で別に出す。Claude の項目は出さない)", JSON.stringify(st.review));
+    ok(st.review?.claude.map((a) => `${a.key}:${a.weeks}`).join() === "time-unknown:1", "振り返りの Claude の項目は、「Claude に頼めること」に出すため、別に渡す(何週つづいているかつき)", JSON.stringify(st.review));
     ok(st.proposals.length === 3 && !("baseline" in st.proposals[0]) && st.committedIds.join() === "SEO-20261001-1" && st.repo === "https://github.com/o/r", "改善案・コミットに書かれた ID・リポジトリの場所を、画面に渡す(基準の数字は渡さない)");
 
     r = await req("/api/events/save", { body: { event: { ...held("h-1"), source: "" }, originalId: "h-1", approve: true } });

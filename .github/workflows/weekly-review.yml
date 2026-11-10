@@ -4,6 +4,8 @@ name: weekly-review
 # 2. 目安から外れたものを「今週やること」にして Issue を立てる。先週の Issue は閉じ、チェックの付いていない手書きの項目は持ち越す(Act)
 # 3. 数字と「次に力を入れるところ」を data/weekly-review.json に残す。Claude の定期タスク(note・月次の調査)が、これを読んで次の計画に使う(Plan)
 # 4. SNSの反応を data/social-performance.json(テーマ別の相対値)に残す。翌日からの post-social が、反応のよいテーマを先に出す(Act)
+# 5. このPCで動く仕組み(週次の分析・note)が止まっていないかを、公開している跡(data/media-stats.json の日付・note の RSS)で確かめる
+# 6. 「やること」が何週つづいているか・先週から何件解消したかを数える(Act が進んでいるかの点検)
 # 検索・アクセス(GA4/Search Console)の数字は公開しない。このPCの定期タスク「週次の検索・アクセス分析」が、非公開のまま分析する
 on:
   workflow_run:
@@ -39,10 +41,16 @@ jobs:
         run: node scripts/social-metrics.mjs
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      # note の最後の投稿日を、公開の RSS から読む(このPCの予定タスクが止まっていないかの確認)。失敗しても振り返りは続ける
+      - name: note-pulse
+        run: node scripts/note-pulse.mjs
+        env:
+          NOTE_PULSE_FILE: ${{ runner.temp }}/note-pulse.json
       - run: node scripts/weekly-review.mjs
         env:
           PREV_REVIEW_FILE: ${{ runner.temp }}/prev.md
           REVIEW_OUT: ${{ runner.temp }}/review.md
+          NOTE_PULSE_FILE: ${{ runner.temp }}/note-pulse.json
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

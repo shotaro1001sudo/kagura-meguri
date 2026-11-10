@@ -43,10 +43,12 @@ export function summarizePerformance(buffer, posted, todayJst) {
   const today = Date.parse(`${todayJst}T00:00:00+09:00`);
   const from = today - LOOKBACK_DAYS * 86400e3, to = today - SETTLE_DAYS * 86400e3;
   const all = []; // 書き方の比べ合わせには、Buffer で手で入れた投稿(manual)も使う
+  let sent = 0;   // 期間内の、このサイトの予約のうち、Buffer の送信済みに見つかった数(反応の数字の有無は問わない)
   for (const b of buffer) {
     const p = byBuffer.get(b.id);
     const at = Date.parse(b.dueAt ?? p?.dueAt ?? "");
     if (!(at >= from && at < to)) continue;
+    if (p) sent++;
     const { views, engagements } = readMetrics(b.metrics);
     if (!views || engagements == null) continue;
     const style = !p ? "manual" : p.style ?? (p.type === "event" ? "event" : "label");
@@ -77,7 +79,15 @@ export function summarizePerformance(buffer, posted, todayJst) {
   const ranked = [...rows].sort((a, b) => b.score - a.score);
   const top = rows.length >= 2 * TOP_N ? ranked.slice(0, TOP_N).map((r) => r.id) : [];
   const bottom = rows.length >= 2 * TOP_N ? ranked.slice(-TOP_N).reverse().map((r) => r.id) : [];
-  return { updated: todayJst, status: rows.length ? "ok" : "no_data", samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes, slots, styles, links, top, bottom };
+  // 「投稿がまだない」と「投稿はあるのに評価できない」を分ける。後者を no_data のままにすると、
+  // 反応の読み取りが壊れていても気づけず、反応による改善(並べ替え・書き出し)が黙って止まる
+  const booked = posted.filter((p) => { const at = Date.parse(p.dueAt ?? `${p.date}T12:00:00+09:00`); return p.bufferId && at >= from && at < to; }).length;
+  let status = rows.length ? "ok" : "no_data", reason = "";
+  if (!rows.length && booked >= MIN_SAMPLES) {
+    status = "no_metrics";
+    reason = sent ? `送信済みの ${sent} 件に、表示回数・反応の数字が付いていない` : `予約の記録は ${booked} 件あるのに、Buffer の送信済みに見つからない`;
+  }
+  return { updated: todayJst, status, ...(reason ? { reason } : {}), samples: rows.length, period: { days: LOOKBACK_DAYS, settleDays: SETTLE_DAYS }, themes, slots, styles, links, top, bottom };
 }
 
 /** 群ごとの反応率と届きやすさの、群全体に対する倍率(件数と相対値だけ。実数は残さない) */

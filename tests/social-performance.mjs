@@ -29,7 +29,11 @@ export function socialPerformanceTests({ ok, section }) {
   ok(perf.themes.event.reach === 3 && perf.themes.program.reach === 1, "届きやすさ(表示回数)も、全体に対する倍率にする");
   ok(perf.themes.viewing.n === 1 && perf.themes.viewing.index === null, `投稿が ${MIN_SAMPLES} 件未満のテーマは、評価しない(様子見)`);
   ok(!JSON.stringify(perf).includes("300") && !/"views"|"engagements"/.test(JSON.stringify(perf)), "結果には、表示回数などの実数を残さない(公開リポジトリのため)");
-  ok(summarizePerformance([], posted, today).status === "no_data", "評価できる投稿がなければ no_data");
+  ok(summarizePerformance([], [], today).status === "no_data" && summarizePerformance([], posted.slice(-1), today).status === "no_data", "予約がまだない(集計待ちの直近だけ)なら no_data");
+  const gone = summarizePerformance([], posted, today);
+  ok(gone.status === "no_metrics" && /Buffer の送信済みに見つからない/.test(gone.reason), "予約の記録があるのに送信済みに見つからなければ、no_data と分けて no_metrics にする", JSON.stringify(gone));
+  const bare = summarizePerformance(buffer.map((b) => ({ ...b, metrics: [] })), posted, today);
+  ok(bare.status === "no_metrics" && /13 件に、表示回数・反応の数字が付いていない/.test(bare.reason) && bare.samples === 0, "送信済みなのに反応の数字が付いていなければ、no_metrics にする(読み取りの不調に気づける)", JSON.stringify(bare));
 
   section("SNSの反応の評価(PDCA): 時間帯・書き方・上位と下位");
   ok(perf.slots["07"]?.n === 13 && perf.slots["07"].index === 1, "時間帯(日本時間の時)ごとに、件数と相対値を出す", JSON.stringify(perf.slots));

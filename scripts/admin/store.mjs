@@ -143,7 +143,9 @@ export function rejectPending(root, id) {
 export function loadReview(root) {
   const r = readJson(paths(root).review, null);
   if (!r) return null;
-  return { updated: r.updated ?? null, actions: (r.actions ?? []).filter((a) => a.owner === "人" && a.key !== "held") };
+  // claude: Claude に頼むと進む項目(「判断待ち」の「Claude に頼めること」に、頼む文つきで出す。頼まれるまで進まないので、見えるところに置く)
+  return { updated: r.updated ?? null, actions: (r.actions ?? []).filter((a) => a.owner === "人" && a.key !== "held"),
+    claude: (r.actions ?? []).filter((a) => a.owner === "Claude").map(({ key, text, weeks }) => ({ key, text, weeks: weeks ?? 1 })) };
 }
 
 // 検索の改善案(analytics/state.json。このPCだけ・git に入らない)。運営者が決められるのは「見送る」と「見送りを戻す」だけ

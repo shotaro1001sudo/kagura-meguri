@@ -76,7 +76,9 @@ function decisions() {
   const plan = planOpen();
   const advice = S.advice || [];
   const openAdv = advice.filter((a) => a.status === "proposed" && !done.has(a.id));
-  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, proposals, openProps, advice, openAdv, done, plan, total: pending.length + actions.length + openProps.length + openAdv.length };
+  // 週次の振り返りの【Claude】の項目(頼まれるまで進まないので、「Claude に頼めること」に頼む文つきで出す)
+  const claudeActs = S.review?.claude || [];
+  return { upcoming: pending.filter((e) => !ended(e)), past: pending.filter(ended), actions, claudeActs, proposals, openProps, advice, openAdv, done, plan, total: pending.length + actions.length + openProps.length + openAdv.length };
 }
 const goTab = (tab, extra) => (ev) => { ev.preventDefault(); Object.assign(view, { tab }, extra || {}); render(); main.focus(); window.scrollTo(0, 0); };
 // 見出し(件数つき)と、ひとことの説明。長い説明は「詳しく」に畳む
@@ -128,12 +130,22 @@ function decideView() {
         h("button", { class: "btn ghost", onclick: () => setAdvice(a, "done") }, "済みにする"),
         h("button", { class: "btn ghost", onclick: () => setAdvice(a, "declined") }, "見送る")]));
   const closedAdv = d.advice.filter((a) => !d.openAdv.includes(a));
+  // 週次の振り返りの【Claude】の項目を、まとめて1枚に(片付くと、次の週の振り返りから消える)
+  const reviewAsk = `週次の振り返り(${S.review?.updated || ""})の Claude の項目をやってください。
+${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
+公式の情報で確かめられたことだけを直し、終わったら、振り返りの Issue の該当の項目にチェックを付けてください。`;
+  const reviewCard = !d.claudeActs.length ? "" : h("section", { class: "panel decision" },
+    h("div", { class: "card-h" }, h("h4", null, h("span", { class: "chip" }, "振り返り"), ` 週次の振り返りの Claude の項目(${d.claudeActs.length}件)`), badge("new", "頼むと進む")),
+    h("ul", { class: "reasons" }, d.claudeActs.map((a) => h("li", null, a.text, a.weeks > 1 ? `(${a.weeks} 週つづいています)` : ""))),
+    promptBox(reviewAsk),
+    h("div", { class: "bar mt" }, h("button", { class: "btn", onclick: () => copyPrompt(reviewAsk) }, "プロンプトをコピー")));
 
   const groups = [
-    { n: d.openAdv.length, body: () => [
-      ...secHead("Claude に頼めること", d.openAdv.length, "やるものは、プロンプト案をコピーして Claude に貼り付けます。終わったら「済みにする」、やらないものは「見送る」。",
+    { n: d.openAdv.length + (d.claudeActs.length ? 1 : 0), body: () => [
+      ...secHead("Claude に頼めること", d.openAdv.length + (d.claudeActs.length ? 1 : 0), "やるものは、プロンプト案をコピーして Claude に貼り付けます。終わったら「済みにする」、やらないものは「見送る」。",
         "毎週月曜の分析が、営業の候補・文案、掲載の穴、目標の見直し、記事の題材など、Claude が進められることを出します(週に5件まで)。見送ると、同じ助言は出なくなります。この記録はこのPCだけに残り、GitHub には送りません。"),
-      d.openAdv.length ? d.openAdv.map((a) => adv(a, false)) : allClear("いま頼めることはありません。"),
+      reviewCard,
+      d.openAdv.length ? d.openAdv.map((a) => adv(a, false)) : d.claudeActs.length ? "" : allClear("いま頼めることはありません。"),
       closedAdv.length ? h("details", { class: "mt" }, h("summary", null, `済み・見送りの助言(${closedAdv.length}件)`), closedAdv.map((a) => adv(a, true))) : ""] },
     { n: d.upcoming.length, body: () => [
       ...secHead("保留中の開催", d.upcoming.length, "公式情報で日時・会場を確かめて、「掲載」か「却下」を選びます。どちらも、すぐにサイトに反映します。",
