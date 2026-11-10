@@ -165,5 +165,50 @@
     "dueAt": "2026-11-11T14:00:00.000Z",
     "bufferId": "6af24872718d70ae70a9b317",
     "date": "2026-11-11"
+  },
+  {
+    "id": "r:history:江戸里神楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-11T18:00:00.000Z",
+    "bufferId": "6af374d14b93a4c024dd2a93",
+    "date": "2026-11-11"
+  },
+  {
+    "id": "unnan-kagura-f7a989adee",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-11T22:00:00.000Z",
+    "bufferId": "6af374d1695294c6ea37d94c",
+    "date": "2026-11-12"
+  },
+  {
+    "id": "r:feature:出雲神楽:2",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-12T02:00:00.000Z",
+    "bufferId": "6af374d24b93a4c024dd2acf",
+    "date": "2026-11-12"
+  },
+  {
+    "id": "r:program:飯南神楽:2",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-12T06:00:00.000Z",
+    "bufferId": "6af374d29b7b5eddae4f9913",
+    "date": "2026-11-12"
+  },
+  {
+    "id": "yusuhara-kumonoue-kagura-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-12T10:00:00.000Z",
+    "bufferId": "6af374d2e021f9ae4259b0ad",
+    "date": "2026-11-12"
   }
 ]
