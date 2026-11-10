@@ -161,10 +161,12 @@ const partners = activePartners(partnerRows, nowJst.slice(0, 10));
 // 出典リンクの一覧(外部リンクは、新しいタブで開き、推薦しない旨の rel を付ける)
 const refList = (refs = []) => refs.length ? `<p class="meta">参考: ${refs.map((r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`).join(" / ")}</p>` : "";
 // 神楽の種類ページの、くわしい解説(歴史・特徴・演目・観賞のコツ)。データがある項目だけ出す
-const kaguraDetail = (k, info) => !(info?.history?.length || info?.features?.length) ? "" : `<section class="detail">${info.history?.length ? `<h2>${esc(k)}の歴史</h2>${info.history.map((t) => `<p>${esc(t)}</p>`).join("")}` : ""}
-${info.features?.length ? `<h2>${esc(k)}の特徴</h2><ul>${info.features.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-${info.programs?.length ? `<h2>主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
-${info.viewing?.length ? `<h2>観賞のコツ</h2><ul>${info.viewing.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+// 種類のページの詳しい解説(冒頭の要約から、見出しへ飛べるように id を付ける)
+const KAGURA_SECTIONS = [["history", "歴史"], ["features", "特徴"], ["programs", "主な演目"], ["viewing", "観賞のコツ"]];
+const kaguraDetail = (k, info) => !(info?.history?.length || info?.features?.length) ? "" : `<section class="detail">${info.history?.length ? `<h2 id="k-history">${esc(k)}の歴史</h2>${info.history.map((t) => `<p>${esc(t)}</p>`).join("")}` : ""}
+${info.features?.length ? `<h2 id="k-features">${esc(k)}の特徴</h2><ul>${info.features.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+${info.programs?.length ? `<h2 id="k-programs">主な演目</h2><dl>${info.programs.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>` : ""}
+${info.viewing?.length ? `<h2 id="k-viewing">観賞のコツ</h2><ul>${info.viewing.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 ${refList(info.refs)}</section>`;
 // 開催ごとの編集部の解説(data/event-notes.json)。公式情報から調べた事実だけを、出典つきで載せる
 const eventNotes = existsSync("data/event-notes.json") ? readJson("data/event-notes.json") : [];
@@ -796,10 +798,13 @@ for (const k of kaguras) {
   const hub = seo.scheduleHub && [...events, ...regular].some((e) => e.prefecture === seo.scheduleHub) ? seo.scheduleHub : "";
   const title = seo.title ? seo.title.replace("{years}", yearsOf(list).replace(/年$/, "")).replace("{towns}", townGroups.map(([t]) => t).join("・") || first.city) : `${k}の日程【${yearsOf(list)}】公演・開催情報`;
   const listHtml = grouped
-    ? `<h2>開催予定</h2>${townGroups.map(([t, xs]) => `<section class="town-group" aria-labelledby="town-${esc(t)}"><h3 id="town-${esc(t)}">${esc(t)}の${esc(k)}</h3>${xs.map((e) => card(e, "h4")).join("")}</section>`).join("")}`
-    : list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : "";
+    ? `<h2 id="k-schedule">開催予定</h2>${townGroups.map(([t, xs]) => `<section class="town-group" aria-labelledby="town-${esc(t)}"><h3 id="town-${esc(t)}">${esc(t)}の${esc(k)}</h3>${xs.map((e) => card(e, "h4")).join("")}</section>`).join("")}`
+    : list.length ? `<h2 id="k-schedule">開催予定</h2>${list.map((e) => card(e)).join("")}` : "";
   const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub.replace(/県$/, ""))}神楽スケジュールを見る</a></section>` : "";
-  const aboutHtml = `${info ? `<section class="about"><h2>${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p></section>` : ""}
+  // 冒頭の要約: 「〇〇とは」と、詳しい解説・開催予定への案内。詳しい解説は、開催予定のすぐ下(広告より上)に置く
+  const jumps = [...KAGURA_SECTIONS.filter(([f]) => info?.[f]?.length && kaguraDetail(k, info)).map(([f, t]) => [`#k-${f}`, t]), ...(list.length + reg.length ? [["#k-schedule", "開催予定"]] : [])];
+  const summaryHtml = info ? `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2><p>${esc(info.intro)}</p><p class="meta">出典: ${esc(info.source)}</p>${jumps.length ? `<nav class="kagura-jumps" aria-label="${esc(k)}のページ内の案内"><ul>${jumps.map(([h, t]) => `<li><a href="${h}">${esc(t)}</a></li>`).join("")}</ul></nav>` : ""}</section>` : "";
+  const aboutHtml = `${summaryHtml}
 ${kaguraDetail(k, info)}`;
   write(`dist/kagura/${k}.html`, layout({
     title: `${title} | ${cfg.siteName}`,
@@ -808,10 +813,10 @@ ${kaguraDetail(k, info)}`;
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
 ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
-${hub ? `${hubHtml}${aboutHtml}` : ""}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
+${hub ? `${hubHtml}${aboutHtml}` : summaryHtml}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2${list.length ? "" : ' id="k-schedule"'}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
+${hub ? "" : kaguraDetail(k, info)}
 ${prSlotHtml(prSlotPartners(partners, plans, { kagura: k }), { esc })}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k })}${adSlot(cfg.adsense.slotList)}
-${hub ? "" : aboutHtml}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
 }
