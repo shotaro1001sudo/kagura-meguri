@@ -2,6 +2,9 @@
   const root=document.getElementById('quiz');if(!root)return;
   const data=JSON.parse(document.getElementById('quiz-data').textContent);
   const engine=(/* quizEngine */)(data.questions,data.traditions);
+  // 定期公演の休演表示(サイトの一覧と同じ考え方): 曜日の決まりどおりなら公演がある日から、14日以上あいていたら「休演中・次の公演は1月16日(土)」。それ以外は ""
+  const addDay=(s,n)=>new Date(Date.parse(s+'T00:00:00Z')+n*864e5).toISOString().slice(0,10);
+  const regularPause=(r,today)=>{const d=(r.next||[]).find(x=>x>=today),base=r.nominal&&r.nominal>=today?r.nominal:today;if(d&&d<addDay(base,r.pauseDays||14))return '';if(!d)return '休演中・次の公演日は未定';const w='日月火水木金土'[new Date(d+'T00:00:00Z').getUTCDay()];return `休演中・次の公演は${+d.slice(5,7)}月${+d.slice(8,10)}日(${w})`};
   const start=document.getElementById('quiz-start'),form=document.getElementById('quiz-form'),field=document.getElementById('quiz-field'),progress=document.getElementById('quiz-progress'),back=document.getElementById('quiz-back'),next=document.getElementById('quiz-next'),result=document.getElementById('quiz-result'),error=document.getElementById('quiz-error');
   const count=data.questions.length;
   let index=0,answers=[],day='',complete=false;
@@ -91,7 +94,8 @@
       }
     }
     const regs=data.regular.filter(r=>kinds.includes(r.kind)&&(!r.until||r.until>=(dates&&dates[0]>now.slice(0,10)?dates[0]:now.slice(0,10)))&&engine.inRegion(r.prefecture,conditions.region,data.regions));
-    if(regs.length){result.append(el('h3','いつでも観に行ける定期公演'),el('p','希望日・時間への適合は確認していない参考情報です。開催日、休演、所要時間は詳細・公式情報をご確認ください。','meta'));regs.forEach(r=>{const p=el('p',null,'quiz-event');p.append(link(r.name,`/regular/${r.id}.html`,null,'quiz_event_click'),el('span',` ${r.prefecture||'地域要確認'}・${r.schedule}`));result.append(p)})}
+    // 定期公演は、休演の時期(秋祭りの間など)があるため、休演中なら「休演中」と次の公演日を添える(外さずに出す)
+    if(regs.length){result.append(el('h3','定期公演'),el('p','曜日を決めて上演している公演です。休演の時期や休演日があります。希望日・時間への適合は確認していない参考情報なので、開催日と所要時間は詳細・公式情報をご確認ください。','meta'));regs.forEach(r=>{const p=el('p',null,'quiz-event'),st=regularPause(r,now.slice(0,10));p.append(link(r.name,`/regular/${r.id}.html`,null,'quiz_event_click'));if(st)p.append(el('span',` ${st}`,'quiz-paused'));p.append(el('span',` ${r.prefecture||'地域要確認'}・${r.schedule}`));result.append(p)})}
     // 4. シェア(押したときだけ。結果はURLに入れない)と、次の操作
     if(best){
       const text=`神楽の好み診断の結果は「${type}」。いちばん近い神楽は「${best.kind}」でした。`,url=data.url||location.origin+'/quiz.html';

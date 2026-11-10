@@ -25,7 +25,7 @@ import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
-import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName } from "./lib/dates.mjs";
+import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled, vcTag } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
@@ -449,10 +449,12 @@ const card = (e, h = "h3", withFacts = true) => {
 <div class="meta">${sepList([sameSeries(e).length ? '<span class="rep">定例開催</span>' : "", e.timeUnknown ? TIME_UNKNOWN : nobr(startTimes(e)), placePh(e.prefecture, e.city), !withFacts && e.fee ? esc(e.fee) : ""])}</div>
 ${withFacts ? cardFacts(e) : ""}${kaguraTag(e.kagura)}</div></div>`;
 };
-const regCard = (r) => `<div class="card reg"><div class="date"><small>定期</small><b>${esc(r.badge || "毎")}</b></div><div>
+// 休演の時期(秋祭りの間など)は、曜日の決まりだけを見せると、いつでも観られると誤解されるため、「休演中」と次の公演日を出す
+const regPause = (r) => { const st = regularStatus(r, today); return st.paused ? `休演中・${st.next ? `次の公演は${mdLabel(st.next)}` : "次の公演日は未定"}` : ""; };
+const regCard = (r) => { const pause = regPause(r); return `<div class="card reg${pause ? " paused" : ""}"><div class="date"><small>定期</small><b>${pause ? "休演中" : esc(r.badge || "毎")}</b></div><div>
 <h3><a href="/regular/${r.id}.html">${namePh(r.name)}</a></h3>
-<div class="meta">${sepList([nobr(esc(r.schedule)), placePh(r.prefecture, r.city)])}</div>
-${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
+${pause ? `<p class="reg-pause">${esc(pause)}</p>` : ""}<div class="meta">${sepList([nobr(esc(r.schedule)), placePh(r.prefecture, r.city)])}</div>
+${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`; };
 const write = (p, c) => { p = p.replace(/^dist(?=\/)/, OUT); mkdirSync(p.replace(/[\\/][^\\/]*$/, "") || ".", { recursive: true }); writeFileSync(p, c); };
 const hero = (h, p) => `<section class="hero"><h1>${h}</h1>${p ? `<p>${p}</p>` : ""}</section>`;
 const empty = (msg) => `<p class="empty">${msg}</p>`;
@@ -603,7 +605,8 @@ const quizTraditions = traditions.map(t => {
 });
 const quizKindNames = new Set(traditions.map(t=>t.kind));
 const quizEvents = upcoming.filter(e=>quizKindNames.has(e.kagura)).map(e=>({id:e.id,name:e.name,start:e.start,end:e.end,timeUnknown:e.timeUnknown,sessions:e.sessions,when:whenOf(e),prefecture:e.prefecture,place:[e.prefecture,e.city].filter(Boolean).join(' '),kind:e.kagura}));
-const quizRegular = regular.filter(r=>quizKindNames.has(r.kagura)).map(r=>({id:r.id,name:r.name,schedule:r.schedule,prefecture:r.prefecture,until:r.until,kind:r.kagura}));
+// next: 次の公演日(近い順)、nominal: 曜日の決まりどおりなら次に公演がある日。ブラウザが、見ている日から休演中かを決める(regularStatus と同じ考え方)
+const quizRegular = regular.filter(r=>quizKindNames.has(r.kagura)).map(r=>({id:r.id,name:r.name,schedule:r.schedule,prefecture:r.prefecture,until:r.until,kind:r.kagura,next:regularNextDates(r,today,{limit:12}),nominal:regularNominalDate(r,today),pauseDays:PAUSE_DAYS}));
 const quizData = JSON.stringify({questions,features,url:`${cfg.baseUrl}/quiz.html`,traditions:quizTraditions,regions:REGIONS,events:quizEvents,regular:quizRegular}).replace(/</g,'\\u003c');
 // 画面のプログラムは別ファイル(ページを軽くする)。中身が変わったら ?v= も変わり、古いキャッシュを使わない
 const quizJs = lf(readFileSync('scripts/client/quiz.js','utf8')).replace('/* quizEngine */',quizEngine.toString());
