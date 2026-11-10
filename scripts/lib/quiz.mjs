@@ -86,10 +86,23 @@ export const traditions = [
   { kind: '鷲宮催馬楽神楽', evidence: [['classic', 'tagline'], ['music', 'intro~1'], ['rite', 'features.1']] },
   { kind: '鶴岡八幡宮の御神楽', evidence: [['classic', 'tagline'], ['music', 'intro~1'], ['rite', 'intro~0']] },
   { kind: '春日若宮おん祭', evidence: [['rite', 'tagline'], ['classic', 'features.0']] },
+  // 2026-11-10 追加(解説を新しく書いた10種類。根拠は各解説の本文)
+  { kind: '早池峰神楽', evidence: [['dynamic', 'features.3'], ['classic', 'features.3'], ['rite', 'history.1'], ['easy', 'viewing.0']] },
+  { kind: '南部神楽', evidence: [['drama', 'tagline'], ['spectacle', 'features.2'], ['music', 'features.2']] },
+  { kind: '出雲神楽', evidence: [['drama', 'intro~1'], ['monster', 'features.1'], ['music', 'features.2'], ['classic', 'programs.1.text'], ['easy', 'viewing.0']] },
+  { kind: '飯南神楽', evidence: [['drama', 'intro~2'], ['spectacle', 'intro~2'], ['easy', 'intro~2'], ['monster', 'programs.1.text']] },
+  { kind: '豊前神楽', evidence: [['monster', 'tagline'], ['together', 'programs.2.text'], ['laugh', 'programs.3.text'], ['yudate', 'features.2'], ['rite', 'features.1']] },
+  { kind: '豊後神楽', evidence: [['drama', 'intro~1'], ['rite', 'features.0'], ['easy', 'viewing.1']] },
+  { kind: '江戸里神楽', evidence: [['drama', 'tagline'], ['spectacle', 'tagline'], ['rite', 'features.2']] },
+  { kind: '都々古別神社の御神楽', evidence: [['rite', 'tagline'], ['music', 'features.0']] },
+  { kind: '湯立神楽', evidence: [['yudate', 'tagline'], ['together', 'programs.2.text'], ['monster', 'features.2']] },
+  { kind: '番楽', evidence: [['dynamic', 'features.2'], ['classic', 'features.1'], ['rite', 'features.4']] },
 ];
 // 解説はあるが、診断の対象にしない神楽と、その理由(週次の点検が「対象外」として扱う)
 export const QUIZ_EXCLUDED = {
   '安芸高田神楽': '広島神楽(芸北神楽)と重なり、解説が紹介文だけのため',
+  '岩手の神楽': '岩手県内の系統の違う神楽(山伏神楽・大乗神楽・南部神楽など)をまとめた地域の呼び名で、一つの種類として好みを当てはめられないため',
+  '青森の神楽': '青森県内の系統の違う神楽(山伏系の神楽・能舞・津軽神楽)をまとめた地域の呼び名で、一つの種類として好みを当てはめられないため',
 };
 export const evidenceWeight =(path) => (/^(tagline|intro)(~\d+)?$/.test(path) ? 2 : 1);
 /** 根拠の本文。path は kagura-info.json のフィールド(例 features.0)。intro~1 は紹介文の2文目、tagline は「地域 ・ 」のあとの部分 */

@@ -14,7 +14,7 @@ export function quizTests({ok,section,OUT}) {
   ok(questions.every(q=>q.choices.some(c=>c.id==='unknown'))&&new Set(questions.map(q=>q.id)).size===questions.length&&questions.every(q=>new Set(q.choices.map(c=>c.id)).size===q.choices.length),'全問に「まだ分からない」、IDの重複なし');
   ok(prefQs.every(q=>q.choices.every(c=>{const w=Object.values(c.weights);return c.id==='unknown'||q.explanationOnly?w.length===0:Math.abs(w.reduce((a,b)=>a+b,0)-1)<1e-9;})),'採点する選択肢は、どれも合計1点(複数の好みには分けて配る)。「分からない」と案内の質問は0点');
   ok(Object.keys(features).every(f=>prefQs.some(q=>q.choices.some(c=>f in c.weights)))&&prefQs.every(q=>q.choices.every(c=>Object.keys(c.weights).every(f=>features[f]))),'すべての好みの軸に、選べる回答がある(使われない軸・未定義の軸なし)');
-  ok(mapped.length===19&&mapped.every(t=>info[t.kind]?.source&&info[t.kind].tagline&&t.evidence.every(e=>features[e.feature]&&e.text.length>4)),'19種類すべて、出典つきの解説の本文を根拠にする');
+  ok(mapped.length===29&&mapped.every(t=>info[t.kind]?.source&&info[t.kind].tagline&&t.evidence.every(e=>features[e.feature]&&e.text.length>4)),'29種類すべて、出典つきの解説の本文を根拠にする');
   ok(mapped.every(t=>t.evidence.every(e=>e.weight===(/^(tagline|intro)/.test(e.path)?2:1))),'特徴の強さは機械的: 紹介の中心(tagline・intro)なら2、ほかは1');
   ok(evidenceText(info['石見神楽'],'intro~1').startsWith('古事記や日本書紀')&&evidenceText(info['石見神楽'],'tagline')==='テンポの速い「八調子」と、金糸・銀糸の豪華な衣装'&&evidenceText(info['石見神楽'],'intro~9')===''&&evidenceText(info['石見神楽'],'nope.0')==='','根拠の本文: 紹介文はその1文だけ、一言紹介は地域のあとだけ。ないものは空(ビルドが止まる)');
   ok(new Set(mapped.map(t=>JSON.stringify(engine.profile(t)))).size===mapped.length,'種類ごとの特徴の組み合わせが、すべて違う(同じ結果になる種類がない)');
@@ -24,7 +24,7 @@ export function quizTests({ok,section,OUT}) {
   const first={};let total=0,blank=0;
   (function rec(k,ans){if(k===scoredIdx.length){total++;const r=engine.scoreAnswers(ans);if(!r.ranked.length){blank++;return;}first[r.ranked[0].kind]=(first[r.ranked[0].kind]||0)+1;return;}for(const c of questions[scoredIdx[k]].choices){const a=[...ans];a[scoredIdx[k]]=c.id;rec(k+1,a);}})(0,unknown);
   const shares=mapped.map(t=>(first[t.kind]||0)/total);
-  ok(mapped.every(t=>first[t.kind]>0)&&blank===1,'回答の全組み合わせで、19種類どれもが1位になりうる(全部分からないの1通りだけ判定なし)',JSON.stringify(first));
+  ok(mapped.every(t=>first[t.kind]>0)&&blank===1,'回答の全組み合わせで、29種類どれもが1位になりうる(全部分からないの1通りだけ判定なし)',JSON.stringify(first));
   ok(Math.max(...shares)<0.2,'どの種類も、1位になる組み合わせは全体の2割未満(かたよりの上限)',String(Math.max(...shares)));
   const only=(qid,cid)=>{const a=[...unknown];a[questions.findIndex(q=>q.id===qid)]=cid;return engine.scoreAnswers(a);};
   const yu=only('scene','yudate');
@@ -71,9 +71,9 @@ export function quizTests({ok,section,OUT}) {
   const dataMatch=html.match(/(<script id="quiz-data" type="application\/json">)([\s\S]*?)(<\/script>)/);
   const config=JSON.parse(dataMatch[2]);
   ok(config.questions.length===questions.length&&config.regions.flatMap(([,ps])=>ps).length===47&&config.url==='https://kagurameguri.jp/quiz.html','同じ質問定義・47都道府県(地方ごと)・シェア用の正規URLを配信');
-  ok(config.traditions.length===19&&config.traditions.every(t=>t.tagline&&(t.href===''||t.href.startsWith('/kagura/'))&&t.evidence.every(e=>e.text&&e.weight)),'19種類の一言紹介・解説ページ・根拠の本文を配信');
+  ok(config.traditions.length===29&&config.traditions.every(t=>t.tagline&&(t.href===''||t.href.startsWith('/kagura/'))&&t.evidence.every(e=>e.text&&e.weight)),'29種類の一言紹介・解説ページ・根拠の本文を配信');
   ok(config.events.every(e=>config.traditions.some(t=>t.kind===e.kind)&&typeof e.when==='string'),'公演表示日時は既存の共通書式を使用');
-  ok(html.includes('診断のしくみ')&&traditions.every(t=>html.includes('>'+t.kind+'</'))&&html.includes('点数や一致率は出しません'),'診断のしくみと、対象19種類の解説へのリンクをページに載せる');
+  ok(html.includes('診断のしくみ')&&traditions.every(t=>html.includes('>'+t.kind+'</'))&&html.includes('点数や一致率は出しません'),'診断のしくみと、対象29種類の解説へのリンクをページに載せる');
   const appTag=html.match(/<script defer src="\/quiz-app\.js\?v=[0-9a-f]{10}"><\/script>/)?.[0],appJs=readFileSync(join(OUT,'quiz-app.js'),'utf8');
   ok(appTag&&!html.includes('function scoreAnswers')&&appJs.includes('function scoreAnswers'),'画面のプログラムは別ファイル(版つき)にして、ページを軽くする');
   function setupQuiz(configOverride){const page=html.replace(appTag,()=>'<script>'+appJs+'</script>');const markup=configOverride?page.replace(dataMatch[0],()=>dataMatch[1]+JSON.stringify(configOverride).replace(/</g,'\\u003c')+dataMatch[3]):page;const dom=new JSDOM(markup,{url:'https://kagurameguri.jp/quiz.html',runScripts:'dangerously',pretendToBeVisual:true});const w=dom.window,d=w.document,calls=[];w.kaguraGa4Allowed=true;w.gtag=(...a)=>calls.push(a);return {dom,w,d,calls};}
@@ -122,7 +122,7 @@ export function quizTests({ok,section,OUT}) {
   {
     const base=acceptBaseline(info,'2026-11-09'),today='2026-11-16';
     const h=quizHealth({info,events:[],regular:[],todayJst:today,baseline:base,checked:'2026-11-09'});
-    ok(h.kinds===19&&!h.missing.length&&!h.changed.length&&!h.newKinds.length&&h.checkedDaysAgo===7,'確認済みのままなら、根拠の変更・欠け・対象外の神楽はない');
+    ok(h.kinds===29&&!h.missing.length&&!h.changed.length&&!h.newKinds.length&&h.checkedDaysAgo===7,'確認済みのままなら、根拠の変更・欠け・対象外の神楽はない');
     const saved=JSON.parse(readFileSync('data/quiz-review.json','utf8'));
     ok(Object.keys(evidenceHashes(info)).every(k=>k in saved.evidence)&&/^\d{4}-\d{2}-\d{2}$/.test(saved.reviewed),'data/quiz-review.json に、いまの根拠がすべて確認済みとして載っている(根拠を足したら --accept する)');
     const edited=structuredClone(info);edited['広島神楽'].features[0]='書き換えた本文。';delete edited['花祭'].tagline;
@@ -133,7 +133,7 @@ export function quizTests({ok,section,OUT}) {
     ok(quizHealth({info:more,events:[],regular:[],todayJst:today}).newKinds.join()==='新しい神楽','解説がそろったのに対象外の神楽を挙げる(理由つきの対象外 QUIZ_EXCLUDED は除く)');
     const ev=(id,kagura,start,status='published')=>({id,kagura,start,status});
     const evs=[ev('a','出雲神楽','2026-11-20'),ev('b','出雲神楽','2026-12-01'),ev('c','出雲神楽','2026-12-05'),ev('d','豊後神楽','2026-12-01'),ev('e','豊後神楽','2026-12-02'),ev('f','豊後神楽','2026-12-03','pending'),ev('g','出雲神楽','2026-11-01'),ev('h','石見神楽','2026-12-01'),ev('i','石見神楽','2026-12-02'),ev('j','石見神楽','2026-12-03')];
-    const h3=quizHealth({info,events:evs,regular:[{kagura:'広島神楽'}],todayJst:today});
+    const noInfo=Object.fromEntries(Object.entries(info).filter(([k])=>!['出雲神楽','豊後神楽'].includes(k))),h3=quizHealth({info:noInfo,events:evs,regular:[{kagura:'広島神楽'}],todayJst:today});
     ok(JSON.stringify(h3.uncovered)==='[{"kind":"出雲神楽","n":3}]','掲載中で今後の開催が3件以上あるのに解説がない神楽だけを挙げる(保留中・終わった開催・解説のある神楽は除く)',JSON.stringify(h3.uncovered));
     ok(!h3.noShows.includes('石見神楽')&&!h3.noShows.includes('広島神楽')&&h3.noShows.includes('花祭'),'いま掲載中の公演も定期公演もない対象を挙げる');
     const m=reviewMetrics({events:[],todayJst:today,quiz:{...h3,changed:['石見神楽/features.0'],missing:['花祭/tagline'],newKinds:['新しい神楽'],checkedDaysAgo:QUIZ_STALE_DAYS+1}});
@@ -141,7 +141,7 @@ export function quizTests({ok,section,OUT}) {
     ok(['quiz-evidence-missing','quiz-evidence-changed','quiz-new-kinds','quiz-uncovered','quiz-stale'].every(k=>keys.some(a=>a.key===k))&&keys.every(a=>a.owner==='Claude'),'点検で見つかったことを、Claude の「今週やること」にする');
     ok(!decideActions(reviewMetrics({events:[],todayJst:today,quiz:h}),null).some(a=>a.key.startsWith('quiz-'))&&!decideActions(reviewMetrics({events:[],todayJst:today}),null).some(a=>a.key.startsWith('quiz-')),'問題がない週・点検の結果がない週は、診断の項目を出さない');
     const md=renderReview(m,null,[],[]);
-    ok(md.includes('### 好み診断')&&md.includes('対象 19 種類')&&md.includes('いま掲載中の公演がない対象'),'振り返りの Issue に、診断の点検の数字を載せる');
+    ok(md.includes('### 好み診断')&&md.includes('対象 29 種類')&&md.includes('いま掲載中の公演がない対象'),'振り返りの Issue に、診断の点検の数字を載せる');
   }
 
   section('診断案内: 閲覧後の推測・フォーカスを奪わない・1回制限');
