@@ -17,7 +17,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, decideTargetPlan, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
@@ -222,6 +222,12 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     // 目標・KPI・収益化の案: 採用 / 見送り / 実施済み / 目標の変更 と、手入力の実績(analytics/plan.json。このPCだけ。push しない)
     "POST /api/plan/item": (body) => serial(async () => {
       const r = setPlanItem(root, { kind: body.kind, id: body.id, status: body.status, note: body.note, targets: body.targets }, today());
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
+    }),
+    // 目標の数の見直しの案: 1つを選ぶ / 見送る / 「検討中」に戻す(戻すと、元の目標に戻る)
+    "POST /api/plan/target-plan": (body) => serial(async () => {
+      const r = decideTargetPlan(root, { id: body.id, status: body.status, option: body.option, note: body.note }, today());
       if (r.error) return [r.code, { error: r.error }];
       return { state: await state() };
     }),

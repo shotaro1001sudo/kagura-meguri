@@ -234,7 +234,73 @@ export function loadPlan(root, today = todayJst()) {
     actuals = actuals ?? { updated: null, months: {} };
     for (const [m, v] of Object.entries(pm)) actuals.months[m] = { ...(actuals.months[m] ?? {}), pitches: v.pitches, contracts: v.contracts };
   }
-  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], manual: p.manual ?? {}, actuals, updated: p.updated ?? null };
+  // 目標の数の見直しの案(元の目標の控え before は、画面に渡さない)
+  const targetPlans = (p.targetPlans ?? []).filter((x) => x?.id && x.title && Array.isArray(x.options) && x.options.length)
+    .map(({ before, ...x }) => ({ ...x, status: ["proposed", "adopted", "declined"].includes(x.status) ? x.status : "proposed" }));
+  return { goal: p.goal ?? null, kpis: p.kpis ?? [], monetization: p.monetization ?? [], targetPlans, manual: p.manual ?? {}, actuals, updated: p.updated ?? null };
+}
+// 月(YYYY-MM)ごとの 0 以上の数か。正しければ写しを、誤り・空なら null を返す
+function cleanTargets(targets) {
+  if (!targets || typeof targets !== "object" || Array.isArray(targets)) return null;
+  const clean = {};
+  for (const [m, v] of Object.entries(targets)) {
+    if (!MONTH.test(m) || typeof v !== "number" || !Number.isFinite(v) || v < 0) return null;
+    clean[m] = v;
+  }
+  return Object.keys(clean).length ? clean : null;
+}
+/**
+ * 目標の数の見直しの案(plan.json の targetPlans)。いくつかの KPI の目標を、まとめて差し替える案を、2〜3通り並べたもの。
+ *   { id: "ADV-…", title, detail, basis: [前提の文], status: "proposed"|"adopted"|"declined", recommended: "B",
+ *     options: [{ key: "B", title, summary, targets: { contracts: { "2026-12": 3, … }, pitches: {…} }, why?: { contracts: "…" }, rows?: [[見出し, { 月: 値 }, 単位]] }] }
+ * 運営者が1つを選ぶと(adopted)、その案の targets(と why)を KPI に入れ、元の目標は before に残す。
+ * 「検討中」に戻すと、before から元の目標に戻す。見送り(declined)は KPI を変えない。
+ */
+export function decideTargetPlan(root, { id, status, option, note = "" }, today) {
+  const p = paths(root);
+  const plan = readJson(p.plan, null);
+  if (!plan) return { code: 404, error: "analytics/plan.json がありません" };
+  const x = plan.targetPlans?.find((y) => y.id === id);
+  if (!x) return { code: 404, error: "見直しの案が見つかりません" };
+  if (!["proposed", "adopted", "declined"].includes(status)) return { code: 400, error: "その状態にはできません" };
+  const kpi = (kid) => plan.kpis?.find((k) => k.id === kid);
+  if (status === "proposed") {
+    for (const [kid, b] of Object.entries(x.before ?? {})) {
+      const k = kpi(kid);
+      if (!k) continue;
+      k.targets = b.targets; k.targetsChangedAt = today;
+      if (b.why !== undefined) k.why = b.why;
+    }
+    x.status = "proposed";
+    delete x.before; delete x.chosen; delete x.decidedAt; delete x.note;
+  } else {
+    if ((x.status ?? "proposed") !== "proposed") return { code: 400, error: "先に「検討中」に戻してください" };
+    if (status === "adopted") {
+      const opt = x.options?.find((o) => o.key === option);
+      if (!opt) return { code: 400, error: "選ぶ案が正しくありません" };
+      const entries = Object.entries(opt.targets ?? {});
+      if (!entries.length) return { code: 400, error: "この案には目標の数がありません" };
+      const next = {};
+      for (const [kid, t] of entries) {
+        if (!kpi(kid)) return { code: 400, error: `目標の数字(${kid})が見つかりません` };
+        next[kid] = cleanTargets(t);
+        if (!next[kid]) return { code: 400, error: `案の目標(${kid})の形が正しくありません` };
+      }
+      x.before = {};
+      for (const [kid, t] of Object.entries(next)) {
+        const k = kpi(kid);
+        x.before[kid] = { targets: k.targets, ...(opt.why?.[kid] ? { why: k.why ?? "" } : {}) };
+        k.targets = t; k.targetsChangedAt = today;
+        if (opt.why?.[kid]) k.why = String(opt.why[kid]).slice(0, 200);
+      }
+      x.chosen = option;
+    }
+    x.status = status; x.decidedAt = today;
+    if (note) x.note = String(note).slice(0, 300); else delete x.note;
+  }
+  plan.updated = today;
+  writeJson(p.plan, plan);
+  return { item: x };
 }
 export function setPlanItem(root, { kind, id, status, note = "", targets }, today) {
   const p = paths(root);

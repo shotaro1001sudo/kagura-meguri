@@ -7,7 +7,7 @@ import { promptFor } from "./todo.js";
 export function planOpen() {
   const p = S.plan;
   if (!p) return [];
-  return [...p.kpis.map((x) => ({ kind: "kpi", ...x })), ...p.monetization.map((x) => ({ kind: "mon", ...x }))].filter((x) => x.status === "proposed");
+  return [...p.kpis.map((x) => ({ kind: "kpi", ...x })), ...(p.targetPlans ?? []).map((x) => ({ kind: "kpi", ...x })), ...p.monetization.map((x) => ({ kind: "mon", ...x }))].filter((x) => x.status === "proposed");
 }
 // その月の実績。自動の値がない・手入力が空のときは、足さずに「含まれていない分」として返す(0 とみなさない)
 function actual(id, m) {
@@ -134,6 +134,55 @@ function kpiCard(k, cols, now) {
     h("div", { class: "bar" }, buttons),
     more("測り方", kv(["測り方", k.source], ["決めた時点の数字", k.current], decided(k))));
 }
+// ---------- 目標の数の見直しの案(いくつかの目標を、まとめて差し替える。2〜3通りから1つを選ぶ) ----------
+async function decideTargetPlan(tp, status, option) {
+  let note = "";
+  if (status === "declined") { note = await askReason(tp.title); if (note === null) return; }
+  try {
+    await call("/api/plan/target-plan", { id: tp.id, status, option, note });
+    toast({ adopted: "選んだ案の目標に変えました", declined: "見送りにしました", proposed: "「検討中」に戻し、目標を元に戻しました" }[status]);
+    render();
+  } catch (err) { fail(err); }
+}
+function targetTable(caption, rows, months) {
+  return h("div", { class: "scroll" }, h("table", { class: "kpi" }, h("caption", { class: "small mut" }, caption),
+    h("thead", null, h("tr", null, h("td", null, ""), months.map((m) => h("th", { scope: "col" }, monthLabel(m))))),
+    h("tbody", null, rows.map(([label, vals, unit]) => h("tr", null, h("th", { scope: "row" }, label), months.map((m) => h("td", null, num(vals?.[m], unit))))))));
+}
+function targetPlanCard(tp) {
+  const p = S.plan;
+  const kpiOf = (id) => p.kpis.find((k) => k.id === id);
+  const ids = [...new Set(tp.options.flatMap((o) => Object.keys(o.targets || {})))];
+  const months = [...new Set(tp.options.flatMap((o) => [...Object.values(o.targets || {}), ...(o.rows || []).map((r) => r[1] || {})].flatMap(Object.keys)))].sort();
+  const nowRows = ids.map((id) => [`今の目標: ${kpiOf(id)?.name || id}`, kpiOf(id)?.targets, kpiOf(id)?.unit]);
+  const optRows = (o) => o.rows?.length ? o.rows : Object.entries(o.targets || {}).map(([id, t]) => [kpiOf(id)?.name || id, t, kpiOf(id)?.unit]);
+  return h("article", { class: "card" },
+    h("div", { class: "card-h" }, h("h3", null, tp.title), chip("見直しの案"), stBadge("proposed")),
+    tp.detail ? h("p", null, tp.detail) : "",
+    targetTable("いまの目標", nowRows, months),
+    tp.options.map((o) => h("section", { class: "card" },
+      h("div", { class: "card-h" }, h("h4", null, o.title), o.key === tp.recommended ? chip("おすすめ", "ac") : ""),
+      o.summary ? h("p", { class: "mut" }, o.summary) : "",
+      targetTable(o.title, optRows(o), months),
+      h("div", { class: "bar" }, h("button", { class: o.key === tp.recommended ? "btn tonal" : "btn", onclick: () => decideTargetPlan(tp, "adopted", o.key) }, "この案にする")))),
+    h("div", { class: "bar" }, h("button", { class: "btn quiet", onclick: () => decideTargetPlan(tp, "declined") }, "どれも選ばない(見送る)")),
+    tp.basis?.length ? more("前提・計算のしかた", h("ul", { class: "reasons" }, tp.basis.map((b) => h("li", null, b)))) : "",
+    h("p", { class: "mut small" }, "案を選ぶと、その案の数で目標の数字を差し替えます。あとで「検討中」に戻すと、元の目標に戻ります。"));
+}
+function targetPlanRow(tp) {
+  const o = tp.options.find((x) => x.key === tp.chosen);
+  return h("li", null,
+    h("span", { class: "t" }, tp.title), o ? chip(o.title) : "",
+    h("span", { class: "mut small" }, [S.planStatus[tp.status], tp.decidedAt, tp.note].filter(Boolean).join(" ・ ")),
+    h("button", { class: "btn sm", onclick: () => decideTargetPlan(tp, "proposed") }, "「検討中」に戻す"));
+}
+function targetPlansPart(p) {
+  const list = p.targetPlans ?? [];
+  const open = list.filter((x) => x.status === "proposed"), closed = list.filter((x) => x.status !== "proposed");
+  return [open.map(targetPlanCard),
+    closed.length ? more(`目標の見直しの記録(${closed.length}件)`, h("ul", { class: "plan-rows card" }, closed.map(targetPlanRow))) : ""];
+}
+
 function monCard(m) {
   const buttons = m.status === "proposed"
     ? [h("button", { class: "btn tonal", onclick: () => setPlan("mon", m, "adopted") }, "採用する"), h("button", { class: "btn quiet", onclick: () => setPlan("mon", m, "declined") }, "見送る")]
@@ -175,7 +224,7 @@ export function goalView() {
   const now = curMonth();
   const months = [...new Set(p.kpis.flatMap((k) => Object.keys(k.targets || {})))].sort();
   const cols = [addMonth(now, -1), now, ...months.filter((m) => m > now)];
-  const openKpis = p.kpis.filter((k) => k.status === "proposed").length, openMons = p.monetization.filter((m) => m.status === "proposed").length;
+  const openKpis = [...p.kpis, ...(p.targetPlans ?? [])].filter((k) => k.status === "proposed").length, openMons = p.monetization.filter((m) => m.status === "proposed").length;
   const SECS = [["overview", "売上と目標"], ["mon", "収益化の案", openMons || null], ["kpi", "目標の数字", openKpis || null], ["manual", "実績を入れる"]];
   const sec = SECS.some(([k]) => k === view.goalSec) ? view.goalSec : "overview";
   const jump = (k, text) => h("a", { href: "#/goal", class: "btn sm", onclick: goLink("goal", { goalSec: k, [k + "St"]: "proposed" }) }, text);
@@ -188,6 +237,7 @@ export function goalView() {
       statusGroups("monSt", p.monetization, monCard, (m) => shortRow(m, m.title, m.expectedYen ? chip(`見込み 月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}`) : ""))] : "",
     sec === "kpi" ? [h("p", { class: "lead" }, "最終目標に届くための、月ごとの目標と実績です(KPI とも呼びます)。実績の * は、まだ含まれていない分があるものです。"),
       more("この項目について", h("p", { class: "mut" }, "バリューコマースの報酬・サイトの訪問・広告のクリックは、毎週月曜の分析が自動で入れます。楽天・AdSense・協賛は「実績を入れる」で入れます。目標の数は、採用の前でも後でも変えられます。")),
+      targetPlansPart(p),
       statusGroups("kpiSt", p.kpis, (k) => kpiCard(k, cols, now), (k) => shortRow(k, k.name))] : "",
     sec === "manual" ? [h("p", { class: "lead" }, "自動で取れない分を、月ごとに入れます。月が変わったら、先月の分を入れてください。"), manualForm()] : "",
   ];

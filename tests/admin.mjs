@@ -319,6 +319,33 @@ export async function adminTests({ ok, section }) {
       writeFileSync(planPath, JSON.stringify(pl));
     }
     {
+      // 目標の数の見直しの案: 2通りから1つを選ぶと、目標の数字(KPI)をまとめて差し替え、戻すと元に戻る
+      const tplan = { ...pl, kpis: [...pl.kpis, { id: "contracts", name: "契約数", unit: "件", why: "1件 月1万円", targets: { "2026-12": 1 }, status: "adopted" }, { id: "pitches", name: "提案数", unit: "件", targets: { "2026-12": 15 }, status: "adopted" }],
+        targetPlans: [{ id: "ADV-20261110-3", title: "契約数を料金に合わせる", status: "proposed", recommended: "B", options: [
+          { key: "A", title: "協賛枠だけ", targets: { contracts: { "2026-12": 3 }, pitches: { "2026-12": 29 } } },
+          { key: "B", title: "協賛枠と記事広告", targets: { contracts: { "2026-12": 3 }, pitches: { "2026-12": 20 } }, why: { contracts: "協賛枠 月5,000円・記事広告 1本2万円から逆算" } },
+          { key: "C", title: "形が誤り", targets: { contracts: { "12月": 3 } } }] }] };
+      writeFileSync(planPath, JSON.stringify(tplan));
+      st = (await req("/api/state")).json;
+      ok(st.plan.targetPlans.length === 1 && st.plan.targetPlans[0].options.length === 3, "目標の見直しの案を、画面に渡す");
+      ok((await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "adopted", option: "Z" } })).status === 400
+        && (await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "adopted", option: "C" } })).status === 400
+        && (await req("/api/plan/target-plan", { body: { id: "ADV-X", status: "adopted", option: "A" } })).status === 404
+        && JSON.parse(read(planPath)).kpis[1].targets["2026-12"] === 1, "知らない案・形の誤った案は選べず、目標も変えない");
+      r = await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "adopted", option: "B" } });
+      let tp = JSON.parse(read(planPath));
+      ok(r.status === 200 && tp.kpis[1].targets["2026-12"] === 3 && tp.kpis[2].targets["2026-12"] === 20 && tp.kpis[1].why.startsWith("協賛枠") && tp.kpis[2].status === "adopted"
+        && tp.targetPlans[0].status === "adopted" && tp.targetPlans[0].chosen === "B" && tp.targetPlans[0].decidedAt === "2026-10-10" && !("before" in r.json.state.plan.targetPlans[0]), "案を選ぶと、契約数・提案数の目標と理由をまとめて差し替える(元の目標の控えは画面に渡さない)");
+      ok((await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "adopted", option: "A" } })).status === 400, "選んだあとに別の案を選ぶには、先に「検討中」に戻す");
+      await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "proposed" } });
+      tp = JSON.parse(read(planPath));
+      ok(tp.kpis[1].targets["2026-12"] === 1 && tp.kpis[1].why === "1件 月1万円" && tp.kpis[2].targets["2026-12"] === 15 && tp.targetPlans[0].status === "proposed" && !tp.targetPlans[0].before && !tp.targetPlans[0].chosen, "「検討中」に戻すと、元の目標と理由に戻る");
+      r = await req("/api/plan/target-plan", { body: { id: "ADV-20261110-3", status: "declined", note: "まだ様子を見る" } });
+      tp = JSON.parse(read(planPath));
+      ok(r.status === 200 && tp.targetPlans[0].status === "declined" && tp.targetPlans[0].note === "まだ様子を見る" && tp.kpis[1].targets["2026-12"] === 1, "見送ると、理由を残し、目標は変えない");
+      writeFileSync(planPath, JSON.stringify(pl));
+    }
+    {
       const R = mkdtempSync(join(tmpdir(), "adm-meas-"));
       mkdirSync(join(R, "analytics"));
       writeFileSync(join(R, "analytics/state.json"), JSON.stringify({ proposals: [
