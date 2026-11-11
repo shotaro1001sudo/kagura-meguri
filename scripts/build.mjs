@@ -495,7 +495,7 @@ const mapsUrl = (x) => `https://www.google.com/maps/search/?api=1&query=${encode
 // 要点の表で分からない欄は「未確認」と短く書き、確認のお願いは表の下に1回だけ置く
 const unknownAs = (v) => (v === "要確認" ? "未確認" : v);
 const unknownNote = (on) => (on ? `<p class="unknown-note">未確認の項目は、お出かけ前に公式情報でご確認ください。</p>` : "");
-const venueCell = (x, fallback = "未確認") => `${x.venue ? esc(x.venue) : fallback}<span class="addr">${esc([x.prefecture, x.city, x.address].filter(Boolean).join(" "))}</span>${x.lat != null ? `<a class="tomap" href="${mapsUrl(x)}" target="_blank" rel="noopener">地図・経路を見る</a>` : ""}`;
+const venueCell = (x, fallback = "未確認") => `${x.venue ? `<span class="vn">${esc(x.venue)}</span>` : fallback}<span class="addr">${esc([x.prefecture, x.city, x.address].filter(Boolean).join(" "))}</span>${x.lat != null ? `<a class="tomap" href="${mapsUrl(x)}" target="_blank" rel="noopener">地図・経路を見る</a>` : ""}`;
 // ---------- 今週末・今月(日付で中身が変わる。deploy.yml が毎日、作り直す) ----------
 const today = nowJst.slice(0, 10);
 const moreOffers = createMoreOfferIndex(moreOffersData, today);
@@ -839,7 +839,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ? `<nav class="pref-month-nav" aria-label="広島県の神楽公演を開催月から探す"><span class="meta">開催月から探す</span>${monthLinks}${hasAffiliate ? `<a class="tag" href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
     : "";
   const scheduleHtml = isHiroshima && list.length
-    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の開催予定</h2><p class="meta"><a href="/month/${key}.html">${esc(monthLabel(key))}の全国日程を見る</a></p>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e, "h3", true)).join("")}</section>`).join("")
+    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の開催予定</h2><p class="meta"><a class="textlink" href="/month/${key}.html">${esc(monthLabel(key))}の全国日程を見る</a></p>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e, "h3", true)).join("")}</section>`).join("")
     : list.length ? `<h2>開催予定</h2>${list.map((e) => card(e)).join("")}` : "";
   const stayHtml = isHiroshima
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
@@ -1042,7 +1042,7 @@ ${otherWays("/weekend.html")}</div></div>`,
 <div class="dpage"><div class="d-top">
 ${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2>
 ${tmEvents.map((e) => card(e)).join("") || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
-${months.includes(mk) ? `<p class="meta"><a href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
+${months.includes(mk) ? `<p class="meta"><a class="textlink" href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
 </div>${tmEvents.length && tripBand("this-month", "今月の旅の宿を探す") ? `<div class="d-side">${tripBand("this-month", "今月の旅の宿を探す")}</div>` : ""}<div class="d-rest">

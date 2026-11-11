@@ -20,7 +20,7 @@ import { approx } from "./media-stats.mjs";
  * 協賛枠そのもの(.sponsor-slot・.pr)は全ページで使うので style.css のまま。
  */
 export const SPONSOR_CSS = `<style>
-.sp-stats{margin:44px 0 0;padding:4px 22px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.sp-stats{margin:44px 0 0;padding:4px 22px 18px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 .prose .sp-stats h2{margin:22px 0 4px}.prose .sp-stats h3{margin:22px 0 10px;font-size:var(--fs-s);color:var(--mut);letter-spacing:.08em}
 .prose .sp-tiles{list-style:none;padding:0;margin:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
 .prose .sp-tiles li{margin:0;padding:12px 14px;border-radius:var(--radius-s);background:var(--bg);display:flex;flex-direction:column;gap:2px}
@@ -29,9 +29,9 @@ export const SPONSOR_CSS = `<style>
 .sp-tiles .v small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:3px}
 .sp-tiles .n{font-size:var(--fs-2xs);color:var(--mut);line-height:1.6}
 .prose .sp-src{margin:10px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
-.prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0 0 6px;break-inside:avoid}
+.prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0;break-inside:avoid}.sp-top a{display:inline-flex;align-items:center;min-height:var(--tap)}
 .prose .sp-menu{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
-.prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
 .prose .sp-plan .tag{margin:0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}
 .prose .sp-plan h3{margin:4px 0 2px;font-size:var(--fs-l)}
 .prose .sp-plan .price{margin:0 0 10px;color:var(--ac);font-weight:500}
@@ -42,7 +42,7 @@ export const SPONSOR_CSS = `<style>
 .sp-sample{margin:18px 0 0}.sp-sample figcaption{font-size:var(--fs-xs);color:var(--mut)}.sp-sample .sponsor-slot{margin:6px 0 0}
 .sp-sample .sp-title{font-weight:500;color:var(--ac);text-decoration:underline;text-underline-offset:3px}
 .prose .sp-sample+.octa{margin-top:14px}
-.sp-article{margin:6px 0 0;padding:16px 18px 14px;border:1px dashed var(--line);border-radius:4px;background:var(--card)}
+.sp-article{margin:6px 0 0;padding:16px 18px 1var(--radius-s);border:1px dashed var(--line);border-radius:4px;background:var(--card)}
 .prose .sp-article p{margin:0;font-size:var(--fs-s);line-height:1.9}
 .sp-article-by,.prose .sp-article-toc{font-size:var(--fs-xs);color:var(--mut)}.prose .sp-article-toc{margin-top:10px}
 .prose .sp-article-title{margin:8px 0 6px;font-family:var(--serif);font-weight:500;font-size:var(--fs-xl);line-height:1.5}
@@ -50,7 +50,7 @@ export const SPONSOR_CSS = `<style>
 .pr-byline{font-size:var(--fs-s);color:var(--mut)}
 .prose .pr-photo{margin:20px 0}.pr-photo-box{display:grid;place-items:center;min-height:180px;padding:16px;border:1px dashed var(--mut);border-radius:var(--radius);color:var(--mut);font-size:var(--fs-s);text-align:center;background:var(--card)}.pr-photo figcaption{font-size:var(--fs-xs);color:var(--mut);margin-top:6px}
 .pr-facts{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;font-size:var(--fs-s)}.pr-facts dt{color:var(--mut)}.pr-facts dd{margin:0}
-.pr-about{margin-top:40px;padding:4px 22px 18px;border:1px solid color-mix(in srgb,var(--line) 75%,transparent);border-radius:var(--radius);background:var(--card)}.prose .pr-about h2{margin-top:18px}.pr-about .cta-end{margin-top:20px}
+.pr-about{margin-top:40px;padding:4px 22px 18px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card)}.prose .pr-about h2{margin-top:18px}.pr-about .cta-end{margin-top:20px}
 @media(min-width:641px){.sp-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-steps li:nth-child(2n):after{display:none}}
 </style>`;
 

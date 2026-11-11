@@ -33,8 +33,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   ok(!css.includes(".home-find{") &&
     !css.includes("main .home-hero{min-height:clamp(") &&
     css.includes(".pref-month-nav") &&
-    css.includes(".home-search-link"),
-    "追加した新デザインの背景・ボタンを除き、余白と月別の配置だけを調整する");
+    !css.includes(".home-search-link") && !css.includes(".discovery-prefs"),
+    "置かなくなった検索入口(.home-find・.home-search-link・.discovery-prefs)の CSS を残さず、月別の配置(.pref-month-nav)は保つ");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
   ok(h("title").text().startsWith("広島神楽スケジュール") &&
