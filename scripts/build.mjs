@@ -937,7 +937,7 @@ const untilBadge = (e) => {
 const sideSummary = (e, when) => `<div class="side-summary"><p class="ss-when">${when}</p><p class="ss-place">${esc(e.venue || `${e.prefecture}${e.city ?? ""}`)}</p>${e.fee ? `<p class="ss-fee">${esc(e.fee)}</p>` : ""}${e.url ? `<a class="btn" data-official-side href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a>` : ""}</div>`;
 // 要点の表が画面の上に隠れたら、右の列に要点を出す(最初から出すと、すぐ左の表と重なるため)
 const SIDE_SUMMARY_JS = `(function(){var k=document.querySelector('.keyinfo'),s=document.querySelector('.side-summary');if(!k||!s||!window.IntersectionObserver)return;new IntersectionObserver(function(x){s.classList.toggle('on',!x[0].isIntersecting&&x[0].boundingClientRect.top<0)}).observe(k)})()`;
-// 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 公式情報のボタン・共有 → 説明・ほかの日程 → 地図・経路 → 出典 → 宿の案内 → あわせて観たい神楽 → 広告
+// 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 説明 → 公式情報のボタン → この開催のポイント・ほかの日程(ここまでが d-top。スマホでは広告の列より先) → 宿・旅の案内(d-side) → 出典・周辺体験・共有 → あわせて観たい神楽 → ほかの探し方 → 広告
 // あわせて観たい神楽: 同じ種類の開催予定を先に、同じ県の開催予定を後に(開催・定期公演のどちらのページでも使う)
 const related = (e) => {
   const uniq = (arr) => arr.filter((x, i) => arr.findIndex((y) => seriesKey(y) === seriesKey(x)) === i && seriesKey(x) !== seriesKey(e));
@@ -975,10 +975,10 @@ for (const e of events) {
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).short ? `<small class="calendar-notice">${esc(calendarNotice(e).short)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
 <tr><th>料金</th><td>${e.fee ? cellLines(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}${glossHtml(e, { esc })}</div>
 <div class="desc-lead">${descParas(shownDesc(e, e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認"))}</div>
-${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
+${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}
 ${noteBlock(e)}
-${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
+${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}</div>
+${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 ${sourceNote(e)}
 ${isUpcoming(e)?`${planningLinks(e,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
@@ -1230,7 +1230,7 @@ doc("/tokushoho.html", "特定商取引法に基づく表記", `${cfg.siteName}�
 doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です。運営者と連絡先、サイトの目的、開催情報の集め方と出典の示し方、広告などによる収益について説明しています。`, `
 <p class="symbol"><img src="/symbol.png" alt="${esc(op.name)}のシンボル" width="120" height="120"></p>
 <table class="info"><tr><th>サイト名</th><td>${esc(cfg.siteName)}</td></tr><tr><th>運営者</th><td>${esc(op.name)}</td></tr>
-<tr><th>連絡先</th><td>${mailLink()}</td></tr><tr><th>開設</th><td>${esc(op.established)}</td></tr></table>
+<tr><th>連絡先</th><td><a class="textlink" href="/contact.html">お問い合わせフォーム</a></td></tr><tr><th>開設</th><td>${esc(op.established)}</td></tr></table>
 <h2>このサイトについて</h2>
 <p>${esc(cfg.siteName)}は、全国の神楽の開催情報を、探しやすくまとめたサイトです。神楽は、地域の神社や保存会が長く受け継いできた大切な文化です。このサイトが、そんな神楽に出会うきっかけになればと考えています。</p>
 <h2>掲載情報について</h2>

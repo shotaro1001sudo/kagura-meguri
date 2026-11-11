@@ -111,7 +111,7 @@ html{scroll-padding-top:84px}
 /* 面(パネル): 一覧のカード・要点の枠・宿や旅の案内・入口のタイルなど、ひとまとまりの情報を載せる箱。
    枠・角の丸み・影・地色は、この1か所で決める(部品ごとに書かない)。中の余白だけを、部品の側で決める */
 :where(.card,.keyinfo,.stay,.aff,.side-summary,.side-box,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
-  .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+  .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details,.toc:not(.gnav)){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 
 /* 一覧のカード: 左に日付、右に題 → 時刻と場所 → 会場・料金・予約 → 種類。カード全体が詳細へのリンク */
 .card{display:flex;gap:24px;padding:18px 22px;margin:0 0 12px;position:relative;transition:border-color var(--t-s) var(--ease)}
@@ -607,8 +607,8 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .tbl thead th{background:var(--card);font-weight:500;color:var(--mut);letter-spacing:.1em;white-space:nowrap}
 .prose h3{font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin:28px 0 8px}
 /* 読み物(ガイド)の目次と出典 */
-.toc{margin:20px 0 8px;padding:14px 18px;border-left:2px solid var(--ac2);background:var(--card)}
-.toc ol{margin:0;padding-left:1.3em}.toc li{margin:6px 0}
+.toc{margin:20px 0 8px;padding:8px 18px}
+.toc ol{margin:0;padding-left:1.3em}.toc li,.prose .toc li{margin:0}.toc a{display:inline-flex;align-items:center;min-height:var(--tap)}
 .prose li strong{font-weight:500}.prose ul.sources{font-size:var(--fs-s)}
 /* トップの「これからの神楽」: 地方のボタン、月の見出し、この先の月 */
 [hidden]{display:none!important}
@@ -712,7 +712,7 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
    見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase)。
    本文・一覧の値(料金・予約方法など)・注釈・箇条書きは、字単位で行を詰める(文節で折ると、狭い画面で行の右が大きく空いて行数が増えるため) */
 body{line-break:strict;text-wrap:pretty}
-:is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.event-facts,.info .vn,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs){word-break:auto-phrase}
+:is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.event-facts,.info .vn,.info .when,.info .sched-main,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs){word-break:auto-phrase}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}
 /* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
 /* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。
@@ -908,7 +908,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 /* ページ下部にまとめた出典・注記・広告の説明 */
 .page-notes{margin:40px 0 0;padding:14px 0 0;border-top:1px solid var(--line);color:var(--mut);font-size:var(--fs-xs);line-height:1.85}
 .page-notes h2{margin:0 0 6px;font-size:var(--fs-2xs);font-family:inherit;font-weight:500;letter-spacing:.04em}
-.page-notes p{margin:0 0 .8em;max-width:none}
+.page-notes p{margin:0 0 .8em;max-width:46em}
 .page-notes .pr{font-size:var(--fs-2xs);border:0;padding:0}
 
 /* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
