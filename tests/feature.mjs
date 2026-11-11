@@ -90,6 +90,8 @@ export function featureTests({ ok, section, OUT, build }) {
         const kg = cheerio.load(read(join(out, "kagura", `${f.kagura}.html`)));
         ok(kg(`a[href='${f.path}']`).length === 1 && kg("a[href^='/feature/']").length === 1, `${f.kagura}: 種類のページから、その祭りの特集にだけ案内する`);
       }
+      const $h = cheerio.load(read(join(out, "events", "t-hana.html"))), hanaEv = $h("aside.stay a.stay-btn");
+      ok(hanaEv.length === 1 && hanaEv.text() === "奥三河の宿を楽天トラベルで探す" && hanaEv.get().every((a) => { const u = decodeURIComponent(decodeURIComponent($h(a).attr("href"))); return u.includes("奥三河") && !u.includes("東栄町"); }), "花祭(東栄町)の開催ページの宿は、東栄町ではなく奥三河で探す(東栄町だと遠い宿ばかり出る)", hanaEv.text());
       ok(page(SHIMO)(".sponsor-slot [data-sponsor='feature-test']").length === 1 && !page(HANA)(".sponsor-slot").length, "承認された協賛は、指定した特集のページにだけ出る");
       ok(!cheerio.load(read(join(out, "kagura", "高千穂神楽.html")))("a[href^='/feature/']").length, "ほかの種類のページからは、特集に案内しない");
       ok(cheerio.load(read(join(out, "sponsor.html")))("a[href^='/feature/']").length === 1, "協賛のご案内の「載る場所」に、特集のページを例として載せる");

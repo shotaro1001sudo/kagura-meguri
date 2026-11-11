@@ -15,7 +15,7 @@
 //   "start": "2026-12-01", "end": "2026-12-31",
 //   "approved": true, "contractRef": "…",     契約・確認の控え(ページには出さない)
 //   "placements": [ { "page": "pref", "prefecture": "島根県" }, { "page": "event", "prefecture": "島根県", "kagura": "石見神楽" } ] }
-// placements の page: pref(県のページ)・kagura(神楽の種類のページ)・event(開催のページ)・regular(定期公演のページ)・feature(特集のページ。id に特集の ID。例: { "page": "feature", "id": "shimotsuki-hanamatsuri" })。
+// placements の page: pref(県のページ)・kagura(神楽の種類のページ)・event(開催のページ)・regular(定期公演のページ)・feature(特集のページ。id に特集の ID。例: { "page": "feature", "id": "tohyama-shimotsuki" })。
 // 条件(prefecture・kagura・city・id)は、書いたものがすべて、そのページの値と一致したときだけ出す。条件が1つもない置き場所は誤りとする。
 
 const PAGES = ["pref", "kagura", "event", "regular", "feature"];

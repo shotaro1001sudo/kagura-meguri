@@ -201,7 +201,9 @@ const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.raku
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
 // 宿の検索(会場の市区町村で探す)。日付があれば、その日の1泊・大人2名で開く。
 // じゃらんはキーワードを Shift_JIS で、楽天トラベルは charset=utf-8 の指定つきで受け取る(どちらも、実際の検索結果で確認済み)
-const stayPlace = (x) => (x.city ? x.city.replace(/^.*郡/, "") : x.prefecture);
+// 市町村名で探すと遠い宿ばかり出る地域は、近くの宿が出ることを確かめた呼び名で探す(2026-11-11 確認。東栄町 → 奥三河の宿が出る)
+const STAY_AREA = { "東栄町": "奥三河" };
+const stayPlace = (x) => { const c = x.city ? x.city.replace(/^.*郡/, "") : x.prefecture; return STAY_AREA[c] ?? c; };
 const jalanStay = (x, day) => {
   const q = [`keyword=${encodeSjisURI(stayPlace(x))}`];
   if (day) q.push(`stayYear=${+day.slice(0, 4)}`, `stayMonth=${+day.slice(5, 7)}`, `stayDay=${+day.slice(8, 10)}`, "stayCount=1", "roomCount=1", "adultNum=2");
