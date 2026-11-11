@@ -16,7 +16,7 @@ import { approx } from "./media-stats.mjs";
 
 /**
  * 協賛のページと記事広告の見本ページだけの CSS。layout の head に入れる(CSP はインラインの style をハッシュで許可する)。
- * 全ページ共通の scripts/style.css には入れない(全ページが重くなり、クイズのページが 140KB の上限を超えるため)。
+ * 全ページ共通の scripts/style.css には入れない(その2ページでしか使わないため)。
  * 協賛枠そのもの(.sponsor-slot・.pr)は全ページで使うので style.css のまま。
  */
 export const SPONSOR_CSS = `<style>

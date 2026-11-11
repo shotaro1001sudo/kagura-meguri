@@ -1075,7 +1075,7 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 .tokushoho th{white-space:nowrap;vertical-align:top}
 /* 広告・協賛のご案内(/sponsor.html): 数字で見る・メニューの比べ・見え方の見本 */
 /* 広告・協賛のご案内(/sponsor.html)と記事広告の見本(/pr/sample.html)だけの CSS(.sp-stats・.sp-menu・.sp-sample・.pr-* など)は、
-   scripts/lib/sponsor.mjs の SPONSOR_CSS にあり、その2ページの <head> だけに入れる(全ページに入れると、クイズのページが 140KB の上限を超えるため) */
+   scripts/lib/sponsor.mjs の SPONSOR_CSS にあり、その2ページの <head> だけに入れる(その2ページでしか使わないため) */
 /* 定期公演の休演中(秋祭りの間など): 曜日の目印を「休演中」にし、次の公演日を本文の先頭に出す */
 .reg.paused .date b{color:var(--mut);font-size:var(--fs-s);letter-spacing:0;padding-top:.5em;word-break:keep-all}
 .reg-pause{margin:2px 0 4px;font-size:var(--fs-s);font-weight:600;color:var(--fg)}

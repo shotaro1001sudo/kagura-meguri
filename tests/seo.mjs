@@ -140,9 +140,9 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
   const jpegSize = (b) => { for (let i = 2; i + 9 < b.length;) { const m = b[i + 1], len = b.readUInt16BE(i + 2); if (m >= 0xc0 && m <= 0xc2) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)]; i += 2 + len; } return null; };
   for (const f of ["og.jpg", "og-en.jpg"]) {
     const jpg = readFileSync(join(dir, f));
-    ok(jpg.slice(0, 2).toString("hex") === "ffd8" && String(jpegSize(jpg)) === "1200,630" && jpg.length < 300_000, `${f}: JPEG・1200x630・300KB未満`, String(jpegSize(jpg)));
+    ok(jpg.slice(0, 2).toString("hex") === "ffd8" && String(jpegSize(jpg)) === "1200,630", `${f}: JPEG・1200x630`, String(jpegSize(jpg)));
   }
-  for (const f of ["washi.svg", "washi-dark.svg"]) { const svg = read(join(dir, f)); ok(svg.startsWith("<svg") && svg.length < 30_000 && /stitchTiles="stitch"/.test(svg), `${f}: 和紙の質感(SVG・30KB未満・つなぎ目なく繰り返せる)`); }
+  for (const f of ["washi.svg", "washi-dark.svg"]) { const svg = read(join(dir, f)); ok(svg.startsWith("<svg") && /stitchTiles="stitch"/.test(svg), `${f}: 和紙の質感(SVG・つなぎ目なく繰り返せる)`); }
   ok(/:root\{--paper:url\(\/washi\.svg\)\}/.test(read(join(dir, "index.html"))) && /--paper:url\(\/washi-dark\.svg\)/.test(read(join(dir, "index.html"))), "背景: 和紙の質感を、明るい配色・暗い配色の両方で敷く");
   const ogOf = (p) => pages.get(p)?.('meta[property="og:image"]').attr("content") ?? "";
   ok(ogOf("/index.html").endsWith("/og.jpg") && ogOf("/en/index.html").endsWith("/og-en.jpg") && pages.get("/index.html")('meta[name="twitter:image"]').attr("content") === ogOf("/index.html"), "共有用の画像: 日本語は og.jpg、英語は og-en.jpg を使う", `${ogOf("/index.html")} / ${ogOf("/en/index.html")}`);

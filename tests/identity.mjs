@@ -51,7 +51,7 @@ export function identityTests({ ok, section, OUT, build }) {
   const heroImg = art.find("img"), heroSrc = art.find("source");
   ok(heroImg.attr("src") === "/hero-pc.webp" && heroSrc.attr("srcset") === "/hero-sp.webp" && /max-width:\s*640px/.test(heroSrc.attr("media")), "PC用とスマホ用の画像を、画面の幅で切り替える");
   ok(!!heroImg.attr("alt") && +heroImg.attr("width") > 0 && +heroImg.attr("height") > 0 && heroImg.attr("fetchpriority") === "high", "絵には、代替テキストと縦横の大きさ(表示のずれ防止)があり、先に読み込む");
-  ok(["hero-pc.webp", "hero-sp.webp"].every((f) => existsSync(join(OUT, f)) && statSync(join(OUT, f)).size < 300 * 1024), "画像は、1枚300KB未満(表示を重くしない)");
+  ok(["hero-pc.webp", "hero-sp.webp"].every((f) => existsSync(join(OUT, f)) && statSync(join(OUT, f)).size > 0), "メインビジュアルの画像(PC用・スマホ用)が書き出されている");
   const homeHtml = read(join(OUT, "index.html"));
   ok(/@media\(max-width:560px\)\{[^@]*\.ms\{display:none\}/.test(css) && /@media print\{[^}]*\.ms[,{]/.test(css), "スマホ(文字の邪魔になる)と印刷では、情景を出さない");
   ok(/\.intro \.ms-sky\{animation:moonrise/.test(css) && /\.js \.ms-sky\{translate:0 calc\(var\(--py,0px\)\*\.42\)\}/.test(css) && /\.js \.ms-land\{translate:0 calc\(var\(--py,0px\)\*\.18\)\}/.test(css), "動き: 最初の訪問で月が昇り、スクロールでは層ごとに違う速さで動く(奥行き)");

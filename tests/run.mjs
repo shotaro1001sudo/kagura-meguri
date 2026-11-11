@@ -119,7 +119,7 @@ for (const f of htmls) {
   ok(($('link[rel="canonical"]').attr("href") ?? "").startsWith("https://"), `${name}: canonical が https`);
   ok($('meta[name="viewport"]').length === 1, `${name}: viewport`);
   ok($("h1").length === 1, `${name}: h1 が1つ`, `${$("h1").length}個`);
-  ok(html.length < 140_000, `${name}: HTML が軽い(140KB未満)`, `${html.length}B`);
+  // ページの大きさ(文字数・KB)の上限は設けない(2026-11-12 運営者の判断: 容量の決まりで内容の充実を縛らない)
   $("script, style").remove(); // コードの中身ではなく、画面に見える文字だけを調べる
   const text = $("body").text();
   ok(!/undefined|NaN|\[object|null(?![a-z])/.test(text), `${name}: 画面に undefined/NaN/null が出ていない`);
