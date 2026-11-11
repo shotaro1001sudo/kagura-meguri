@@ -22,7 +22,9 @@ export function salesTodos() {
     { n: B?.overdue || 0, label: "支払いの期限を過ぎた請求", go: go("won") },
     { n: B?.renew.length || 0, label: "更新の連絡をする時期の契約", go: go("won") },
     { n: !P.billingReady && P.leads.some((x) => x.stage === "won") ? 1 : 0, label: "請求の振込先が未設定", go: go("won") },
-    { n: wk.short ? wk.guide - wk.count : 0, nText: wk.short ? `あと${wk.guide - wk.count}件` : "", count: wk.short ? 1 : 0, label: "今週の提案が、1週の目安に足りません", note: fresh ? `毎週の分析が足した候補が ${fresh} 件あります。内容を確かめて送ります` : "候補に送って、「送った」を押します", go: go("candidate") },
+    // 送れる候補がない時は、メニューの数字に数えない(押しても消せないため)。営業の画面には出す
+    { n: wk.short ? wk.guide - wk.count : 0, nText: wk.short ? `あと${wk.guide - wk.count}件` : "", count: wk.short && sm.candidates ? 1 : 0, label: "今週の提案が、1週の目安に足りません",
+      note: !sm.candidates ? "いま送れる候補はありません。毎週月曜の分析で候補が足されます" : fresh ? `毎週の分析が足した候補が ${fresh} 件あります。内容を確かめて送ります` : "候補に送って、「送った」を押します", go: go("candidate") },
   ].filter((r) => r.n);
 }
 export const salesCount = () => salesTodos().reduce((a, r) => a + (r.count ?? r.n), 0);
