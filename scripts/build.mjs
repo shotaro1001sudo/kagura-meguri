@@ -20,7 +20,7 @@ import { guideHtml, CHECKED as GUIDE_CHECKED } from "./lib/guide.mjs";
 import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs";
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
-import { sponsorHtml } from "./lib/sponsor.mjs";
+import { sponsorHtml, sponsorArticleSampleHtml, SAMPLE_SPONSOR, SPONSOR_CSS } from "./lib/sponsor.mjs";
 import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage } from "./lib/sponsor-slots.mjs";
 import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
@@ -1149,7 +1149,15 @@ doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の
       const h1 = existsSync(f) ? (readFileSync(f, "utf8").match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim() : "";
       return h1 ? { name: h1, href } : null;
     }).filter(Boolean) }),
-  { lead: "神楽を観に出かける方へ、地域の情報を届けます。" });
+  { lead: "神楽を観に出かける方へ、地域の情報を届けます。", layout: { head: SPONSOR_CSS } });
+// 記事広告の見本(架空の宿。noindex で、サイトマップにも入れない)。見出しは記事の題、要点に「見本」と書く
+{
+  const crumbs = [["ホーム", "/"], ["広告・協賛のご案内", "/sponsor.html"], ["記事広告の見本"]];
+  write("dist/pr/sample.html", layout({
+    title: `記事広告の見本 | ${cfg.siteName}`, desc: "記事広告(編集部が取材して書く、PR記事)の見本です。架空の温泉宿を例に、神楽の日の過ごし方を紹介する記事の形をご覧いただけます。", path: "/pr/sample.html", noindex: true, ld: crumbsLd(crumbs), head: SPONSOR_CSS,
+    body: `${crumbNav(crumbs)}${hero(esc(SAMPLE_SPONSOR.article.title), "記事広告の見本です。宿は架空のものです。")}<div class="prose">${sponsorArticleSampleHtml({ esc, siteName: cfg.siteName })}</div>`,
+  }));
+}
 
 // ---------- 団体ページ(有料のプラン・MON-1)・見本・申し込み・特定商取引法に基づく表記 ----------
 {

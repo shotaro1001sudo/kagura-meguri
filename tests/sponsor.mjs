@@ -44,7 +44,24 @@ export function sponsorTests({ ok, section, OUT }) {
   ok(st.text().includes("ご相談の際にお伝えします"), "ページごとの数字は、相談の際に伝えると書く");
   ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。ページごとの数字は相談の際に伝えると書いてある");
   ok($("#menu").length === 1 && $('a[href="#menu"]').length === 1 && $(".sp-menu .sp-plan").length >= 2 && $(".sp-menu .sp-plan").get().every((x) => $(x).find("h3").text() && $(x).find(".price").text() && $(x).find("dt").text().includes("載る場所")), "メニューは、名前・料金・載る場所を並べて比べられる。冒頭からメニューへ飛べる");
-  ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .pr").text() === "PR" && $(".sp-sample figcaption").text().includes("見本"), "協賛枠の見え方の見本(リンクなし・「見本」と書く)");
+  ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .sponsor-slot .pr").first().text() === "PR" && $(".sp-sample .sponsor-slot .pr").map((_, x) => $(x).text()).get().includes("PR記事") && $(".sp-sample figcaption").get().every((f) => $(f).text().includes("見本")), "協賛枠の見え方の見本(リンクなし・「見本」と書く・PR と PR記事の両方)");
+  ok($(".sp-sample-article .sp-article").length === 1 && $(".sp-sample-article .pr").text() === "PR記事" && $('main a[href="/pr/sample.html"]').length >= 1 && $(".sp-ready li").length === 2 && $(".sp-ready dt").length >= 6 && $(".sp-who .eg").length === 3, "記事広告の冒頭の見本と見本ページへのリンク、ご用意いただくもの(協賛枠・記事広告)、このような方へ の載せ方の例");
+  // 見本と載せ方の例には、特定の神楽の名前・団体の名前を使わない(架空の「◯◯温泉旅館」などにする)
+  const prPage = cheerio.load(read(join(OUT, "pr/sample.html")));
+  {
+    const rows = [...JSON.parse(read("data/events.json")), ...JSON.parse(read("data/regular.json"))];
+    const names = [...new Set(rows.flatMap((e) => [e.kagura, e.organizer, e.performer, ...(Array.isArray(e.performers) ? e.performers : [])]).filter((x) => typeof x === "string" && x.length >= 3))];
+    const partnerNames = (existsSync("data/partners.json") ? JSON.parse(read("data/partners.json")) : []).map((p) => p.name);
+    const sampleText = $(".sp-sample, .sp-ready, .sp-who").text() + prPage("main").text();
+    const found = [...names, ...partnerNames].filter((n) => sampleText.includes(n));
+    ok(sampleText.includes("◯◯") && found.length === 0, "見本と載せ方の例に、特定の神楽の名前・団体の名前を使っていない", found.join(", "));
+  }
+  ok(/noindex/.test(prPage('meta[name="robots"]').attr("content")) && !read(join(OUT, "sitemap.xml")).includes("/pr/sample.html") && prPage("title").text() === "記事広告の見本 | 神楽めぐり", "記事広告の見本ページは、検索に載せない(noindex・サイトマップに入れない)");
+  ok(prPage("main .pr").first().text() === "PR記事" && prPage("main").text().includes("見本") && prPage("main").text().includes("架空") && prPage("main").text().includes("編集部が取材して書き") && prPage("main").text().includes("並び順は変わりません") && prPage('main a[href="/sponsor.html"]').length >= 1 && prPage('main a[href="/contact.html"]').length >= 1, "見本ページ: PR記事の表示、架空である旨、取材して書くこと、中立の方針、案内と問い合わせへのリンク");
+  ok(prPage('main a[href^="http"]').length === 0 && prPage(".crumbs a[href='/sponsor.html']").length === 1 && prPage("main h2").length >= 5, "見本ページに外へのリンクはなく、パンくずは広告・協賛のご案内から。見出しごとの本文がある");
+  // 協賛のページだけの CSS は、その2ページの head にだけ入れる(全ページの CSS には入れない。ページの重さの上限のため)
+  const hasCss = (p) => /\.sp-stats\{/.test(read(join(OUT, p))) && /\.sp-article\{/.test(read(join(OUT, p)));
+  ok(hasCss("sponsor.html") && hasCss("pr/sample.html") && !hasCss("index.html") && !hasCss("organizers.html") && !/\.sp-stats\{/.test(read("scripts/style.css")), "協賛のページ専用の CSS は、協賛のページと見本ページにだけ入り、style.css には無い");
   {
     const cfgP = JSON.parse(read("config.json")).sponsorPrices ?? {};
     const prices = $(".sp-menu .sp-plan").map((_, x) => [[$(x).find("h3").text(), $(x).find(".price").text()]]).get();
