@@ -45,6 +45,9 @@ function listingPart(Lg) {
   const c = Lg.collect;
   return [tiles, h("div", { class: "cols" }, h("div", { class: "card" }, chart), h("div", { class: "card" }, h("h3", null, "地方ごと(30日以内)"), hbars(Lg.regions.map((r) => ({ label: r.name, value: r.count }))))),
     c ? h("p", { class: "small" }, `前回の自動収集(${whenText(c.date)}): 新しく掲載 ${fmtN(c.published)} 件 ・ 保留 ${fmtN(c.held)} 件 ・ エラー ${fmtN(c.errors)} 件`) : "",
+    Lg.sponsors?.length ? h("div", { class: "card" }, h("h3", null, "協賛枠の載る場所"), h("p", { class: "mut small" }, "data/sponsors.json の契約ごとの見込みです。契約の前は approved を false にして登録すると、ここで載る場所を確かめられます(サイトには出ません)。"), h("ul", { class: "small" }, Lg.sponsors.map((s) => h("li", null,
+      `${s.sponsor}${s.approved ? "" : "【下書き・未承認】"}(${s.start}〜${s.end}): いま ${s.pages} ページ(県 ${s.count.pref}・種類 ${s.count.kagura}・開催 ${s.count.event}・定期公演 ${s.count.regular})`,
+      !s.pages ? h("b", null, " 載るページがありません。置き場所を見直してください") : s.short ? h("b", null, ` ${s.last} の後、載る場所がなくなる見込み(契約は ${s.end} まで)。地域の枠にすると続けて載ります`) : h("span", { class: "mut" }, " 契約の終わりまで載り続けます"))))) : "",
     Lg.expiring.length ? h("div", { class: "card" }, h("h3", null, "期限が近い広告リンク"), h("ul", { class: "small" }, Lg.expiring.map((o) => h("li", null, `${o.title}: ${o.expiresAt}${o.days < 0 ? "(切れて、表示が止まっています)" : `(あと ${o.days} 日)`}`)))) : ""];
 }
 

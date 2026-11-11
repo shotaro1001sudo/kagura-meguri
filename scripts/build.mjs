@@ -21,7 +21,7 @@ import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs"
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { sponsorHtml } from "./lib/sponsor.mjs";
-import { sponsorErrors, activeSponsors, sponsorSlot } from "./lib/sponsor-slots.mjs";
+import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage } from "./lib/sponsor-slots.mjs";
 import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { pngToIco } from "./lib/ico.mjs";
@@ -500,7 +500,7 @@ const venueCell = (x, fallback = "未確認") => `${x.venue ? esc(x.venue) : fal
 const today = nowJst.slice(0, 10);
 const moreOffers = createMoreOfferIndex(moreOffersData, today);
 const sponsorsNow = activeSponsors(sponsorsData, today);
-const sponsorFor = (page, x) => sponsorSlot(sponsorsNow, page, { prefecture: x.prefecture, kagura: x.kagura, city: x.city, id: x.id }, { esc });
+const sponsorFor = (page, x) => sponsorSlot(sponsorsNow, page, { prefecture: x.prefecture, kagura: x.kagura, city: x.city, id: x.id, places: x.places }, { esc });
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
 const timeOf = (r) => (r.schedule.match(/\d{1,2}:\d{2}/)?.[0] ?? "99:99").padStart(5, "0");
 const daysBetween = (a, b) => { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; };
@@ -819,7 +819,7 @@ ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
 ${hub ? `${hubHtml}${aboutHtml}` : summaryHtml}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2${list.length ? "" : ' id="k-schedule"'}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${hub ? "" : kaguraDetail(k, info)}
 ${prSlotHtml(prSlotPartners(partners, plans, { kagura: k }), { esc })}
-${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k })}${adSlot(cfg.adsense.slotList)}
+${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k, places: [...list, ...reg] })}${adSlot(cfg.adsense.slotList)}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
 }
@@ -1270,6 +1270,11 @@ write("dist/security.txt", securityTxt);
 // GitHub Pages は無視するが、Cloudflare Pages / Netlify へ移したときに、本物のHTTPヘッダになる設定
 write("dist/_headers", `/*\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()\n  Cross-Origin-Opener-Policy: same-origin\n`);
 console.log(`built: ${events.length} events (${upcoming.length} upcoming), ${regular.length} regular, ${urls.length} pages`);
+// 協賛枠: 契約の終わりまで載り続けるか(祭りの時期が過ぎて、載る場所がなくなる契約を知らせる。公開は止めない)
+for (const c of sponsorCoverage(sponsorsData, { events, regular, today })) {
+  if (!c.pages) console.warn(`SPONSOR_NO_PAGE: ${c.id} は、いま載るページがありません(placements を見直してください)`);
+  else if (c.short) console.warn(`SPONSOR_ENDS_EARLY: ${c.id} は、契約の終わり(${c.end})より前の ${c.last} の後、載る場所がなくなる見込みです(地域の枠 area にすると続けて載ります)`);
+}
 
 const stayAudit = issuedRakutenStays.audit();
 console.log(`Rakuten stay issued coverage: ${stayAudit.verified.length} verified / ${stayAudit.unverified.length} unverified unique destinations`);

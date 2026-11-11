@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { REGIONS, regionOf } from "../lib/util.mjs";
 import { affiliateCoverage } from "../lib/affiliate-coverage.mjs";
+import { sponsorCoverage } from "../lib/sponsor-slots.mjs";
 import { reviewChecks, reviewIssueDate } from "./store.mjs";
 
 const DAY = 864e5;
@@ -151,7 +152,7 @@ export function isEnded(e, today, now = nowJst()) {
   if (e.timeUnknown) return e.start.slice(0, 10) < today;
   return new Date(Date.parse(e.start + ":00Z") + 3 * 3600e3).toISOString().slice(0, 16) < now;
 }
-export function listingSection({ events = [], regular = [], collect = null, more = null, planning = null, affiliate = {}, today, now }) {
+export function listingSection({ events = [], regular = [], collect = null, more = null, planning = null, affiliate = {}, sponsors = [], today, now }) {
   const live = events.filter((e) => e.status === "published" && !isEnded(e, today, now));
   const within = (n) => live.filter((e) => e.start.slice(0, 10) <= addDays(today, n)).length;
   const start = mondayOf(today);
@@ -162,6 +163,9 @@ export function listingSection({ events = [], regular = [], collect = null, more
   const in30 = live.filter((e) => e.start.slice(0, 10) <= addDays(today, 30));
   const regions = REGIONS.map(([name]) => ({ name, count: in30.filter((e) => regionOf(e.prefecture) === name).length }));
   const stale = live.filter((e) => !e.checked || daysBetween(e.checked, today) > 60);
+  // 協賛枠: 契約ごとに、いま載るページの数と、契約の終わりまで載り続けるか
+  let sponsorReach = [];
+  try { sponsorReach = sponsorCoverage(sponsors, { events, regular, today, drafts: true }); } catch { sponsorReach = []; }
   let expiring = [];
   try { expiring = affiliateCoverage({ events: [], affiliate, planning: planning ?? {}, more, today }).expiring; } catch { expiring = []; }
   return {
@@ -170,6 +174,7 @@ export function listingSection({ events = [], regular = [], collect = null, more
     stale: stale.length, noGeo: live.filter((e) => e.lat == null || e.lng == null).length,
     timeUnknown14: live.filter((e) => e.timeUnknown && e.start.slice(0, 10) <= addDays(today, 14)).length,
     auto: live.filter((e) => e.auto).length, weeks, regions,
+    sponsors: sponsorReach,
     expiring: expiring.map((o) => ({ id: o.id, title: o.title, expiresAt: o.expiresAt, days: o.days })),
     collect: collect && { date: collect.date, published: collect.published ?? null, held: collect.held ?? null, errors: collect.errors ?? null, withdrawn: collect.withdrawn ?? null },
   };
@@ -311,7 +316,7 @@ export function buildOverview(root, { today, nowMs = Date.now(), now, runs, site
   const rg = readJson(root, "data/regular.json", []);
   const regular = Array.isArray(rg) ? rg : rg.regular ?? [];
   const collect = readJson(root, "data/collect-summary.json");
-  const listing = listingSection({ events, regular, collect, more: readJson(root, "data/more-offers.json"), planning: readJson(root, "data/visitor-planning.json"), affiliate: cfg.affiliate ?? {}, today, now });
+  const listing = listingSection({ events, regular, collect, more: readJson(root, "data/more-offers.json"), planning: readJson(root, "data/visitor-planning.json"), affiliate: cfg.affiliate ?? {}, sponsors: readJson(root, "data/sponsors.json", []), today, now });
   const actuals = plan?.actuals ?? deriveActuals(state, series); // loadPlan の実績(営業の台帳の数を含む)を優先
   return {
     generatedAt: new Date(nowMs).toISOString(), today,

@@ -1,10 +1,11 @@
 // 「広告・協賛のご案内」のテスト: 書いてある「載せる場所」が実在するか、数字は「数字で見る」の概数と料金だけか、中立の方針が他のページと食い違わないか
 // 協賛枠(PR)のテスト: データの検査、期間・承認・置き場所の判定、PR の表示・sponsored、開催情報と分かれていること(MON-2)
-import { readFileSync, existsSync, rmSync } from "node:fs";
+import { readFileSync, existsSync, rmSync, writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import * as cheerio from "cheerio";
-import { sponsorErrors, activeSponsors, sponsorSlot, SPONSOR_MAX_PER_PAGE } from "../scripts/lib/sponsor-slots.mjs";
+import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage, SPONSOR_MAX_PER_PAGE } from "../scripts/lib/sponsor-slots.mjs";
 import { roundDown2, approx, computeMediaStats, mediaStatsErrors, statsFresh } from "../scripts/lib/media-stats.mjs";
 import { sponsorHtml } from "../scripts/lib/sponsor.mjs";
 
@@ -133,6 +134,34 @@ function sponsorSlotTests({ ok, section, OUT }) {
   ok(cheerio.load(evHtml)(".pr").text() === "PR記事" && !/target=/.test(evHtml) && sponsorSlot(evAct, "event", { prefecture: "島根県", kagura: "出雲神楽" }, { esc }) === "", "記事広告は「PR記事」。条件はすべて一致したときだけ。サイト内のリンクは同じタブ");
   ok(!/<script/i.test(sponsorSlot(activeSponsors([{ ...base, title: "<script>x</script>" }], "2026-10-15"), "pref", { prefecture: "島根県" }, { esc })), "文字はエスケープする");
 
+  // 地域の枠(area): 地域の県・開催・定期公演・神楽の種類のページにまとめて出す(1年を通して載せられる)
+  const area = { ...base, id: "area", end: "2027-03-31", placements: [{ page: "area", prefecture: "島根県", cities: ["益田市", "邑智郡邑南町"] }] };
+  ok(sponsorErrors([area]).length === 0 && bad({ placements: [{ page: "area" }] }) && bad({ placements: [{ page: "area", prefecture: "島根県", cities: [] }] }) && bad({ placements: [{ page: "area", prefecture: "島根県", kagura: "石見神楽" }] }), "地域の枠: 県が必須。cities は市町村名の配列。ほかの条件は書けない");
+  const aAct = activeSponsors([area], "2026-10-15");
+  const has = (page, ctx) => sponsorSlot(aAct, page, ctx, { esc }).includes('data-sponsor="area"');
+  ok(has("pref", { prefecture: "島根県" }) && has("event", { prefecture: "島根県", city: "益田市", kagura: "石見神楽", id: "x" }) && has("regular", { prefecture: "島根県", city: "邑南町", id: "y" })
+    && has("kagura", { kagura: "石見神楽", places: [{ prefecture: "島根県", city: "浜田市" }, { prefecture: "島根県", city: "益田市" }] }), "地域の枠は、県・開催・定期公演・神楽の種類のページに出る(郡は書いても書かなくても同じ)");
+  ok(!has("event", { prefecture: "島根県", city: "浜田市" }) && !has("pref", { prefecture: "広島県" }) && !has("kagura", { kagura: "石見神楽", places: [{ prefecture: "島根県", city: "浜田市" }] }), "地域の外(ほかの市町村・県・地域の開催がない種類)には出ない");
+  const hiro = activeSponsors([{ ...area, placements: [{ page: "area", prefecture: "広島県", cities: ["広島市"] }] }], "2026-10-15");
+  ok(sponsorSlot(hiro, "event", { prefecture: "広島県", city: "広島市安佐北区" }, { esc }) !== "" && sponsorSlot(hiro, "event", { prefecture: "広島県", city: "東広島市" }, { esc }) === "", "政令市は区も含む。名前の一部が同じ別の市(東広島市)は含まない");
+
+  // 載り続けるかの見込み: 祭りの開催ページだけの契約は、祭りが終わると載る場所がなくなる。地域の枠で定期公演があれば続く
+  const cEv = [{ id: "fest", prefecture: "長野県", city: "飯田市", kagura: "霜月祭", start: "2026-12-05T11:00", status: "published" }, { id: "old", prefecture: "島根県", city: "益田市", kagura: "石見神楽", start: "2026-09-01T19:00" }];
+  const cReg = [{ id: "night", prefecture: "島根県", city: "益田市", kagura: "石見神楽" }, { id: "gone", prefecture: "島根県", city: "益田市", kagura: "石見神楽", until: "2026-09-30" }];
+  const cov = sponsorCoverage([
+    { ...base, id: "fest-only", end: "2027-03-31", placements: [{ page: "event", kagura: "霜月祭" }, { page: "kagura", kagura: "霜月祭" }] },
+    { ...area, id: "area" },
+    { ...base, id: "nowhere", end: "2027-03-31", placements: [{ page: "pref", prefecture: "北海道" }] },
+    { ...base, id: "ended", end: "2026-10-01" }, { ...area, id: "draft", approved: false },
+  ], { events: cEv, regular: cReg, today: "2026-11-11" });
+  const byId = Object.fromEntries(cov.map((c) => [c.id, c]));
+  ok(cov.map((c) => c.id).sort().join() === "area,fest-only,nowhere", "見込みは、承認済みで、契約が今日以降まであるものだけ");
+  ok(byId["fest-only"].short && byId["fest-only"].last === "2026-12-05" && byId["fest-only"].count.event === 1 && byId["fest-only"].count.kagura === 1, "祭りのページだけの契約は、祭りの日の後に載る場所がなくなる(short)");
+  ok(!byId.area.short && byId.area.last === null && byId.area.count.pref === 1 && byId.area.count.regular === 1 && byId.area.count.kagura === 1 && byId.area.count.event === 0, "地域の枠は、定期公演があれば契約の終わりまで続く(終わった開催・定期公演は数えない)");
+  ok(byId.nowhere.pages === 0 && byId.nowhere.last === "", "載るページがない契約も分かる");
+  const withDrafts = sponsorCoverage([{ ...area, id: "draft", approved: false }], { events: cEv, regular: cReg, today: "2026-11-11", drafts: true });
+  ok(withDrafts.length === 1 && withDrafts[0].approved === false && withDrafts[0].last === null, "管理者用ページでは、未承認の下書きも、契約の前に載る場所を確かめられる");
+
   // 本番のビルド(協賛なし): 枠を出さない
   const pages = ["pref/島根県.html", "kagura/石見神楽.html", "events/t-xss.html", "regular/r-weekly.html"];
   ok(pages.every((p) => !existsSync(join(OUT, p)) || !read(join(OUT, p)).includes('class="sponsor-slot')), "協賛が登録されていなければ、枠は出ない");
@@ -157,4 +186,20 @@ function sponsorSlotTests({ ok, section, OUT }) {
     ok(order(out) === order(OUT), "協賛があっても、開催情報の並び順は同じ");
   }
   rmSync(out, { recursive: true, force: true });
+
+  // 地域の枠を入れたビルド: 地域のページに出る。契約の終わりより前に載る場所がなくなる契約は、ビルドが知らせる(公開は止めない)
+  const out2 = "dist-test-sponsor-area", dir = mkdtempSync(join(tmpdir(), "sponsor-area-")), spFile = join(dir, "sponsors.json");
+  writeFileSync(spFile, JSON.stringify([
+    { ...area, id: "t-area", start: "2026-10-01", end: "2026-11-30" },
+    { ...base, id: "t-short", start: "2026-10-01", end: "2027-03-31", placements: [{ page: "event", prefecture: "島根県", kagura: "石見神楽", city: "大田市" }] },
+  ]));
+  const r2 = spawnSync("node", ["scripts/build.mjs"], { encoding: "utf8", env: { ...process.env, EVENTS_FILE: "tests/fixtures/events.test.json", REGULAR_FILE: "tests/fixtures/regular.test.json", SPONSORS_FILE: spFile, OUT_DIR: out2, BUILD_NOW: "2026-10-09T12:00", TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_ADS_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "" } });
+  ok(r2.status === 0, "地域の枠ありでビルドできる", r2.stderr?.slice(0, 300));
+  if (r2.status === 0) {
+    const ids = (p) => { const $a = cheerio.load(read(join(out2, p))); return $a(".sponsor-slot .sp-item").map((_, x) => $a(x).attr("data-sponsor")).get(); };
+    ok(ids("pref/島根県.html").includes("t-area") && ids("kagura/石見神楽.html").includes("t-area") && ids("events/t-xss.html").includes("t-area") && !ids("events/t-long.html").includes("t-area"), "地域の枠: 県・神楽の種類・地域の開催のページに出て、地域の外の開催(大田市)には出ない");
+    ok(/SPONSOR_ENDS_EARLY: t-short/.test(r2.stderr) && !/SPONSOR_(ENDS_EARLY|NO_PAGE): t-area/.test(r2.stderr), "開催のページだけの契約は「契約の終わりより前に載る場所がなくなる」とビルドが知らせる", r2.stderr.slice(-300));
+  }
+  rmSync(out2, { recursive: true, force: true });
+  rmSync(dir, { recursive: true, force: true });
 }
