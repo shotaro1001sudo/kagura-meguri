@@ -116,9 +116,9 @@ privacyの送信先表・本文は、画像表示時の通信（タグにサイ�
 
 - 2026-11-08(MON-2): 名前を「広告・協賛のご案内」(媒体資料)に。売りは「神楽に特化したサイト・神楽を目的に出かける人が読む」こと。メニューは、月ごとの協賛枠(県・神楽の種類・開催・定期公演のページ)と、お申し込みごとの記事広告(取材記事。編集部が取材して書き、「PR記事」と表示)。
 - **協賛枠の表示の仕組み**: [scripts/lib/sponsor-slots.mjs](scripts/lib/sponsor-slots.mjs)。データは `data/sponsors.json`(いまは空 = どのページにも出ない)。契約が決まったら、1件ずつ登録する(形はファイルの先頭のコメント)。`approved:true` と `contractRef`(見積書・申込の控え。ページには出ない)、期間 `start`〜`end`、置き場所 `placements`(例: `{ "page": "pref", "prefecture": "島根県" }`、`{ "page": "event", "prefecture": "島根県", "kagura": "石見神楽" }`)。
-- 2026-11-11(ADV-20261110-5): 特集「[遠山の霜月祭と花祭 夜通しの神楽の見方・泊まり方](https://kagurameguri.jp/feature/shimotsuki-hanamatsuri.html)」を追加([scripts/lib/overnight-feature.mjs](scripts/lib/overnight-feature.mjs))。宿の広告(じゃらん・楽天トラベル)を、遠山郷と奥三河の2か所に置く(市町村名の「東栄町」では遠い宿が出るため、近くの宿が出る地名で検索)。協賛枠の置き場所に `{ "page": "feature", "id": "shimotsuki-hanamatsuri" }` を使える(遠山郷・東栄町の観光協会や宿への営業の見本。L-010・L-011)。載せる開催がない時期は noindex。
   - 表示: 開催の一覧より後ろに、点線の枠で「PR」(記事広告は「PR記事」)と提供者の名前つき。リンクは `rel="sponsored"`。1ページ最大2件、並びは開始日・ID の順。終わった開催のページには出さない。クリックは GoatCounter で `sponsor/<id>`。
   - 誤ったデータ(http のURL、契約の控えのない承認、条件のない置き場所など)は、ビルドが止まる。
+- 2026-11-11(ADV-20261110-5): 祭りごとの特集「[遠山の霜月祭の見方・泊まり方](https://kagurameguri.jp/feature/tohyama-shimotsuki.html)」「[東栄町の花祭の見方・泊まり方](https://kagurameguri.jp/feature/hanamatsuri.html)」を追加([scripts/lib/overnight-feature.mjs](scripts/lib/overnight-feature.mjs))。別の祭りなので1ページにまとめない。宿の広告(じゃらん・楽天トラベル)は、霜月祭は「遠山郷」、花祭は「奥三河」で検索(市町村名の「東栄町」では遠い宿が出るため)。協賛枠の置き場所に `{ "page": "feature", "id": "tohyama-shimotsuki" }`・`{ "page": "feature", "id": "hanamatsuri" }` を使える(遠山郷・東栄町の観光協会や宿への営業の見本。L-010・L-011)。載せる開催がない時期は noindex。
 - 料金: 2026-11-08 から、協賛枠 月額5,000円・記事広告 1本20,000円(税込)をページに載せています(下の「お金の受け取り方」)。
 - 2026-11-08: ページを作り直し(要点 → 数字で見る → メニューと料金の比べ → 載る場所と見え方の見本 → 方針 → 流れ → よくある質問)。
 - **数字で見る**: 掲載の件数(これからの開催・都道府県・神楽の種類・定期公演。ビルド時の実数)と、アクセスの参考値を載せます(運営者の判断で、11-07 の「数字は公開しない」を、協賛のページの概数に限って変えた)。
