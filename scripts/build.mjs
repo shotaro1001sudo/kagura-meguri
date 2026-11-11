@@ -30,6 +30,7 @@ import { VC, vcEnabled, vcTag } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
+import { FEATURE_PATH, FEATURE_KAGURA, FEATURE_ID, FEATURE_TITLE, FEATURE_CHECKED, featureEvents, overnightFeatureHtml } from "./lib/overnight-feature.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, features, traditions, quizEngine, QUIZ_CHECKED, evidenceWeight, evidenceText } from './lib/quiz.mjs';
 import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
@@ -149,6 +150,10 @@ const scheduleCell = (s) => String(s).split("。").filter(Boolean).map((part, i)
 const jpDate = (s) => { const [y, m, d] = s.split("-").map(Number); return `${y}年${m}月${d}日`; };
 const events = rawEvents.sort((a, b) => a.start.localeCompare(b.start));
 const upcoming = events.filter(isUpcoming);
+// 特集(遠山の霜月祭と花祭)に載せる開催。0件なら特集は検索に載せない(noindex)・種類のページから案内しない
+const featureList = featureEvents(upcoming);
+const featureCount = featureList.shimo.length + featureList.hana.length;
+const FEATURE_KAGURAS = Object.values(FEATURE_KAGURA);
 const regular = rawRegular.filter((r) => !r.until || r.until >= nowJst.slice(0, 10));
 const kaguraInfo = existsSync("data/kagura-info.json") ? readJson("data/kagura-info.json") : {};
 const prefInfo = existsSync("data/pref-info.json") ? readJson("data/pref-info.json") : {};
@@ -815,6 +820,7 @@ ${kaguraDetail(k, info)}`;
 ${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
 ${hub ? `${hubHtml}${aboutHtml}` : summaryHtml}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2${list.length ? "" : ' id="k-schedule"'}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${hub ? "" : kaguraDetail(k, info)}
+${featureCount && FEATURE_KAGURAS.includes(k) ? `<p class="feature-link"><a class="btn ghost" href="${FEATURE_PATH}">特集: 夜通しの神楽の見方・泊まり方(遠山の霜月祭と花祭)</a></p>` : ""}
 ${prSlotHtml(prSlotPartners(partners, plans, { kagura: k }), { esc })}
 ${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k })}${adSlot(cfg.adsense.slotList)}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
@@ -1067,6 +1073,34 @@ ${otherWays("/this-month.html")}</div></div>`,
   }));
 }
 
+// ---------- 特集: 遠山の霜月祭と花祭(夜通しの神楽の見方・泊まり方。ADV-20261110-5) ----------
+// 日程は開催データから並べ、宿の広告は地域ごとの枠に置く。協賛枠は、承認された協賛(placements の page: "feature")があるときだけ出る
+{
+  const crumbs = [["ホーム", "/"], ["はじめての神楽ガイド", "/guide.html"], ["遠山の霜月祭と花祭"]];
+  const stayHtml = (a) => {
+    if (!rakutenOn && !jalanOn) return "";
+    const x = { id: `feature-${a.key}`, city: a.area, prefecture: "" };
+    const firstWithHotels = nearbyHotels && featureList[a.kagura === "花祭" ? "hana" : "shimo"].find((e) => nearbyHotels.byEvent[e.id]?.length);
+    const cards = firstWithHotels ? hotelCardsHtml(nearbyHotels.byEvent[firstWithHotels.id], { eventId: firstWithHotels.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : "";
+    return `${cards}${stayLinks(x, "", a.area)}`;
+  };
+  write(`dist${FEATURE_PATH}`, layout({
+    title: `${FEATURE_TITLE} | ${cfg.siteName}`,
+    desc: "12月の遠山の霜月祭(長野県飯田市)と東栄町の花祭(愛知県)は、夜を通して行われる湯立ての神楽です。これからの日程と、防寒・マナー・休憩所・宿・帰りの交通など、夜通しの祭りの見方と泊まり方を公式の案内をもとにまとめました。",
+    path: FEATURE_PATH, active: "/guide.html", noindex: featureCount === 0,
+    ld: [crumbsLd(crumbs), {
+      "@context": "https://schema.org", "@type": "Article", headline: FEATURE_TITLE, inLanguage: "ja", datePublished: FEATURE_CHECKED, dateModified: maxDay(FEATURE_CHECKED, [...featureList.shimo, ...featureList.hana].map((e) => e.checked)),
+      author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${FEATURE_PATH}`, image: ogUrl(false),
+    }],
+    body: `${crumbNav(crumbs)}${hero("遠山の霜月祭と花祭", "夜通しの神楽の見方・泊まり方")}<div class="prose feature">${overnightFeatureHtml({
+      esc, list: featureList, card,
+      kaguraLink: (k) => (kaguras.includes(k) ? `<a href="${kaguraHref(k)}">${esc(k)}</a>` : esc(k)),
+      stayHtml, prNote: prNote(rakutenOn || jalanOn),
+      sponsor: sponsorSlot(sponsorsNow, "feature", { id: FEATURE_ID }, { esc }),
+    })}</div>`,
+  }));
+}
+
 // 周辺体験は、一般的な観覧ガイドと分けて地域・確認日を明示する。
 write('dist/experiences.html',layout({
   title:`神楽の前後に楽しむ体験を全国47都道府県から探す | ${cfg.siteName}`,
@@ -1135,7 +1169,8 @@ doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の
     pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined,
     kagura: kaguraEg ? { name: kaguraEg, href: kaguraHref(kaguraEg) } : undefined,
     ev: upcoming.length ? { name: upcoming[0].name, href: `/events/${upcoming[0].id}.html` } : undefined,
-    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans, prices: cfg.sponsorPrices ?? {},
+    reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined,
+    feature: featureCount ? { name: FEATURE_TITLE, href: FEATURE_PATH } : undefined, plans, prices: cfg.sponsorPrices ?? {},
     facts: { events: upcoming.length, prefs: prefs.length, kaguras: kaguras.length, regular: regular.length },
     stats: statsFresh(mediaStats, today) ? mediaStats : null,
     // よく読まれているページ: 書き出し済みのページの見出しを名前にする(無いページは出さない)
@@ -1220,6 +1255,7 @@ const sm = [
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ["/en/", EN_CHECKED], ["/en/guide.html", EN_CHECKED], ["/en/kagura.html", EN_CHECKED], ["/en/history.html", EN_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay], ["/sponsor.html", staticDay],
+  ...(featureCount ? [[FEATURE_PATH, maxDay(FEATURE_CHECKED, [...featureList.shimo, ...featureList.hana].map((e) => e.checked))]] : []),
   ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", (() => { const m = privacyUpdated(cfg).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
   ["/apply.html", staticDay], ["/tokushoho.html", staticDay], ...partners.map((p) => [partnerHref(p.id), p.checked ?? p.start]),
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
