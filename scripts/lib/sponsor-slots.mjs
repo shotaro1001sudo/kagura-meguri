@@ -15,10 +15,10 @@
 //   "start": "2026-12-01", "end": "2026-12-31",
 //   "approved": true, "contractRef": "…",     契約・確認の控え(ページには出さない)
 //   "placements": [ { "page": "pref", "prefecture": "島根県" }, { "page": "event", "prefecture": "島根県", "kagura": "石見神楽" } ] }
-// placements の page: pref(県のページ)・kagura(神楽の種類のページ)・event(開催のページ)・regular(定期公演のページ)・feature(特集のページ。id に特集の ID。例: { "page": "feature", "id": "tohyama-shimotsuki" })。
+// placements の page: pref(県のページ)・kagura(神楽の種類のページ)・event(開催のページ)・regular(定期公演のページ)。
 // 条件(prefecture・kagura・city・id)は、書いたものがすべて、そのページの値と一致したときだけ出す。条件が1つもない置き場所は誤りとする。
 
-const PAGES = ["pref", "kagura", "event", "regular", "feature"];
+const PAGES = ["pref", "kagura", "event", "regular"];
 const KEYS = ["prefecture", "kagura", "city", "id"];
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const URL_OK = /^(https:\/\/[^\s"'<>]+|\/[^\s"'<>]*)$/;
@@ -61,7 +61,7 @@ const matches = (p, page, ctx) => p.page === page && KEYS.every((k) => !String(p
 /**
  * 協賛枠の HTML(当てはまる協賛がなければ空文字)
  * @param {object[]} active activeSponsors の結果
- * @param {"pref"|"kagura"|"event"|"regular"|"feature"} page
+ * @param {"pref"|"kagura"|"event"|"regular"} page
  * @param {{prefecture?:string,kagura?:string,city?:string,id?:string}} ctx そのページの値
  */
 export function sponsorSlot(active, page, ctx, { esc, side = false }) {

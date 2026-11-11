@@ -18,14 +18,13 @@ const jpShort = (d) => d.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, "$1月$2日");
 /**
  * @param {{ esc: (s:string)=>string, siteName: string,
  *   pref?: { name: string, href: string }, kagura?: { name: string, href: string }, ev?: { name: string, href: string }, reg?: { name: string, href: string },
- *   feature?: { name: string, href: string }   特集のページ(地域の祭りをまとめた読み物。載せている開催があるときだけ)
  *   plans?: { name: string, priceText: string, includes: string[] }[],
  *   prices?: { monthly?: number, article?: number },   協賛枠(月額)と記事広告(1本)の料金。税込。無いものは「お見積もり」
  *   facts?: { events: number, prefs: number, kaguras: number, regular: number },
  *   stats?: { updated: string, search?: { from: string, to: string, impressions: number, clicks: number, impressions7?: number, clicks7?: number }, analytics?: { from: string, to: string, pageviews: number, users: number } } | null,
  *   topPages?: { name: string, href: string }[] }} x
  */
-export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, feature, plans = [], prices = {}, facts, stats, topPages = [] }) {
+export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], prices = {}, facts, stats, topPages = [] }) {
   const yen = (n) => `${Number(n).toLocaleString("ja-JP")}円`;
   const ok = (n) => Number.isFinite(n) && n > 0;
   const monthlyText = ok(prices.monthly) ? `月額${yen(prices.monthly)}(税込)` : "お見積もり";
@@ -124,7 +123,6 @@ ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体
 <li><b>神楽の種類のページ</b>神楽の種類ごとの日程と解説のページ。${eg(kagura)}</li>
 <li><b>開催のページ</b>地域や神楽の種類を決めて、その開催のページに。${eg(ev)}</li>
 <li><b>定期公演のページ</b>毎週・毎晩の定期公演のページに、会場の近くの情報として。${eg(reg)}</li>
-${feature ? `<li><b>特集のページ</b>地域の祭りの日程と、見方・泊まり方をまとめた読み物に、その地域の宿やお店の情報として。${eg(feature)}</li>` : ""}
 </ul>
 <figure class="sp-sample">
 <figcaption>見え方の見本</figcaption>
