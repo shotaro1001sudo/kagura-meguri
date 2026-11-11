@@ -500,7 +500,8 @@ const venueCell = (x, fallback = "未確認") => `${x.venue ? esc(x.venue) : fal
 const today = nowJst.slice(0, 10);
 const moreOffers = createMoreOfferIndex(moreOffersData, today);
 const sponsorsNow = activeSponsors(sponsorsData, today);
-const sponsorFor = (page, x) => sponsorSlot(sponsorsNow, page, { prefecture: x.prefecture, kagura: x.kagura, city: x.city, id: x.id, places: x.places }, { esc });
+// 協賛枠は、あればページの上のほう(県・種類のページは説明の直後、開催・定期公演のページは右の列の先頭。スマホでは要点のすぐ後)に出す。なければ何も出さない
+const sponsorFor = (page, x, o = {}) => sponsorSlot(sponsorsNow, page, { prefecture: x.prefecture, kagura: x.kagura, city: x.city, id: x.id, places: x.places }, { esc, ...o });
 const onDay = (e, d) => e.start.slice(0, 10) <= d && (e.end || e.start).slice(0, 10) >= d;
 const timeOf = (r) => (r.schedule.match(/\d{1,2}:\d{2}/)?.[0] ?? "99:99").padStart(5, "0");
 const daysBetween = (a, b) => { const out = []; for (let d = a; d <= b; d = addDays(d, 1)) out.push(d); return out; };
@@ -815,11 +816,11 @@ ${kaguraDetail(k, info)}`;
     path: kaguraHref(k), active: "/kagura/", noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
-${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}
+${info?.tagline ? `<p class="lead kagura-lead">${esc(info.tagline)}</p>` : ""}${sponsorFor("kagura", { kagura: k, places: [...list, ...reg] })}
 ${hub ? `${hubHtml}${aboutHtml}` : summaryHtml}${k === "庄内神楽" ? upcomingSummary(list, { formatWhen: whenOf }) : ""}${listHtml}${reg.length ? `<h2${list.length ? "" : ' id="k-schedule"'}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}
 ${hub ? "" : kaguraDetail(k, info)}
 ${prSlotHtml(prSlotPartners(partners, plans, { kagura: k }), { esc })}
-${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${sponsorFor("kagura", { kagura: k, places: [...list, ...reg] })}${adSlot(cfg.adsense.slotList)}
+${affiliateBlock({ prefecture: first.prefecture, city: "", kagura: k })}${adSlot(cfg.adsense.slotList)}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}${furusatoBlock(moreOffers, { prefecture: first.prefecture, towns: [...list, ...reg].map((x) => x.city) }, today, "kagura_furusato")}`,
   }));
 }
@@ -853,8 +854,8 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     path: prefHref(p), noindex: list.length + reg.length === 0,
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
-<p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>
-${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prSlotHtml(prSlotPartners(partners, plans, { prefecture: p }), { esc })}${sponsorFor("pref", { prefecture: p })}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
+<p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>${sponsorFor("pref", { prefecture: p })}
+${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map(regCard).join("")}` : ""}${list.length + reg.length ? "" : empty("現在の開催予定はありません。")}${prSlotHtml(prSlotPartners(partners, plans, { prefecture: p }), { esc })}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}`,
   }));
 }
 
@@ -934,13 +935,12 @@ for (const e of events) {
 <tr><th>料金</th><td>${e.fee ? esc(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}</div>
 <div class="desc-lead">${descParas(e.description)}</div>
 ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-${isUpcoming(e) ? `<div class="d-side">${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato", { side: true })}</div>` : ""}<div class="d-rest">
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${sourceNote(e)}
 ${isUpcoming(e)?`${planningLinks(e,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}`:''}
 ${shareBlock(`/events/${e.id}.html`, e.name)}
-${isUpcoming(e) ? sponsorFor("event", e) : ""}
 ${related(e)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
   }));
@@ -969,11 +969,10 @@ for (const r of regular) {
 <div class="desc-lead">${descParas(r.description)}</div>
 ${programTable(r)}
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
+<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}
 ${planningLinks(r,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
-${sponsorFor("regular", r)}
 ${related(r)}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>`,
   }));

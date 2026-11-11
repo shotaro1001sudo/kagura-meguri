@@ -371,6 +371,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:4px;background:var(--card)}
+.sponsor-slot.side{margin:4px 0 16px}
 .sponsor-slot .sp-head{margin:0 0 8px;font-size:var(--fs-xs);letter-spacing:.1em;color:var(--mut)}
 .sponsor-slot ul{list-style:none;margin:0;padding:0}.sponsor-slot .sp-item{padding:8px 0}.sponsor-slot .sp-item+.sp-item{border-top:1px solid var(--line)}
 .sponsor-slot .sp-item a{font-weight:500}.sponsor-slot .sp-item p{margin:4px 0 0;font-size:var(--fs-s)}

@@ -178,6 +178,12 @@ function sponsorSlotTests({ ok, section, OUT }) {
     ok(slotIds("kagura/石見神楽.html").join() === "t-kagura", "神楽の種類のページ");
     ok(slotIds("events/t-xss.html").join() === "t-event" && slotIds("events/t-full.html").length === 0 && slotIds("events/t-past.html").length === 0, "開催のページ: 条件に合う、これからの開催だけ(終わった開催には出さない)");
     ok(slotIds("regular/r-weekly.html").join() === "t-regular", "定期公演のページ");
+    // 置き場所: あればページの上のほう。県・種類のページは開催の一覧より前、開催・定期公演のページは右の列の先頭
+    const before = (p) => { const h = read(join(out, p)); return h.indexOf('class="sponsor-slot') > 0 && h.indexOf('class="sponsor-slot') < h.indexOf('class="card'); };
+    const sideFirst = (p) => at(p)(".d-side > :first-child").is(".sponsor-slot.side");
+    ok(before("pref/島根県.html") && before("kagura/石見神楽.html"), "県・種類のページ: 協賛枠は、開催の一覧より前(上のほう)に出す");
+    ok(sideFirst("events/t-xss.html") && sideFirst("regular/r-weekly.html"), "開催・定期公演のページ: 協賛枠は、右の列の先頭に出す");
+    ok(!at("events/t-full.html")(".sponsor-slot").length && !at("pref/広島県.html")(".sponsor-slot").length, "当てはまる協賛がなければ、枠ごと出さない");
     ok(!read(join(out, "pref/島根県.html")).includes("t-expired") && !read(join(out, "pref/島根県.html")).includes("t-unapproved"), "期間切れ・未承認は出さない");
     const $p = at("pref/島根県.html");
     ok($p(".card .sponsor-slot, .sponsor-slot .card").length === 0 && $p(".sponsor-slot").attr("aria-label").includes("PR"), "協賛枠は開催情報のカードと分かれ、PR と分かる");
