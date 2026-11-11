@@ -67,7 +67,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
       reciprocal.text() === section.find("h2").text().replace("の開催予定", "の全国日程を見る");
   }), "広島の各開催予定から同じ月の全国日程へ移動できる");
   const november = cheerio.load(read(join(OUT, "month/2026-11.html")));
-  ok(november(`.lead a[href='/pref/${encodeURIComponent("広島県")}.html']`).length === 1 &&
+  ok(november(`.month-regions a.chip[href='/pref/${encodeURIComponent("広島県")}.html']`).length === 1 &&
     h(".pref-month a[href='/month/2026-11.html']").length === 1,
     "2026年11月は月別ページと広島県ページを相互に案内する");
   ok(h(".pref-month h2").toArray().every((node) => h(node).text().includes("開催予定")) &&

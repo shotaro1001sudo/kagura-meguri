@@ -28,8 +28,17 @@ export function sponsorTests({ ok, section, OUT }) {
   // 数字は「数字で見る」(.sp-stats)と、メニューの料金(.sp-menu)だけに置く。例のリンクの名前(公演名)は除いて調べる
   const $m = cheerio.load($("main").html());
   $m("a").filter((_, a) => /^\/(pref|kagura|events|regular)\//.test($m(a).attr("href"))).remove();
-  $m(".sp-stats, .sp-menu").remove();
-  ok(!/[0-9０-９]/.test($m.root().text()), "数字は「数字で見る」とメニューの料金の中だけ", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
+  // 冒頭の要点(.sp-from)の料金は、メニューと同じ値(config.json の sponsorPrices)をそのまま出す
+  ok($(".opoints .sp-from b").text() === `協賛枠は${$(".sp-menu .sp-plan .price").first().text()}`, "冒頭の要点に、協賛枠の料金をメニューと同じ値で出す(結論を先に)", $(".opoints .sp-from b").text());
+  $m(".sp-stats, .sp-menu, .sp-from").remove();
+  ok(!/[0-9０-９]/.test($m.root().text()), "数字は「数字で見る」とメニューの料金(と、それを写した冒頭の要点)の中だけ", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
+  // 並び: 結論(向いている方 → メニューと料金 → 載る場所と見え方)を先に、裏づけ(読んでいる方・数字)と決まり(流れ・方針・質問)を後ろに
+  const order = $("main h2").map((_, h) => $(h).text()).get();
+  ok(order.join("|") === "こんな方に向いています|メニューと料金|載る場所と見え方|読んでいるのは、こんな方|数字で見る神楽めぐり|掲載までの流れ|掲載の方針|よくあるご質問", "見出しの並び: 向いている方 → メニューと料金 → 見え方 → 読者と数字 → 流れ → 方針 → 質問", order.join("|"));
+  // 同じ説明は1か所だけ(方針・載る場所・数字のところ)。質問の答えで言い直さない
+  const count = (re) => (text.match(re) ?? []).length;
+  ok(count(/載り続けます/g) === 1 && count(/並び順/g) === 2 && count(/ご相談の際に/g) === 1 && $(".faq details").length >= 2 && !$(".faq").text().includes("並び順"), "同じ説明をくり返さない(載り続けること・並び順を変えないこと・ページごとの数字は、それぞれ1か所。見本の枠の注記は別)", `${count(/載り続けます/g)} / ${count(/並び順/g)} / ${count(/ご相談の際に/g)}`);
+  ok($(".sp-ready").prevAll("h2").first().text() === "掲載までの流れ" && $(".sp-terms").text().includes("前払い"), "「ご用意いただくもの」は流れの中に、支払いと解約の条件は料金のすぐ下に(注釈の小さな字にしない)");
   ok(!/読者の(多く|大半|ほとんど)/.test(text), "確かめていない読者の傾向を書いていない");
   // 数字で見る: 掲載の件数は実数、アクセスは概数(約)と期間・出典つき。丸めていない数字を出さない
   const st = $(".sp-stats");

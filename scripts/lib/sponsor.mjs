@@ -29,6 +29,7 @@ export const SPONSOR_CSS = `<style>
 .sp-tiles .v small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:3px}
 .sp-tiles .n{font-size:var(--fs-2xs);color:var(--mut);line-height:1.6}
 .prose .sp-src{margin:10px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
+.prose .sp-terms{margin:14px 0 0;font-size:var(--fs-s);line-height:1.9}
 .prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0;break-inside:avoid}.sp-top a{display:inline-flex;align-items:center;min-height:var(--tap)}
 .prose .sp-menu{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
 .prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
@@ -42,8 +43,8 @@ export const SPONSOR_CSS = `<style>
 .sp-sample{margin:18px 0 0}.sp-sample figcaption{font-size:var(--fs-xs);color:var(--mut)}.sp-sample .sponsor-slot{margin:6px 0 0}
 .sp-sample .sp-title{font-weight:500;color:var(--ac);text-decoration:underline;text-underline-offset:3px}
 .prose .sp-sample+.octa{margin-top:14px}
-.sp-article{margin:6px 0 0;padding:16px 18px 1var(--radius-s);border:1px dashed var(--line);border-radius:4px;background:var(--card)}
-.prose .sp-article p{margin:0;font-size:var(--fs-s);line-height:1.9}
+.sp-article{margin:6px 0 0;padding:16px 18px 14px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
+.sp-article p{margin:0;font-size:var(--fs-s);line-height:1.9}
 .sp-article-by,.prose .sp-article-toc{font-size:var(--fs-xs);color:var(--mut)}.prose .sp-article-toc{margin-top:10px}
 .prose .sp-article-title{margin:8px 0 6px;font-family:var(--serif);font-weight:500;font-size:var(--fs-xl);line-height:1.5}
 .sp-ready dl{margin:4px 0 0;font-size:var(--fs-s);line-height:1.75}.sp-ready dt{font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em;margin-top:8px}.sp-ready dd{margin:0}
@@ -125,30 +126,21 @@ ${a ? tile("ページの閲覧数", approx(a.pageviews), "回", "直近4週間�
 <dl><dt>載る場所</dt><dd>団体だけのページ(<a href="/partner/sample.html">見本</a>)</dd><dt>内容</dt><dd>${p.includes.map(esc).join("。")}。</dd></dl>
 </li>` : "";
 
+  // ページの並び(2026-11-12 に整理): だれ向けか → メニューと料金 → 載る場所と見え方 → 読んでいる方と数字 → 流れ・用意するもの → 方針 → 質問。
+  // 結論(何を・いくらで・どう見えるか)を先に、裏づけ(数字)と決まりごとを後ろに置く。同じ説明は1か所だけに書く
+  //   ・協賛で開催情報を変えないこと → 「掲載の方針」
+  //   ・祭りが終わっても地域のページで載り続けること → 「載る場所と見え方」
+  //   ・ページごとの数字は相談の際に伝えること → 「数字で見る」
   return `
 <p class="olead">${esc(siteName)}は、全国の神楽の開催日・会場・定期公演をまとめた、<strong>神楽に特化したサイト</strong>です。神楽を観に出かける方に、会場の近くの宿や道の駅、観光の情報を届けませんか。地域の皆さまからの<strong>協賛</strong>と<strong>記事広告</strong>を受け付けています。</p>
 <ul class="opoints">
 <li><b>神楽を目当てに出かける方に届く</b><span>「いつ・どこで神楽が観られるか」を調べる方のためのページに載ります。</span></li>
 <li><b>地域ごと・神楽の種類ごとに載る</b><span>県・神楽の種類・開催のページに、その地域の情報として載ります。</span></li>
+<li class="sp-from"><b>${ok(prices.monthly) ? `協賛枠は${esc(monthlyText)}` : "料金はお見積もり"}</b><span>${ok(prices.monthly) ? "月ごとのお申し込みです。秋祭りの時期だけでも載せられます。" : "載せる場所と期間をうかがって、お伝えします。"}</span></li>
 </ul>
 <p class="octa"><a class="btn" href="/contact.html">協賛・記事広告について問い合わせる</a><a class="btn ghost" href="#menu">メニューと料金を見る</a></p>
 
-<section class="sp-stats" aria-labelledby="sp-stats-h">
-<h2 id="sp-stats-h">数字で見る${esc(siteName)}</h2>
-${factsHtml}
-${accessHtml}
-${topHtml}
-</section>
-
-<h2>どんな方が読むページか</h2>
-<ul class="ocards noic">
-<li><b>開催日と会場を調べる方</b>公演の日時・会場・料金・予約の要否を確かめて、出かける計画を立てる方のためのページです。</li>
-<li><b>好きな神楽を追いかける方</b>流派や系統など、神楽の種類ごとに、開催と定期公演をまとめています。</li>
-<li><b>遠くから訪ねる方</b>開催のページから、会場の近くの宿・交通・周辺の体験を探せるようにしています。</li>
-</ul>
-<p>一般の旅行サイトとちがい、神楽という目的がはっきりした方が読むサイトです。協賛の情報は、その神楽の地域や、公演の前後の過ごし方として届けます。</p>
-
-<h2>このような方へ</h2>
+<h2>こんな方に向いています</h2>
 <p>載せ方の例は、架空のものです。地域や神楽の種類に合わせて、ご一緒に考えます。</p>
 <ul class="ocards noic sp-who">
 <li><b>観光協会・自治体</b>神楽を目当てに来る方に、地域の見どころや交通を案内したい。<span class="eg">載せ方の例: 「神楽の前に寄りたい、◯◯の見どころと駐車場の案内」</span></li>
@@ -156,37 +148,38 @@ ${topHtml}
 <li><b>道の駅・飲食店・お土産</b>公演の前後に立ち寄れるお店として、知ってもらいたい。<span class="eg">載せ方の例: 「${esc(S.station.title)}」</span></li>
 </ul>
 
-<h2 id="menu">掲載のメニュー</h2>
+<h2 id="menu">メニューと料金</h2>
 <p>目的に合わせて選べます。組み合わせることもできます。</p>
 <ul class="sp-menu">
 <li class="sp-plan">
 <p class="tag">観光協会・宿・お店の方へ</p>
 <h3>協賛枠(月ごと)</h3>
 <p class="price">${esc(monthlyText)}</p>
-<dl><dt>載る場所</dt><dd>地域(県、または市町村)を決めると、その地域の県・開催・定期公演・神楽の種類のページにまとめて載ります。ひとつの祭りが終わっても、地域にほかの公演や定期公演があれば、そのページで載り続けます</dd><dt>内容</dt><dd>見出し・ひとこと・リンク。「PR」と提供者の名前を表示</dd><dt>期間</dt><dd>月ごと。1年を通して続けて載せることも、秋祭りの時期だけにすることもできます</dd></dl>
+<dl><dt>載る場所</dt><dd>選んだ地域(県、または市町村)の、県・開催・定期公演・神楽の種類のページ</dd><dt>内容</dt><dd>見出し・ひとこと・リンクの文字だけの枠。「PR」と提供者の名前を表示</dd><dt>期間</dt><dd>月ごと。1年を通して続けて載せることも、秋祭りの時期だけにすることもできます</dd></dl>
 </li>
 <li class="sp-plan">
 <p class="tag">じっくり紹介したい方へ</p>
 <h3>記事広告(お申し込みごと)</h3>
 <p class="price">${esc(articleText)}</p>
-<dl><dt>載る場所</dt><dd>記事のページ。協賛枠から記事へご案内します</dd><dt>内容</dt><dd>宿や道の駅、地域の観光を、神楽と合わせて楽しめる過ごし方として、編集部が取材して書きます。公開の前に内容をご確認いただきます</dd><dt>表示</dt><dd>「PR記事」と表示します</dd></dl>
+<dl><dt>載る場所</dt><dd>記事のページ。協賛枠から記事へご案内します</dd><dt>内容</dt><dd>宿や道の駅、地域の観光を、神楽と合わせて楽しめる過ごし方として、編集部が取材して書きます。写真や地図、道順も載せられます。公開の前に内容をご確認いただきます</dd><dt>表示</dt><dd>「PR記事」と表示します</dd></dl>
 </li>
 ${plans.map(plan).join("")}
 </ul>
 ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体ページを申し込む</a></p>` : ""}
-<p class="sp-src">${priced ? "協賛枠の料金には、選んだ地域の県・開催・定期公演・神楽の種類のページへの掲載を含みます。お支払いは、請求書をお送りして銀行振込の前払いです。協賛枠は月ごとのお申し込みで、やめるときは前の月の末までにお知らせください。" : "協賛枠と記事広告の料金は、載せる場所と期間に応じてお見積もりします。"}</p>
+<p class="sp-terms">${priced ? "協賛枠の料金には、選んだ地域の県・開催・定期公演・神楽の種類のページへの掲載を含みます。お支払いは、請求書をお送りして銀行振込の前払いです。協賛枠は月ごとのお申し込みで、やめるときは前の月の末までにお知らせください。" : "協賛枠と記事広告の料金は、載せる場所と期間に応じてお見積もりします。"}</p>
 
 <h2>載る場所と見え方</h2>
-<p>協賛枠は、選んだ地域の次のページの上のほう(県・神楽の種類のページは説明のすぐ下、開催・定期公演のページは要点の横。スマホでは公演の情報のすぐ下)に、開催情報とは別の枠で載ります。開催のページは公演の日が過ぎると外れますが、地域に定期公演やほかの開催があれば、そのページに続けて載ります。載る場所の見込みは、お申し込みの前にお知らせします。</p>
+<p>協賛枠は、選んだ地域の次のページに、開催情報とは別の枠で載ります。位置は、ページの上のほうです。</p>
 <ul class="ocards noic sp-where">
-<li><b>県のページ</b>その県の神楽と開催予定をまとめたページ。${eg(pref)}</li>
-<li><b>神楽の種類のページ</b>神楽の種類ごとの日程と解説のページ。${eg(kagura)}</li>
-<li><b>開催のページ</b>地域や神楽の種類を決めて、その開催のページに。${eg(ev)}</li>
-<li><b>定期公演のページ</b>毎週・毎晩の定期公演のページに、会場の近くの情報として。${eg(reg)}</li>
+<li><b>県のページ</b>その県の神楽と開催予定をまとめたページ。説明のすぐ下に載ります。${eg(pref)}</li>
+<li><b>神楽の種類のページ</b>神楽の種類ごとの日程と解説のページ。説明のすぐ下に載ります。${eg(kagura)}</li>
+<li><b>開催のページ</b>地域や神楽の種類を決めて、その開催のページに。要点の横(スマホでは公演の情報のすぐ下)に載ります。${eg(ev)}</li>
+<li><b>定期公演のページ</b>毎週・毎晩の定期公演のページ。開催のページと同じ位置に載ります。${eg(reg)}</li>
 </ul>
+<p>開催のページは公演の日が過ぎると外れますが、同じ地域に定期公演やほかの開催があれば、そのページで載り続けます。載る場所の見込みは、お申し込みの前にお知らせします。</p>
 
 <h3>見本: 協賛枠(月ごと)</h3>
-<p>見出し・ひとこと・リンクの文字だけの枠です。「PR」の印と提供者の名前がつきます。記事広告をお申し込みの方は「PR記事」の印で載り、そこから記事へご案内します。</p>
+<p>「PR」の印と提供者の名前がつきます。記事広告をお申し込みの方は「PR記事」の印で載り、そこから記事へご案内します。</p>
 <figure class="sp-sample">
 <figcaption>見え方の見本(提供者の名前は架空のものです)</figcaption>
 <div class="sponsor-slot" aria-hidden="true"><p class="sp-head">地域の協賛</p><ul>
@@ -196,7 +189,7 @@ ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体
 </figure>
 
 <h3>見本: 記事広告(お申し込みごと)</h3>
-<p>宿や道の駅での過ごし方を、神楽と合わせて、編集部が取材して書きます。写真も載せられます。見出しの立て方と文章の雰囲気は、見本のページでご覧ください。</p>
+<p>見出しの立て方と文章の雰囲気は、見本のページでご覧ください。</p>
 <figure class="sp-sample sp-sample-article">
 <figcaption>記事の冒頭の見本(宿は架空のものです)</figcaption>
 <div class="sp-article" aria-hidden="true">
@@ -208,6 +201,29 @@ ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体
 </figure>
 <p class="octa"><a class="btn ghost" href="/pr/sample.html">記事広告の見本ページを見る</a></p>
 
+<h2>読んでいるのは、こんな方</h2>
+<p>一般の旅行サイトとちがい、神楽という目的がはっきりした方が読むサイトです。</p>
+<ul class="ocards noic">
+<li><b>開催日と会場を調べる方</b>公演の日時・会場・料金・予約の要否を確かめて、出かける計画を立てる方。</li>
+<li><b>好きな神楽を追いかける方</b>流派や系統など、神楽の種類ごとに、開催と定期公演を探す方。</li>
+<li><b>遠くから訪ねる方</b>開催のページから、会場の近くの宿・交通・周辺の体験を探す方。</li>
+</ul>
+
+<section class="sp-stats" aria-labelledby="sp-stats-h">
+<h2 id="sp-stats-h">数字で見る${esc(siteName)}</h2>
+${factsHtml}
+${accessHtml}
+${topHtml}
+</section>
+
+<h2>掲載までの流れ</h2>
+<ol class="steps sp-steps">
+<li><b>ご相談</b><span><a href="/contact.html">お問い合わせ</a>の「ご用件」で「広告・取材などのご相談」を選び、載せたい場所と時期をお知らせください。</span></li>
+<li><b>${priced ? "お申し込み" : "お見積もり"}</b><span>${priced ? "載せる場所・期間を決めて、請求書をお送りします。" : "載せる場所・期間・料金をお伝えします。"}</span></li>
+<li><b>原稿の確認・取材</b><span>載せる文章と画像が、掲載の方針に合っているかを確かめます。記事広告は、取材のうえ編集部が書きます。</span></li>
+<li><b>掲載</b><span>決めた期間だけ載せ、期間が終わったら外します。</span></li>
+</ol>
+
 <h3>ご用意いただくもの</h3>
 <p>お申し込みの際に、次のものをお知らせください。文章は、編集部で整えることもできます。</p>
 <ul class="ocards noic sp-ready">
@@ -217,29 +233,17 @@ ${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体
 
 <h2>掲載の方針</h2>
 <ul class="rules">
-<li><strong>開催情報の掲載は、これからも無料</strong>です。協賛の有無で、掲載するかどうか・並び順・本文は変えません。</li>
+<li><strong>開催情報の掲載は、これからも無料</strong>です(<a href="/organizers.html">主催者の方へ</a>)。協賛の有無で、掲載するかどうか・並び順・本文は変えません。</li>
 <li>協賛枠と記事広告には、<strong>「PR」と表示</strong>し、提供者の名前を載せます。リンクには、検索エンジンに広告であると伝える印(sponsored)を付けます。</li>
 <li>神楽団・保存会・神社の名前や写真は、その団体の了解があるときだけ使います。</li>
 <li>次のものは載せません: 事実と異なる表示、神事や地域の文化を軽んじる内容、投資や賭け事、成人向けの内容、政党や宗教への勧誘。</li>
 <li>掲載の前に、内容を確かめます。方針に合わない場合は、お断りすることがあります。</li>
 </ul>
 
-<h2>掲載までの流れ</h2>
-<ol class="steps sp-steps">
-<li><b>ご相談</b><span><a href="/contact.html">お問い合わせ</a>の「ご用件」で「広告・取材などのご相談」を選び、載せたい場所と時期をお知らせください。</span></li>
-<li><b>${priced ? "お申し込み" : "お見積もり"}</b><span>${priced ? "載せる場所・期間を決めて、請求書をお送りします。載せたいページの閲覧数などの数字も、お伝えします。" : "載せる場所・期間・料金と、そのページの閲覧数などの数字をお伝えします。"}</span></li>
-<li><b>原稿の確認・取材</b><span>載せる文章と画像が、掲載の方針に合っているかを確かめます。記事広告は、取材のうえ編集部が書きます。</span></li>
-<li><b>掲載</b><span>決めた期間だけ載せ、期間が終わったら外します。</span></li>
-</ol>
-
 <h2>よくあるご質問</h2>
 <div class="faq">
-<details><summary>協賛すると、開催情報が目立つように載りますか?</summary><p>いいえ。開催情報は、協賛の有無にかかわらず、同じ形・同じ順で載せます。協賛枠は、開催情報とは別の場所に「PR」と表示して載せます。</p></details>
-<details><summary>神楽の開催情報を載せるのに、費用はかかりますか?</summary><p>かかりません。<a href="/organizers.html">主催者の方へ</a>のとおり、開催情報の掲載は無料です。</p></details>
-<details><summary>短い期間だけでも載せられますか?</summary><p>はい。秋祭りの時期だけなど、月を区切ってご相談ください。</p></details>
-<details><summary>載せたいページの閲覧数を教えてもらえますか?</summary><p>はい。このページの数字はサイト全体の概数です。ご相談の際に、載せたい場所のページについてお伝えします。</p></details>
+<details><summary>どの地域を選べばよいですか?</summary><p>神楽を観に来た方が、お店や宿に立ち寄れる範囲でお選びください。県全体でも、市町村を決めることもできます。</p></details>
 <details><summary>写真や地図は載せられますか?</summary><p>協賛枠は、見出し・ひとこと・リンクの文字だけです。写真や地図、道順も載せたいときは、記事広告をご利用ください(<a href="/pr/sample.html">記事広告の見本</a>)。</p></details>
-<details><summary>どの地域を選べばよいですか?</summary><p>神楽を観に来た方が、お店や宿に立ち寄れる範囲でお選びください。県全体でも、市町村を決めることもできます。地域に定期公演やほかの開催があれば、ひとつの祭りが終わっても、そのページで載り続けます。</p></details>
 </div>
 
 <p class="cta-end"><a class="btn" href="/contact.html">協賛・記事広告について問い合わせる</a></p>

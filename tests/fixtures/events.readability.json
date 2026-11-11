@@ -37,5 +37,19 @@
     "description": "演目は変更される場合があるため、出かける前に公式案内をご確認ください。",
     "url": "https://example.com/rd-nov2",
     "status": "published"
+  },
+  {
+    "id": "rd-terms",
+    "name": "読みやすさの確認 夜神楽(確認用の公民館)",
+    "kagura": "高千穂神楽",
+    "prefecture": "宮崎県",
+    "city": "高千穂町",
+    "venue": "確認用の公民館",
+    "start": "2026-11-28T17:00",
+    "fee": "御初穂料・ご神前については公式案内をご確認ください。",
+    "reservationStatus": "not_required",
+    "description": "舞入れ17:00。会場は神楽宿です。",
+    "url": "https://example.com/rd-terms",
+    "status": "published"
   }
 ]

@@ -134,7 +134,9 @@ export async function homeTests({ ok, section, OUT, build }) {
   ok(route.length === 1 && route.text() === "地図・経路を見る" && route.closest(".keyinfo").length === 1 && route.attr("target") === "_blank" && wm("#map").length === 0, "地図・経路は、要点の会場の欄から Google マップで見る(ページ内に地図は置かない)");
   ok(!noMap || pg(noMap)('a[href*="google.com/maps"]').length === 0, "地図のない開催では、経路のボタンを出さない", noMap?.id);
   const rel = wm("h2").filter((_, h) => wm(h).text() === "あわせて観たい神楽");
-  ok(!wm("h2").text().includes("ほかの") && (rel.length === 0 || /・/.test(rel.next(".monthlist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));
+  // 「ほかの探し方」(今週末・地図などへの近道)は別。開催を「ほかの〜」という見出しでいくつもの一覧に分けない
+  ok(wm("h2").filter((_, h) => /^ほかの(?!探し方$)/.test(wm(h).text())).length === 0 && (rel.length === 0 || /・/.test(rel.next(".monthlist").find(".meta").first().text())), "関連の開催は「あわせて観たい神楽」の1つの一覧(各行に種類・県)", rel.next().text().slice(0, 80));
+  ok(wm("h2").filter((_, h) => wm(h).text() === "ほかの探し方").next(".taglist").find('a[href="/weekend.html"], a[href="/map.html"]').length === 2, "開催ページの終わりに「ほかの探し方」(今週末・地図などへの近道)を置く");
   ok(/.crumbs li{display:flex;align-items:center}/.test(read("scripts/style.css")), "パンくずの、リンクと今のページ名の高さをそろえる");
 
   section("検索向け: タイトルの年・開催の構造化データ");

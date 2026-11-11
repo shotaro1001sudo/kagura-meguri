@@ -27,7 +27,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 </ul>
 
 <h2>送り方</h2>
-<p>保存会・社中のX（Twitter）・Instagram・Facebookの開催案内も受け付けます。開催日・会場が分かる<strong>公開投稿の個別URL</strong>を、掲載依頼フォームの「公式情報のURL」にご記入ください。公式の投稿元と事実を確認してから、出典リンクと確認日を添えて掲載します。画像・投稿全文は転載しません。ログインが必要な投稿や検索結果だけでは掲載できません。SNSの自動巡回は行っていません。</p>
+<p>送りたい内容に合わせて、次のどれかでお知らせください。</p>
 <div class="oways">
 <section class="oway"><h3>1件ずつの開催</h3>
 <p><a href="/submit.html">掲載の依頼フォーム</a>から、1件ずつお送りください。${formReady ? "" : "現在は、送信ボタンを押すと、入力した内容が入ったメールの作成画面が開きます。そのまま送ってください。"}</p>
@@ -35,6 +35,13 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <tr><th>必須</th><td>神楽・イベントの名称 / 神楽の種類 / 都道府県・市区町村 / 会場名 / 開催日</td></tr>
 <tr><th>任意</th><td>開始・終了時刻 / 公式情報のURL / 番地までの住所(地図に正しく出すため) / 料金 / ひとこと説明</td></tr>
 </table>
+<p><strong>SNSの開催案内でも送れます。</strong>保存会・社中のX（Twitter）・Instagram・Facebookで、開催日・会場が分かる<strong>公開投稿の個別URL</strong>を、フォームの「公式情報のURL」にご記入ください。</p>
+<details class="tech"><summary>SNSの投稿をもとに載せるときの決まり</summary>
+<ul><li>公式の投稿元と事実を確認してから、出典リンクと確認日を添えて掲載します。</li>
+<li>画像・投稿全文は転載しません。</li>
+<li>ログインが必要な投稿や検索結果だけでは掲載できません。</li>
+<li>SNSの自動巡回は行っていません。</li></ul>
+</details>
 <p class="oway-go"><a class="btn" href="/submit.html">掲載の依頼フォームへ</a></p></section>
 <section class="oway"><h3>定期公演・年間の日程</h3>
 <p>毎週・毎月の定期公演や年間の日程表は、まとめて受け付けます。<a href="/contact.html">お問い合わせ</a>(ご用件は「その他」)から、日程が載っているページのURLか、日程の内容をお知らせください。</p>
