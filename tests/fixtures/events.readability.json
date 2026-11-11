@@ -1,0 +1,41 @@
+[
+  {
+    "id": "rd-oct",
+    "name": "読みやすさの確認 十月の奉納神楽(第一神楽社中)",
+    "kagura": "石見神楽",
+    "prefecture": "島根県",
+    "city": "浜田市",
+    "venue": "確認用の神社",
+    "start": "2026-10-10T19:00",
+    "description": "秋祭りの夜に、地元の社中が奉納します。観覧は無料です。出発前に公式情報をご確認ください。",
+    "url": "https://example.com/rd-oct",
+    "status": "published"
+  },
+  {
+    "id": "rd-nov",
+    "name": "読みやすさの確認 十一月の定期公演(第二神楽社中)",
+    "kagura": "石見神楽",
+    "prefecture": "島根県",
+    "city": "益田市",
+    "venue": "確認用のホール",
+    "start": "2026-11-14T19:30",
+    "end": "2026-11-14T21:00",
+    "fee": "大人1,000円",
+    "reservationStatus": "not_required",
+    "description": "ホールで2演目を上演します。出発前に公式情報をご確認ください。",
+    "url": "https://example.com/rd-nov",
+    "status": "published"
+  },
+  {
+    "id": "rd-nov2",
+    "name": "読みやすさの確認 終演時刻が未定の奉納神楽",
+    "kagura": "出雲神楽",
+    "prefecture": "島根県",
+    "city": "雲南市",
+    "venue": "確認用の集会所",
+    "start": "2026-11-21T18:00",
+    "description": "演目は変更される場合があるため、出かける前に公式案内をご確認ください。",
+    "url": "https://example.com/rd-nov2",
+    "status": "published"
+  }
+]

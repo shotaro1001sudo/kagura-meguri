@@ -330,7 +330,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .side-summary{display:none;padding:18px 20px}
 /* 説明文: 本文より少し大きく、要点のすぐ後の「何の公演か」を読みやすく */
 .desc-lead{font-size:var(--fs-l);line-height:1.9;margin:8px 0 24px}
-.desc-lead p{margin:0 0 .9em}.desc-lead p:last-child{margin-bottom:0}
+.desc-lead p{margin:0 0 .9em}.desc-lead p:last-child{margin-bottom:0}.desc-lead:empty{display:none}
 .d-rest .share{margin-top:40px}
 /* 開催ページの交通・体験のカード: 列が狭いため、文字と余白を詰め、選び方の注意は小さく */
 .d-rest .planning-card{padding:16px 18px}.d-rest .planning-card :is(h3,h4){font-size:var(--fs-m);margin-bottom:8px}
@@ -351,7 +351,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 }
 /* 宿の画像バナー: 文字のボタンの下に並べる。大きさは、画像のまま(幅は枠に収める) */
 .stay-banners{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 6px}
-.stay-banner{display:block;max-width:100%;line-height:0;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.stay-banner{display:block;max-width:100%;line-height:0;border:1px solid transparent;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
 .stay-banner img{display:block;max-width:100%;height:auto}
 /* 横長(468×60)のバナーは、サイドの幅いっぱいに縦に並べる。注意書きは、折りたたんで、ボタンとバナーを先に見せる */
 .d-side .stay-banners{flex-direction:column;gap:8px;margin:12px 0}.d-side .stay-banner{width:100%}.d-side .stay-banner img{width:100%}
@@ -600,6 +600,7 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .regions button[aria-pressed=true],.regions button[aria-pressed=true]:hover{background:var(--fg);border-color:var(--fg);color:var(--bg)}
 .mhead{display:flex;align-items:center;gap:14px;margin:40px 0 6px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);letter-spacing:.1em;color:var(--mut)}
 .mhead:after{content:"";flex:1;border-top:1px solid var(--line)}
+h2+.mhead{margin-top:4px}
 .more{margin:24px 0 0}
 .regions.prefs{margin-top:0}.regions.prefs button{padding:6px 14px;font-size:var(--fs-xs)}
 .later .tag span{color:var(--mut);font-size:var(--fs-xs);margin-left:2px}
@@ -821,17 +822,19 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 @media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
   #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
 
-/* 都道府県ページ: 先頭のリンクを整理する。「開催月から探す」は罫で挟んだ1本の帯にし、宿探しは月と線で分ける。
-   「観覧前に確認」は、その下に注釈の形で置く。スマホでは月の札を1行にして、横に送る */
-.pref-month-nav,.viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+/* チップの行(.chiprow): 小さな言葉+チップの並び(広島県の「開催月から探す」、今週末の「各県の全日程を見る」)。
+   スマホでは1行にして横に送り、右端を薄くして続きがあることを示す(すぐ下の一覧を、最初の画面に近づけるため) */
+.chiprow,.viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+:is(.chiprow,.viewing-preparation) .meta{margin-right:4px;font-size:var(--fs-xs)}
 .pref-month-nav{margin:20px 0 6px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.weekend-regions{margin:0 0 4px}
 .viewing-preparation{margin:12px 0 0}
-:is(.pref-month-nav,.viewing-preparation) .meta{margin-right:4px;font-size:var(--fs-xs)}
 @media(max-width:560px){
-  .pref-month-nav{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:10px 18px;scrollbar-width:none;
+  .chiprow{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:4px 18px;scrollbar-width:none;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
-  .pref-month-nav::-webkit-scrollbar{display:none}
-  .pref-month-nav>*{flex:none}
+  .chiprow::-webkit-scrollbar{display:none}
+  .chiprow>*{flex:none}
+  .pref-month-nav{padding-top:10px;padding-bottom:10px}
 }
 
 /* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */
@@ -842,7 +845,6 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 /* 宿の検索条件(泊まる日・人数・場所)は押せないので、ボタンと同じ丸い枠にせず、文字だけで「・」区切りにする */
 .stay-cond{display:flex;flex-wrap:wrap;margin:0 0 12px!important;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--mut)}
 .stay-cond span+span::before{content:"・";margin:0 .2em}
-.stay-banner{border-radius:8px;border-color:transparent;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
 /* たたんだ注意書き: 小さく、薄く */

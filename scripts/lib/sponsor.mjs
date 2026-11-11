@@ -32,7 +32,7 @@ export const SPONSOR_CSS = `<style>
 .prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0;break-inside:avoid}.sp-top a{display:inline-flex;align-items:center;min-height:var(--tap)}
 .prose .sp-menu{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
 .prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
-.prose .sp-plan .tag{margin:0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}
+.prose .sp-plan .tag{align-self:flex-start;margin:0 0 4px;padding:1px 10px;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}
 .prose .sp-plan h3{margin:4px 0 2px;font-size:var(--fs-l)}
 .prose .sp-plan .price{margin:0 0 10px;color:var(--ac);font-weight:500}
 .sp-plan dl{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-s);line-height:1.75}
