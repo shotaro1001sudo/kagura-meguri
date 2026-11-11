@@ -210,5 +210,59 @@
     "dueAt": "2026-11-12T10:00:00.000Z",
     "bufferId": "6af374d2e021f9ae4259b0ad",
     "date": "2026-11-12"
+  },
+  {
+    "id": "r:feature:出雲神楽:3",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-12T14:00:00.000Z",
+    "bufferId": "6af4c48553159c0c7515cc73",
+    "date": "2026-11-12"
+  },
+  {
+    "id": "r:program:飯南神楽:3",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-12T18:00:00.000Z",
+    "bufferId": "6af4c485b523db05a3eb1437",
+    "date": "2026-11-12"
+  },
+  {
+    "id": "niyodogawa-nanokawa-iwato-kagura-2026-11-18",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-12T22:00:00.000Z",
+    "bufferId": "6af4c4858259a45014de5a52",
+    "date": "2026-11-13"
+  },
+  {
+    "id": "r:page:weekend:2026-11-13",
+    "type": "reading",
+    "style": "label",
+    "link": true,
+    "dueAt": "2026-11-13T02:00:00.000Z",
+    "bufferId": "6af4c486cf36c484ae92b56b",
+    "date": "2026-11-13"
+  },
+  {
+    "id": "r:program:飯南神楽:0",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-13T06:00:00.000Z",
+    "bufferId": "6af4c486e805a6da2310fca8",
+    "date": "2026-11-13"
+  },
+  {
+    "id": "tsuno-tsunoyama-kagura-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-13T10:00:00.000Z",
+    "bufferId": "6af4c48653159c0c7515cca6",
+    "date": "2026-11-13"
   }
 ]
