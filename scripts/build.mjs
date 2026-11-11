@@ -6,6 +6,7 @@ import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
 import { upcomingSummary, upcomingSummaryDescription } from './lib/upcoming-summary.mjs';
 import { reservationLabel } from './lib/reservation.mjs';
+import { isKaguraKaikanMonthly, kaguraKaikanTitle, kaguraKaikanDesc } from './lib/kagura-kaikan-seo.mjs';
 // 静的サイト生成: data/events.json + data/regular.json + config.json -> dist/
 // 2026-10-21: event-handoff smoke marker (comment only; no functional or output change).
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
@@ -923,8 +924,10 @@ for (const e of events) {
   write(`dist/events/${e.id}.html`, layout({
     // 検索結果で切れないよう、長い名称はタイトルでは短くする(ページの見出しは、名称のまま)
     // titleName: 検索語に合わせたタイトルの名称の部分(出演団体名を先に出すなど)。seoDesc: 検索語に合わせた説明文(どちらも、公式の情報で確かめたことだけを書く)
-    title: `${e.titleName ? e.titleName : e.name.length > 36 ? e.name.slice(0, 35) + "…" : e.name}(${jpDate(e.start.slice(0, 10))}) | ${e.prefecture} | ${cfg.siteName}`,
-    desc: e.seoDesc ? clip(e.seoDesc, 150) : padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
+    // 神楽会館の毎月の一般公演は、毎回同じ形のタイトル・説明文(SEO-20261110-3。scripts/lib/kagura-kaikan-seo.mjs)
+    title: !e.titleName && isKaguraKaikanMonthly(e) ? `${kaguraKaikanTitle(e)} | ${cfg.siteName}`
+      : `${e.titleName ? e.titleName : e.name.length > 36 ? e.name.slice(0, 35) + "…" : e.name}(${jpDate(e.start.slice(0, 10))}) | ${e.prefecture} | ${cfg.siteName}`,
+    desc: e.seoDesc ? clip(e.seoDesc, 150) : isKaguraKaikanMonthly(e) ? clip(kaguraKaikanDesc(e), 125) : padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催される${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`)),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e), ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
     body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
 <div class="dpage"><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>${calendarNotice(e).text ? `<small class="calendar-notice">${esc(calendarNotice(e).text)}</small>` : ""}` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>

@@ -134,6 +134,10 @@ export function sourcesTests({ ok, section }) {
   const item = parseOita(page, oita, links[0])[0];
   ok(item?.start === "2026-11-15T12:30" && item?.end === "2026-11-15T15:30" && item?.url === links[0], "公演日時欄のみから11/15 12:30-15:30を抽出（10/16投稿日・10/20予約開始を除外）", JSON.stringify(item));
   ok(item?.name.includes("一般公演") && !item?.name.includes("予約受付") && item?.prefecture === "大分県" && item?.venue === "神楽会館" && /1,200/.test(item?.fee ?? ""), "タイトル、地域、会場、料金を必要最小限取得", JSON.stringify(item));
+  ok(item?.kagura === "豊後神楽", "御嶽神楽以外の団体が出る回は、収集元の既定の神楽の種類のまま", item?.kagura);
+  const perf = (td) => parseOita(`<h2>令和8年12月一般公演(第211回)のご案内</h2><table><tr><th>公演日時</th><td>令和8年12月20日(日)12時30分～15時30分</td></tr><tr><th>出演団体／演目</th><td>${td}</td></tr></table>`, oita, links[1])[0]?.kagura;
+  ok(perf("御嶽神楽／五方礼始・誓約・太平楽・天孫降臨") === "御嶽神楽" && perf("緒方三社神楽保存会／五穀舞・岩戸開<br>御嶽流吉田俚楽座／平国・八雲払") === "豊後神楽"
+    && perf("御嶽神楽／五方礼始<br>緒方三社神楽保存会／岩戸開") === "豊後神楽", "出演が御嶽神楽だけの回だけ、神楽の種類を御嶽神楽にする(SEO-20261110-3。<br> で分かれた団体をすべて見る)");
   const noTime = parseOita('<h2>令和8年12月自主公演のご案内</h2><dl><dt>公演日時</dt><dd>令和8年12月20日(日)</dd></dl>', oita, links[1])[0];
   ok(noTime?.start === "2026-12-20T00:00" && noTime?.timeUnknown, "時刻未発表は時間未定、勝手な開演時刻を付けない", JSON.stringify(noTime));
   ok(parseOita('<h2>令和8年度の神楽公演計画</h2><time>2026年2月4日</time>', oita, links[0]).length === 0, "年度計画や投稿日のみの記事は除外");

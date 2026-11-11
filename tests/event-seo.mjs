@@ -35,6 +35,32 @@ export function eventSeoTests({ ok, section, build }) {
     rmSync(dir, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
   }
+  // SEO-20261110-3: 神楽会館の毎月の一般公演は、毎回同じ形のタイトル・説明文(実際のデータでビルドしたページを見る)
+  section("開催ページ: 神楽会館の毎月の一般公演のタイトル・説明文(SEO-20261110-3)");
+  {
+    const out2 = "dist-test-kaikan-seo", dir2 = mkdtempSync(join(tmpdir(), "kaikan-seo-"));
+    try {
+      const nov = { id: "t-kaikan-11", name: "神楽会館 11月一般公演(御嶽神楽)", kagura: "御嶽神楽", prefecture: "大分県", city: "豊後大野市", venue: "神楽会館", start: "2027-11-14T12:30", end: "2027-11-14T15:30", fee: "一般1,200円、中学生以下500円(当日券は、それぞれ500円増し)", url: "https://www.kagura-kaikan.jp/", description: "出演は御嶽神楽。", lat: 32.97, lng: 131.51, status: "published", checked: "2026-11-11" };
+      const dec = { ...nov, id: "t-kaikan-12", name: "神楽会館 令和9年12月一般公演(第223回)", kagura: "豊後神楽", start: "2027-12-19T12:30", end: "2027-12-19T15:30", fee: "一般1,200円、中学生以下500円（当日券は500円増）", description: "" };
+      const other = { ...nov, id: "t-kaikan-sp", name: "神楽会館 新年特別公演", start: "2027-01-10T12:30", end: "2027-01-10T15:30" };
+      const f = join(dir2, "events.json");
+      writeFileSync(f, JSON.stringify([nov, dec, other]));
+      const r = build(f, out2, {});
+      ok(r.status === 0, "ビルドが通る", (r.stderr ?? "").slice(0, 300));
+      const pg = (id) => cheerio.load(read(join(out2, "events", `${id}.html`)));
+      const n = pg("t-kaikan-11"), d = pg("t-kaikan-12");
+      ok(n("title").text() === "神楽会館 御嶽神楽 一般公演 11月14日 | 豊後大野市清川町 | 神楽めぐり", "御嶽神楽の回: 「神楽会館 御嶽神楽 一般公演 ○月○日 | 豊後大野市清川町」", n("title").text());
+      ok(d("title").text() === "神楽会館 豊後神楽 一般公演 12月19日 | 豊後大野市清川町 | 神楽めぐり", "ほかの団体の回は、その回の神楽の種類で同じ形(御嶽神楽と書かない)", d("title").text());
+      const nd = n('meta[name="description"]').attr("content"), dd = d('meta[name="description"]').attr("content");
+      ok(nd.startsWith("開演12:30(〜15:30)。前売り 一般1,200円・中学生以下500円、当日券は各500円増し。11月14日(日)、神楽会館(豊後大野市清川町)の御嶽神楽の一般公演。") && nd.includes("出演は御嶽神楽。"), "説明文の先頭に、開演時刻と前売り・当日券", nd);
+      ok(dd.startsWith("開演12:30(〜15:30)。前売り 一般1,200円・中学生以下500円、当日券は各500円増し。"), "全角のかっこ・「当日券は500円増」の表記でも、同じ形になる", dd);
+      ok(n("h1").text().trim() === nov.name, "ページの見出しは、名称のまま");
+      ok(!pg("t-kaikan-sp")("title").text().startsWith("神楽会館 御嶽神楽 一般公演"), "一般公演でない回(特別公演)は、ふだんの形のまま");
+    } finally {
+      rmSync(dir2, { recursive: true, force: true });
+      rmSync(out2, { recursive: true, force: true });
+    }
+  }
   // 実際のデータ: 検索語「あさひが丘神楽団」
   const L = JSON.parse(read("data/events.json").replace(/^﻿/, ""));
   const asa = (Array.isArray(L) ? L : L.events).find((e) => e.id === "npo-hiroshima-0cf097bb64");

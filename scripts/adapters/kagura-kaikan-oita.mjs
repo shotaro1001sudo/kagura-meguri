@@ -43,6 +43,20 @@ function findField($, label) {
   return value;
 }
 
+// 「出演団体／演目」の欄から、団体名だけを並べる(1行に「団体／演目」。行は <br> で分かれる)
+function performers($) {
+  let names = [];
+  $("tr").each((_, tr) => {
+    if (names.length) return;
+    const cells = $(tr).children("th, td");
+    if (cells.length < 2 || normalize(cells.first().text()).replace(/\s/g, "") !== "出演団体/演目") return;
+    const cell = cells.eq(1).clone();
+    cell.find("br").replaceWith("\n");
+    names = cell.text().split("\n").map((l) => normalize(l).split("/")[0].trim()).filter(Boolean);
+  });
+  return names;
+}
+
 function dateFromField(raw) {
   const s = normalize(raw);
   const day = s.match(/(?:令和\s*(?:元|\d{1,2})\s*年|\d{4}\s*年)\s*\d{1,2}\s*月\s*\d{1,2}\s*日/);
@@ -75,11 +89,14 @@ export function parse(html, source, pageUrl = source.url) {
   if (!date) throw new Error(`公演日時を解析できません: ${pageUrl}`);
   const name = `神楽会館 ${title.replace(/\s*のご案内.*$/, "").replace(/\s*～.*$/, "")}`.slice(0, 100);
   const fee = findField($, "入場料").slice(0, 80);
+  // 出演が御嶽神楽だけの回は、神楽の種類を「御嶽神楽」にする(ほかの団体が出る回は、収集元の既定の種類のまま。SEO-20261110-3)
+  const groups = performers($);
+  const kagura = groups.length && groups.every((g) => g === "御嶽神楽") ? "御嶽神楽" : source.kagura || "豊後神楽";
   return [{
     name, start: date.start, ...(date.end ? { end: date.end } : {}),
     ...(date.hasTime ? {} : { timeUnknown: true }),
     prefecture: source.prefecture || "大分県", city: source.city || "豊後大野市",
-    venue: "神楽会館", kagura: source.kagura || "豊後神楽", fee,
+    venue: "神楽会館", kagura, fee,
     url: pageUrl,
   }];
 }
