@@ -130,7 +130,6 @@ ${a ? tile("ページの閲覧数", approx(a.pageviews), "回", "直近4週間�
 <ul class="opoints">
 <li><b>神楽を目当てに出かける方に届く</b><span>「いつ・どこで神楽が観られるか」を調べる方のためのページに載ります。</span></li>
 <li><b>地域ごと・神楽の種類ごとに載る</b><span>県・神楽の種類・開催のページに、その地域の情報として載ります。</span></li>
-<li><b>「PR」と表示して、開催情報と分ける</b><span>読む方が迷わないよう、開催情報とは別の枠に載せます。</span></li>
 </ul>
 <p class="octa"><a class="btn" href="/contact.html">協賛・記事広告について問い合わせる</a><a class="btn ghost" href="#menu">メニューと料金を見る</a></p>
 
