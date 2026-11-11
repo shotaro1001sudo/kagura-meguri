@@ -349,7 +349,7 @@ partnersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });
-consistencyTests({ ok, section, OUT });
+consistencyTests({ ok, section, OUT, build });
 asakitaFactsTests({ ok, section, build });
 editorialTests({ ok, section, OUT, build });
 await uxTests({ ok, section, OUT });

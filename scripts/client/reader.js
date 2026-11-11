@@ -18,8 +18,9 @@
   // 横に並ぶ章ナビ(スマホ・タブレット)では、今の見出し(歴史では今のページ)が見える位置まで横に送る
   function center(a) {
     if (!a || a.offsetParent === null) a = page;
-    if (!a || !list || list.scrollWidth <= list.clientWidth + 1) return;
-    var left = a.offsetLeft - (list.clientWidth - a.offsetWidth) / 2;
+    if (!list || list.scrollWidth <= list.clientWidth + 1) return;
+    // ページの先頭へ戻ったとき(どの見出しよりも上)は、章ナビも最初の位置へ戻す(右へ送られたままにしない)
+    var left = a ? a.offsetLeft - (list.clientWidth - a.offsetWidth) / 2 : 0;
     if (list.scrollTo) list.scrollTo({ left: left, behavior: reduce ? 'auto' : 'smooth' }); else list.scrollLeft = left;
   }
   function mark(i) {

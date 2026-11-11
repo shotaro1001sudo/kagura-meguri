@@ -40,7 +40,7 @@ ${field("city", "市区町村", { required: true, max: 40, placeholder: "例: �
 ${field("venue", "会場名", { required: true, max: 80, placeholder: "例: 〇〇神社 神楽殿" })}
 <div class="f-row">${field("date", "開催日", { type: "date", required: true, max: 10 })}
 ${field("time_start", "開始時刻", { type: "time", max: 5 })}</div>
-${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "主催者・保存会・社中の公式ページや、X（Twitter）・Instagram・Facebookの公開投稿も受け付けます。SNSは開催日・会場が分かる個別投稿のURLをご記入ください（プロフィールや検索結果ではなく投稿へのリンク）。内容と投稿元を確認してから掲載します。https:// で始まるものに限ります。" })}
+${field("url", "公式情報のURL", { type: "url", max: 300, placeholder: "https://", hint: "公式ページのほか、X(Twitter)・Instagram・Facebookの公開投稿も受け付けます。SNSは、開催日と会場が分かる投稿そのもののURLを(プロフィールや検索結果は不可)。https:// で始まるものに限ります。" })}
 <details class="more-fields"><summary>くわしく書く <small>(任意: 住所・終了時刻・料金・ひとこと説明)</small></summary>
 ${field("address", "番地までの住所", { max: 100, hint: "地図に正しく表示するために使います。分かる範囲で結構です。" })}
 ${field("time_end", "終了時刻", { type: "time", max: 5 })}

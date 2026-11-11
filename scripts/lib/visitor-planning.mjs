@@ -109,7 +109,7 @@ export function experiencesFor(context,today) {
 }
 // 体験の注意書きと、開催地域の施設紹介例。周辺体験のカードの中(compact)では、紹介例を折りたたむ。
 const experienceNotes=(items,aff,compact)=>{
-  const grid=`<div class="planning-grid">${items.map(x=>`<article class="planning-card"><p class="meta">${esc(x.prefecture)} ${esc(x.city)}・${esc(x.place)}</p><h3>${esc(x.name)}</h3><p>${esc(x.reason)}</p><p>${esc(x.detail)}</p>${x.notice?`<p class="planning-notice">${esc(x.notice)}</p>`:''}<a class="btn ghost sm" href="${x.source}" target="_blank" rel="noopener noreferrer">公式で営業・利用方法を確認</a><p class="meta annotation">公式案内: ${esc(x.by)} ／ 確認日: ${CHECKED}</p></article>`).join('')}</div>`;
+  const grid=`<div class="planning-grid">${items.map(x=>`<article class="planning-card"><p class="meta">${esc(x.prefecture)} ${esc(x.city)}・${esc(x.place)}</p><h3>${esc(x.name)}</h3><p>${esc(x.reason)}</p><p>${esc(x.detail)}</p>${x.notice?`<p class="planning-notice">${esc(x.notice)}</p>`:''}<a class="btn ghost sm" href="${x.source}" target="_blank" rel="noopener noreferrer">公式で営業・利用方法を確認</a><p class="meta annotation">公式案内: ${esc(x.by)}(${CHECKED.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日")}確認)</p></article>`).join('')}</div>`;
   return `<details class="pc-more"><summary>ご注意</summary><p class="meta annotation">県内全域の一覧です。会場からの距離・市町村・日付・所要時間はリンク先で確認してください。公演会場からの移動時間は未確認です。${adNote(aff)}公演の受付・移動・食事の時間を先に確保して、訪問先の体験を選びましょう。</p></details>${items.length?(compact?`<details class="pc-more"><summary>開催地域での施設紹介例</summary>${grid}</details>`:`<h3>開催地域での施設紹介例</h3>${grid}`):''}<p class="meta annotation">営業状況・空き・価格はリアルタイム表示ではありません。公演前に利用できることを保証するものではありません。</p>`;
 };
 // 都道府県のページの欄。
