@@ -11,6 +11,7 @@ import { REGIONS, regionOf } from "../lib/util.mjs";
 import { affiliateCoverage } from "../lib/affiliate-coverage.mjs";
 import { sponsorCoverage } from "../lib/sponsor-slots.mjs";
 import { reviewChecks, reviewIssueDate } from "./store.mjs";
+import { loadEarnings } from "./earnings.mjs";
 
 const DAY = 864e5;
 const readJson = (root, p, fb = null) => { try { return JSON.parse(readFileSync(join(root, p), "utf8")); } catch { return fb; } };
@@ -58,22 +59,34 @@ export function recentWindows(days, metric) {
 const monthAgg = (days, m) => agg(days, m + "-01", m + "-" + String(daysInMonth(m)).padStart(2, "0"));
 
 // ---------- 売上と KPI ----------
-/** 週次の分析の kpi(state.json)に、series.json から出せる分を足す(分析の値を優先。取れない値は書かない) */
-export function deriveActuals(state, series) {
+/**
+ * 週次の分析の kpi(state.json)に、series.json から出せる分を足す(分析の値を優先。取れない値は書かない)。
+ * earnings(analytics/earnings.json。管理者用ページが API で直接読んだ報酬)は、いちばん新しいので、あれば上書きする
+ */
+export function deriveActuals(state, series, earnings = null) {
   const months = structuredClone(state?.kpi?.months ?? {});
   const add = (m, k, v) => { if (v == null) return; months[m] ??= {}; if (months[m][k] == null) months[m][k] = v; };
+  const set = (m, k, v) => { if (v == null) return; months[m] ??= {}; months[m][k] = v; };
   for (const [m, v] of Object.entries(series?.vcMonths ?? {})) {
     add(m, "revenueVc", (v.pendingYen ?? 0) + (v.approvedYen ?? 0) + (v.billedYen ?? 0));
     add(m, "conversionsVc", v.orders);
   }
+  for (const [m, v] of Object.entries(earnings?.vc?.months ?? {})) {
+    set(m, "revenueVc", (v.pendingYen ?? 0) + (v.approvedYen ?? 0) + (v.billedYen ?? 0));
+    set(m, "conversionsVc", v.orders);
+  }
+  for (const [m, v] of Object.entries(earnings?.rakuten?.months ?? {})) set(m, "revenueRakuten", v.yen);
   const ms = new Set(Object.keys(series?.days ?? {}).map((d) => d.slice(0, 7)));
   for (const m of ms) { const a = monthAgg(series.days, m); if (a.gaDays) { add(m, "sessions", a.sessions); if (months[m].sessionsDays == null) months[m].sessionsDays = a.gaDays; } }
-  return Object.keys(months).length ? { updated: state?.kpi?.updated ?? series?.updated ?? null, months } : null;
+  const updated = [state?.kpi?.updated ?? series?.updated, earnings?.vc?.fetchedAt?.slice(0, 10), earnings?.rakuten?.fetchedAt?.slice(0, 10)].filter(Boolean).sort().at(-1) ?? null;
+  return Object.keys(months).length ? { updated, months } : null;
 }
 const MANUAL_PARTS = [["rakuten", "楽天"], ["adsense", "AdSense"], ["direct", "協賛・有料プラン"]];
+// 自動で入る分(手入力があれば、手入力を優先する)
+const AUTO_OF = { rakuten: "revenueRakuten" };
 export function revenueOf(actuals, manual, m) {
   const a = actuals?.months?.[m] ?? {}, man = manual?.[m] ?? {};
-  const parts = [["vc", "バリューコマース", a.revenueVc], ...MANUAL_PARTS.map(([k, label]) => [k, label, man[k]])].map(([key, label, v]) => ({ key, label, value: v ?? null }));
+  const parts = [["vc", "バリューコマース", a.revenueVc], ...MANUAL_PARTS.map(([k, label]) => [k, label, man[k] ?? (AUTO_OF[k] ? a[AUTO_OF[k]] : null)])].map(([key, label, v]) => ({ key, label, value: v ?? null }));
   const known = parts.filter((p) => p.value != null);
   return { value: known.length ? sum(known.map((p) => p.value)) : null, parts, missing: parts.filter((p) => p.value == null).map((p) => p.label) };
 }
@@ -317,7 +330,7 @@ export function buildOverview(root, { today, nowMs = Date.now(), now, runs, site
   const regular = Array.isArray(rg) ? rg : rg.regular ?? [];
   const collect = readJson(root, "data/collect-summary.json");
   const listing = listingSection({ events, regular, collect, more: readJson(root, "data/more-offers.json"), planning: readJson(root, "data/visitor-planning.json"), affiliate: cfg.affiliate ?? {}, sponsors: readJson(root, "data/sponsors.json", []), today, now });
-  const actuals = plan?.actuals ?? deriveActuals(state, series); // loadPlan の実績(営業の台帳の数を含む)を優先
+  const actuals = plan?.actuals ?? deriveActuals(state, series, loadEarnings(root)); // loadPlan の実績(営業の台帳の数を含む)を優先
   return {
     generatedAt: new Date(nowMs).toISOString(), today,
     revenue: plan ? revenueSection({ ...plan, manual: plan.manual ?? {} }, actuals, today) : null,

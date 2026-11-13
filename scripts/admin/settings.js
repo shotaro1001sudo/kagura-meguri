@@ -1,7 +1,30 @@
-// 設定: スマホで開く(PC の画面だけ)・メールの読み込み・自動の読み込み・請求の設定・しくみと言葉の説明
+// 設定: スマホで開く(PC の画面だけ)・メールの読み込み・自動の読み込み・広告の報酬・請求の設定・しくみと言葉の説明
 import { h, S, view, render, call, toast, fail, confirmBox, note, loading, more, kv, ext, at } from "./ui.js";
 import { fetchMail } from "./inbox.js";
 import { editBilling } from "./sales.js";
+
+// ---------- 広告の報酬(バリューコマースは API、楽天は予定タスクが Chrome で読む) ----------
+export async function readVcNow() {
+  toast("バリューコマースの報酬を読み込んでいます…", { busy: true });
+  try { const r = await call("/api/earnings/vc", {}); toast(r.text, !r.ok); render(); } catch (err) { fail(err); }
+}
+export function earnBox() {
+  const E = S.earnings;
+  if (!E) return "";
+  const vc = E.vc, rk = E.rakuten;
+  return h("section", { class: "card", "aria-labelledby": "set-earn" }, h("h2", { id: "set-earn" }, "広告の報酬の読み込み"),
+    h("p", null, "売上の「バリューコマース」と「楽天」は、ここで読み込んだ額が自動で入ります。手で入れた月は、手入力を優先します。"),
+    h("h3", null, "バリューコマース"),
+    vc.ready
+      ? [kv(["前回", vc.fetchedAt ? at(vc.fetchedAt) : "まだ読み込んでいません"], ["しくみ", "公式の API で、6時間に1回(自動の読み込みのとき)と「最新にする」のときに、今月と前の2か月を読み直します"]),
+        vc.error && (!vc.fetchedAt || vc.errorAt >= vc.fetchedAt) ? note("warn", vc.error) : "",
+        h("div", { class: "bar" }, h("button", { class: "btn", onclick: readVcNow }, "いま読み込む"))]
+      : note("info", "バリューコマースの API のキーが、まだありません。ADMIN.md の「広告の報酬」の手順で、admin.local.json に入れてください(GitHub には上がりません)。"),
+    h("h3", null, "楽天アフィリエイト"),
+    kv(["前回", rk.fetchedAt ? at(rk.fetchedAt) : "まだ読み込んでいません"], ["しくみ", "楽天には公式の API がないため、3日に1回(朝8時半)、予定タスクがこのPCの Chrome で成果の画面を読みます"]),
+    rk.problem ? note("warn", rk.error ? rk.error + "。Chrome で楽天アフィリエイトにログインしておくと、次の回(3日以内)に読み込みます。" : "楽天の報酬を、しばらく読み込めていません。Chrome で楽天アフィリエイトにログインしているか、予定タスクが動いているかを確かめてください。") : "",
+    h("div", { class: "bar" }, ext("https://affiliate.rakuten.co.jp/", "楽天アフィリエイトを開く")));
+}
 
 // ---------- スマホで開く(Tailscale 経由。PC の画面だけに出す) ----------
 const isPc = () => ["127.0.0.1", "localhost"].includes(location.hostname);
@@ -61,7 +84,8 @@ export function settingsView() {
         : note("warn", "Gmail の設定が、まだありません。リポジトリの ADMIN.md の「最初に1回だけ: Gmail の設定」の手順で、admin.local.json を作ってください(GitHub には上がりません)。設定のあと、この画面を開き直します。")),
     h("section", { class: "card", "aria-labelledby": "set-auto" }, h("h2", { id: "set-auto" }, "自動の読み込み"),
       h("p", null, rf.hours ? `管理者用ページが動いている間、${rf.hours}時間おきに、GitHub の最新の取り込みと、メールの読み込みを行います。画面の上の「最新にする」で、すぐにも行えます。` : "自動の読み込みは、止めています。画面の上の「最新にする」で、手で行えます。"),
-      rf.last ? kv(["前回", `${at(rf.last.at)}(${rf.last.why})`], ["GitHub", rf.last.git?.text], ["メール", rf.last.mail?.text], ["X の書き出し", rf.last.hooks?.text]) : h("p", { class: "mut small" }, "まだ読み込んでいません(起動の1分後に、最初の読み込みをします)。")),
+      rf.last ? kv(["前回", `${at(rf.last.at)}(${rf.last.why})`], ["GitHub", rf.last.git?.text], ["メール", rf.last.mail?.text], ["バリューコマース", rf.last.vc?.text], ["X の書き出し", rf.last.hooks?.text]) : h("p", { class: "mut small" }, "まだ読み込んでいません(起動の1分後に、最初の読み込みをします)。")),
+    earnBox(),
     S.pipeline ? h("section", { class: "card", "aria-labelledby": "set-bill" }, h("h2", { id: "set-bill" }, "請求の設定"),
       h("p", null, "請求書に載せる差出人と振込先です。このPCにだけ保存します。"),
       S.pipeline.billingReady ? "" : note("info", "振込先が、まだ入っていません。"),

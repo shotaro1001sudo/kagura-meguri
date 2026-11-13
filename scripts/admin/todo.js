@@ -109,7 +109,8 @@ const linkRows = (rows) => h("ul", { class: "linkrows" }, rows.filter((r) => r.n
 export function todoGroups() {
   const d = decisions(), plan = planOpen();
   const prevMonth = S.plan ? addMonth(curMonth(), -1) : null;
-  const manualMissing = !!S.plan && prevMonth >= (S.plan.goal?.setAt || "").slice(0, 7) && ["rakuten", "adsense", "direct"].some((k) => S.plan.manual?.[prevMonth]?.[k] == null);
+  const manualMissing = !!S.plan && prevMonth >= (S.plan.goal?.setAt || "").slice(0, 7) && ["rakuten", "adsense", "direct"].some((k) => S.plan.manual?.[prevMonth]?.[k] == null && !(k === "rakuten" && S.plan.actuals?.months?.[prevMonth]?.revenueRakuten != null));
+  const E = S.earnings, earnBad = E ? (E.vc.ready && E.vc.error && (!E.vc.fetchedAt || E.vc.errorAt >= E.vc.fetchedAt) ? 1 : 0) + (E.rakuten.problem ? 1 : 0) : 0;
   const tasksBad = S.tasks?.attention || S.tasks?.missed || 0;
   const sales = salesTodos();
   const closedAdv = d.advice.filter((a) => !d.openAdv.includes(a)), closedProps = d.proposals.filter((p) => !d.openProps.includes(p));
@@ -148,10 +149,11 @@ ${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
       lead: "検索で見つけてもらいやすくする案と、数字を測れるようにする案です。やるものは「頼む文をコピー」を押して、Claude に貼り付けます。やらないものは「見送る」。",
       help: "毎週月曜の分析が出します。Claude が作業を終えると「実施済み(作業の記録あり)」になり、効果は翌週からの分析が確かめます。見送ると、同じ案は出なくなります。この記録はこのPCだけに残ります。",
       body: () => d.openProps.map((p) => proposalCard(p, d, false)) },
-    { id: "goal", title: "目標・収益を決める", n: plan.length + (manualMissing ? 1 : 0), clear: S.plan ? "目標・収益で、いま決めることはありません。" : null, lead: "「目標・収益」で行います。",
+    { id: "goal", title: "目標・収益を決める", n: plan.length + (manualMissing ? 1 : 0) + earnBad, clear: S.plan ? "目標・収益で、いま決めることはありません。" : null, lead: "「目標・収益」で行います。",
       body: () => linkRows([{ n: plan.filter((x) => x.kind === "mon").length, label: "決めていない収益化の案", note: "採用するか、見送るかを選びます", go: ["goal", { goalSec: "mon", monSt: "proposed" }] },
         { n: plan.filter((x) => x.kind === "kpi").length, label: "決めていない目標の数字", note: "採用するか、見送るかを選びます", go: ["goal", { goalSec: "kpi", kpiSt: "proposed" }] },
-        { n: manualMissing ? 1 : 0, label: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, note: "楽天・AdSense・協賛の額を入れます", go: ["goal", { goalSec: "manual", manualMonth: prevMonth }] }]) },
+        { n: manualMissing ? 1 : 0, label: `${prevMonth ? monthLabel(prevMonth) : ""}の実績が未入力`, note: "AdSense・協賛の額を入れます(楽天は自動)", go: ["goal", { goalSec: "manual", manualMonth: prevMonth }] },
+        { n: earnBad, label: "広告の報酬を読み込めていません", note: E?.rakuten.problem ? "楽天は、Chrome で楽天アフィリエイトにログインすると、次の回に読み込みます" : "バリューコマースのキーを確かめます", go: ["settings"] }]) },
   ].map((g) => ({ ...g, closed: g.id === "claude" ? closedAdv : g.id === "props" ? closedProps : [] }));
 }
 export const todoCount = () => todoGroups().reduce((a, g) => a + g.n, 0);

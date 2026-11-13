@@ -62,6 +62,7 @@ import { eventHandoffTests } from "./event-handoff.mjs";
 import { quizTests } from './quiz.mjs';
 import { visitorPlanningTests } from './visitor-planning.mjs';
 import { billingTests } from "./billing.mjs";
+import { earningsTests } from "./earnings.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
@@ -340,6 +341,7 @@ weeklyReviewTests({ ok, section });
 analyticsHistoryTests({ ok, section });
 socialPerformanceTests({ ok, section });
 billingTests({ ok, section });
+await earningsTests({ ok, section });
 moreOffersTests({ ok, section });
 guideTests({ ok, section, OUT, build });
 historyTests({ ok, section, OUT });

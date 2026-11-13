@@ -1,5 +1,5 @@
 // 目標・収益(このPCだけに保存。GitHub には送らない): 売上と目標 / 収益化の案 / 目標の数字(KPI) / 実績を入れる
-// 実績は、自動の分(週次の分析が入れる)と、手入力の分(楽天・AdSense・協賛など)
+// 実績は、自動の分(週次の分析・広告の報酬の読み込みが入れる)と、手入力の分(AdSense・協賛など。楽天は自動で、手入力があれば手入力を優先)
 import { h, S, view, render, call, toast, undoToast, fail, askReason, openForm, field, input, badge, chip, seg, more, kv, note, loading, icon, yen, num, curMonth, addMonth, monthLabel, copyPrompt, promptBox, goLink } from "./ui.js";
 import { overview, loadOverview, columnChart, tile, paceMeter, valueOf, PACE } from "./dash.js";
 import { promptFor } from "./todo.js";
@@ -14,7 +14,7 @@ function actual(id, m) {
   const a = S.plan.actuals?.months?.[m] || {};
   const man = S.plan.manual?.[m] || {};
   if (id === "revenue") {
-    const parts = { "バリューコマース": a.revenueVc, "楽天": man.rakuten, "AdSense": man.adsense, "協賛・有料プラン": man.direct };
+    const parts = { "バリューコマース": a.revenueVc, "楽天": man.rakuten ?? a.revenueRakuten, "AdSense": man.adsense, "協賛・有料プラン": man.direct };
     let sum = 0, any = false; const missing = [];
     for (const [k, v] of Object.entries(parts)) { if (v == null) missing.push(k); else { sum += v; any = true; } }
     return { v: any ? sum : null, missing };
@@ -45,6 +45,15 @@ function editTargets(k) {
       await call("/api/plan/item", { kind: "kpi", id: k.id, targets });
       toast("目標の数を保存しました"); render();
     } });
+}
+
+// 広告の報酬を読めていないとき(キーの誤り・楽天のログイン切れ)
+function earnNote() {
+  const E = S.earnings;
+  if (!E) return "";
+  const vcBad = E.vc.ready && E.vc.error && (!E.vc.fetchedAt || E.vc.errorAt >= E.vc.fetchedAt);
+  if (!vcBad && !E.rakuten.problem) return "";
+  return note("warn", [vcBad ? E.vc.error : "", E.rakuten.problem ? (E.rakuten.error || "楽天の報酬を、しばらく読み込めていません") : ""].filter(Boolean).join("。") + "。 ", h("a", { href: "#/settings", onclick: goLink("settings") }, "設定の「広告の報酬の読み込み」を開く"));
 }
 
 // ---------- 売上と目標(数字とグラフ。読むだけ) ----------
@@ -85,7 +94,8 @@ function revenuePart(p) {
       h("td", null, paceMeter(k.value, k.target, k.pace)),
       h("td", null, valueOf(k.prev, k.unit)))))));
   return [tiles, goalBox, h("section", { class: "card" }, chart, parts), h("section", { class: "card" }, lead),
-    h("p", { class: "mut small" }, "売上は、広告・アフィリエイトの報酬と、協賛・有料プランの収入の合計です。楽天・AdSense・協賛は「実績を入れる」で入れた額、ほかは毎週月曜の分析が自動で入れます。")];
+    earnNote(),
+    h("p", { class: "mut small" }, "売上は、広告・アフィリエイトの報酬と、協賛・有料プランの収入の合計です。バリューコマースは6時間おきに API で、楽天は3日に1回 Chrome で、自動で入ります(どちらも、まだ確定していない分を含む見込みの額)。AdSense・協賛は「実績を入れる」で入れた額です。")];
 }
 
 // ---------- 収益化の案・目標の数字: 状態で切り替えて見る(検討中・採用・実施済み・見送り) ----------
@@ -213,7 +223,7 @@ function manualForm() {
   } },
     h("div", { class: "f inline" }, h("label", { for: "mm" }, "どの月の実績ですか"), h("select", { id: "mm", onchange: (ev) => { view.manualMonth = ev.target.value; render(); } }, months.map((x) => h("option", { value: x, selected: x === m }, monthLabel(x) + (x === curMonth() ? "(今月)" : "(先月)"))))),
     h("div", { class: "grid" }, Object.entries(S.manualFields).map(([k, label]) => h("div", { class: "f" }, h("label", { for: "man-" + k }, label), h("input", { id: "man-" + k, name: k, type: "number", min: "0", step: "1", inputmode: "numeric", value: row[k] ?? "", placeholder: "未入力" })))),
-    h("p", { class: "mut small" }, "楽天は楽天アフィリエイトの成果報酬、AdSense は見積もり収益額の、その月の額です。空欄は「未入力」として扱い、0 とはみなしません。提案・契約の数は、営業の台帳から自動で入るので、直したいときだけ入れます。"),
+    h("p", { class: "mut small" }, "楽天は自動で入ります(3日に1回 Chrome で読む楽天アフィリエイトの成果報酬)。自動の額と違うときだけ入れると、その月は手入力を優先します。AdSense は見積もり収益額の、その月の額です。空欄は「未入力」として扱い、0 とはみなしません。提案・契約の数は、営業の台帳から自動で入るので、直したいときだけ入れます。"),
     h("div", { class: "bar" }, h("button", { class: "btn primary", type: "submit" }, "保存する"), row.updatedAt ? h("span", { class: "mut small" }, `前回の保存: ${row.updatedAt}`) : ""));
   return form;
 }
@@ -236,7 +246,7 @@ export function goalView() {
       more("この項目について", h("p", { class: "mut" }, "新しい案は、毎週月曜の分析が、数字や営業の台帳に根拠があるときだけ足します(週に2件まで)。営業・契約・リンクの発行など、人が行う部分は「最初の一歩」を見てください。採用・見送りは、このPCにだけ保存します。")),
       statusGroups("monSt", p.monetization, monCard, (m) => shortRow(m, m.title, m.expectedYen ? chip(`見込み 月 ${yen(m.expectedYen[0])}〜${yen(m.expectedYen[1])}`) : ""))] : "",
     sec === "kpi" ? [h("p", { class: "lead" }, "最終目標に届くための、月ごとの目標と実績です(KPI とも呼びます)。実績の * は、まだ含まれていない分があるものです。"),
-      more("この項目について", h("p", { class: "mut" }, "バリューコマースの報酬・サイトの訪問・広告のクリックは、毎週月曜の分析が自動で入れます。楽天・AdSense・協賛は「実績を入れる」で入れます。目標の数は、採用の前でも後でも変えられます。")),
+      more("この項目について", h("p", { class: "mut" }, "バリューコマース・楽天の報酬は自動で読み込み、サイトの訪問・広告のクリックは、毎週月曜の分析が自動で入れます。AdSense・協賛は「実績を入れる」で入れます。目標の数は、採用の前でも後でも変えられます。")),
       targetPlansPart(p),
       statusGroups("kpiSt", p.kpis, (k) => kpiCard(k, cols, now), (k) => shortRow(k, k.name))] : "",
     sec === "manual" ? [h("p", { class: "lead" }, "自動で取れない分を、月ごとに入れます。月が変わったら、先月の分を入れてください。"), manualForm()] : "",

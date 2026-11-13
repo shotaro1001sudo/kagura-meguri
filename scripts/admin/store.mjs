@@ -1,5 +1,6 @@
 import { isSocialEvent, socialEvidenceErrors, socialDuplicate, socialFacts } from '../lib/social-evidence.mjs';
 import { deriveActuals } from "./overview.mjs";
+import { loadEarnings } from "./earnings.mjs";
 import { loadPipeline, pipelineMonths } from "./pipeline.mjs";
 const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 import { sameEvent } from '../lib/collect-core.mjs';
@@ -221,7 +222,7 @@ export function setAdviceStatus(root, id, status, today, note = "") {
 }
 
 // 最終目標・KPI・収益化の案(analytics/plan.json。このPCだけ・git に入らない)。運営者が採用・見送り・目標の変更・実績の入力をする
-// 実績は、週次の分析タスクが analytics/state.json の kpi に書く(自動の分)。手入力の分は plan.json の manual
+// 実績は、週次の分析タスクが analytics/state.json の kpi に書く(自動の分)と、広告の報酬(analytics/earnings.json。earnings.mjs)。手入力の分は plan.json の manual(楽天は、手入力があれば自動の分より優先)
 export const PLAN_STATUS = { proposed: "検討中", adopted: "採用", declined: "見送り", done: "実施済み" };
 export const MANUAL_FIELDS = { rakuten: "楽天の報酬(円)", adsense: "AdSense の収益(円)", direct: "協賛・有料プランの収入(円)", contracts: "有償の契約数(件)", pitches: "提案した相手の数(件)" };
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -231,7 +232,7 @@ export function loadPlan(root, today = todayJst()) {
   const s = readJson(paths(root).analytics, null);
   // 実績: 週次の分析の kpi に、日ごとの記録(analytics/series.json)から出せる分を足す(分析の値を優先)
   const series = readJson(join(root, "analytics", "series.json"), null);
-  let actuals = deriveActuals(s, series);
+  let actuals = deriveActuals(s, series, loadEarnings(root));
   // 提案した数・契約数は、営業の台帳(analytics/pipeline.json)から月ごとに数える(手入力があれば、画面と概要は手入力を優先)
   const pm = pipelineMonths(loadPipeline(root).leads, today);
   if (Object.keys(pm).length) {

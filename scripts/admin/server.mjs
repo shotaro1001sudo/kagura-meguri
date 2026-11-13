@@ -4,7 +4,8 @@
 //   画面のプログラムは、このフォルダの .js(app.js が起動。メニューごとに todo.js・events.js などに分けてある)。ADMIN.md の「画面のプログラムの置き場所」
 //   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
 //   運営の状況(売上と目標・集客の推移・運営の信号・掲載の量と鮮度)を数字と信号で(読むだけ。overview.mjs。画面では「目標・収益」「数字」「動いているか」と、「やること」の上の信号に出す)
-//   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込みを行う(refreshHours。admin.local.json で変えられる)
+//   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込み・バリューコマースの報酬の読み込みを行う(refreshHours。admin.local.json で変えられる)
+//   広告の報酬: バリューコマースは API で、楽天は予定タスクが Chrome で読んで、analytics/earnings.json に(earnings.mjs)
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
 //            Host・Origin を確かめる(ほかのサイトから、この画面を操作させない)
 // スマホから: Tailscale Serve(自分の端末だけに見える https://<PC>.<tailnet>.ts.net)経由で開ける。
@@ -24,6 +25,7 @@ import { loadTasks } from "./tasks.mjs";
 import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, defaultDueAt, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
+import { refreshVc, earningsStatus, loadEarnings, VC_MIN_HOURS } from "./earnings.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +38,7 @@ const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite, reviewIssues = loadReviewIssues } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite, reviewIssues = loadReviewIssues, vcFetch = globalThis.fetch } = {}) {
   const token = randomBytes(24).toString("hex");
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
@@ -78,6 +80,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, mailIgnore: loadMailIgnore(root), pending: await pending(root).catch(() => null),
       review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
+      earnings: earningsStatus(root, { local, today: today(), nowMs: now() }),
       refresh: { last: lastRefresh, hours: refreshHours } };
   };
 
@@ -120,6 +123,9 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     return { added: items.length, direct: items.filter((x) => x.direct).length, directError: items.directError ?? null, pruned, replies: replies.added, advanced: replies.advanced.length, replyError };
   };
 
+  // バリューコマースの報酬を、API で読み直す(analytics/earnings.json)
+  const readVc = () => refreshVc(root, { local: loadLocal(root), sid: cfg.affiliate?.valueCommerceSid, today: today(), fetchImpl: vcFetch, nowIso: new Date(now()).toISOString() });
+
   // 定期の更新: GitHub の最新を取り込む → Gmail を読み込む。ほかの保存・公開と重ならないよう、順番に
   const refresh = (why) => serial(async () => {
     const r = { at: new Date(now()).toISOString(), why };
@@ -132,6 +138,10 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     } catch (err) { r.hooks = { ok: false, text: err.message }; }
     try { r.git = await sync(root); } catch (err) { r.git = { ok: false, text: err.message }; }
     if (loadLocal(root).gmail?.appPassword) { const m = await readMail(); r.mail = m.error ? { ok: false, text: m.error } : { ok: true, text: `新しい申請・問い合わせ ${m.added} 件${m.replies ? `・営業の相手からの返信 ${m.replies} 件` : ""}${m.replyError ? `(営業の返信は読み込めませんでした: ${m.replyError})` : ""}`, added: m.added, replies: m.replies }; }
+    // バリューコマースの報酬(キーがあるときだけ)
+    const local = loadLocal(root);
+    const lastVc = Date.parse(loadEarnings(root).vc?.fetchedAt ?? "") || 0;
+    if (local.valuecommerce?.clientKey && (why === "手動" || now() - lastVc >= VC_MIN_HOURS * 3600e3)) { const v = await readVc(); r.vc = { ok: v.ok, text: v.text }; }
     lastRefresh = r;
     ext = null; // 次に概要を開いたとき、GitHub の実行とサイトを確かめ直す
     issues = null; // 振り返りの Issue のチェックも、読み直す
@@ -164,6 +174,14 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     "POST /api/fetch-mail": () => serial(async () => {
       const r = await readMail();
       if (r.error) return [r.code, { error: r.error }];
+      return { ...r, state: await state() };
+    }),
+
+    // バリューコマースの報酬を、いま読み直す
+    "POST /api/earnings/vc": () => serial(async () => {
+      const r = await readVc();
+      if (r.skipped) return [400, { error: "バリューコマースのキーが未設定です(ADMIN.md の「広告の報酬」の手順で、admin.local.json に入れてください)" }];
+      ext = null;
       return { ...r, state: await state() };
     }),
 

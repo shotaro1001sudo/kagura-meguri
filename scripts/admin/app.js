@@ -77,8 +77,8 @@ async function refreshNow(ev) {
     await busy(ev.currentTarget, "読み込んでいます…", async () => {
       const r = await call("/api/refresh", {});
       view.loadedAt = new Date().toISOString();
-      const bad = [r.refresh.git, r.refresh.mail, r.refresh.hooks].some((x) => x && x.ok === false);
-      toast([r.refresh.git?.text, r.refresh.mail?.text, r.refresh.hooks?.text].filter(Boolean).join("\n") || "最新にしました", bad);
+      const bad = [r.refresh.git, r.refresh.mail, r.refresh.hooks, r.refresh.vc].some((x) => x && x.ok === false);
+      toast([r.refresh.git?.text, r.refresh.mail?.text, r.refresh.vc?.text, r.refresh.hooks?.text].filter(Boolean).join("\n") || "最新にしました", bad);
     });
     render(); loadOverview(true);
   } catch (err) { fail(err); }
