@@ -53,8 +53,8 @@ export function weeklyReviewTests({ ok, section }) {
 
   section("週次の振り返り(PDCA): このPCの仕組みの見張り(分析・note)");
   const base = { events, summary, posted, info, todayJst: "2026-11-23" };
-  const alive = reviewMetrics({ ...base, mediaStats: { updated: "2026-11-16" }, note: { status: "ok", lastPost: "2026-11-21" } });
-  ok(alive.pc.analysisDaysAgo === 7 && alive.pc.noteDaysAgo === 2 && !decideActions(alive, null).some((a) => /^(analysis|note)-stale$/.test(a.key)), "分析が先週の月曜に動き、note が2日前に出ていれば、何も出さない", JSON.stringify(alive.pc));
+  const alive = reviewMetrics({ ...base, mediaStats: { updated: "2026-11-20" }, note: { status: "ok", lastPost: "2026-11-21" } });
+  ok(alive.pc.analysisDaysAgo === 3 && alive.pc.noteDaysAgo === 2 && !decideActions(alive, null).some((a) => /^(analysis|note)-stale$/.test(a.key)), "分析(3日に1回)が3日前に動き、note が2日前に出ていれば、何も出さない", JSON.stringify(alive.pc));
   const dead = reviewMetrics({ ...base, mediaStats: { updated: "2026-11-09" }, note: { status: "ok", lastPost: "2026-11-08" } });
   const deadActs = decideActions(dead, null);
   ok(deadActs.some((a) => a.key === "analysis-stale" && a.owner === "人" && a.text.includes("2026-11-09") && a.text.includes("14 日")), `分析の公開の跡が ${TARGETS.analysisStaleDays} 日より前なら、止まっていると知らせる`);

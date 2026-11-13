@@ -62,7 +62,7 @@ export function statusView() {
     h("section", { "aria-labelledby": "st-ops" }, h("h2", { id: "st-ops", class: "sec" }, "自動の仕組み"), opsPart(),
       h("p", { class: "mut small" }, "GitHub の実行とサイトの表示は、10分ごとに確かめ直します。")),
     h("section", { "aria-labelledby": "st-tasks" }, h("h2", { id: "st-tasks", class: "sec" }, "予定タスク"),
-      h("p", { class: "mut" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です(Note の投稿・毎週の分析など)。PC が起動していて、アプリが開いているときだけ動きます。予定の変更は、PC のアプリで行います。"),
+      h("p", { class: "mut" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です(Note の投稿・3日に1回の分析など)。PC が起動していて、アプリが開いているときだけ動きます。予定の変更は、PC のアプリで行います。"),
       tasksPart()),
   ];
 }

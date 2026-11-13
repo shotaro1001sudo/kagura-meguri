@@ -10,7 +10,7 @@ export const TARGETS = {
   heldMax: 10,        // 保留がこれより多いと「保留を片付ける」
   readingDaysMin: 14, // 読み物の未投稿が、この日数分を切ると「読み物を足す」
   collectStaleDays: 8, // 週次収集がこの日数より前なら「収集が止まっている」
-  analysisStaleDays: 8, // このPCの週次の分析(月曜)が、この日数より前なら「分析が止まっている」
+  analysisStaleDays: 6, // このPCの分析(3日に1回)が、この日数より前なら「分析が止まっている」(1回飛んだら知らせる)
   noteStaleDays: 5,     // note(2日に1回)の最後の投稿が、この日数より前なら「note が止まっている」
   socialMinRatio: 0.7,  // 過去7日のSNS予約が、予定の本数のこの割合を切ると「予約が足りない」
   staleWeeks: 3         // 同じ「やること」がこの週数つづいたら、目立たせる
@@ -122,7 +122,7 @@ export function decideActions(m, prev) {
   if (perf.status === "unavailable") add("social-metrics-unavailable", "人", `Buffer から投稿の反応を読めませんでした(${perf.reason || "理由不明"})。APIキーの期限と、反応の読み取り(insightsRead)が使えるかを確認する`);
   if (perf.status === "no_metrics") add("social-no-metrics", "人", `SNSの投稿はあるのに、反応の数字を評価できませんでした(${perf.reason || "理由不明"})。Buffer の画面で、投稿ごとの反応が出ているかを確認する。出ていなければ、反応による投稿の並べ替えと書き出しの改善は止まったままです`);
   // このPCで動く仕組みの脈。止まると、検索・売上の点検と改善(Check・Act)がまるごと抜ける
-  if (pc.analysisDaysAgo != null && pc.analysisDaysAgo > TARGETS.analysisStaleDays) add("analysis-stale", "人", `このPCの週次の分析が ${pc.analysisDate} から動いていません(${pc.analysisDaysAgo} 日)。月曜 9:00 に PC と Claude アプリが開いているか、管理者用ページの「予定タスク」で止まった理由を確認し、「Run now」で動かす`);
+  if (pc.analysisDaysAgo != null && pc.analysisDaysAgo > TARGETS.analysisStaleDays) add("analysis-stale", "人", `このPCの分析が ${pc.analysisDate} から動いていません(${pc.analysisDaysAgo} 日)。3日に1回の 9:00 に PC と Claude アプリが開いているか、管理者用ページの「予定タスク」で止まった理由を確認し、「Run now」で動かす`);
   if (pc.noteDaysAgo != null && pc.noteDaysAgo > TARGETS.noteStaleDays) add("note-stale", "人", `note の投稿が ${pc.noteLastPost} から止まっています(${pc.noteDaysAgo} 日)。note のログイン切れか、予定の時刻に PC が閉じていた可能性。管理者用ページの「予定タスク」と NOTE-LOG.md を確認する`);
   for (const [t, v] of Object.entries(perf.themes ?? {})) {
     if (v.index != null && v.index <= WEAK_INDEX) add(`social-weak-${t}`, "Claude", `SNSの「${THEME_LABELS[t] ?? t}」は、反応率が全体の ${v.index} 倍。投稿の順番は自動で後ろに回しました。文面(最初の一文・切り口)を見直す`);
@@ -246,7 +246,7 @@ export function renderReview(m, prev, actions, carried = [], progress = null) {
     "",
     "## このPCで見るもの(数字は公開しない)",
     "",
-    "- [ ] 検索・アクセスの分析レポート(月曜 9:00 の定期タスク「週次の検索・アクセス分析」が作る `analytics/` の最新ファイル)の改善案を、管理者用ページの「やること」で、Claude に頼むか見送るか決める <!-- manual-analytics -->",
+    "- [ ] 検索・アクセスの分析レポート(3日に1回 9:00 の定期タスク「検索・アクセス分析」が作る `analytics/` の最新ファイル)の改善案を、管理者用ページの「やること」で、Claude に頼むか見送るか決める <!-- manual-analytics -->",
     "- [ ] note: NOTE-LOG.md(このPC)の「時刻判明」「食い違い」メモがあれば、データを直す <!-- manual-note -->",
     "",
     "気づいたことは、この Issue にコメントで残してください。次の週の振り返りで、チェックの付いていない項目は持ち越されます。",
