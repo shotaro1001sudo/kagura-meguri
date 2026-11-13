@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
-import { classify, readFields, readJsonBlock, toItem, toDirectItem, DIRECT_TOPICS, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
+import { classify, readFields, readJsonBlock, toItem, toDirectItem, DIRECT_TOPICS, SERVICE_DOMAINS, ignoredSender, ignoreKey, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals, reviewChecks, reviewIssueDate } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
@@ -69,6 +69,13 @@ export async function adminTests({ ok, section }) {
       && toDirectItem(mailOf({ headers: new Map([["list-unsubscribe", "<https://x.example/u>"]]) }), opt) === null && toDirectItem(mailOf({ headers: new Map([["precedence", "bulk"]]) }), opt) === null
       && toDirectItem(mailOf({ headers: new Map([["auto-submitted", "auto-generated"]]) }), opt) === null, "送信専用のアドレス・一斉配信・サービスの自動のお知らせは取り込まない");
     ok(toDirectItem(mailOf({ from: { value: [{ address: "info@inn.example.jp" }] } }), opt)?.status === "new", "info@ のような普通の窓口のアドレスは取り込む");
+    // 本物の受信箱で混ざったもの(2026-11-14): アフィリエイト・解析・SNS などのサービスの会社からの、認証コード・登録の確認・お知らせ
+    ok(["account@valuecommerce.ne.jp", "support@goatcounter.com", "gmail-noreply@google.com", "member@value-point.jp", "info@x.com", "x@mail.github.com"].every((a) => toDirectItem(mailOf({ from: { value: [{ address: a }] } }), opt) === null)
+      && SERVICE_DOMAINS.includes("valuecommerce.ne.jp") && !SERVICE_DOMAINS.some((d) => /example|city|kanko/.test(d)), "運営で使っているサービスの会社からのメール(途中に noreply があるアドレスも)は取り込まない");
+    ok(toDirectItem(mailOf(), { ...opt, ignore: ["inn.example.jp"] }) === null && toDirectItem(mailOf(), { ...opt, ignore: ["other@inn.example.jp"] })?.from === "okami@inn.example.jp" && toDirectItem(mailOf(), { ...opt, ignore: ["okami@inn.example.jp"] }) === null,
+      "運営者が「出さない」にした差出人(ドメインか、アドレス)は取り込まない。記録には差出人のアドレス(from)を残す");
+    ok(ignoredSender("a@sub.shop.example.com", ["shop.example.com"]) && !ignoredSender("a@myshop.example.com", ["shop.example.com"]) && !ignoredSender("b@gmail.com", ["a@gmail.com"]) && ignoreKey("Okami@Inn.Example.jp") === "inn.example.jp" && ignoreKey("someone@gmail.com") === "someone@gmail.com",
+      "出さない単位: 独自ドメインはドメインごと(下のドメインも)、無料のメールはそのアドレスだけ");
     const au = toDirectItem(mailOf({ subject: "【自動返信】お問い合わせを受け付けました", messageId: "<d2@x>" }), opt);
     ok(au?.status === "done" && au.closedAt === "2026-11-14" && au.topic === DIRECT_TOPICS.auto, "自動返信は「完了」で入れる(未対応の数に入れない)", JSON.stringify(au && { s: au.status, c: au.closedAt, t: au.topic }));
     const bo = toDirectItem(mailOf({ subject: "Delivery Status Notification (Failure)", from: { value: [{ address: "mailer-daemon@googlemail.com", name: "Mail Delivery Subsystem" }] }, headers: new Map([["auto-submitted", "auto-replied"]]), messageId: "<d3@x>" }), opt);
@@ -185,7 +192,7 @@ export async function adminTests({ ok, section }) {
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
     siteCheck: async () => { ovCalls.site++; return { ok: true, status: 200, ms: 120, at: "2026-10-10T01:00:00Z" }; },
     fetchReplies: async ({ leads }) => { fakeReplies.calls.push(leads.map((x) => x.id)); return fakeReplies.next.splice(0); },
-    fetchMails: async ({ knownIds, address, leads }) => { fakeMail.calls++; fakeMail.address = address; fakeMail.leads = leads; return [sub, con, ...(fakeMail.direct ?? [])].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
+    fetchMails: async ({ knownIds, address, leads, ignore }) => { fakeMail.calls++; fakeMail.address = address; fakeMail.leads = leads; fakeMail.ignore = ignore; return [sub, con, ...(fakeMail.direct ?? [])].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
     const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: method ?? (body ? "POST" : "GET"), headers: { "x-admin-token": token, ...(body ? { "content-type": "application/json" } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined });
@@ -235,6 +242,15 @@ export async function adminTests({ ok, section }) {
     ok(r.json.added === 1 && r.json.direct === 1 && dItem?.kind === "contact" && dItem.status === "new" && r.json.state.inbox.length === 3, "編集部あての直接のメールが、受信箱の問い合わせに入る");
     r = await req("/api/inbox/update", { body: { id: dItem.id, status: "done" } });
     ok(r.status === 200 && r.json.state.inbox.find((x) => x.id === dItem.id).status === "done", "直接のメールも、対応の状況を変えられる");
+    r = await req("/api/inbox/ignore", { body: { id: subItem.id } });
+    ok(r.status === 400, "フォームからの申請・問い合わせの差出人は、「出さない」にできない");
+    r = await req("/api/inbox/ignore", { body: { id: dItem.id } });
+    ok(r.status === 200 && r.json.key === "inn.example.jp" && r.json.removed === 1 && r.json.state.inbox.length === 2 && r.json.state.mailIgnore.join() === "inn.example.jp" && JSON.parse(read(join(ROOT, ".admin/mail-ignore.json"))).join() === "inn.example.jp",
+      "「この差出人は出さない」: ドメインを .admin/mail-ignore.json に残し、受信箱にあるその差出人の直接のメールを消す", JSON.stringify(r.json.state?.mailIgnore));
+    r = await req("/api/fetch-mail", { body: {} });
+    ok(fakeMail.calls > 0 && r.status === 200, "次の読み込みでも動く");
+    r = await req("/api/inbox/unignore", { body: { key: "inn.example.jp" } });
+    ok(r.status === 200 && r.json.state.mailIgnore.length === 0, "「出さない差出人」は、戻せる");
     fakeMail.direct = [];
     ok(existsSync(join(ROOT, ".admin/inbox.json")) && !read(join(ROOT, "data/events.json")).includes("sender@example.net"), "投稿者の連絡先は .admin/ だけに保存し、開催データには入れない");
 

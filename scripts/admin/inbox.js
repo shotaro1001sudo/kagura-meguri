@@ -1,7 +1,7 @@
 // 受信箱: 投稿フォームからの掲載の申請と、お問い合わせ。メールから読み込んだものを一覧にし、選ぶと中身と操作が出る。
 // 編集部のアドレスに直接届いたメール(x.direct)も、「問い合わせ」に並べる(件名を見出しに、差出人と種類を下に出す)。
 // 投稿者の名前・メールアドレス・メモは、このPCの中だけに保存する
-import { h, S, view, render, call, toast, fail, confirmBox, badge, seg, kv, note, icon, ext, pageUrl, jpDate, recv, isOpen, inboxOpen, openMail, busy, empty } from "./ui.js";
+import { h, S, view, render, call, toast, fail, confirmBox, badge, seg, kv, note, icon, ext, pageUrl, jpDate, recv, isOpen, inboxOpen, openMail, busy, empty, more } from "./ui.js";
 import { openEditor, setEventStatus, evState } from "./events.js";
 
 const STATUS_FILTER = { submit: [["open", "未対応"], ["published", "掲載済み"], ["rejected", "却下"], ["all", "すべて"]], contact: [["open", "未対応・対応中"], ["done", "完了"], ["all", "すべて"]] };
@@ -38,6 +38,14 @@ function detail(x, back) {
     if (await confirmBox({ title: "この申請を却下しますか?", body: x.draft?.name || x.subject, danger: true, ok: "却下する", points: [["local", "サイトには何も載りません。投稿した人への連絡は、下の「見送りのお知らせ」から自分で送ります。"], ["undo", "「対応中に戻す」で戻せます。"]] })) upd({ status: "rejected" }, "却下しました");
   };
   const sub = x.kind === "submit";
+  // 直接のメール: この差出人(サービスのお知らせなど)を、今後は受信箱に出さない
+  const mute = async () => {
+    const who = x.from || x.email;
+    if (!(await confirmBox({ title: "この差出人のメールを、今後は出さないようにしますか?", body: who, ok: "出さないようにする",
+      points: [["local", "会社や団体のアドレスなら、同じドメインのメールをまとめて出さなくします(無料のメールなら、このアドレスだけ)。いま受信箱にある、この差出人の直接のメールも消えます。Gmail のメールは消えません。"], ["undo", "「問い合わせ」の一覧の下の「出さない差出人」から戻せます。"]] }))) return;
+    try { const r = await call("/api/inbox/ignore", { id: x.id }); toast(`「${r.key}」からのメールを、出さないようにしました(${r.removed} 件を受信箱から消しました)`); back(); }
+    catch (err) { fail(err); }
+  };
   return h("section", { class: "card", "aria-labelledby": "inb-h" },
     h("button", { class: "btn sm quiet", onclick: back }, icon("back"), "一覧に戻る"),
     h("div", { class: "card-h" }, h("h2", { id: "inb-h", tabindex: "-1" }, x.subject), badge(TONE[x.status] || "info", S.inboxStatus[x.status])),
@@ -61,6 +69,7 @@ function detail(x, back) {
       h("select", { id: "con-st", onchange: (e2) => upd({ status: e2.target.value }, "対応の状況を変えました") }, ["new", "doing", "done"].map((s) => h("option", { value: s, selected: x.status === s }, S.inboxStatus[s])))) : "",
     x.email ? [h("h3", null, "返信する"), h("p", { class: "mut small" }, S.gmailUser ? "定型文を入れて、Gmail の作成画面を開きます。送るのは自分です。" : "定型文を入れて、メールアプリを開きます。送るのは自分です。"),
       h("div", { class: "bar" }, replies(x, ev).map(([label, body]) => h("button", { class: "btn", onclick: () => openMail(x.email, (/^re[:：]/i.test(x.subject) ? "" : "Re: ") + x.subject, body) }, label)))] : "",
+    x.direct && (x.from || x.email) ? h("div", { class: "bar" }, h("button", { class: "btn quiet", onclick: mute }, "この差出人のメールを、今後は出さない")) : "",
     h("h3", null, h("label", { for: "memo" }, "メモ")), h("p", { class: "mut small" }, "このPCの中だけに保存します。"), memo,
     h("div", { class: "bar" }, h("button", { class: "btn", onclick: () => upd({ memo: memo.value }, "メモを保存しました") }, "メモを保存")));
 }
@@ -87,5 +96,7 @@ export function inboxView() {
         h("span", { class: "mut small" }, kind === "submit" ? `${jpDate(x.draft?.start)} ${x.draft?.prefecture || ""}${x.draft?.city || ""}` : x.direct ? [x.sender || x.email, x.topic].filter(Boolean).join(" ・ ") : x.sender || "")),
       badge(TONE[x.status] || "info", S.inboxStatus[x.status]), icon("chev")))))
       : empty(view[key] === "open" ? (kind === "submit" ? "未対応の申請はありません" : "未対応の問い合わせはありません") : "当てはまるものはありません", kind === "contact" ? "フォームや、編集部あてのメールで届くと、ここに並びます。" : "フォームから届くと、ここに並びます。"),
+    kind === "contact" && (S.mailIgnore || []).length ? more(`出さない差出人(${S.mailIgnore.length}件)`, h("p", { class: "mut small" }, "編集部あての直接のメールのうち、ここにある差出人のものは、受信箱に出しません。戻すと、次の読み込みから、直近60日の分がまた出ます。"),
+      h("ul", { class: "plan-rows" }, S.mailIgnore.map((k) => h("li", null, h("span", { class: "t" }, k), h("button", { class: "btn sm quiet", onclick: async () => { try { await call("/api/inbox/unignore", { key: k }); toast(`「${k}」を戻しました`); render(); } catch (err) { fail(err); } } }, "戻す"))))) : "",
   ];
 }

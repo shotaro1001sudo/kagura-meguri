@@ -125,19 +125,29 @@ export function isAutoReply(headers = {}, subject = "", text = "") {
 // ---------- 編集部のアドレスに直接届いたメール ----------
 // 受信箱の「問い合わせ」に出す。次のものは出さない:
 //   フォームの通知(別に読み込む)・自分が送ったメール・営業の台帳の相手からのメール(「営業」に返信として出る)・
-//   一斉配信やサービスのお知らせ(List-Unsubscribe / List-Id / Precedence: bulk など、送信専用のアドレス)
+//   一斉配信やサービスのお知らせ(List-Unsubscribe / List-Id / Precedence: bulk など、送信専用のアドレス)・
+//   サイトの運営で使っているサービスの会社からのメール(SERVICE_DOMAINS。認証コード・登録の確認・お知らせなど)・
+//   運営者が画面で「この差出人は出さない」にした差出人(.admin/mail-ignore.json)
 // 自動返信(受付の確認など)は「完了」で入れる(未対応の数に入れない)。届かなかった通知(mailer-daemon)は、未対応で出す
 export const DIRECT_DAYS = 60; // さかのぼって読む日数(はじめて読むときに、古いメールで埋まらないように)
 export const DIRECT_TOPICS = { mail: "編集部あてのメール", auto: "自動返信(編集部あてのメール)", bounce: "届かなかったメールの通知" };
-const SEND_ONLY = /^(no-?reply|noreply|do-?not-?reply|donotreply|notifications?|notify|newsletter|news|mailer|bounces?|updates?|alerts?|marketing|promo)([._+-]|$)/i;
+const SEND_ONLY = /^(notifications?|notify|newsletter|news|mailer|bounces?|updates?|alerts?|marketing|promo)([._+-]|$)|(^|[._+-])(no[-_.]?reply|do[-_.]?not[-_.]?reply)([._+-]|$)/i; // gmail-noreply@ のように、途中にあるものも
+// サイトの運営で使っているサービス(アフィリエイト・解析・フォーム・メール・SNS・ドメインなど)。ここからのメールは、問い合わせではない
+export const SERVICE_DOMAINS = ["valuecommerce.ne.jp", "value-point.jp", "goatcounter.com", "google.com", "x.com", "twitter.com", "note.com", "web3forms.com", "improvmx.com", "buffer.com", "bufferapp.com",
+  "github.com", "rakuten.co.jp", "rakuten.com", "a8.net", "amazon.co.jp", "amazon.com", "cloudflare.com", "onamae.com", "gmo.jp", "jalan.net", "recruit.co.jp", "facebookmail.com", "instagram.com", "line.me", "microsoft.com", "apple.com"];
+const domainIn = (d, list) => list.some((e) => d === e || d.endsWith("." + e));
+/** 「出さない差出人」に当たるか。list の項目は、アドレス(a@b.jp)かドメイン(b.jp。下のドメインも含む) */
+export const ignoredSender = (from, list = []) => { const a = String(from ?? "").toLowerCase(), d = a.split("@")[1] ?? ""; return list.map((e) => String(e).toLowerCase()).some((e) => (e.includes("@") ? a === e : !!d && (d === e || d.endsWith("." + e)))); };
+/** 「出さない」にするときの単位: 独自ドメインならドメインごと、無料のメール(gmail.com など)ならそのアドレスだけ */
+export const ignoreKey = (from) => { const a = String(from ?? "").toLowerCase(); return leadDomain(a) || a; };
 const BOUNCER = /^(mailer-daemon|postmaster)$/i;
 const plainHeaders = (mail) => Object.fromEntries([...(mail.headers ?? new Map())].map(([k, v]) => [String(k).toLowerCase(), typeof v === "string" ? v : v?.value ?? v?.text ?? JSON.stringify(v)]));
 
 /**
  * 解析済みのメールから、直接届いたメールの記録を作る。出さないメールは null。
- * o: { site, self: [自分のアドレス…], leads: [台帳の相手(送信済み以降)…] }
+ * o: { site, self: [自分のアドレス…], leads: [台帳の相手(送信済み以降)…], ignore: [運営者が「出さない」にした差出人…] }
  */
-export function toDirectItem(mail, { site, self = [], leads = [] } = {}) {
+export function toDirectItem(mail, { site, self = [], leads = [], ignore = [] } = {}) {
   const subject = mail.subject ?? "";
   if (classify(subject, site)) return null; // フォームの通知
   const fromAddr = (mail.from?.value?.[0]?.address ?? "").toLowerCase();
@@ -147,7 +157,7 @@ export function toDirectItem(mail, { site, self = [], leads = [] } = {}) {
   const headers = plainHeaders(mail);
   const bounce = BOUNCER.test(local);
   if (!bounce) {
-    if (SEND_ONLY.test(local)) return null;
+    if (SEND_ONLY.test(local) || domainIn(fromAddr.split("@")[1] ?? "", SERVICE_DOMAINS) || ignoredSender(fromAddr, ignore)) return null;
     if (headers["list-unsubscribe"] || headers["list-id"] || /bulk|list|junk/i.test(String(headers.precedence ?? ""))) return null;
     if (/auto-generated/i.test(String(headers["auto-submitted"] ?? ""))) return null;
     if (leads.some((x) => fromLead(fromAddr, x))) return null; // 営業の相手からのメールは、「営業」に出る
@@ -161,7 +171,7 @@ export function toDirectItem(mail, { site, self = [], leads = [] } = {}) {
     id: createHash("sha256").update(messageId).digest("hex").slice(0, 16),
     messageId, kind: "contact", direct: true, status: auto ? "done" : "new", ...(auto ? { closedAt: received.slice(0, 10) } : {}),
     received, subject: subject.slice(0, 200),
-    sender: mail.from?.value?.[0]?.name || "", email: bounce ? "" : replyTo || fromAddr,
+    sender: mail.from?.value?.[0]?.name || "", email: bounce ? "" : replyTo || fromAddr, from: fromAddr,
     viaForm: false, fields: {}, memo: "",
     topic: DIRECT_TOPICS[bounce ? "bounce" : auto ? "auto" : "mail"], target: "", message: text,
   };
@@ -221,7 +231,7 @@ export async function fetchLeadReplies({ user, pass, leads, knownIds = new Set()
  * address(編集部のアドレス)を渡すと、そのアドレスに直接届いたメール(直近 DIRECT_DAYS 日)も、同じ接続で取得する。
  * 直接のメールの読み込みに失敗しても、フォームの分は返す(返す配列の directError に理由を入れる)
  */
-export async function fetchFormMails({ user, pass, site, knownIds, address = "", leads = [], host = "imap.gmail.com", port = 993, days = 400, directDays = DIRECT_DAYS }) {
+export async function fetchFormMails({ user, pass, site, knownIds, address = "", leads = [], ignore = [], host = "imap.gmail.com", port = 993, days = 400, directDays = DIRECT_DAYS }) {
   const { ImapFlow } = await import("imapflow");
   const { simpleParser } = await import("mailparser");
   const client = new ImapFlow({ host, port, secure: true, auth: { user, pass }, logger: false });
@@ -258,7 +268,7 @@ export async function fetchFormMails({ user, pass, site, knownIds, address = "",
             dFresh.push(m.uid);
           }
           if (dFresh.length) for await (const m of client.fetch(dFresh, { source: true }, { uid: true })) {
-            const item = toDirectItem(await simpleParser(m.source), { site, self, leads });
+            const item = toDirectItem(await simpleParser(m.source), { site, self, leads, ignore });
             if (item && !knownIds.has(item.messageId) && !items.some((x) => x.messageId === item.messageId)) items.push(item);
           }
         } catch (err) { items.directError = err.code || err.message || String(err); }

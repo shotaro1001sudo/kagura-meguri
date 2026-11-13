@@ -17,8 +17,8 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, decideTargetPlan, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
-import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, loadMailIgnore, saveMailIgnore, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, decideTargetPlan, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
+import { ignoredSender, ignoreKey, fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
 import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, defaultDueAt, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
@@ -75,7 +75,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const box = loadInbox(root);
     const local = loadLocal(root);
     return { events: loadEvents(root), inbox: box.items, lastFetch: box.lastFetch, mailReady: !!(local.gmail?.user && local.gmail?.appPassword), gmailUser: local.gmail?.user ?? "",
-      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, pending: await pending(root).catch(() => null),
+      today: today(), site, operator: cfg.operator?.name ?? site, baseUrl: cfg.baseUrl ?? "", prefectures: PREFECTURES, inboxStatus: INBOX_STATUS, mailIgnore: loadMailIgnore(root), pending: await pending(root).catch(() => null),
       review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       refresh: { last: lastRefresh, hours: refreshHours } };
@@ -100,7 +100,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     // 営業の台帳の相手(送信済み以降)からのメールは、下の「返信」で「営業」に出すので、ここでは除く
     const address = g.inboxAddress ?? (cfg.domain ? `henshubu@${cfg.domain}` : "");
     const sentLeads = loadPipeline(root).leads.filter((x) => x.sentAt && x.stage !== "candidate" && (x.email || x.url || x.formUrl));
-    try { items = await fetchMails({ user: g.user, pass: g.appPassword, site, knownIds: new Set(box.items.map((x) => x.messageId)), address, leads: sentLeads }); }
+    try { items = await fetchMails({ user: g.user, pass: g.appPassword, site, knownIds: new Set(box.items.map((x) => x.messageId)), address, leads: sentLeads, ignore: loadMailIgnore(root) }); }
     catch (err) { return { code: 502, error: `Gmail から読み込めませんでした(${err.authenticationFailed ? "ユーザー名またはアプリパスワードが違います" : err.code || err.message})` }; }
     const events = loadEvents(root);
     for (const it of items) if (it.draft) it.draft.id = suggestId(it.draft, events);
@@ -318,6 +318,23 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       return { reset: true };
     },
 
+    // 編集部あての直接のメール: この差出人を、今後は出さない(独自ドメインならドメインごと。いま受信箱にある、その差出人の直接のメールも消す) / 元に戻す
+    "POST /api/inbox/ignore": (body) => serial(async () => {
+      const box = loadInbox(root);
+      const item = box.items.find((x) => x.id === body.id);
+      if (!item?.direct || !(item.from || item.email)) return [400, { error: "この差出人は、指定できません" }];
+      const key = ignoreKey(item.from || item.email);
+      saveMailIgnore(root, [...loadMailIgnore(root), key]);
+      const before = box.items.length;
+      box.items = box.items.filter((x) => !(x.direct && ignoredSender(x.from || x.email, [key])));
+      saveInbox(root, box);
+      return { key, removed: before - box.items.length, state: await state() };
+    }),
+    "POST /api/inbox/unignore": (body) => serial(async () => {
+      const key = String(body.key ?? "").toLowerCase();
+      saveMailIgnore(root, loadMailIgnore(root).filter((x) => x !== key));
+      return { state: await state() };
+    }),
     // 申請・問い合わせの状態とメモ
     "POST /api/inbox/update": (body) => serial(async () => {
       const box = loadInbox(root);

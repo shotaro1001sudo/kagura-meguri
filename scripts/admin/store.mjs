@@ -17,6 +17,7 @@ export const paths = (root) => ({
   events: join(root, "data/events.json"),
   dir: join(root, ".admin"),
   inbox: join(root, ".admin/inbox.json"),
+  mailIgnore: join(root, ".admin/mail-ignore.json"),
   local: join(root, "admin.local.json"),
   config: join(root, "config.json"),
   rejected: join(root, "data/rejected.json"),
@@ -30,6 +31,9 @@ export const saveEvents = (root, events) => writeJson(paths(root).events, events
 export const loadConfig = (root) => readJson(paths(root).config, {});
 export const loadLocal = (root) => readJson(paths(root).local, {});
 export function loadInbox(root) { const b = readJson(paths(root).inbox, {}); return { items: b.items ?? [], lastFetch: b.lastFetch ?? null }; }
+// 編集部あての直接のメールで、受信箱に出さない差出人(アドレスかドメイン)。運営者が画面で決める。このPCだけ
+export const loadMailIgnore = (root) => { const v = readJson(paths(root).mailIgnore, []); return Array.isArray(v) ? v.filter((x) => typeof x === "string" && x) : []; };
+export function saveMailIgnore(root, list) { const p = paths(root); if (!existsSync(p.dir)) mkdirSync(p.dir, { recursive: true }); writeJson(p.mailIgnore, [...new Set(list.map((x) => String(x).toLowerCase().trim()).filter(Boolean))].sort()); }
 export function saveInbox(root, box) { const p = paths(root); if (!existsSync(p.dir)) mkdirSync(p.dir, { recursive: true }); writeJson(p.inbox, box); }
 
 // 申請・問い合わせの状態。「完了・掲載済み・却下」は、対応が終わった状態(closedAt を付ける)
