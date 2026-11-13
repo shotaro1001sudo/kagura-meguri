@@ -1,4 +1,5 @@
-// 「広告・協賛のご案内」のテスト: 書いてある「載せる場所」が実在するか、数字は「数字で見る」の概数と料金だけか、中立の方針が他のページと食い違わないか
+// 「広告・協賛のご案内」のテスト(2026-11-14 に作り直したページ): 短いメニューと料金の目安、相談しながら決められることを伝えているか、
+// 書いてある「載るページの例」が実在するか、数字は「数字で見る」の概数と料金だけか、中立の方針が他のページと食い違わないか
 // 協賛枠(PR)のテスト: データの検査、期間・承認・置き場所の判定、PR の表示・sponsored、開催情報と分かれていること(MON-2)
 import { readFileSync, existsSync, rmSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,7 +8,7 @@ import { spawnSync } from "node:child_process";
 import * as cheerio from "cheerio";
 import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage, SPONSOR_MAX_PER_PAGE } from "../scripts/lib/sponsor-slots.mjs";
 import { roundDown2, approx, computeMediaStats, mediaStatsErrors, statsFresh } from "../scripts/lib/media-stats.mjs";
-import { sponsorHtml } from "../scripts/lib/sponsor.mjs";
+import { sponsorHtml, SPONSOR_TOPIC } from "../scripts/lib/sponsor.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -21,73 +22,73 @@ export function sponsorTests({ ok, section, OUT }) {
   const fileOf = (h) => join(OUT, decodeURIComponent(h.endsWith("/") ? h + "index.html" : h));
   ok(internal.length >= 5 && internal.every((h) => existsSync(fileOf(h))), "サイト内のリンクが、すべて実在するページにつながる", internal.filter((h) => !existsSync(fileOf(h))).join(", "));
 
-  // 「載せられる場所」の例が、実在する県・種類・開催・定期公演のページを指す
-  const egs = $("main a").filter((_, a) => /^\/(pref|kagura|events|regular)\/.+\.html$/.test($(a).attr("href"))).map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
-  const titleOf = (h) => cheerio.load(read(fileOf(h)))("h1").text();
-  ok(["/pref/", "/kagura/", "/events/", "/regular/"].every((d) => egs.some(([h]) => h.startsWith(d))) && egs.every(([h, t]) => t && titleOf(h).includes(t)), "載せられる場所の例が、県・種類・開催・定期公演のページにつながり、リンクの文字が行き先の名前になっている", egs.map(([h, t]) => `${t}→${titleOf(h)}`).join(", "));
-  // 数字は「数字で見る」(.sp-stats)と、メニューの料金(.sp-menu)だけに置く。例のリンクの名前(公演名)は除いて調べる
-  const $m = cheerio.load($("main").html());
-  $m("a").filter((_, a) => /^\/(pref|kagura|events|regular)\//.test($m(a).attr("href"))).remove();
-  // 冒頭の要点(.sp-from)の料金は、メニューと同じ値(config.json の sponsorPrices)をそのまま出す
-  ok($(".opoints .sp-from b").text() === `協賛枠は${$(".sp-menu .sp-plan .price").first().text()}`, "冒頭の要点に、協賛枠の料金をメニューと同じ値で出す(結論を先に)", $(".opoints .sp-from b").text());
-  $m(".sp-stats, .sp-menu, .sp-from").remove();
-  ok(!/[0-9０-９]/.test($m.root().text()), "数字は「数字で見る」とメニューの料金(と、それを写した冒頭の要点)の中だけ", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
-  // 並び: 結論(向いている方 → メニューと料金 → 載る場所と見え方)を先に、裏づけ(読んでいる方・数字)と決まり(流れ・方針・質問)を後ろに
+  // 伝えたいこと: 細かく書かず、内容・期間・ご予算を相談しながら決められること
+  ok($(".sp-open").first().text().includes("決まった型はありません") && text.includes("下のメニューは目安です") && text.includes("ご相談しながら決められます"), "書き出しで、メニューは目安で、相談しながら決められると伝える");
+  ok($(".sp-menu-box .sp-any").text().includes("ここにない形も") && $(".sp-menu-box .sp-terms").text().includes("ご事情に合わせて調整します") && $(".sp-menu-box .sp-terms").text().includes("お見積書"), "メニューのすぐ下に、ここにない形の相談・金額や期間の調整・見積書を出せることを書く");
+  const asks = $(".sp-asks > div").map((_, d) => [[$(d).find("dt").text(), $(d).find("dd").text()]]).get();
+  ok(asks.length >= 5 && asks.every(([q, a]) => /^「.+」$/.test(q) && a.length > 0) && asks.some(([q]) => q.includes("予算")) && asks.some(([q]) => q.includes("時期")) && asks.some(([q]) => q.includes("メニューにない")), "相談の例: 時期・予算・メニューにない形など、相談とその応え方を並べる", JSON.stringify(asks.map(([q]) => q)));
   const order = $("main h2").map((_, h) => $(h).text()).get();
-  ok(order.join("|") === "こんな方に向いています|メニューと料金|載る場所と見え方|読んでいるのは、こんな方|数字で見る神楽めぐり|掲載までの流れ|掲載の方針|よくあるご質問", "見出しの並び: 向いている方 → メニューと料金 → 見え方 → 読者と数字 → 流れ → 方針 → 質問", order.join("|"));
-  // 同じ説明は1か所だけ(方針・載る場所・数字のところ)。質問の答えで言い直さない
-  const count = (re) => (text.match(re) ?? []).length;
-  ok(count(/載り続けます/g) === 1 && count(/並び順/g) === 2 && count(/ご相談の際に/g) === 1 && $(".faq details").length >= 2 && !$(".faq").text().includes("並び順"), "同じ説明をくり返さない(載り続けること・並び順を変えないこと・ページごとの数字は、それぞれ1か所。見本の枠の注記は別)", `${count(/載り続けます/g)} / ${count(/並び順/g)} / ${count(/ご相談の際に/g)}`);
-  ok($(".sp-ready").prevAll("h2").first().text() === "掲載までの流れ" && $(".sp-terms").text().includes("前払い"), "「ご用意いただくもの」は流れの中に、支払いと解約の条件は料金のすぐ下に(注釈の小さな字にしない)");
+  ok(order.join("|") === "メニューと料金の目安|こんなご相談も、お受けします|数字で見る神楽めぐり|掲載までの流れ|掲載にあたってのお約束", "見出しの並び: メニューと料金の目安 → 相談の例 → 数字 → 流れ → お約束", order.join("|"));
+  ok($(".sp-steps li").length === 3 && $(".sp-steps").text().includes("ここまでは無料") && $(".sp-end a.btn[href='/contact.html']").length === 1 && $(".sp-cta a.btn[href='/contact.html']").length === 2, "流れは3段(相談・提案・掲載)。提案までは無料と書き、相談の入口を冒頭と末尾に置く");
+
+  // メニューと料金の目安: 協賛枠・記事広告・年間協賛。料金は config.json の sponsorPrices
+  {
+    const cfgP = JSON.parse(read("config.json")).sponsorPrices ?? {};
+    const yen = (n) => n.toLocaleString("ja-JP") + "円";
+    const lines = $(".sp-menu > li").map((_, li) => [[$(li).find("h3").text(), $(li).find(".price").text(), $(li).find(".sp-desc").text()]]).get();
+    ok($("#menu").length === 1 && $('a[href="#menu"]').length === 1 && lines.map(([n]) => n).join() === "協賛枠,記事広告,年間協賛" && lines.every(([, p, d]) => p && d), "メニューは3つ(協賛枠・記事広告・年間協賛)。名前・料金・ひとことの説明。冒頭からメニューへ飛べる", JSON.stringify(lines));
+    ok(lines[0][1] === `月額${yen(cfgP.monthly)}(税込)` && lines[1][1] === `1本${yen(cfgP.article)}(税込)` && lines[2][1] === `年額${yen(cfgP.annual)}(税込)`, "料金は、config.json の sponsorPrices のとおりに出す", JSON.stringify(lines.map(([, p]) => p)));
+    ok(cfgP.annual < cfgP.monthly * 12 + cfgP.article * 2 && lines[2][2].includes("記事広告を二本") && lines[2][2].includes("年に一度"), "年間協賛は、協賛枠1年分と記事広告2本を別々に頼むより安く、請求は年に一度");
+    ok(($(".sp-menu .sp-try").length === 1) === (cfgP.trial === true) && (!cfgP.trial || $(".sp-menu > li").first().find(".sp-try").text().includes("無料でお試し")), "協賛枠のお試し(はじめのひと月は無料)は、sponsorPrices.trial が true のときだけ書く");
+    const est = cheerio.load(`<main>${sponsorHtml({ esc: (s) => s, siteName: "神楽めぐり", prices: {} })}</main>`);
+    ok(est(".sp-menu .price").map((_, x) => est(x).text()).get().join() === "お見積もり,お見積もり,お見積もり" && est(".sp-try").length === 0 && est(".sp-group").length === 0, "料金を決めていないときは「お見積もり」と書き、お試しも団体ページの案内も出さない");
+  }
+  // 神楽団・保存会の団体ページ(料金は partner.plans)は、メニューのすぐ下で案内する
+  ok($(".sp-group a[href='/apply.html']").length === 1 && $(".sp-group a[href='/partner/sample.html']").length === 1 && /月額[\d,]+円\(税込\)から/.test($(".sp-group").text()), "団体ページは、いちばん安いプランの料金と、見本・申し込みへのリンクで案内する", $(".sp-group").text());
+
+  // 「載るページの例」が、実在する県・種類・開催・定期公演のページを指す
+  const egs = $(".sp-eg a").map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
+  const titleOf = (h) => cheerio.load(read(fileOf(h)))("h1").text();
+  ok(["/pref/", "/kagura/", "/events/", "/regular/"].every((d) => egs.some(([h]) => h.startsWith(d))) && egs.every(([h, t]) => t && titleOf(h).includes(t)), "載るページの例が、県・種類・開催・定期公演のページにつながり、リンクの文字が行き先の名前になっている", egs.map(([h, t]) => `${t}→${titleOf(h)}`).join(", "));
+  // 数字は、メニュー(.sp-menu・.sp-group)と「数字で見る」(.sp-stats)だけに置く。例のリンクの名前(公演名)は除いて調べる
+  const $m = cheerio.load($("main").html());
+  $m(".sp-eg a").remove();
+  $m(".sp-stats, .sp-menu, .sp-group").remove();
+  ok(!/[0-9０-９]/.test($m.root().text()), "数字は、メニューの料金と「数字で見る」の中だけ(ほかの文は「ひと月」「二本」と書く)", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
   ok(!/読者の(多く|大半|ほとんど)/.test(text), "確かめていない読者の傾向を書いていない");
+
   // 数字で見る: 掲載の件数は実数、アクセスは概数(約)と期間・出典つき。丸めていない数字を出さない
   const st = $(".sp-stats");
   const tiles = st.find(".sp-tiles li").map((_, li) => [[$(li).find(".k").text(), $(li).find(".v").text()]]).get();
   const tv = (k) => (tiles.find(([x]) => x.includes(k)) ?? [, ""])[1];
-  ok(/^\d+件$/.test(tv("これからの開催")) && /^\d+都道府県$/.test(tv("都道府県")) && /^\d+種類$/.test(tv("神楽の種類")) && /^\d+か所$/.test(tv("定期公演")), "掲載している情報: 開催・都道府県・神楽の種類・定期公演の件数", JSON.stringify(tiles));
+  ok(/^\d+件$/.test(tv("これからの開催")) && /^\d+都道府県$/.test(tv("掲載している地域")) && /^\d+種類$/.test(tv("神楽の種類")) && /^\d+か所$/.test(tv("定期公演")), "掲載している情報: 開催・都道府県・神楽の種類・定期公演の件数", JSON.stringify(tiles));
   ok(tv("検索結果に表示") === "約2.3万回" && tv("検索から訪れた") === "約1,900回" && tv("閲覧数") === "約5,200回" && st.text().includes("うち直近1週間で約8,100回"), "アクセス: 概数(約)で、直近1週間も添える", JSON.stringify(tiles));
   ok(st.find(".sp-tiles .v").get().every((v) => /^約/.test($(v).text()) || /^\d+\D+$/.test($(v).text())) && !/23000|1900|5200/.test(st.text()), "アクセスの数字は、すべて「約」つきの概数");
   ok(st.text().includes("Google Search Console(9月8日〜10月5日)") && st.text().includes("Googleアナリティクス(9月10日〜10月7日)") && st.text().includes("2026年10月8日更新") && st.text().includes("計測に同意した方の分だけ"), "出典・集計期間・更新日・閲覧数の計り方を書く");
-  const tops = st.find(".sp-top a").map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
-  ok(tops.map(([h]) => h).join() === "/pref/島根県.html,/kagura/石見神楽.html" && tops.every(([h, t]) => t && titleOf(h) === t), "よく読まれているページ: 名前は行き先の見出し。無いページは出さない", JSON.stringify(tops));
-  ok(st.text().includes("ご相談の際にお伝えします"), "ページごとの数字は、相談の際に伝えると書く");
-  ok(text.includes("神楽に特化") && text.includes("ご相談の際に") && text.includes("お伝えします"), "売りは「神楽に特化した読者」。ページごとの数字は相談の際に伝えると書いてある");
-  ok($("#menu").length === 1 && $('a[href="#menu"]').length === 1 && $(".sp-menu .sp-plan").length >= 2 && $(".sp-menu .sp-plan").get().every((x) => $(x).find("h3").text() && $(x).find(".price").text() && $(x).find("dt").text().includes("載る場所")), "メニューは、名前・料金・載る場所を並べて比べられる。冒頭からメニューへ飛べる");
-  ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .sponsor-slot .pr").first().text() === "PR" && $(".sp-sample .sponsor-slot .pr").map((_, x) => $(x).text()).get().includes("PR記事") && $(".sp-sample figcaption").get().every((f) => $(f).text().includes("見本")), "協賛枠の見え方の見本(リンクなし・「見本」と書く・PR と PR記事の両方)");
-  ok($(".sp-sample-article .sp-article").length === 1 && $(".sp-sample-article .pr").text() === "PR記事" && $('main a[href="/pr/sample.html"]').length >= 1 && $(".sp-ready li").length === 2 && $(".sp-ready dt").length >= 6 && $(".sp-who .eg").length === 3, "記事広告の冒頭の見本と見本ページへのリンク、ご用意いただくもの(協賛枠・記事広告)、このような方へ の載せ方の例");
-  // 見本と載せ方の例には、特定の神楽の名前・団体の名前を使わない(架空の「◯◯温泉旅館」などにする)
+  ok(st.text().includes("ご相談の際にお伝えします") && text.includes("神楽に特化"), "売りは「神楽に特化したサイト」。地域のページごとの数字は、相談の際に伝えると書く");
+
+  // 協賛枠の見え方の見本(架空の提供者。特定の神楽の名前・団体の名前を使わない)
+  ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .sponsor-slot .pr").first().text() === "PR" && $(".sp-sample figcaption").text().includes("見本") && $(".sp-sample figcaption").text().includes("架空"), "協賛枠の見え方の見本(リンクなし・「見本」「架空」と書く・PR の印)");
   const prPage = cheerio.load(read(join(OUT, "pr/sample.html")));
   {
     const rows = [...JSON.parse(read("data/events.json")), ...JSON.parse(read("data/regular.json"))];
     const names = [...new Set(rows.flatMap((e) => [e.kagura, e.organizer, e.performer, ...(Array.isArray(e.performers) ? e.performers : [])]).filter((x) => typeof x === "string" && x.length >= 3))];
     const partnerNames = (existsSync("data/partners.json") ? JSON.parse(read("data/partners.json")) : []).map((p) => p.name);
-    const sampleText = $(".sp-sample, .sp-ready, .sp-who").text() + prPage("main").text();
+    const sampleText = $(".sp-sample, .sp-asks, .sp-menu").text() + prPage("main").text();
     const found = [...names, ...partnerNames].filter((n) => sampleText.includes(n));
-    ok(sampleText.includes("◯◯") && found.length === 0, "見本と載せ方の例に、特定の神楽の名前・団体の名前を使っていない", found.join(", "));
+    ok(sampleText.includes("◯◯") && found.length === 0, "見本・メニュー・相談の例に、特定の神楽の名前・団体の名前を使っていない", found.join(", "));
   }
-  ok(/noindex/.test(prPage('meta[name="robots"]').attr("content")) && !read(join(OUT, "sitemap.xml")).includes("/pr/sample.html") && prPage("title").text() === "記事広告の見本 | 神楽めぐり", "記事広告の見本ページは、検索に載せない(noindex・サイトマップに入れない)");
+  ok($('.sp-menu a[href="/pr/sample.html"]').length === 1 && /noindex/.test(prPage('meta[name="robots"]').attr("content")) && !read(join(OUT, "sitemap.xml")).includes("/pr/sample.html") && prPage("title").text() === "記事広告の見本 | 神楽めぐり", "記事広告の見本ページへメニューから案内する。見本ページは検索に載せない(noindex・サイトマップに入れない)");
   ok(prPage("main .pr").first().text() === "PR記事" && prPage("main").text().includes("見本") && prPage("main").text().includes("架空") && prPage("main").text().includes("編集部が取材して書き") && prPage("main").text().includes("並び順は変わりません") && prPage('main a[href="/sponsor.html"]').length >= 1 && prPage('main a[href="/contact.html"]').length >= 1, "見本ページ: PR記事の表示、架空である旨、取材して書くこと、中立の方針、案内と問い合わせへのリンク");
   ok(prPage('main a[href^="http"]').length === 0 && prPage(".crumbs a[href='/sponsor.html']").length === 1 && prPage("main h2").length >= 5, "見本ページに外へのリンクはなく、パンくずは広告・協賛のご案内から。見出しごとの本文がある");
-  // 協賛のページだけの CSS は、その2ページの head にだけ入れる(全ページの CSS には入れない。ページの重さの上限のため)
-  const hasCss = (p) => /\.sp-stats\{/.test(read(join(OUT, p))) && /\.sp-article\{/.test(read(join(OUT, p)));
-  ok(hasCss("sponsor.html") && hasCss("pr/sample.html") && !hasCss("index.html") && !hasCss("organizers.html") && !/\.sp-stats\{/.test(read("scripts/style.css")), "協賛のページ専用の CSS は、協賛のページと見本ページにだけ入り、style.css には無い");
-  {
-    const cfgP = JSON.parse(read("config.json")).sponsorPrices ?? {};
-    const prices = $(".sp-menu .sp-plan").map((_, x) => [[$(x).find("h3").text(), $(x).find(".price").text()]]).get();
-    const priceOf = (h) => (prices.find(([t]) => t.startsWith(h)) ?? [, ""])[1];
-    const yen = (n) => n.toLocaleString("ja-JP") + "円";
-    ok(priceOf("協賛枠") === `月額${yen(cfgP.monthly)}(税込)` && priceOf("記事広告") === `1本${yen(cfgP.article)}(税込)` && text.includes("銀行振込の前払い") && !text.includes("お見積もりします"),
-      "協賛枠と記事広告の料金は、config.json の sponsorPrices のとおりに出し、支払いは前払いと書く(お見積もりにしない)", JSON.stringify(prices));
-    const est = cheerio.load(`<main>${sponsorHtml({ esc: (s) => s, siteName: "神楽めぐり", prices: {} })}</main>`);
-    ok(est(".sp-menu .price").map((_, x) => est(x).text()).get().slice(0, 2).join() === "お見積もり,お見積もり" && est("main").text().includes("お見積もりします"), "料金を決めていないときは、「お見積もり」と書く");
-  }
-  ok(text.includes("協賛枠(月ごと)") && text.includes("記事広告(お申し込みごと)") && text.includes("取材") && text.includes("道の駅"), "メニュー: 月ごとの協賛枠と、1回ごとの記事広告(取材記事)。道の駅にも案内");
-  ok(text.includes("毎週・毎晩の定期公演") && text.includes("編集部が取材して書き"), "言葉の統一: 「毎週・毎晩の定期公演」、書き手は「編集部」");
+  // 協賛のページだけの CSS は、その2ページの head にだけ入れる(全ページの CSS には入れない)
+  const hasCss = (p) => /\.sp-menu-box\{/.test(read(join(OUT, p))) && /\.pr-photo-box\{/.test(read(join(OUT, p)));
+  ok(hasCss("sponsor.html") && hasCss("pr/sample.html") && !hasCss("index.html") && !hasCss("organizers.html") && !/\.sp-menu-box\{/.test(read("scripts/style.css")), "協賛のページ専用の CSS は、協賛のページと見本ページにだけ入り、style.css には無い");
+  ok(text.includes("記事広告") && text.includes("取材して書きます") && text.includes("道の駅") && text.includes("観光協会"), "記事広告は編集部が取材して書くこと、道の駅・観光協会にも案内していること");
 
   // 問い合わせの案内が、実物のフォームの選択肢と一致している
-  const topic = "広告・取材などのご相談";
   const cf = cheerio.load(read(join(OUT, "contact.html")));
-  ok(text.includes(`「${topic}」`) && cf("#topic option").map((_, o) => cf(o).text()).get().includes(topic), `お問い合わせの「ご用件」に「${topic}」があり、その名前で案内している`);
+  ok(text.includes(`「${SPONSOR_TOPIC}」`) && cf("#topic option").map((_, o) => cf(o).text()).get().includes(SPONSOR_TOPIC), `お問い合わせの「ご用件」に「${SPONSOR_TOPIC}」があり、その名前で案内している`);
 
   // 中立の方針が、「主催者の方へ」・運営者情報と食い違わない
   const org = cheerio.load(read(join(OUT, "organizers.html")))("main").text();

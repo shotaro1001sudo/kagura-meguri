@@ -1,15 +1,15 @@
-// 「広告・協賛のご案内」(/sponsor.html)の本文。媒体資料を兼ねる(MON-2)。
-// 地域の観光協会・宿・道の駅・お店などに、月額の協賛枠と、1回ごとの記事広告(取材記事)を案内する。
-// 並び: 要点 → 数字で見る(掲載の件数・アクセスの概数)→ メニューと料金の比べ → 載る場所と見本 → 方針 → 流れ → よくある質問。
-// ここに書く「載せる場所」は、サイトに実在するページだけにする(tests/sponsor.mjs で確認)。
-// 数字は「数字で見る」(.sp-stats)と団体ページの料金(ul.plans)だけに置く。
-//   - 掲載の件数は、ビルドの時点の実数(サイトの作りの事実)。
-//   - アクセスは、data/media-stats.json の概数だけ(上から2桁で切り捨て。scripts/lib/media-stats.mjs)。集計期間・出典を必ず添える。
-//   - 集計が古い・無いときは、アクセスの数字を出さず、「ご相談の際にお伝えします」とだけ書く。
-// 読者の傾向は、確かめていないことを書かない。書くのは「どんなことを調べる人のためのページか」(サイトの作りの事実)だけ。
-// 中立の方針(掲載は無料・協賛で掲載や並び順を変えない・PRの表示)は、「主催者の方へ」と食い違わないようにする。
-// 「実際のページ」のリンクは、行き先が分かるように、県名・神楽の名前・公演名を文字にする。
-// 見本(協賛枠・記事広告・載せ方の例)には、特定の神楽の名前・団体の名前を使わない(「◯◯温泉旅館」のように書く。tests/sponsor.mjs で確認)。
+// 「広告・協賛のご案内」(/sponsor.html)の本文。媒体資料を兼ねる(MON-2)。2026-11-14 に、0から作り直した。
+// 考え方: 細かく書かない。メニューと料金は「目安」として短く見せ、内容・期間・ご予算は相談しながら決められることを、いちばん強く伝える。
+// 並び: 書き出し(型は決まっていない) → メニューと料金の目安(品書きの形) → こんなご相談も、お受けします → 数字 → 流れ → お約束 → 相談の入口。
+//   ・メニュー: 協賛枠(月額)・記事広告(1本)・年間協賛(年額)。料金は config.json の sponsorPrices。神楽団・保存会の団体ページは、その下で案内する(料金は partner.plans)。
+//   ・「載るページの例」は、サイトに実在するページだけにする(tests/sponsor.mjs で確認)。
+//   ・数字を書くのは、メニュー(.sp-menu・.sp-group)と「数字で見る」(.sp-stats)だけ。ほかの文には数字を書かない(「ひと月」「一本」と書く)。
+//       - 掲載の件数は、ビルドの時点の実数(サイトの作りの事実)。
+//       - アクセスは、data/media-stats.json の概数だけ(上から2桁で切り捨て。scripts/lib/media-stats.mjs)。集計期間・出典を必ず添える。
+//       - 集計が古い・無いときは、アクセスの数字を出さず、「ご相談の際にお伝えします」とだけ書く。
+//   ・読者の傾向は、確かめていないことを書かない。
+//   ・中立の方針(掲載は無料・協賛で掲載や並び順を変えない・PRの表示)は、「主催者の方へ」と食い違わないようにする。
+//   ・見本には、特定の神楽の名前・団体の名前を使わない(「◯◯温泉旅館」のように書く。tests/sponsor.mjs で確認)。
 // 記事広告の見本ページ(/pr/sample.html、noindex)の本文は sponsorArticleSampleHtml。
 // 協賛枠の表示の仕組みは scripts/lib/sponsor-slots.mjs(データは data/sponsors.json)。
 import { approx } from "./media-stats.mjs";
@@ -17,42 +17,63 @@ import { approx } from "./media-stats.mjs";
 /**
  * 協賛のページと記事広告の見本ページだけの CSS。layout の head に入れる(CSP はインラインの style をハッシュで許可する)。
  * 全ページ共通の scripts/style.css には入れない(その2ページでしか使わないため)。
- * 協賛枠そのもの(.sponsor-slot・.pr)は全ページで使うので style.css のまま。
+ * 協賛枠そのもの(.sponsor-slot・.pr)は全ページで使うので style.css のまま。色は、サイトの変数だけを使う(夜の配色でもそのまま通る)。
  */
 export const SPONSOR_CSS = `<style>
-.sp-stats{margin:44px 0 0;padding:4px 22px 18px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
-.prose .sp-stats h2{margin:22px 0 4px}.prose .sp-stats h3{margin:22px 0 10px;font-size:var(--fs-s);color:var(--mut);letter-spacing:.08em}
-.prose .sp-tiles{list-style:none;padding:0;margin:0;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
-.prose .sp-tiles li{margin:0;padding:12px 14px;border-radius:var(--radius-s);background:var(--bg);display:flex;flex-direction:column;gap:2px}
+.prose.sp-page{max-width:none}
+.sp-page>p,.sp-page>ul.rules{max-width:40em}
+.prose .sp-open{margin:4px 0 0;max-width:none;font-family:var(--serif);font-size:clamp(1.3rem,3.6vw,1.75rem);line-height:1.75;letter-spacing:.06em;text-wrap:balance;word-break:auto-phrase}
+.prose .sp-open+p{margin-top:18px;line-height:2.05}
+.prose .sp-cta{margin:22px 0 0;max-width:none}
+.prose.sp-page h2{margin:64px 0 6px;font-size:var(--fs-xl)}
+.prose .sp-sub{margin:0 0 18px;color:var(--mut)}
+.sp-menu-box{padding:6px 26px 20px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.prose .sp-menu{list-style:none;margin:0;padding:0}
+.prose .sp-menu>li{margin:0;padding:20px 0 18px;border-bottom:1px solid var(--line)}
+.sp-row{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:2px 12px}
+.prose .sp-row h3{margin:0;font-size:var(--fs-xl);letter-spacing:.1em}
+.sp-dots{flex:1 1 2em;min-width:2em;align-self:center;border-bottom:1px dotted var(--mut);opacity:.7;transform:translateY(.2em)}
+.prose .sp-row .price{margin:0;font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sp-row .price small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:2px}
+.prose .sp-desc{margin:8px 0 0;max-width:38em;font-size:var(--fs-s);line-height:1.9}
+.prose .sp-for{margin:6px 0 0;font-size:var(--fs-xs);color:var(--mut)}
+.prose .sp-try{margin:8px 0 0;font-size:var(--fs-s);color:var(--ac)}
+.prose .sp-any{margin:18px 0 0;font-family:var(--serif);font-size:var(--fs-l);line-height:1.9;text-wrap:balance;word-break:auto-phrase}
+.prose .sp-terms{margin:6px 0 0;font-size:var(--fs-s);color:var(--mut);line-height:1.9}
+.prose .sp-group{margin:16px 0 0;max-width:none;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.9}
+.sp-look{display:grid;gap:18px 32px;margin:36px 0 0;align-items:start}
+@media(min-width:760px){.sp-look{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}}
+.prose .sp-look h3{margin:0 0 6px}.prose .sp-look p{margin:0 0 8px;font-size:var(--fs-s);line-height:1.9}
+.prose .sp-eg{font-size:var(--fs-xs);color:var(--mut);line-height:2}
+.sp-sample{margin:0}.sp-sample figcaption{font-size:var(--fs-xs);color:var(--mut)}.sp-sample .sponsor-slot{margin:6px 0 0}
+.sp-sample .sp-title{font-weight:500;color:var(--ac);text-decoration:underline;text-underline-offset:3px}
+.sp-asks{margin:8px 0 0;border-top:1px solid var(--line)}
+.sp-asks>div{display:grid;gap:4px 28px;padding:18px 0;border-bottom:1px solid var(--line)}
+@media(min-width:680px){.sp-asks>div{grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:baseline}}
+.sp-asks dt{font-family:var(--serif);font-size:var(--fs-l);line-height:1.7;letter-spacing:.06em}
+.sp-asks dd{margin:0;font-size:var(--fs-s);line-height:1.9}
+.sp-stats{margin:8px 0 0}
+.prose .sp-tiles{list-style:none;padding:0;margin:0;display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.prose .sp-tiles+.sp-tiles{margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+@media(min-width:680px){.prose .sp-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.prose .sp-tiles li{margin:0;padding:12px 14px;border-radius:var(--radius-s);border:1px solid var(--edge);background:var(--card);display:flex;flex-direction:column;gap:2px}
 .sp-tiles .k{font-size:var(--fs-xs);color:var(--mut);line-height:1.6}
 .sp-tiles .v{font-family:var(--serif);font-size:var(--fs-xl);color:var(--ac);line-height:1.3;font-variant-numeric:tabular-nums}
 .sp-tiles .v small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:3px}
 .sp-tiles .n{font-size:var(--fs-2xs);color:var(--mut);line-height:1.6}
-.prose .sp-src{margin:10px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
-.prose .sp-terms{margin:14px 0 0;font-size:var(--fs-s);line-height:1.9}
-.prose .sp-top{margin:8px 0 0;padding-left:1.6em;columns:2 16em;column-gap:28px}.prose .sp-top li{margin:0;break-inside:avoid}.sp-top a{display:inline-flex;align-items:center;min-height:var(--tap)}
-.prose .sp-menu{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
-.prose .sp-plan{margin:0;padding:16px 18px 14px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column}
-.prose .sp-plan .tag{align-self:flex-start;margin:0 0 4px;padding:1px 10px;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}
-.prose .sp-plan h3{margin:4px 0 2px;font-size:var(--fs-l)}
-.prose .sp-plan .price{margin:0 0 10px;color:var(--ac);font-weight:500}
-.sp-plan dl{margin:0;padding-top:10px;border-top:1px solid var(--line);font-size:var(--fs-s);line-height:1.75}
-.sp-plan dt{font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em}.sp-plan dd{margin:0 0 8px}
-.ocards .eg{display:block;margin-top:4px;font-size:var(--fs-xs);color:var(--mut)}
-.ocards.noic li{padding-left:18px}
-.sp-sample{margin:18px 0 0}.sp-sample figcaption{font-size:var(--fs-xs);color:var(--mut)}.sp-sample .sponsor-slot{margin:6px 0 0}
-.sp-sample .sp-title{font-weight:500;color:var(--ac);text-decoration:underline;text-underline-offset:3px}
-.prose .sp-sample+.octa{margin-top:14px}
-.sp-article{margin:6px 0 0;padding:16px 18px 14px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
-.sp-article p{margin:0;font-size:var(--fs-s);line-height:1.9}
-.sp-article-by,.prose .sp-article-toc{font-size:var(--fs-xs);color:var(--mut)}.prose .sp-article-toc{margin-top:10px}
-.prose .sp-article-title{margin:8px 0 6px;font-family:var(--serif);font-weight:500;font-size:var(--fs-xl);line-height:1.5}
-.sp-ready dl{margin:4px 0 0;font-size:var(--fs-s);line-height:1.75}.sp-ready dt{font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.06em;margin-top:8px}.sp-ready dd{margin:0}
+.prose .sp-src{margin:10px 0 0;max-width:none;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
+.prose .sp-steps{margin-top:14px}
+.sp-end{margin:72px 0 0;padding:34px 26px 8px;border-top:1px solid var(--line);text-align:center}
+.prose .sp-end p{margin:0 auto;max-width:34em}
+.prose .sp-end .sp-open{margin-bottom:10px}
+.prose .sp-end .sp-cta{margin-top:20px}.sp-end .btn{margin:0 4px 8px}
+@media(max-width:480px){.sp-row{display:block}.sp-dots{display:none}.prose .sp-row .price{margin-top:2px}}
+@media(max-width:640px){.sp-menu-box{padding:2px 18px 16px}.sp-cta .btn{display:flex;width:100%;margin-right:0}.sp-end{padding:28px 6px 0}}
+.sp-article-by{font-size:var(--fs-xs);color:var(--mut)}
 .pr-byline{font-size:var(--fs-s);color:var(--mut)}
 .prose .pr-photo{margin:20px 0}.pr-photo-box{display:grid;place-items:center;min-height:180px;padding:16px;border:1px dashed var(--mut);border-radius:var(--radius);color:var(--mut);font-size:var(--fs-s);text-align:center;background:var(--card)}.pr-photo figcaption{font-size:var(--fs-xs);color:var(--mut);margin-top:6px}
 .pr-facts{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;font-size:var(--fs-s)}.pr-facts dt{color:var(--mut)}.pr-facts dd{margin:0}
 .pr-about{margin-top:40px;padding:4px 22px 18px;border:1px solid var(--edge);border-radius:var(--radius);background:var(--card)}.prose .pr-about h2{margin-top:18px}.pr-about .cta-end{margin-top:20px}
-@media(min-width:641px){.sp-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-steps li:nth-child(2n):after{display:none}}
 </style>`;
 
 /** 見本に使う、架空の提供者と記事(特定の神楽・団体の名前を使わない) */
@@ -72,181 +93,116 @@ export const SAMPLE_SPONSOR = {
   },
 };
 
+/** お問い合わせフォームの「ご用件」の選択肢の名前(tests/sponsor.mjs が、実物のフォームと照らす) */
+export const SPONSOR_TOPIC = "広告・取材などのご相談";
+
 const jpDay = (d) => d.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日");
 const jpShort = (d) => d.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, "$1月$2日");
 
 /**
  * @param {{ esc: (s:string)=>string, siteName: string,
  *   pref?: { name: string, href: string }, kagura?: { name: string, href: string }, ev?: { name: string, href: string }, reg?: { name: string, href: string },
- *   plans?: { name: string, priceText: string, includes: string[] }[],
- *   prices?: { monthly?: number, article?: number },   協賛枠(月額)と記事広告(1本)の料金。税込。無いものは「お見積もり」
+ *   plans?: { name: string, monthly: number, priceText: string }[],   神楽団・保存会の団体ページのプラン(config.json の partner.plans)
+ *   prices?: { monthly?: number, article?: number, annual?: number, trial?: boolean },   協賛枠(月額)・記事広告(1本)・年間協賛(年額)。税込。無いものは「お見積もり」。trial: 協賛枠のはじめのひと月を無料にする
  *   facts?: { events: number, prefs: number, kaguras: number, regular: number },
- *   stats?: { updated: string, search?: { from: string, to: string, impressions: number, clicks: number, impressions7?: number, clicks7?: number }, analytics?: { from: string, to: string, pageviews: number, users: number } } | null,
- *   topPages?: { name: string, href: string }[] }} x
+ *   stats?: { updated: string, search?: { from: string, to: string, impressions: number, clicks: number, impressions7?: number, clicks7?: number }, analytics?: { from: string, to: string, pageviews: number, users: number } } | null }} x
  */
-export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], prices = {}, facts, stats, topPages = [] }) {
+export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], prices = {}, facts, stats }) {
   const yen = (n) => `${Number(n).toLocaleString("ja-JP")}円`;
   const ok = (n) => Number.isFinite(n) && n > 0;
-  const monthlyText = ok(prices.monthly) ? `月額${yen(prices.monthly)}(税込)` : "お見積もり";
-  const articleText = ok(prices.article) ? `1本${yen(prices.article)}(税込)` : "お見積もり";
-  const priced = ok(prices.monthly) && ok(prices.article);
-  const eg = (x) => (x ? `<span class="eg">実際のページ: <a href="${x.href}">${esc(x.name)}</a></span>` : "");
+  const price = (n, unit) => (ok(n) ? `${unit}${yen(n)}<small>(税込)</small>` : "お見積もり");
   const S = SAMPLE_SPONSOR;
   const s = stats?.search, a = stats?.analytics;
   const tile = (label, value, unit, note = "") => `<li><span class="k">${label}</span><span class="v">${value}<small>${unit}</small></span>${note ? `<span class="n">${note}</span>` : ""}</li>`;
+  const line = (name, priceHtml, desc, who, extra = "") => `<li>
+<div class="sp-row"><h3>${name}</h3><span class="sp-dots" aria-hidden="true"></span><p class="price">${priceHtml}</p></div>
+<p class="sp-desc">${desc}</p>${extra}
+<p class="sp-for">${who}</p>
+</li>`;
+  const egs = [pref, kagura, ev, reg].filter(Boolean);
+  const cheapest = plans.filter((p) => ok(p.monthly)).sort((x, y) => x.monthly - y.monthly)[0];
+  const cta = (ghost = "") => `<p class="sp-cta octa"><a class="btn" href="/contact.html">協賛・広告について相談する</a>${ghost}</p>`;
 
-  const factsHtml = facts ? `
-<h3>掲載している情報</h3>
+  return `
+<p class="sp-open">載せ方に、決まった型はありません。</p>
+<p>${esc(siteName)}は、全国の神楽の開催日・会場・定期公演をまとめた、<strong>神楽に特化したサイト</strong>です。神楽を観に出かける方へ、会場の近くの宿やお店、地域の見どころを届けませんか。下のメニューは目安です。<strong>内容も、期間も、ご予算も、ご相談しながら決められます。</strong></p>
+${cta(`<a class="btn ghost" href="#menu">メニューと料金の目安を見る</a>`)}
+
+<h2 id="menu">メニューと料金の目安</h2>
+<p class="sp-sub">組み合わせも、時期を区切ることもできます。</p>
+<div class="sp-menu-box">
+<ul class="sp-menu">
+${line("協賛枠", price(prices.monthly, "月額"), "選んだ地域の神楽のページに、見出しとひとこと、リンクを載せます。ひと月から。秋祭りの時期だけでも載せられます。", "宿・お店・道の駅・施設の方に", prices.trial && ok(prices.monthly) ? `<p class="sp-try">はじめての方は、ひと月、無料でお試しいただけます。</p>` : "")}
+${line("記事広告", price(prices.article, "1本"), `神楽と合わせて楽しめる過ごし方として、編集部がお話をうかがい、取材して書きます。写真や地図も載せられます(<a href="/pr/sample.html">記事の見本</a>)。`, "じっくり伝えたい方に")}
+${line("年間協賛", price(prices.annual, "年額"), "一年を通した協賛枠に、記事広告を二本。季節に合わせた内容の差し替えや、催しのお知らせも、その都度ご相談いただけます。ご請求は、年に一度です。", "観光協会・自治体・温泉地の方に")}
+</ul>
+<p class="sp-any">ここにない形も、どうぞご相談ください。</p>
+<p class="sp-terms">金額・期間・内容は、ご事情に合わせて調整します。お見積書・ご請求書・領収書をお出しします。お支払いは、掲載の前に、銀行振込でお願いしています。時期や分け方も、ご相談ください。</p>
+</div>
+${cheapest ? `<p class="sp-group"><b>神楽団・保存会・主催者の方へ</b><br>写真・動画・演目の紹介をまとめた団体ページを、${esc(cheapest.priceText)}からご用意しています。<a href="/partner/sample.html">団体ページの見本</a>・<a href="/apply.html">団体ページのお申し込み</a></p>` : ""}
+
+<div class="sp-look">
+<div>
+<h3>協賛枠の見え方</h3>
+<p>開催情報とは別の枠に、「PR」の印と提供者のお名前をつけて載せます。載るのは、選んだ地域の、県・神楽の種類・開催・定期公演の各ページです。</p>
+${egs.length ? `<p class="sp-eg">載るページの例: ${egs.map((x) => `<a href="${x.href}">${esc(x.name)}</a>`).join("、")}</p>` : ""}
+</div>
+<figure class="sp-sample">
+<figcaption>見本(提供者のお名前は架空のものです)</figcaption>
+<div class="sponsor-slot" aria-hidden="true"><p class="sp-head">地域の協賛</p><ul>
+<li class="sp-item"><span class="pr">PR</span><span class="sp-title">${esc(S.inn.title)}</span><p>${esc(S.inn.text)}</p><p class="sp-by">提供: ${esc(S.inn.name)}</p></li>
+</ul></div>
+</figure>
+</div>
+
+<h2>こんなご相談も、お受けします</h2>
+<p class="sp-sub">まだ何も決まっていない段階でも、かまいません。</p>
+<dl class="sp-asks">
+<div><dt>「秋祭りの時期だけ、載せたい」</dt><dd>ひと月から、時期を決めて載せられます。祭りの前だけ、冬の夜神楽のあいだだけ、という載せ方もできます。</dd></div>
+<div><dt>「予算が決まっている」</dt><dd>ご予算をうかがって、その中でできる載せ方をご提案します。</dd></div>
+<div><dt>「何を書けばよいか、分からない」</dt><dd>お話をうかがって、編集部が文章を整えます。原稿のご用意は要りません。</dd></div>
+<div><dt>「地域の宿やお店で、まとめて載せたい」</dt><dd>組合や商店会、観光協会でまとめたお申し込みも、ご相談ください。</dd></div>
+<div><dt>「来年度の予算で、考えたい」</dt><dd>年度の始まりに合わせた掲載にできます。お見積書を先にお出しすることも、お支払いの時期をご事情に合わせることもできます。</dd></div>
+<div><dt>「メニューにない形で、協力したい」</dt><dd>催しのお知らせや、いくつかの地域にまたがる掲載など、まずはお聞かせください。</dd></div>
+</dl>
+
+<h2 id="sp-stats-h">数字で見る${esc(siteName)}</h2>
+<section class="sp-stats" aria-labelledby="sp-stats-h">
 <ul class="sp-tiles">
-${tile("これからの開催", facts.events.toLocaleString("ja-JP"), "件")}
-${tile("都道府県", String(facts.prefs), "都道府県")}
+${facts ? `${tile("これからの開催", facts.events.toLocaleString("ja-JP"), "件")}
+${tile("掲載している地域", String(facts.prefs), "都道府県")}
 ${tile("神楽の種類", String(facts.kaguras), "種類")}
-${tile("毎週・毎晩の定期公演", String(facts.regular), "か所")}
-</ul>` : "";
-
-  const accessHtml = s || a ? `
-<h3>アクセス(参考)</h3>
-<ul class="sp-tiles">
+${tile("毎週・毎晩の定期公演", String(facts.regular), "か所")}` : ""}
+</ul>${s || a ? `
+<ul class="sp-tiles">` : ""}
 ${s ? tile("Googleの検索結果に表示された回数", approx(s.impressions), "回", `直近4週間${s.impressions7 ? `。うち直近1週間で${approx(s.impressions7)}回` : ""}`) : ""}
 ${s ? tile("検索から訪れた回数", approx(s.clicks), "回", `直近4週間${s.clicks7 ? `。うち直近1週間で${approx(s.clicks7)}回` : ""}`) : ""}
 ${a ? tile("ページの閲覧数", approx(a.pageviews), "回", "直近4週間。計測に同意した方の分だけ") : ""}
-</ul>
-<p class="sp-src">${[s && `検索: Google Search Console(${jpShort(s.from)}〜${jpShort(s.to)})`, a && `閲覧数: Googleアナリティクス(${jpShort(a.from)}〜${jpShort(a.to)})`].filter(Boolean).join("・")}。数字は上から2桁で切り捨てた概数です(${jpDay(stats.updated)}更新)。載せたいページごとの数字は、ご相談の際にお伝えします。</p>`
-    : `<p class="sp-src">アクセスの数字は、ご相談の際に、載せたいページについてお伝えします。</p>`;
-
-  const topHtml = topPages.length ? `
-<h3>よく読まれているページ</h3>
-<p class="sp-src">検索から訪れた方が多い順です。</p>
-<ol class="sp-top">${topPages.map((p) => `<li><a href="${p.href}">${esc(p.name)}</a></li>`).join("")}</ol>` : "";
-
-  const plan = (p) => p ? `<li class="sp-plan">
-<p class="tag">神楽団・主催者の方へ</p>
-<h3>${esc(p.name)}</h3>
-<p class="price">${esc(p.priceText)}</p>
-<dl><dt>載る場所</dt><dd>団体だけのページ(<a href="/partner/sample.html">見本</a>)</dd><dt>内容</dt><dd>${p.includes.map(esc).join("。")}。</dd></dl>
-</li>` : "";
-
-  // ページの並び(2026-11-12 に整理): だれ向けか → メニューと料金 → 載る場所と見え方 → 読んでいる方と数字 → 流れ・用意するもの → 方針 → 質問。
-  // 結論(何を・いくらで・どう見えるか)を先に、裏づけ(数字)と決まりごとを後ろに置く。同じ説明は1か所だけに書く
-  //   ・協賛で開催情報を変えないこと → 「掲載の方針」
-  //   ・祭りが終わっても地域のページで載り続けること → 「載る場所と見え方」
-  //   ・ページごとの数字は相談の際に伝えること → 「数字で見る」
-  return `
-<p class="olead">${esc(siteName)}は、全国の神楽の開催日・会場・定期公演をまとめた、<strong>神楽に特化したサイト</strong>です。神楽を観に出かける方に、会場の近くの宿や道の駅、観光の情報を届けませんか。地域の皆さまからの<strong>協賛</strong>と<strong>記事広告</strong>を受け付けています。</p>
-<ul class="opoints">
-<li><b>神楽を目当てに出かける方に届く</b><span>「いつ・どこで神楽が観られるか」を調べる方のためのページに載ります。</span></li>
-<li><b>地域ごと・神楽の種類ごとに載る</b><span>県・神楽の種類・開催のページに、その地域の情報として載ります。</span></li>
-<li class="sp-from"><b>${ok(prices.monthly) ? `協賛枠は${esc(monthlyText)}` : "料金はお見積もり"}</b><span>${ok(prices.monthly) ? "月ごとのお申し込みです。秋祭りの時期だけでも載せられます。" : "載せる場所と期間をうかがって、お伝えします。"}</span></li>
-</ul>
-<p class="octa"><a class="btn" href="/contact.html">協賛・記事広告について問い合わせる</a><a class="btn ghost" href="#menu">メニューと料金を見る</a></p>
-
-<h2>こんな方に向いています</h2>
-<p>載せ方の例は、架空のものです。地域や神楽の種類に合わせて、ご一緒に考えます。</p>
-<ul class="ocards noic sp-who">
-<li><b>観光協会・自治体</b>神楽を目当てに来る方に、地域の見どころや交通を案内したい。<span class="eg">載せ方の例: 「神楽の前に寄りたい、◯◯の見どころと駐車場の案内」</span></li>
-<li><b>宿・温泉地</b>定期公演や秋祭りの時期に、会場の近くに泊まれることを知らせたい。<span class="eg">載せ方の例: 「${esc(S.inn.title)}」</span></li>
-<li><b>道の駅・飲食店・お土産</b>公演の前後に立ち寄れるお店として、知ってもらいたい。<span class="eg">載せ方の例: 「${esc(S.station.title)}」</span></li>
-</ul>
-
-<h2 id="menu">メニューと料金</h2>
-<p>目的に合わせて選べます。組み合わせることもできます。</p>
-<ul class="sp-menu">
-<li class="sp-plan">
-<p class="tag">観光協会・宿・お店の方へ</p>
-<h3>協賛枠(月ごと)</h3>
-<p class="price">${esc(monthlyText)}</p>
-<dl><dt>載る場所</dt><dd>選んだ地域(県、または市町村)の、県・開催・定期公演・神楽の種類のページ</dd><dt>内容</dt><dd>見出し・ひとこと・リンクの文字だけの枠。「PR」と提供者の名前を表示</dd><dt>期間</dt><dd>月ごと。1年を通して続けて載せることも、秋祭りの時期だけにすることもできます</dd></dl>
-</li>
-<li class="sp-plan">
-<p class="tag">じっくり紹介したい方へ</p>
-<h3>記事広告(お申し込みごと)</h3>
-<p class="price">${esc(articleText)}</p>
-<dl><dt>載る場所</dt><dd>記事のページ。協賛枠から記事へご案内します</dd><dt>内容</dt><dd>宿や道の駅、地域の観光を、神楽と合わせて楽しめる過ごし方として、編集部が取材して書きます。写真や地図、道順も載せられます。公開の前に内容をご確認いただきます</dd><dt>表示</dt><dd>「PR記事」と表示します</dd></dl>
-</li>
-${plans.map(plan).join("")}
-</ul>
-${plans.length ? `<p class="octa"><a class="btn ghost" href="/apply.html">団体ページを申し込む</a></p>` : ""}
-<p class="sp-terms">${priced ? "協賛枠の料金には、選んだ地域の県・開催・定期公演・神楽の種類のページへの掲載を含みます。お支払いは、請求書をお送りして銀行振込の前払いです。協賛枠は月ごとのお申し込みで、やめるときは前の月の末までにお知らせください。" : "協賛枠と記事広告の料金は、載せる場所と期間に応じてお見積もりします。"}</p>
-
-<h2>載る場所と見え方</h2>
-<p>協賛枠は、選んだ地域の次のページに、開催情報とは別の枠で載ります。位置は、ページの上のほうです。</p>
-<ul class="ocards noic sp-where">
-<li><b>県のページ</b>その県の神楽と開催予定をまとめたページ。説明のすぐ下に載ります。${eg(pref)}</li>
-<li><b>神楽の種類のページ</b>神楽の種類ごとの日程と解説のページ。説明のすぐ下に載ります。${eg(kagura)}</li>
-<li><b>開催のページ</b>地域や神楽の種類を決めて、その開催のページに。要点の横(スマホでは公演の情報のすぐ下)に載ります。${eg(ev)}</li>
-<li><b>定期公演のページ</b>毎週・毎晩の定期公演のページ。開催のページと同じ位置に載ります。${eg(reg)}</li>
-</ul>
-<p>開催のページは公演の日が過ぎると外れますが、同じ地域に定期公演やほかの開催があれば、そのページで載り続けます。載る場所の見込みは、お申し込みの前にお知らせします。</p>
-
-<h3>見本: 協賛枠(月ごと)</h3>
-<p>「PR」の印と提供者の名前がつきます。記事広告をお申し込みの方は「PR記事」の印で載り、そこから記事へご案内します。</p>
-<figure class="sp-sample">
-<figcaption>見え方の見本(提供者の名前は架空のものです)</figcaption>
-<div class="sponsor-slot" aria-hidden="true"><p class="sp-head">地域の協賛</p><ul>
-<li class="sp-item"><span class="pr">PR</span><span class="sp-title">${esc(S.inn.title)}</span><p>${esc(S.inn.text)}</p><p class="sp-by">提供: ${esc(S.inn.name)}</p></li>
-<li class="sp-item"><span class="pr">PR記事</span><span class="sp-title">${esc(S.station.title)}</span><p>${esc(S.station.text)}</p><p class="sp-by">提供: ${esc(S.station.name)}</p></li>
-</ul><p class="sp-note">協賛の有無で、開催情報の掲載や並び順は変わりません。</p></div>
-</figure>
-
-<h3>見本: 記事広告(お申し込みごと)</h3>
-<p>見出しの立て方と文章の雰囲気は、見本のページでご覧ください。</p>
-<figure class="sp-sample sp-sample-article">
-<figcaption>記事の冒頭の見本(宿は架空のものです)</figcaption>
-<div class="sp-article" aria-hidden="true">
-<p class="sp-article-by"><span class="pr">PR記事</span>この記事は、${esc(S.inn.name)}の提供でお届けします。取材・文: ${esc(siteName)}編集部</p>
-<p class="sp-article-title">${esc(S.article.title)}</p>
-<p class="sp-article-lead">${esc(S.article.lead)}</p>
-<p class="sp-article-toc">記事の流れ: ${S.article.sections.map(([h]) => esc(h)).join(" / ")} / 宿の情報</p>
-</div>
-</figure>
-<p class="octa"><a class="btn ghost" href="/pr/sample.html">記事広告の見本ページを見る</a></p>
-
-<h2>読んでいるのは、こんな方</h2>
-<p>一般の旅行サイトとちがい、神楽という目的がはっきりした方が読むサイトです。</p>
-<ul class="ocards noic">
-<li><b>開催日と会場を調べる方</b>公演の日時・会場・料金・予約の要否を確かめて、出かける計画を立てる方。</li>
-<li><b>好きな神楽を追いかける方</b>流派や系統など、神楽の種類ごとに、開催と定期公演を探す方。</li>
-<li><b>遠くから訪ねる方</b>開催のページから、会場の近くの宿・交通・周辺の体験を探す方。</li>
-</ul>
-
-<section class="sp-stats" aria-labelledby="sp-stats-h">
-<h2 id="sp-stats-h">数字で見る${esc(siteName)}</h2>
-${factsHtml}
-${accessHtml}
-${topHtml}
+${s || a ? "</ul>" : ""}
+${s || a ? `<p class="sp-src">${[s && `検索: Google Search Console(${jpShort(s.from)}〜${jpShort(s.to)})`, a && `閲覧数: Googleアナリティクス(${jpShort(a.from)}〜${jpShort(a.to)})`].filter(Boolean).join("・")}。数字は上から2桁で切り捨てた概数です(${jpDay(stats.updated)}更新)。載せたい地域のページごとの数字は、ご相談の際にお伝えします。</p>`
+    : `<p class="sp-src">アクセスの数字は、ご相談の際に、載せたい地域のページについてお伝えします。</p>`}
 </section>
 
 <h2>掲載までの流れ</h2>
 <ol class="steps sp-steps">
-<li><b>ご相談</b><span><a href="/contact.html">お問い合わせ</a>の「ご用件」で「広告・取材などのご相談」を選び、載せたい場所と時期をお知らせください。</span></li>
-<li><b>${priced ? "お申し込み" : "お見積もり"}</b><span>${priced ? "載せる場所・期間を決めて、請求書をお送りします。" : "載せる場所・期間・料金をお伝えします。"}</span></li>
-<li><b>原稿の確認・取材</b><span>載せる文章と画像が、掲載の方針に合っているかを確かめます。記事広告は、取材のうえ編集部が書きます。</span></li>
-<li><b>掲載</b><span>決めた期間だけ載せ、期間が終わったら外します。</span></li>
+<li><b>ご相談</b><span><a href="/contact.html">お問い合わせ</a>の「ご用件」で「${SPONSOR_TOPIC}」を選び、ご希望をお聞かせください。ひとことだけでも、かまいません。</span></li>
+<li><b>ご提案</b><span>載せ方・期間・お見積もりをお送りします。ここまでは無料です。合わなければ、遠慮なくお断りください。</span></li>
+<li><b>掲載</b><span>載せる内容をご確認いただいてから、公開します。期間が終わったら外します。</span></li>
 </ol>
 
-<h3>ご用意いただくもの</h3>
-<p>お申し込みの際に、次のものをお知らせください。文章は、編集部で整えることもできます。</p>
-<ul class="ocards noic sp-ready">
-<li><b>協賛枠(月ごと)</b><dl><dt>提供者の名前</dt><dd>枠に表示します。例: ${esc(S.inn.name)}</dd><dt>見出し</dt><dd>一行。例: 「${esc(S.inn.title)}」</dd><dt>ひとこと</dt><dd>二〜三文。例: 「${esc(S.inn.text)}」</dd><dt>リンク先と地域</dt><dd>公式サイトなどのリンク先と、載せたい地域(県、または市町村)・期間</dd></dl></li>
-<li><b>記事広告(お申し込みごと)</b><dl><dt>取材の日</dt><dd>お話をうかがえる日と、見せていただける場所</dd><dt>紹介したいこと</dt><dd>神楽の日の過ごし方、こだわり、神楽を観に来る方へのひとこと</dd><dt>写真</dt><dd>あればお借りします。なければ取材の際に編集部が撮ります</dd><dt>リンク先・連絡先</dt><dd>記事に載せる公式サイトと、予約や問い合わせの窓口</dd></dl></li>
-</ul>
-
-<h2>掲載の方針</h2>
+<h2>掲載にあたってのお約束</h2>
 <ul class="rules">
 <li><strong>開催情報の掲載は、これからも無料</strong>です(<a href="/organizers.html">主催者の方へ</a>)。協賛の有無で、掲載するかどうか・並び順・本文は変えません。</li>
-<li>協賛枠と記事広告には、<strong>「PR」と表示</strong>し、提供者の名前を載せます。リンクには、検索エンジンに広告であると伝える印(sponsored)を付けます。</li>
-<li>神楽団・保存会・神社の名前や写真は、その団体の了解があるときだけ使います。</li>
-<li>次のものは載せません: 事実と異なる表示、神事や地域の文化を軽んじる内容、投資や賭け事、成人向けの内容、政党や宗教への勧誘。</li>
-<li>掲載の前に、内容を確かめます。方針に合わない場合は、お断りすることがあります。</li>
+<li>協賛枠と記事広告には、<strong>「PR」と表示</strong>し、提供者のお名前を載せます。リンクには、検索エンジンに広告であると伝える印(sponsored)を付けます。</li>
+<li>神楽団・保存会・神社のお名前や写真は、その団体の了解があるときだけ使います。</li>
+<li>事実と異なる表示や、神事・地域の文化を軽んじる内容などは載せません。掲載の前に内容を確かめ、方針に合わない場合は、お断りすることがあります。</li>
 </ul>
 
-<h2>よくあるご質問</h2>
-<div class="faq">
-<details><summary>どの地域を選べばよいですか?</summary><p>神楽を観に来た方が、お店や宿に立ち寄れる範囲でお選びください。県全体でも、市町村を決めることもできます。</p></details>
-<details><summary>写真や地図は載せられますか?</summary><p>協賛枠は、見出し・ひとこと・リンクの文字だけです。写真や地図、道順も載せたいときは、記事広告をご利用ください(<a href="/pr/sample.html">記事広告の見本</a>)。</p></details>
+<div class="sp-end">
+<p class="sp-open">まずは、お気軽にお聞かせください。</p>
+<p>載せたい地域や時期、ご予算の目安など、分かる範囲でかまいません。編集部から、メールでお返事します。</p>
+${cta()}
 </div>
-
-<p class="cta-end"><a class="btn" href="/contact.html">協賛・記事広告について問い合わせる</a></p>
 `;
 }
 

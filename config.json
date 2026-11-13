@@ -27,7 +27,7 @@
     "accessKey": "20ab6985-4c0f-4fc8-a523-17fa2e601df2",
     "providerName": "Web3Forms"
   },
-  "sponsorPrices": { "monthly": 5000, "article": 20000 },
+  "sponsorPrices": { "monthly": 5000, "article": 30000, "annual": 96000, "trial": true },
   "partner": {
     "plans": [
       { "id": "page", "name": "団体ページ", "monthly": 3000, "prSlot": false, "includes": ["写真(8枚まで)・動画のリンク・演目の紹介(12件まで)・公式の案内をまとめた、団体だけのページ", "内容の差し替えは月に1度まで"] },

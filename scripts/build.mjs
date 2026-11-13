@@ -1208,7 +1208,7 @@ write('dist/experiences.html',layout({
 // ---------- 固定ページ ----------
 const doc = (path, title, desc, inner, opts = {}) => {
   const crumbs = [["ホーム", "/"], ...(opts.crumbs ?? []), [title]];
-  write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, ld: crumbsLd(crumbs), body: `${crumbNav(crumbs)}${hero(title, opts.lead ?? "")}<div class="prose">${inner}</div>`, ...opts.layout }));
+  write(`dist${path}`, layout({ title: `${title} | ${cfg.siteName}`, desc, path, ld: crumbsLd(crumbs), body: `${crumbNav(crumbs)}${hero(title, opts.lead ?? "")}<div class="prose${opts.cls ? ` ${opts.cls}` : ""}">${inner}</div>`, ...opts.layout }));
 };
 
 doc("/submit.html", "掲載の依頼", "神楽の開催情報の掲載依頼フォーム", `<p>神楽の開催情報をお送りください。公式情報で内容を確かめてから掲載します。掲載される場所や流れは<a href="/organizers.html">主催者の方へ</a>をご覧ください。</p>${submitForm(cfg)}`, { lead: "掲載は無料です。", crumbs: [["主催者の方へ", "/organizers.html"]], layout: { noindex: true, withForm: true, active: "/submit.html" } });
@@ -1218,23 +1218,17 @@ doc("/organizers.html", "主催者の方へ", `神楽の主催者・神社・保
   organizersHtml({ esc, siteName: cfg.siteName, formReady: formReady(cfg) }),
   { lead: "神楽の開催情報を、無料で掲載します。", layout: { active: "/organizers.html" } });
 
-// 広告・協賛のご案内(媒体資料。MON-2。地域の観光協会・宿・道の駅に、月額の協賛枠と記事広告を案内する。例のリンクは、実在する県・種類・開催・定期公演のページ)
+// 広告・協賛のご案内(媒体資料。MON-2。2026-11-14 に作り直した。細かく書かず、内容・期間・ご予算を相談しながら決められることを伝える。例のリンクは、実在する県・種類・開催・定期公演のページ)
 const kaguraEg = kaguras.find((k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k));
-doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の駅・お店の皆さまへ。${cfg.siteName}の協賛枠(月額)と記事広告(取材記事)のご案内です。神楽を観に出かける方に、地域の情報を届けます。載せる場所、掲載の方針、掲載までの流れを説明しています。`,
+doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の駅・お店の皆さまへ。${cfg.siteName}の協賛枠・記事広告・年間協賛のご案内です。神楽を観に出かける方に、地域の情報を届けます。内容・期間・ご予算は、ご相談しながら決められます。`,
   sponsorHtml({ esc, siteName: cfg.siteName,
     pref: prefs.length ? { name: prefs[0], href: prefHref(prefs[0]) } : undefined,
     kagura: kaguraEg ? { name: kaguraEg, href: kaguraHref(kaguraEg) } : undefined,
     ev: upcoming.length ? { name: upcoming[0].name, href: `/events/${upcoming[0].id}.html` } : undefined,
     reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, plans, prices: cfg.sponsorPrices ?? {},
     facts: { events: upcoming.length, prefs: prefs.length, kaguras: kaguras.length, regular: regular.length },
-    stats: statsFresh(mediaStats, today) ? mediaStats : null,
-    // よく読まれているページ: 書き出し済みのページの見出しを名前にする(無いページは出さない)
-    topPages: (statsFresh(mediaStats, today) ? mediaStats.topPages ?? [] : []).map((href) => {
-      const f = `${OUT}${href.endsWith("/") ? href + "index.html" : href}`;
-      const h1 = existsSync(f) ? (readFileSync(f, "utf8").match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? "").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim() : "";
-      return h1 ? { name: h1, href } : null;
-    }).filter(Boolean) }),
-  { lead: "神楽を観に出かける方へ、地域の情報を届けます。", layout: { head: SPONSOR_CSS } });
+    stats: statsFresh(mediaStats, today) ? mediaStats : null }),
+  { lead: "神楽を観に出かける方へ、地域の情報を届けます。", cls: "sp-page", layout: { head: SPONSOR_CSS } });
 // 記事広告の見本(架空の宿。noindex で、サイトマップにも入れない)。見出しは記事の題、要点に「見本」と書く
 {
   const crumbs = [["ホーム", "/"], ["広告・協賛のご案内", "/sponsor.html"], ["記事広告の見本"]];
