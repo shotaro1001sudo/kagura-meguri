@@ -18,7 +18,7 @@ export function salesTodos() {
   return [
     { n: sm.unseen || 0, label: "相手から届いた新しい返信", go: go("sent") },
     { n: sm.due.length, label: "連絡する日が来た相手", go: go("sent") },
-    { n: B?.noInvoice.length || 0, label: "契約したのに、請求書がまだの相手", go: go("won") },
+    { n: B?.noInvoice.length || 0, label: "契約して、請求書がまだの相手(掲載を始めたら作ります)", go: go("won") },
     { n: B?.overdue || 0, label: "支払いの期限を過ぎた請求", go: go("won") },
     { n: B?.renew.length || 0, label: "更新の連絡をする時期の契約", go: go("won") },
     { n: !P.billingReady && P.leads.some((x) => x.stage === "won") ? 1 : 0, label: "請求の振込先が未設定", go: go("won") },
@@ -96,7 +96,7 @@ async function setInvoice(x, i, status) {
   } else if (!(await confirmBox(status === "void"
     ? { title: `請求書 ${i.no} を取り消しますか?`, body: `「${x.name}」あて ${yen(i.amount)}`, danger: true, ok: "取り消す", points: [["local", "このPCの記録だけを変えます。相手に送った請求書は、自分で取り消しを伝えてください。"], ["undo", "「入金待ちに戻す」で戻せます。"]] }
     : { title: `請求書 ${i.no} を「入金待ち」に戻しますか?`, body: `「${x.name}」あて ${yen(i.amount)}`, ok: "入金待ちに戻す", points: [["local", "このPCにだけ記録します。"]] }))) return;
-  try { await call("/api/billing/status", { id: x.id, no: i.no, status, paidAt }); toast(status === "paid" ? "入金済みにしました。掲載を始めてください" : "変更しました"); render(); }
+  try { await call("/api/billing/status", { id: x.id, no: i.no, status, paidAt }); toast(status === "paid" ? "入金済みにしました" : "変更しました"); render(); }
   catch (err) { fail(err); }
 }
 async function invoiceMailOut(x, i) {
@@ -121,13 +121,11 @@ export function editBilling() {
       field("accountType", "口座の種類", h("select", { id: "f-accountType", name: "accountType" }, ["普通", "当座"].map((t) => h("option", { value: t, selected: (b.accountType || "普通") === t }, t)))),
       field("accountNumber", "口座番号(7桁)", inp("accountNumber", { inputmode: "numeric", maxlength: 7, autocomplete: "off" })),
       field("accountHolder", "口座の名義(カナ)", inp("accountHolder", { maxlength: 60 }), { help: "通帳のとおりに。個人の口座なら、本名が相手に見えます" }),
-      field("payDays", "支払いの期限(請求日から何日)", input("payDays", b.payDays ?? 10, { type: "number", min: "1", max: "60", inputmode: "numeric" })),
       field("invoiceRegNo", "インボイスの登録番号", inp("invoiceRegNo", { maxlength: 14, placeholder: "T から始まる14桁" }), { optional: true, help: "登録していなければ、空欄" })),
     field("feeNote", "振込手数料の書き方", inp("feeNote", { class: "full", maxlength: 200 }))],
     onSubmit: async (form) => {
       const f = form.elements, billing = {};
       for (const k of ["issuerName", "issuerRep", "issuerEmail", "bankName", "branchName", "accountType", "accountNumber", "accountHolder", "invoiceRegNo", "feeNote"]) billing[k] = f[k].value;
-      billing.payDays = f.payDays.value === "" ? null : Number(f.payDays.value);
       await call("/api/billing/settings", { billing });
       toast("請求の設定を保存しました"); render();
     },
@@ -135,17 +133,17 @@ export function editBilling() {
 }
 function newInvoice(x, period, preset) {
   const b = S.pipeline.billing;
-  const per = period || (x.contract?.to ? addMonth(x.contract.to, 1) : addMonth(curMonth(), 1));
-  const due = addDays(S.today, b.payDays || 10);
+  const per = period || (x.contract?.to ? addMonth(x.contract.to, 1) : curMonth()); // 後払い: はじめての請求は、掲載を始めた月(今月)から
+  const due = S.pipeline.defaultDue; // 翌月の末
   const offerName = { "MON-2": "協賛枠", "MON-1": "協賛枠(神楽団・主催者向け)" }[x.offer] || "掲載";
   const form = openForm({
     title: `請求書を作る: ${x.name}`, ok: "請求書を作る",
-    intro: h("p", { class: "mut" }, "前払いです。作ったあと、請求書が開きます。印刷の画面で「PDF に保存」を選び、メールに添えて送ります。"),
+    intro: h("p", { class: "mut" }, "後払いです。掲載を始めたあとに作ります。作ったあと、請求書が開きます。印刷の画面で「PDF に保存」を選び、メールに添えて送ります。"),
     body: [h("div", { class: "grid" },
       field("period", "掲載の始まりの月", input("period", per, { type: "month", required: true })),
       field("months", "何か月分", input("months", "1", { type: "number", min: "1", max: "12", inputmode: "numeric" })),
       field("amount", "金額(税込・円)", input("amount", preset?.amount ?? x.monthlyYen, { type: "number", min: "1", step: "1", required: true, inputmode: "numeric" }), { help: "何か月分かまとめるときは、合計の金額" }),
-      field("dueAt", "支払いの期限", input("dueAt", due, { type: "date", required: true }), { help: "掲載の始まりより前にすると、前払いになります" })),
+      field("dueAt", "支払いの期限", input("dueAt", due, { type: "date", required: true }), { help: "はじめは、翌月の末が入っています。相手の事情に合わせて変えられます" })),
     field("item", "品目", h("input", { id: "f-item", name: "invItem", class: "full", maxlength: 80, required: true, value: preset?.item ?? `${offerName}(神楽めぐり)${monthLabel(per)}分` }))],
     onSubmit: async (f0) => {
       const f = f0.elements;
@@ -217,7 +215,7 @@ function showQuote(x, q) {
     h("dl", { class: "inv-bank" },
       q.term ? [h("dt", null, "掲載の期間"), h("dd", null, q.term)] : "",
       h("dt", null, "有効期限"), h("dd", null, fullDate(q.validUntil)),
-      h("dt", null, "お支払い"), h("dd", null, "ご請求書をお送りします(銀行振込)。時期は、ご相談に合わせます。")),
+      h("dt", null, "お支払い"), h("dd", null, "後払いです。掲載を始めたあとに、ご請求書をお送りします(銀行振込。翌月の末まで)。時期は、ご相談に合わせます。")),
     q.note ? h("p", { class: "inv-note" }, q.note) : "",
     q.status === "void" ? h("p", { class: "inv-void" }, "この見積書は取り消しました") : "");
   docView({ label: `見積書 ${q.no}`, fileName: `見積書_${q.no}`, sheet });
@@ -295,7 +293,7 @@ function showInvoice(x, i) {
       h("dt", null, "名義"), h("dd", null, b.accountHolder),
       h("dt", null, "お支払いの期限"), h("dd", null, fullDate(i.dueAt))),
     h("p", { class: "inv-note" }, b.feeNote),
-    h("p", { class: "inv-note" }, "ご入金を確かめたあとに、掲載を始めます。"),
+    h("p", { class: "inv-note" }, "お支払いの期限までに、お振り込みをお願いいたします。"),
     i.status === "void" ? h("p", { class: "inv-void" }, "この請求書は取り消しました") : "");
   docView({ label: `請求書 ${i.no}`, fileName: `請求書_${i.no}`, sheet });
 }
@@ -306,15 +304,15 @@ function billingPanel() {
   return h("section", { class: "card", "aria-labelledby": "bill-h" },
     h("div", { class: "card-h" }, h("h2", { id: "bill-h" }, "請求と入金"), h("button", { class: "btn sm", onclick: editBilling }, "請求の設定(振込先)")),
     !P.billingReady ? note("warn", "振込先が、まだ入っていません。請求書を作る前に「請求の設定」で入れてください(このPCにだけ保存します)。") : "",
-    B.noInvoice.length ? [h("h3", null, "契約したのに、請求書がまだの相手"), h("ul", { class: "plan-rows" }, B.noInvoice.map((r) => h("li", null, h("span", { class: "t" }, r.name), h("span", { class: "mut small" }, `契約 ${jpDate(r.wonAt)}`),
+    B.noInvoice.length ? [h("h3", null, "契約して、請求書がまだの相手(掲載を始めたら作ります)"), h("ul", { class: "plan-rows" }, B.noInvoice.map((r) => h("li", null, h("span", { class: "t" }, r.name), h("span", { class: "mut small" }, `契約 ${jpDate(r.wonAt)}`),
       h("button", { class: "btn sm tonal", disabled: !P.billingReady, onclick: () => newInvoice(lead(r.id)) }, "請求書を作る"))))] : "",
     B.unpaid.length ? [h("h3", null, "入金待ち"), h("ul", { class: "plan-rows" }, B.unpaid.map((i) => h("li", { class: i.overdue ? "att" : "" }, h("span", { class: "t" }, `${i.name} ・ ${yen(i.amount)}`), invBadge(i), h("span", { class: "mut small" }, `${i.no} ・ 期限 ${jpDate(i.dueAt)}`),
       h("button", { class: "btn sm tonal", onclick: () => setInvoice(lead(i.leadId), i, "paid") }, "入金を確かめた"))))] : "",
     B.renew.length ? [h("h3", null, "更新の連絡をする時期"), h("ul", { class: "plan-rows" }, B.renew.map((r) => h("li", { class: "att" }, h("span", { class: "t" }, r.name), h("span", { class: "mut small" }, `掲載は ${jpDate(r.end)} まで(${r.days >= 0 ? `あと${r.days}日` : `${-r.days}日過ぎ`})`),
       h("button", { class: "btn sm tonal", disabled: !P.billingReady, onclick: () => newInvoice(lead(r.id), addMonth(r.to, 1)) }, "次の月の請求書を作る"))))] : "",
-    B.publishReady.length ? h("p", { class: "mut small" }, `入金済みで、今月が掲載の期間の相手: ${B.publishReady.map((r) => r.name).join("、")}。協賛枠に載っているか確かめてください(載せるのは、Claude に「協賛枠に○○を載せて」と頼めます)。`) : "",
+    B.running.length ? h("p", { class: "mut small" }, `今月が掲載の期間の相手: ${B.running.map((r) => r.name).join("、")}。協賛枠に載っているか確かめてください(載せるのは、Claude に「協賛枠に○○を載せて」と頼めます)。`) : "",
     Object.keys(B.paidByMonth).length ? h("p", { class: "mut small" }, "入金の合計: ", Object.entries(B.paidByMonth).sort().reverse().slice(0, 3).map(([m, v]) => `${monthLabel(m)} ${yen(v)}`).join(" ・ "), "(「目標・収益」の「実績を入れる」の、協賛・有料プランの収入に入れる目安)") : "",
-    more("請求の流れ", h("p", { class: "mut" }, "(求められたら)相手のカードの「見積書」で見積書を作る → 契約したら請求書を作る → PDF にしてメールで送る → 入金を確かめたら「入金を確かめた」→ (求められたら)領収書を送る → 掲載を始める → 終わりの2週間前に更新の連絡。前払いが基本です。支払いの時期を相手に合わせたときは、期限の日付を変えてください。")));
+    more("請求の流れ", h("p", { class: "mut" }, "(求められたら)相手のカードの「見積書」で見積書を作る → 契約したら掲載を始める → 請求書を作り、PDF にしてメールで送る → 入金を確かめたら「入金を確かめた」→ (求められたら)領収書を送る → 終わりの2週間前に更新の連絡。後払いです(支払いの期限は、はじめは翌月の末)。期限を過ぎた請求は「やること」に出るので、相手に確かめてください。")));
 }
 function billingBox(x) {
   const P = S.pipeline;

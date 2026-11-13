@@ -21,7 +21,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pr
 import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
-import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
+import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, defaultDueAt, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
@@ -87,7 +87,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const billing = loadBilling(root);
     return { leads: pl.leads, updated: pl.updated, stages: STAGES, kinds: KINDS, offers: OFFERS, followDays: FOLLOW_DAYS, summary: pipelineSummary(pl, loadPlan(root, today())?.kpis ?? [], today()),
       // 請求と入金(振込先は analytics/billing.json。このPCだけ)
-      billing, billingReady: billingReady(billing), billingSummary: billingSummary(pl.leads, today()), invoiceStatus: INVOICE_STATUS, renewDays: RENEW_NOTICE_DAYS, quoteStatus: QUOTE_STATUS, quoteValidDays: QUOTE_VALID_DAYS, quoteMaxLines: QUOTE_MAX_LINES };
+      billing, billingReady: billingReady(billing), billingSummary: billingSummary(pl.leads, today()), invoiceStatus: INVOICE_STATUS, renewDays: RENEW_NOTICE_DAYS, defaultDue: defaultDueAt(today()), quoteStatus: QUOTE_STATUS, quoteValidDays: QUOTE_VALID_DAYS, quoteMaxLines: QUOTE_MAX_LINES };
   };
 
   // Gmail から、新しい申請・問い合わせを読み込む(画面のボタンと、定期の更新の両方から)

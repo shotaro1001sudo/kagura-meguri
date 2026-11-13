@@ -3,7 +3,7 @@
 // 保存するもの(どちらも analytics/ の中。.gitignore 済み。このPCだけ。GitHub には送らない):
 //   analytics/billing.json  … 請求書に載せる差出人と振込先(運営者が画面で入れる。口座の情報なので、公開しない)
 //   analytics/pipeline.json … 相手ごとの請求(lead.invoices)と、掲載の期間(lead.contract)
-// 前払い: 入金を確かめてから掲載する。金額は税込の総額で書く(適格請求書の登録はしていない前提。登録したら invoiceRegNo を入れる)
+// 後払い(2026-11-14 から): 掲載を始めたあとに請求書を送り、翌月の末までに振り込んでもらう。入金の前でも掲載する。金額は税込の総額で書く(適格請求書の登録はしていない前提。登録したら invoiceRegNo を入れる)
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { loadPipeline } from "./pipeline.mjs";
@@ -19,7 +19,7 @@ const addDays = (d, k) => new Date(Date.parse(d + "T00:00:00Z") + k * DAY).toISO
 const monthEnd = (m) => `${m}-${String(new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate()).padStart(2, "0")}`;
 const writeJson = (p, v) => { if (!existsSync(dirname(p))) mkdirSync(dirname(p), { recursive: true }); writeFileSync(p + ".tmp", JSON.stringify(v, null, 2)); renameSync(p + ".tmp", p); };
 
-export const BILLING_DEFAULTS = { issuerName: "神楽めぐり編集部", issuerEmail: "henshubu@kagurameguri.jp", issuerSite: "https://kagurameguri.jp/", payDays: 10, feeNote: "振込手数料は、お手数ですがご負担ください。", invoiceRegNo: "" };
+export const BILLING_DEFAULTS = { issuerName: "神楽めぐり編集部", issuerEmail: "henshubu@kagurameguri.jp", issuerSite: "https://kagurameguri.jp/", feeNote: "振込手数料は、お手数ですがご負担ください。", invoiceRegNo: "" };
 const B_LIMITS = { issuerName: 60, issuerRep: 40, issuerEmail: 120, issuerSite: 200, bankName: 40, branchName: 40, accountType: 4, accountNumber: 8, accountHolder: 60, feeNote: 200, invoiceRegNo: 14, note: 300 };
 
 export function loadBilling(root) {
@@ -27,6 +27,8 @@ export function loadBilling(root) {
   const j = existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : {};
   return { ...BILLING_DEFAULTS, ...j };
 }
+/** 支払いの期限の既定: 請求した月の、翌月の末(月末締め・翌月末払い。請求書を作るときに変えられる) */
+export const defaultDueAt = (today) => monthEnd(new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7), 1)).toISOString().slice(0, 7));
 /** 振込先がそろっているか(請求書を作る前に確かめる) */
 export const billingReady = (b) => !!(b.bankName && b.branchName && b.accountType && b.accountNumber && b.accountHolder && b.issuerName);
 
@@ -37,15 +39,13 @@ export function validateBilling(x) {
   if (x.accountType && !["普通", "当座"].includes(x.accountType)) errs.accountType = "普通か当座を選んでください";
   if (x.accountNumber && !/^\d{7}$/.test(x.accountNumber)) errs.accountNumber = "7桁の半角数字で入れてください";
   if (x.invoiceRegNo && !/^T\d{13}$/.test(x.invoiceRegNo)) errs.invoiceRegNo = "T と13桁の数字で入れてください(登録していなければ空欄)";
-  if (x.payDays != null && !(Number.isInteger(x.payDays) && x.payDays >= 1 && x.payDays <= 60)) errs.payDays = "1〜60 の日数で入れてください";
   for (const [k, n] of Object.entries(B_LIMITS)) if (String(x[k] ?? "").length > n) errs[k] = `${n}字以内にしてください`;
   return errs;
 }
 
 export function saveBilling(root, input) {
-  const keys = [...Object.keys(B_LIMITS), "payDays"];
+  const keys = Object.keys(B_LIMITS);
   const x = Object.fromEntries(keys.filter((k) => input[k] !== undefined).map((k) => [k, typeof input[k] === "string" ? input[k].trim() : input[k]]));
-  if (x.payDays === "" || x.payDays == null) delete x.payDays; else x.payDays = Number(x.payDays);
   const next = { ...loadBilling(root), ...x }; // 一部だけの更新も、全体で確かめる
   const errs = validateBilling(next);
   if (Object.keys(errs).length) return { code: 400, error: "入力を確かめてください", fields: errs };
@@ -72,7 +72,7 @@ export function nextInvoiceNo(leads, today) {
 }
 
 /**
- * 請求書を作る(契約した相手だけ)。input: { item, amount, period(YYYY-MM。掲載の月), months(何か月分。既定1), dueAt }
+ * 請求書を作る(契約した相手だけ。後払いなので、掲載を始めたあとに作る)。input: { item, amount, period(YYYY-MM。掲載の始まりの月), months(何か月分。既定1), dueAt(既定は翌月の末) }
  * 掲載の期間(lead.contract)を、請求した月まで延ばす(更新の連絡の目安になる)
  */
 export function addInvoice(root, id, input, today) {
@@ -85,7 +85,7 @@ export function addInvoice(root, id, input, today) {
     const amount = Number(input.amount);
     const months = input.months == null || input.months === "" ? 1 : Number(input.months);
     const period = String(input.period ?? "");
-    const dueAt = String(input.dueAt || addDays(today, b.payDays ?? BILLING_DEFAULTS.payDays));
+    const dueAt = String(input.dueAt || defaultDueAt(today));
     if (!item || item.length > 80) errs.item = "品目を80字以内で入れてください";
     if (!Number.isInteger(amount) || amount <= 0 || amount > 10_000_000) errs.amount = "税込の金額を、1円以上の整数で入れてください";
     if (!MONTH.test(period)) errs.period = "掲載の月を選んでください";
@@ -123,7 +123,7 @@ export function setInvoiceStatus(root, id, no, status, today, paidAt) {
  * 契約した相手の、請求と入金と更新のまとめ(画面と週次の分析が使う)
  *   unpaid: 入金待ち(overdue: 期限を過ぎた) / noInvoice: 契約したのに請求書がない
  *   renew: 掲載の終わりが RENEW_NOTICE_DAYS 日以内で、その次の月の請求がない / paidByMonth: 入金した月ごとの合計(円)
- *   publishReady: 入金済みで、掲載の期間に入っている(協賛枠を出してよい)相手
+ *   running: 今月が掲載の期間の相手(取り消していない請求書があるもの。後払いなので、入金の前でも載せている)
  */
 export function billingSummary(leads, today) {
   const won = leads.filter((x) => x.stage === "won");
@@ -135,8 +135,8 @@ export function billingSummary(leads, today) {
   const paidByMonth = {};
   for (const i of all) if (i.status === "paid" && i.paidAt) paidByMonth[i.paidAt.slice(0, 7)] = (paidByMonth[i.paidAt.slice(0, 7)] ?? 0) + i.amount;
   const m = today.slice(0, 7);
-  const publishReady = won.filter((x) => (x.invoices ?? []).some((i) => i.status === "paid" && i.period <= m && (i.to ?? i.period) >= m)).map((x) => ({ id: x.id, name: x.name }));
-  return { unpaid, overdue: unpaid.filter((i) => i.overdue).length, noInvoice, renew, paidByMonth, publishReady };
+  const running = won.filter((x) => (x.invoices ?? []).some((i) => i.status !== "void" && i.period <= m && (i.to ?? i.period) >= m)).map((x) => ({ id: x.id, name: x.name }));
+  return { unpaid, overdue: unpaid.filter((i) => i.overdue).length, noInvoice, renew, paidByMonth, running };
 }
 
 /** 請求書を送るメールの文面(運営者が送る。振込先は請求書の PDF に書くので、本文には書かない) */
@@ -145,7 +145,7 @@ export function invoiceMail(lead, inv, b) {
   const d = (s) => `${+s.slice(0, 4)}年${+s.slice(5, 7)}月${+s.slice(8, 10)}日`;
   return {
     subject: `【${b.issuerName}】請求書のご送付(${inv.item})`,
-    body: `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お申し込みをいただき、ありがとうございます。\n\n下記のとおり、請求書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${inv.item}\n・金額: ${yen(inv.amount)}円(税込)\n・お支払いの期限: ${d(inv.dueAt)}\n\nご入金を確かめたあとに、掲載を始めます。掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${b.issuerName}${b.issuerRep ? `\n代表 ${b.issuerRep}` : ""}\n${b.issuerSite}\n${b.issuerEmail}`,
+    body: `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お申し込みをいただき、ありがとうございます。\n\n掲載を始めましたので、請求書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${inv.item}\n・金額: ${yen(inv.amount)}円(税込)\n・お支払いの期限: ${d(inv.dueAt)}\n\n期限までに、お振り込みをお願いいたします。お支払いの時期にご事情がございましたら、どうぞお知らせください。\nご不明な点があれば、このメールにご返信ください。\n\n${b.issuerName}${b.issuerRep ? `\n代表 ${b.issuerRep}` : ""}\n${b.issuerSite}\n${b.issuerEmail}`,
   };
 }
 
@@ -230,6 +230,6 @@ export function receiptMail(lead, inv, b) {
   if (!r) return null;
   return {
     subject: `【${b.issuerName}】領収書のご送付(${r.item})`,
-    body: `${addressee(lead)}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お振り込みをいただき、ありがとうございます。${jpDay(r.date)}に、ご入金を確かめました。\n\n領収書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${r.item}\n・金額: ${yenText(r.amount)}(税込)\n・領収日: ${jpDay(r.date)}\n\n掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${signature(b)}`,
+    body: `${addressee(lead)}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お振り込みをいただき、ありがとうございます。${jpDay(r.date)}に、ご入金を確かめました。\n\n領収書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${r.item}\n・金額: ${yenText(r.amount)}(税込)\n・領収日: ${jpDay(r.date)}\n\n引き続き、どうぞよろしくお願いいたします。\nご不明な点があれば、このメールにご返信ください。\n\n${signature(b)}`,
   };
 }

@@ -24,7 +24,8 @@ export function sponsorTests({ ok, section, OUT }) {
 
   // 伝えたいこと: 細かく書かず、内容・期間・ご予算を相談しながら決められること
   ok($(".sp-open").first().text().includes("決まった型はありません") && text.includes("下のメニューは目安です") && text.includes("ご相談しながら決められます"), "書き出しで、メニューは目安で、相談しながら決められると伝える");
-  ok($(".sp-menu-box .sp-any").text().includes("ここにない形も") && $(".sp-menu-box .sp-terms").text().includes("ご事情に合わせて調整します") && $(".sp-menu-box .sp-terms").text().includes("お見積書"), "メニューのすぐ下に、ここにない形の相談・金額や期間の調整・見積書を出せることを書く");
+  ok($(".sp-menu-box .sp-any").text().includes("ここにない形も") && $(".sp-menu-box .sp-terms").text().includes("ご事情に合わせて調整します") && $(".sp-menu-box .sp-terms").text().includes("お見積書") && $(".sp-menu-box .sp-terms").text().includes("お支払いは後払いです") && $(".sp-menu-box .sp-terms").text().includes("掲載を始めたあとにご請求書") && !text.includes("前払い") && !text.includes("掲載の前に、銀行振込"),
+    "メニューのすぐ下に、ここにない形の相談・金額や期間の調整・見積書を出せること・後払い(掲載を始めたあとに請求)を書く");
   const asks = $(".sp-asks > div").map((_, d) => [[$(d).find("dt").text(), $(d).find("dd").text()]]).get();
   ok(asks.length >= 5 && asks.every(([q, a]) => /^「.+」$/.test(q) && a.length > 0) && asks.some(([q]) => q.includes("予算")) && asks.some(([q]) => q.includes("時期")) && asks.some(([q]) => q.includes("メニューにない")), "相談の例: 時期・予算・メニューにない形など、相談とその応え方を並べる", JSON.stringify(asks.map(([q]) => q)));
   const order = $("main h2").map((_, h) => $(h).text()).get();
