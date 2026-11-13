@@ -96,7 +96,11 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     if (!g.user || !g.appPassword) return { code: 400, error: "Gmail の設定(admin.local.json)がありません。ADMIN.md の手順で設定してください。" };
     const box = loadInbox(root);
     let items;
-    try { items = await fetchMails({ user: g.user, pass: g.appPassword, site, knownIds: new Set(box.items.map((x) => x.messageId)) }); }
+    // 編集部のアドレス(henshubu@ + サイトのドメイン。admin.local.json の gmail.inboxAddress で変えられる)に直接届いたメールも、問い合わせとして読み込む。
+    // 営業の台帳の相手(送信済み以降)からのメールは、下の「返信」で「営業」に出すので、ここでは除く
+    const address = g.inboxAddress ?? (cfg.domain ? `henshubu@${cfg.domain}` : "");
+    const sentLeads = loadPipeline(root).leads.filter((x) => x.sentAt && x.stage !== "candidate" && (x.email || x.url || x.formUrl));
+    try { items = await fetchMails({ user: g.user, pass: g.appPassword, site, knownIds: new Set(box.items.map((x) => x.messageId)), address, leads: sentLeads }); }
     catch (err) { return { code: 502, error: `Gmail から読み込めませんでした(${err.authenticationFailed ? "ユーザー名またはアプリパスワードが違います" : err.code || err.message})` }; }
     const events = loadEvents(root);
     for (const it of items) if (it.draft) it.draft.id = suggestId(it.draft, events);
@@ -113,7 +117,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       try { replies = recordReplies(root, await fetchReplies({ user: g.user, pass: g.appPassword, leads: targets, knownIds: known }), today()); }
       catch (err) { replyError = err.code || err.message; }
     }
-    return { added: items.length, pruned, replies: replies.added, advanced: replies.advanced.length, replyError };
+    return { added: items.length, direct: items.filter((x) => x.direct).length, directError: items.directError ?? null, pruned, replies: replies.added, advanced: replies.advanced.length, replyError };
   };
 
   // 定期の更新: GitHub の最新を取り込む → Gmail を読み込む。ほかの保存・公開と重ならないよう、順番に

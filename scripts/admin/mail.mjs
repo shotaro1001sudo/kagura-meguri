@@ -1,4 +1,5 @@
-// Gmail(IMAP)から、フォームの通知メール(Web3Forms 経由)を読み込み、申請・問い合わせとして取り出す
+// Gmail(IMAP)から、フォームの通知メール(Web3Forms 経由)を読み込み、申請・問い合わせとして取り出す。
+// 編集部のアドレスに直接届いたメール(フォームを通さない問い合わせ・見積もりの依頼など)も、「問い合わせ」として取り出す(2026-11-14 から)
 import { createHash } from "node:crypto";
 
 // フォームの項目名(ラベル) → 開催データの項目
@@ -121,6 +122,51 @@ export function isAutoReply(headers = {}, subject = "", text = "") {
   const head = String(text).slice(0, 400);
   return /(下記|以下)の?(送信|お問い?合わせ|お申し?込み|ご連絡)?内容(にて|で)受け?付|受付(いた)?しました|受け付けました|このメールは(送信専用|自動)|自動(的に)?(送信|配信)され|改めて担当(者)?(より|から)/.test(head);
 }
+// ---------- 編集部のアドレスに直接届いたメール ----------
+// 受信箱の「問い合わせ」に出す。次のものは出さない:
+//   フォームの通知(別に読み込む)・自分が送ったメール・営業の台帳の相手からのメール(「営業」に返信として出る)・
+//   一斉配信やサービスのお知らせ(List-Unsubscribe / List-Id / Precedence: bulk など、送信専用のアドレス)
+// 自動返信(受付の確認など)は「完了」で入れる(未対応の数に入れない)。届かなかった通知(mailer-daemon)は、未対応で出す
+export const DIRECT_DAYS = 60; // さかのぼって読む日数(はじめて読むときに、古いメールで埋まらないように)
+export const DIRECT_TOPICS = { mail: "編集部あてのメール", auto: "自動返信(編集部あてのメール)", bounce: "届かなかったメールの通知" };
+const SEND_ONLY = /^(no-?reply|noreply|do-?not-?reply|donotreply|notifications?|notify|newsletter|news|mailer|bounces?|updates?|alerts?|marketing|promo)([._+-]|$)/i;
+const BOUNCER = /^(mailer-daemon|postmaster)$/i;
+const plainHeaders = (mail) => Object.fromEntries([...(mail.headers ?? new Map())].map(([k, v]) => [String(k).toLowerCase(), typeof v === "string" ? v : v?.value ?? v?.text ?? JSON.stringify(v)]));
+
+/**
+ * 解析済みのメールから、直接届いたメールの記録を作る。出さないメールは null。
+ * o: { site, self: [自分のアドレス…], leads: [台帳の相手(送信済み以降)…] }
+ */
+export function toDirectItem(mail, { site, self = [], leads = [] } = {}) {
+  const subject = mail.subject ?? "";
+  if (classify(subject, site)) return null; // フォームの通知
+  const fromAddr = (mail.from?.value?.[0]?.address ?? "").toLowerCase();
+  if (!fromAddr || /@web3forms\.com$/i.test(fromAddr)) return null;
+  if (self.map((a) => String(a).toLowerCase()).includes(fromAddr)) return null; // 自分が送ったメール(週次の通知など)
+  const local = fromAddr.split("@")[0];
+  const headers = plainHeaders(mail);
+  const bounce = BOUNCER.test(local);
+  if (!bounce) {
+    if (SEND_ONLY.test(local)) return null;
+    if (headers["list-unsubscribe"] || headers["list-id"] || /bulk|list|junk/i.test(String(headers.precedence ?? ""))) return null;
+    if (/auto-generated/i.test(String(headers["auto-submitted"] ?? ""))) return null;
+    if (leads.some((x) => fromLead(fromAddr, x))) return null; // 営業の相手からのメールは、「営業」に出る
+  }
+  const text = String(mail.text ?? "").trim();
+  const auto = !bounce && isAutoReply(headers, subject, text);
+  const received = (mail.date instanceof Date && !isNaN(mail.date) ? mail.date : new Date()).toISOString();
+  const messageId = mail.messageId || `${subject}|${received}`;
+  const replyTo = (mail.replyTo?.value?.[0]?.address ?? "").toLowerCase();
+  return {
+    id: createHash("sha256").update(messageId).digest("hex").slice(0, 16),
+    messageId, kind: "contact", direct: true, status: auto ? "done" : "new", ...(auto ? { closedAt: received.slice(0, 10) } : {}),
+    received, subject: subject.slice(0, 200),
+    sender: mail.from?.value?.[0]?.name || "", email: bounce ? "" : replyTo || fromAddr,
+    viaForm: false, fields: {}, memo: "",
+    topic: DIRECT_TOPICS[bounce ? "bounce" : auto ? "auto" : "mail"], target: "", message: text,
+  };
+}
+
 /**
  * Gmail から、営業の相手(台帳の email)が送ってきたメールを探す。相手ごとに、最初に送った日より後の分だけ。
  * leads: [{ id, email, sentAt }]。返すのは [{ leadId, messageId, date, from, subject, snippet, auto }](本文は先頭の 300 字だけ)
@@ -172,8 +218,10 @@ export async function fetchLeadReplies({ user, pass, leads, knownIds = new Set()
 /**
  * Gmail から、まだ読み込んでいないフォームの通知メールを取得する。
  * 「すべてのメール」を探すので、受信トレイから移動・アーカイブしたメールも対象。直近 400 日分。
+ * address(編集部のアドレス)を渡すと、そのアドレスに直接届いたメール(直近 DIRECT_DAYS 日)も、同じ接続で取得する。
+ * 直接のメールの読み込みに失敗しても、フォームの分は返す(返す配列の directError に理由を入れる)
  */
-export async function fetchFormMails({ user, pass, site, knownIds, host = "imap.gmail.com", port = 993, days = 400 }) {
+export async function fetchFormMails({ user, pass, site, knownIds, address = "", leads = [], host = "imap.gmail.com", port = 993, days = 400, directDays = DIRECT_DAYS }) {
   const { ImapFlow } = await import("imapflow");
   const { simpleParser } = await import("mailparser");
   const client = new ImapFlow({ host, port, secure: true, auth: { user, pass }, logger: false });
@@ -186,19 +234,34 @@ export async function fetchFormMails({ user, pass, site, knownIds, host = "imap.
     try {
       const since = new Date(Date.now() - days * 864e5);
       const uids = (await client.search({ subject: `【${site}】`, since }, { uid: true })) || [];
-      if (!uids.length) return items;
       // まず件名と Message-ID だけを見て、未取得のものに絞ってから、本文を取得する
       const fresh = [];
-      for await (const m of client.fetch(uids, { envelope: true }, { uid: true })) {
+      if (uids.length) for await (const m of client.fetch(uids, { envelope: true }, { uid: true })) {
         if (!classify(m.envelope?.subject, site)) continue;
         const mid = m.envelope?.messageId;
         if (mid && knownIds.has(mid)) continue;
         fresh.push(m.uid);
       }
-      if (!fresh.length) return items;
-      for await (const m of client.fetch(fresh, { source: true }, { uid: true })) {
+      if (fresh.length) for await (const m of client.fetch(fresh, { source: true }, { uid: true })) {
         const item = toItem(await simpleParser(m.source), site);
         if (item && !knownIds.has(item.messageId)) items.push(item);
+      }
+      // 編集部のアドレスに直接届いたメール(宛先か Cc が編集部のアドレス)
+      if (address) {
+        try {
+          const dSince = new Date(Date.now() - directDays * 864e5);
+          const dUids = (await client.search({ or: [{ to: address }, { cc: address }], since: dSince }, { uid: true })) || [];
+          const self = [user, address], dFresh = [];
+          if (dUids.length) for await (const m of client.fetch(dUids, { envelope: true }, { uid: true })) {
+            const env = m.envelope ?? {}, from = (env.from?.[0]?.address ?? "").toLowerCase();
+            if (classify(env.subject, site) || self.map((a) => a.toLowerCase()).includes(from) || (env.messageId && knownIds.has(env.messageId))) continue;
+            dFresh.push(m.uid);
+          }
+          if (dFresh.length) for await (const m of client.fetch(dFresh, { source: true }, { uid: true })) {
+            const item = toDirectItem(await simpleParser(m.source), { site, self, leads });
+            if (item && !knownIds.has(item.messageId) && !items.some((x) => x.messageId === item.messageId)) items.push(item);
+          }
+        } catch (err) { items.directError = err.code || err.message || String(err); }
       }
     } finally { lock.release(); }
   } finally { await client.logout().catch(() => {}); }

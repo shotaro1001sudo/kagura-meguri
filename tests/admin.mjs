@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { simpleParser } from "mailparser";
-import { classify, readFields, readJsonBlock, toItem, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
+import { classify, readFields, readJsonBlock, toItem, toDirectItem, DIRECT_TOPICS, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals, reviewChecks, reviewIssueDate } from "../scripts/admin/store.mjs";
 import { startAdmin } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
@@ -52,6 +52,31 @@ export async function adminTests({ ok, section }) {
   ok(f["内容"] === "1行目\n2行目" && f["対象のページのURL"] === "https://kagurameguri.jp/events/a.html", "複数行の内容や、URL(コロンを含む)を、正しく読む");
   const con = toItem({ subject: `【${SITE}】お問い合わせ: 掲載内容の訂正`, text: "■ご用件: 掲載内容の訂正\n■お名前: 山田\n■メールアドレス: y@example.net\n■内容: 日付が違います", date: new Date("2026-10-09T01:00:00Z"), messageId: "<c1@x>", from: { value: [{ address: "notify@web3forms.com" }] } }, SITE);
   ok(con.kind === "contact" && con.topic === "掲載内容の訂正" && con.message === "日付が違います" && con.email === "y@example.net", "問い合わせの用件・内容・返信先を読む(返信先の見出しがなくても、本文から)");
+
+  section("管理者用ページ: 編集部のアドレスに直接届いたメール");
+  {
+    const mailOf = (o = {}) => ({ subject: "協賛の見積もりのお願い", text: "はじめまして。◯◯温泉旅館です。\n協賛枠の見積もりをお願いできますか。", date: new Date("2026-11-14T01:00:00Z"), messageId: "<d1@inn.example.jp>",
+      from: { value: [{ address: "Okami@inn.example.jp", name: "◯◯温泉旅館 女将" }] }, headers: new Map(), ...o });
+    const opt = { site: SITE, self: ["me@gmail.example", "henshubu@kagurameguri.jp"], leads: [{ id: "L-1", email: "info@kanko.example.jp", sentAt: "2026-11-01" }] };
+    const dm = toDirectItem(mailOf(), opt);
+    ok(dm && dm.kind === "contact" && dm.direct === true && dm.status === "new" && dm.email === "okami@inn.example.jp" && dm.sender === "◯◯温泉旅館 女将" && dm.topic === DIRECT_TOPICS.mail && dm.message.includes("見積もりをお願い") && dm.viaForm === false && Object.keys(dm.fields).length === 0,
+      "フォームを通さず届いたメールを、問い合わせ(直接のメール)として取り出す", JSON.stringify(dm));
+    ok(toDirectItem(mailOf({ replyTo: { value: [{ address: "Front@inn.example.jp" }] } }), opt).email === "front@inn.example.jp", "返信先(Reply-To)があれば、それを返信の宛先にする");
+    ok(toDirectItem(mailOf({ subject: `【${SITE}】お問い合わせ: その他` }), opt) === null && toDirectItem(mailOf({ from: { value: [{ address: "notify@web3forms.com" }] } }), opt) === null, "フォームの通知は、直接のメールとしては取り込まない(別に読み込む)");
+    ok(toDirectItem(mailOf({ from: { value: [{ address: "ME@gmail.example" }] } }), opt) === null && toDirectItem(mailOf({ from: { value: [{ address: "henshubu@kagurameguri.jp" }] } }), opt) === null, "自分が送ったメール(週次の通知など)は取り込まない");
+    ok(toDirectItem(mailOf({ from: { value: [{ address: "staff@kanko.example.jp" }] } }), opt) === null, "営業の台帳の相手からのメールは取り込まない(「営業」に返信として出る)");
+    ok(toDirectItem(mailOf({ from: { value: [{ address: "no-reply@service.example.com" }] } }), opt) === null && toDirectItem(mailOf({ from: { value: [{ address: "newsletter@shop.example.com" }] } }), opt) === null
+      && toDirectItem(mailOf({ headers: new Map([["list-unsubscribe", "<https://x.example/u>"]]) }), opt) === null && toDirectItem(mailOf({ headers: new Map([["precedence", "bulk"]]) }), opt) === null
+      && toDirectItem(mailOf({ headers: new Map([["auto-submitted", "auto-generated"]]) }), opt) === null, "送信専用のアドレス・一斉配信・サービスの自動のお知らせは取り込まない");
+    ok(toDirectItem(mailOf({ from: { value: [{ address: "info@inn.example.jp" }] } }), opt)?.status === "new", "info@ のような普通の窓口のアドレスは取り込む");
+    const au = toDirectItem(mailOf({ subject: "【自動返信】お問い合わせを受け付けました", messageId: "<d2@x>" }), opt);
+    ok(au?.status === "done" && au.closedAt === "2026-11-14" && au.topic === DIRECT_TOPICS.auto, "自動返信は「完了」で入れる(未対応の数に入れない)", JSON.stringify(au && { s: au.status, c: au.closedAt, t: au.topic }));
+    const bo = toDirectItem(mailOf({ subject: "Delivery Status Notification (Failure)", from: { value: [{ address: "mailer-daemon@googlemail.com", name: "Mail Delivery Subsystem" }] }, headers: new Map([["auto-submitted", "auto-replied"]]), messageId: "<d3@x>" }), opt);
+    ok(bo?.status === "new" && bo.topic === DIRECT_TOPICS.bounce && bo.email === "", "届かなかった通知(mailer-daemon)は、未対応で出す(返信の宛先は付けない)", JSON.stringify(bo && { s: bo.status, t: bo.topic, e: bo.email }));
+    ok(dm.id !== au.id && /^[0-9a-f]{16}$/.test(dm.id), "記録の ID は、Message-ID から作る");
+    const ui = read("scripts/admin/inbox.js");
+    ok(ui.includes("x.direct ? note(\"info\", \"編集部のアドレスに、フォームを通さずに直接届いたメールです。\"") && ui.includes("x.direct ? x.subject ||") && ui.includes("Gmail で開く"), "画面: 直接のメールは、件名を見出しに出し、なりすましの注意ではなく「直接届いた」と書き、Gmail で開ける");
+  }
 
   section("管理者用ページ: 予定タスク(読むだけ)");
   const TD = mkdtempSync(join(tmpdir(), "adm-tasks-"));
@@ -160,7 +185,7 @@ export async function adminTests({ ok, section }) {
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
     siteCheck: async () => { ovCalls.site++; return { ok: true, status: 200, ms: 120, at: "2026-10-10T01:00:00Z" }; },
     fetchReplies: async ({ leads }) => { fakeReplies.calls.push(leads.map((x) => x.id)); return fakeReplies.next.splice(0); },
-    fetchMails: async ({ knownIds }) => { fakeMail.calls++; return [sub, con].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
+    fetchMails: async ({ knownIds, address, leads }) => { fakeMail.calls++; fakeMail.address = address; fakeMail.leads = leads; return [sub, con, ...(fakeMail.direct ?? [])].filter((x) => !knownIds.has(x.messageId)).map((x) => structuredClone(x)); } });
   const port = new URL(url).port;
   const req = async (path, { body, headers = {}, method } = {}) => {
     const r = await fetch(`http://127.0.0.1:${port}${path}`, { method: method ?? (body ? "POST" : "GET"), headers: { "x-admin-token": token, ...(body ? { "content-type": "application/json" } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined });
@@ -203,6 +228,14 @@ export async function adminTests({ ok, section }) {
     ok(subItem?.draft?.id === "ev-20261103", "申請には、ID の候補が付く");
     r = await req("/api/fetch-mail", { body: {} });
     ok(r.json.added === 0 && r.json.state.inbox.length === 2, "同じメールは、二度読み込まない");
+    ok(fakeMail.address === "henshubu@kagurameguri.jp" && Array.isArray(fakeMail.leads) && r.json.direct === 0 && r.json.directError === null, "メールの読み込みに、編集部のアドレスと、営業の台帳の相手(除くため)を渡す", String(fakeMail.address));
+    fakeMail.direct = [toDirectItem({ subject: "協賛について", text: "ご相談です。", date: new Date("2026-10-09T03:00:00Z"), messageId: "<dz@inn.example.jp>", from: { value: [{ address: "okami@inn.example.jp", name: "女将" }] }, headers: new Map() }, { site: SITE })];
+    r = await req("/api/fetch-mail", { body: {} });
+    const dItem = r.json.state.inbox.find((x) => x.direct);
+    ok(r.json.added === 1 && r.json.direct === 1 && dItem?.kind === "contact" && dItem.status === "new" && r.json.state.inbox.length === 3, "編集部あての直接のメールが、受信箱の問い合わせに入る");
+    r = await req("/api/inbox/update", { body: { id: dItem.id, status: "done" } });
+    ok(r.status === 200 && r.json.state.inbox.find((x) => x.id === dItem.id).status === "done", "直接のメールも、対応の状況を変えられる");
+    fakeMail.direct = [];
     ok(existsSync(join(ROOT, ".admin/inbox.json")) && !read(join(ROOT, "data/events.json")).includes("sender@example.net"), "投稿者の連絡先は .admin/ だけに保存し、開催データには入れない");
 
     r = await req("/api/events/save", { body: { event: { ...subItem.draft, source: "", checked: "2026-10-10" }, inboxId: subItem.id } });

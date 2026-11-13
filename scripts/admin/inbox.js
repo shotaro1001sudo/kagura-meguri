@@ -1,16 +1,19 @@
 // 受信箱: 投稿フォームからの掲載の申請と、お問い合わせ。メールから読み込んだものを一覧にし、選ぶと中身と操作が出る。
+// 編集部のアドレスに直接届いたメール(x.direct)も、「問い合わせ」に並べる(件名を見出しに、差出人と種類を下に出す)。
 // 投稿者の名前・メールアドレス・メモは、このPCの中だけに保存する
 import { h, S, view, render, call, toast, fail, confirmBox, badge, seg, kv, note, icon, ext, pageUrl, jpDate, recv, isOpen, inboxOpen, openMail, busy, empty } from "./ui.js";
 import { openEditor, setEventStatus, evState } from "./events.js";
 
 const STATUS_FILTER = { submit: [["open", "未対応"], ["published", "掲載済み"], ["rejected", "却下"], ["all", "すべて"]], contact: [["open", "未対応・対応中"], ["done", "完了"], ["all", "すべて"]] };
 const TONE = { new: "info", doing: "warn", done: "ok", published: "ok", rejected: "mut" };
+// Gmail で、そのメールを開くアドレス(Message-ID で探す)
+const gmailMsg = (mid) => `https://mail.google.com/mail/?authuser=${encodeURIComponent(S.gmailUser || "")}#search/${encodeURIComponent("rfc822msgid:" + String(mid).replace(/^<|>$/g, ""))}`;
 
 export async function fetchMail(ev) {
   try {
     await busy(ev?.currentTarget, "読み込んでいます…", async () => {
       const r = await call("/api/fetch-mail", {});
-      toast(`新しく ${r.added} 件を読み込みました${r.replies ? `。営業の相手からの返信 ${r.replies} 件(「営業」に出ます)` : ""}${r.pruned ? `(保存期間を過ぎた ${r.pruned} 件を削除)` : ""}${r.replyError ? `。営業の返信は読み込めませんでした(${r.replyError})` : ""}`, !!r.replyError);
+      toast(`新しく ${r.added} 件を読み込みました${r.direct ? `(うち、編集部あての直接のメール ${r.direct} 件)` : ""}${r.directError ? `。編集部あての直接のメールは読み込めませんでした(${r.directError})` : ""}${r.replies ? `。営業の相手からの返信 ${r.replies} 件(「営業」に出ます)` : ""}${r.pruned ? `(保存期間を過ぎた ${r.pruned} 件を削除)` : ""}${r.replyError ? `。営業の返信は読み込めませんでした(${r.replyError})` : ""}`, !!r.replyError);
     });
     render();
   } catch (err) { fail(err); }
@@ -38,7 +41,8 @@ function detail(x, back) {
   return h("section", { class: "card", "aria-labelledby": "inb-h" },
     h("button", { class: "btn sm quiet", onclick: back }, icon("back"), "一覧に戻る"),
     h("div", { class: "card-h" }, h("h2", { id: "inb-h", tabindex: "-1" }, x.subject), badge(TONE[x.status] || "info", S.inboxStatus[x.status])),
-    !x.viaForm ? note("warn", "このメールは、フォームの送信サービス以外から届いています。なりすましの可能性があるので、内容を慎重に確かめてください。") : "",
+    x.direct ? note("info", "編集部のアドレスに、フォームを通さずに直接届いたメールです。", x.messageId && S.gmailUser ? [" ", ext(gmailMsg(x.messageId), "Gmail で開く")] : "")
+      : !x.viaForm ? note("warn", "このメールは、フォームの送信サービス以外から届いています。なりすましの可能性があるので、内容を慎重に確かめてください。") : "",
     kv(["受信", new Date(x.received).toLocaleString("ja-JP")], ["送った人", `${x.sender || "(名前なし)"} ${x.email ? "<" + x.email + ">" : ""}`],
       ...Object.entries(x.fields).filter(([k]) => !/お名前|メールアドレス/.test(k)).map(([k, v]) => [k, /^https:\/\//.test(v) ? ext(v) : v])),
     x.kind === "contact" && !Object.keys(x.fields).length ? h("pre", { class: "draft" }, x.message) : "",
@@ -56,7 +60,7 @@ function detail(x, back) {
     x.kind === "contact" ? h("div", { class: "f inline" }, h("label", { for: "con-st" }, "対応の状況"),
       h("select", { id: "con-st", onchange: (e2) => upd({ status: e2.target.value }, "対応の状況を変えました") }, ["new", "doing", "done"].map((s) => h("option", { value: s, selected: x.status === s }, S.inboxStatus[s])))) : "",
     x.email ? [h("h3", null, "返信する"), h("p", { class: "mut small" }, S.gmailUser ? "定型文を入れて、Gmail の作成画面を開きます。送るのは自分です。" : "定型文を入れて、メールアプリを開きます。送るのは自分です。"),
-      h("div", { class: "bar" }, replies(x, ev).map(([label, body]) => h("button", { class: "btn", onclick: () => openMail(x.email, "Re: " + x.subject, body) }, label)))] : "",
+      h("div", { class: "bar" }, replies(x, ev).map(([label, body]) => h("button", { class: "btn", onclick: () => openMail(x.email, (/^re[:：]/i.test(x.subject) ? "" : "Re: ") + x.subject, body) }, label)))] : "",
     h("h3", null, h("label", { for: "memo" }, "メモ")), h("p", { class: "mut small" }, "このPCの中だけに保存します。"), memo,
     h("div", { class: "bar" }, h("button", { class: "btn", onclick: () => upd({ memo: memo.value }, "メモを保存しました") }, "メモを保存")));
 }
@@ -79,9 +83,9 @@ export function inboxView() {
     h("p", { class: "mut small", role: "status" }, `${items.length} 件${S.lastFetch ? ` ・ 前回の読み込み: ${new Date(S.lastFetch).toLocaleString("ja-JP")}` : ""}`),
     items.length ? h("ul", { class: "rows" }, items.map((x) => h("li", null, h("button", { class: "inb", onclick: () => open(x) },
       h("span", { class: "inb-when" }, recv(x.received)),
-      h("span", { class: "inb-main" }, h("b", null, kind === "submit" ? x.draft?.name || x.subject : x.topic || x.subject),
-        h("span", { class: "mut small" }, kind === "submit" ? `${jpDate(x.draft?.start)} ${x.draft?.prefecture || ""}${x.draft?.city || ""}` : x.sender || "")),
+      h("span", { class: "inb-main" }, h("b", null, kind === "submit" ? x.draft?.name || x.subject : x.direct ? x.subject || "(件名なし)" : x.topic || x.subject),
+        h("span", { class: "mut small" }, kind === "submit" ? `${jpDate(x.draft?.start)} ${x.draft?.prefecture || ""}${x.draft?.city || ""}` : x.direct ? [x.sender || x.email, x.topic].filter(Boolean).join(" ・ ") : x.sender || "")),
       badge(TONE[x.status] || "info", S.inboxStatus[x.status]), icon("chev")))))
-      : empty(view[key] === "open" ? (kind === "submit" ? "未対応の申請はありません" : "未対応の問い合わせはありません") : "当てはまるものはありません", "フォームから届くと、ここに並びます。"),
+      : empty(view[key] === "open" ? (kind === "submit" ? "未対応の申請はありません" : "未対応の問い合わせはありません") : "当てはまるものはありません", kind === "contact" ? "フォームや、編集部あてのメールで届くと、ここに並びます。" : "フォームから届くと、ここに並びます。"),
   ];
 }
