@@ -4,7 +4,7 @@ import { REGIONS, regionOf } from "./util.mjs";
 import { readingCandidates, WINDOW_MIN, THEMES } from "./x-post.mjs";
 import { QUIZ_STALE_DAYS } from "./quiz-health.mjs";
 
-export const HISTORY_WEEKS = 26;     // 推移として残す週数(約半年)
+export const HISTORY_WEEKS = 104;    // 推移として残す週数(約2年。前の年の同じ時期と比べるため)
 export const TARGETS = {
   upcoming30: 30,     // 今後30日の掲載が、これより少ないと「開催情報を増やす」
   heldMax: 10,        // 保留がこれより多いと「保留を片付ける」
