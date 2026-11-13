@@ -1,4 +1,4 @@
-// 契約のあとの流れ: 請求書 → 入金の確認 → 掲載 → 更新の連絡(管理者用ページの「営業」の「契約」から)
+// 契約の前後の書類とお金の流れ: 見積書 → (契約) → 請求書 → 入金の確認 → 領収書 → 掲載 → 更新の連絡(管理者用ページの「営業」から)
 //
 // 保存するもの(どちらも analytics/ の中。.gitignore 済み。このPCだけ。GitHub には送らない):
 //   analytics/billing.json  … 請求書に載せる差出人と振込先(運営者が画面で入れる。口座の情報なので、公開しない)
@@ -146,5 +146,90 @@ export function invoiceMail(lead, inv, b) {
   return {
     subject: `【${b.issuerName}】請求書のご送付(${inv.item})`,
     body: `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お申し込みをいただき、ありがとうございます。\n\n下記のとおり、請求書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${inv.item}\n・金額: ${yen(inv.amount)}円(税込)\n・お支払いの期限: ${d(inv.dueAt)}\n\nご入金を確かめたあとに、掲載を始めます。掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${b.issuerName}${b.issuerRep ? `\n代表 ${b.issuerRep}` : ""}\n${b.issuerSite}\n${b.issuerEmail}`,
+  };
+}
+
+// ---------- 見積書・領収書 ----------
+// 見積書: 契約の前に出す(見送りの相手には作らない)。相手ごとに lead.quotes に残す。番号は KQ-YYYYMM-NNN(発行した月ごとの通し番号)。
+//   行は QUOTE_MAX_LINES 行まで。値引きは、金額をマイナスにした行で書く(例: 「神楽団・主催者さま向けの割引」-48,000)。合計は1円以上。
+//   振込先は載せない(請求書に載せる)。金額は税込の総額。
+// 領収書: 入金済みの請求書から作る。新しく保存するものはない(番号は 請求番号-R、領収日は入金を確かめた日)。
+export const QUOTE_STATUS = { open: "有効", void: "取り消し" };
+export const QUOTE_VALID_DAYS = 30; // 有効期限の既定(発行日から)
+export const QUOTE_MAX_LINES = 4;
+const jpDay = (s) => `${+s.slice(0, 4)}年${+s.slice(5, 7)}月${+s.slice(8, 10)}日`;
+const yenText = (n) => `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("ja-JP")}円`; // 値引きの行は「−48,000円」
+const signature = (b) => `${b.issuerName}${b.issuerRep ? `\n代表 ${b.issuerRep}` : ""}\n${b.issuerSite}\n${b.issuerEmail}`;
+const addressee = (lead) => `${lead.name}\n${lead.contact ? lead.contact + "\n" : ""}`;
+
+/** 次の見積番号: KQ-YYYYMM-NNN(全部の相手で数える) */
+export function nextQuoteNo(leads, today) {
+  const ym = today.slice(0, 7).replace("-", "");
+  const n = leads.flatMap((x) => x.quotes ?? []).reduce((m, q) => { const k = q.no?.match(new RegExp(`^KQ-${ym}-(\\d+)$`)); return k ? Math.max(m, +k[1]) : m; }, 0);
+  return `KQ-${ym}-${String(n + 1).padStart(3, "0")}`;
+}
+
+/**
+ * 見積書を作る。input: { lines: [{ item, amount }], term(掲載の期間などの文。なくても可), validUntil(有効期限), note(備考。なくても可) }
+ * 空の行(品目も金額もない)は捨てる。誤りは fields に、行ごとの名前(item1・amount1 …)で返す
+ */
+export function addQuote(root, id, input, today) {
+  return withLead(root, id, (lead, pl) => {
+    if (lead.stage === "lost") return { code: 400, error: "見送りの相手には、見積書を作れません" };
+    const errs = {};
+    const raw = (Array.isArray(input.lines) ? input.lines : []).slice(0, QUOTE_MAX_LINES).map((l, i) => ({ i: i + 1, item: String(l?.item ?? "").trim(), amount: l?.amount === "" || l?.amount == null ? null : Number(l.amount) }));
+    const used = raw.filter((l) => l.item || l.amount != null);
+    for (const l of used) {
+      if (!l.item || l.item.length > 80) errs[`item${l.i}`] = "品目を80字以内で入れてください";
+      if (!Number.isInteger(l.amount) || l.amount === 0 || Math.abs(l.amount) > 10_000_000) errs[`amount${l.i}`] = "税込の金額を、整数で入れてください(値引きはマイナス)";
+    }
+    if (!used.length) errs.item1 = "品目と金額を、1行は入れてください";
+    const total = used.reduce((a, l) => a + (Number.isInteger(l.amount) ? l.amount : 0), 0);
+    if (used.length && !Object.keys(errs).length && total <= 0) errs.amount1 = "合計が1円以上になるようにしてください";
+    const term = String(input.term ?? "").trim(), note = String(input.note ?? "").trim();
+    const validUntil = String(input.validUntil || addDays(today, QUOTE_VALID_DAYS));
+    if (term.length > 60) errs.term = "60字以内にしてください";
+    if (note.length > 200) errs.note = "200字以内にしてください";
+    if (!DATE.test(validUntil) || validUntil < today) errs.validUntil = "有効期限は、今日以降の日付にしてください";
+    if (Object.keys(errs).length) return { code: 400, error: "入力を確かめてください", fields: errs };
+    const quote = { no: nextQuoteNo(pl.leads, today), issuedAt: today, lines: used.map(({ item, amount }) => ({ item, amount })), total, validUntil, status: "open", ...(term ? { term } : {}), ...(note ? { note } : {}) };
+    (lead.quotes ??= []).push(quote);
+    (lead.log ??= []).push({ date: today, stage: lead.stage, note: `見積書 ${quote.no}(${yenText(total)}・有効期限 ${validUntil})` });
+    lead.updatedAt = today;
+    return { quote, today };
+  });
+}
+
+/** 見積書を取り消す・有効に戻す */
+export function setQuoteStatus(root, id, no, status, today) {
+  if (!(status in QUOTE_STATUS)) return { code: 400, error: "不明な状態です" };
+  return withLead(root, id, (lead) => {
+    const q = (lead.quotes ?? []).find((y) => y.no === no);
+    if (!q) return { code: 404, error: "見積書が見つかりません" };
+    q.status = status;
+    (lead.log ??= []).push({ date: today, stage: lead.stage, note: `${q.no} を「${QUOTE_STATUS[status]}」に` });
+    lead.updatedAt = today;
+    return { quote: q, today };
+  });
+}
+
+/** 見積書を送るメールの文面(運営者が送る。押し付けない言い方で、内容は相談に合わせて直せると書く) */
+export function quoteMail(lead, q, b) {
+  return {
+    subject: `【${b.issuerName}】お見積書のご送付`,
+    body: `${addressee(lead)}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、ご相談をいただき、ありがとうございます。\n\nお見積書をお送りします(添付の PDF をご確認ください)。\n\n${q.lines.map((l) => `・${l.item}: ${yenText(l.amount)}`).join("\n")}\n・お見積もりの金額: ${yenText(q.total)}(税込)\n${q.term ? `・掲載の期間: ${q.term}\n` : ""}・有効期限: ${jpDay(q.validUntil)}\n\n内容や期間、金額は、ご事情に合わせて調整いたします。ご希望がございましたら、どうぞお気軽にお知らせください。\nもし今回は難しいようでしたら、どうぞお気になさらないでください。\n\n${signature(b)}`,
+  };
+}
+
+/** 領収書の中身(入金済みの請求書だけ。そうでなければ null) */
+export const receiptOf = (inv) => (inv?.status === "paid" && inv.paidAt ? { no: `${inv.no}-R`, date: inv.paidAt, amount: inv.amount, item: inv.item, invoiceNo: inv.no } : null);
+
+/** 領収書を送るメールの文面(入金済みの請求書だけ。そうでなければ null) */
+export function receiptMail(lead, inv, b) {
+  const r = receiptOf(inv);
+  if (!r) return null;
+  return {
+    subject: `【${b.issuerName}】領収書のご送付(${r.item})`,
+    body: `${addressee(lead)}\nいつもお世話になっております。${b.issuerName}です。\nこのたびは、お振り込みをいただき、ありがとうございます。${jpDay(r.date)}に、ご入金を確かめました。\n\n領収書をお送りします(添付の PDF をご確認ください)。\n\n・品目: ${r.item}\n・金額: ${yenText(r.amount)}(税込)\n・領収日: ${jpDay(r.date)}\n\n掲載が始まりましたら、あらためてご連絡します。\nご不明な点があれば、このメールにご返信ください。\n\n${signature(b)}`,
   };
 }

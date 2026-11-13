@@ -133,7 +133,7 @@ export function editBilling() {
     },
   });
 }
-function newInvoice(x, period) {
+function newInvoice(x, period, preset) {
   const b = S.pipeline.billing;
   const per = period || (x.contract?.to ? addMonth(x.contract.to, 1) : addMonth(curMonth(), 1));
   const due = addDays(S.today, b.payDays || 10);
@@ -144,9 +144,9 @@ function newInvoice(x, period) {
     body: [h("div", { class: "grid" },
       field("period", "掲載の始まりの月", input("period", per, { type: "month", required: true })),
       field("months", "何か月分", input("months", "1", { type: "number", min: "1", max: "12", inputmode: "numeric" })),
-      field("amount", "金額(税込・円)", input("amount", x.monthlyYen, { type: "number", min: "1", step: "1", required: true, inputmode: "numeric" }), { help: "何か月分かまとめるときは、合計の金額" }),
+      field("amount", "金額(税込・円)", input("amount", preset?.amount ?? x.monthlyYen, { type: "number", min: "1", step: "1", required: true, inputmode: "numeric" }), { help: "何か月分かまとめるときは、合計の金額" }),
       field("dueAt", "支払いの期限", input("dueAt", due, { type: "date", required: true }), { help: "掲載の始まりより前にすると、前払いになります" })),
-    field("item", "品目", h("input", { id: "f-item", name: "invItem", class: "full", maxlength: 80, required: true, value: `${offerName}(神楽めぐり)${monthLabel(per)}分` }))],
+    field("item", "品目", h("input", { id: "f-item", name: "invItem", class: "full", maxlength: 80, required: true, value: preset?.item ?? `${offerName}(神楽めぐり)${monthLabel(per)}分` }))],
     onSubmit: async (f0) => {
       const f = f0.elements;
       const invoice = { period: f.period.value, months: Number(f.months.value) || 1, amount: Number(f.amount.value), dueAt: f.dueAt.value, item: f.invItem.value };
@@ -155,14 +155,127 @@ function newInvoice(x, period) {
       setTimeout(() => showInvoice(S.pipeline.leads.find((y) => y.id === x.id), r.invoice), 0); // 入力の画面が閉じてから開く
     },
   });
+  if (preset?.item) return; // 見積書の品目を入れたときは、月を変えても品目を書き換えない
   const sync = () => { const v = form.elements.period.value, n = Number(form.elements.months.value) || 1; if (v) form.elements.invItem.value = `${offerName}(神楽めぐり)${n > 1 ? `${monthLabel(v)}から${n}か月分` : `${monthLabel(v)}分`}`; };
   form.elements.period.addEventListener("change", sync); form.elements.months.addEventListener("change", sync);
 }
-// 請求書(印刷して PDF に保存する)。画面の上に重ねて出し、印刷のときは請求書だけを出す(app.css の @media print)
-function showInvoice(x, i) {
-  const b = S.pipeline.billing;
+// 書類(見積書・請求書・領収書)を、画面の上に重ねて出す。印刷のときは書類だけを出す(app.css の @media print)。印刷の画面で「PDF に保存」を選ぶ
+function docView({ label, fileName, sheet, hint }) {
   $("#invoice-view")?.remove();
   const back = document.activeElement;
+  const close = () => { box.remove(); back?.focus?.(); };
+  const box = h("div", { id: "invoice-view", class: "invoice-view", role: "dialog", "aria-modal": "true", "aria-label": label, onkeydown: (ev) => { if (ev.key === "Escape") close(); } },
+    h("div", { class: "bar inv-tools" },
+      h("button", { class: "btn primary", onclick: () => window.print() }, "印刷する(「PDF に保存」を選ぶ)"),
+      h("button", { class: "btn", onclick: close }, "閉じる"),
+      h("span", { class: "mut small" }, `ファイル名の例: ${fileName}.pdf`)),
+    hint ? h("p", { class: "mut small inv-tools" }, hint) : "",
+    sheet);
+  document.body.append(box);
+  box.querySelector(".btn").focus();
+}
+const money = (n) => `${n < 0 ? "−" : ""}${Math.abs(n).toLocaleString("ja-JP")}円`;
+const docParties = (x, b) => h("div", { class: "inv-parties" },
+  h("div", null, h("p", { class: "inv-to" }, `${x.name} 御中`), x.contact ? h("p", null, x.contact) : ""),
+  h("div", { class: "inv-from" }, h("p", null, h("b", null, b.issuerName)), b.issuerRep ? h("p", null, `代表 ${b.issuerRep}`) : "", h("p", null, b.issuerEmail), h("p", null, b.issuerSite), b.invoiceRegNo ? h("p", null, `登録番号: ${b.invoiceRegNo}`) : ""));
+
+// 見積書: 契約の前に出す。行は quoteMaxLines 行まで、値引きはマイナスの行
+function newQuote(x) {
+  const P = S.pipeline, n = P.quoteMaxLines || 4;
+  const rows = Array.from({ length: n }, (_, k) => k + 1);
+  openForm({
+    title: `見積書を作る: ${x.name}`, ok: "見積書を作る",
+    intro: h("p", { class: "mut" }, "作ったあと、見積書が開きます。印刷の画面で「PDF に保存」を選び、メールに添えて送ります。値引きは、金額をマイナスにした行で書けます(例: 神楽団・主催者さま向けの割引 -48000)。"),
+    body: [rows.map((k) => h("div", { class: "grid" },
+      field("item" + k, `品目 ${k}`, input("item" + k, k === 1 ? "協賛枠(神楽めぐり)" : "", { maxlength: 80, required: k === 1, placeholder: k === 2 ? "例: 神楽団・主催者さま向けの割引" : null }), k === 1 ? {} : { optional: true }),
+      field("amount" + k, "金額(税込・円)", input("amount" + k, k === 1 ? x.monthlyYen : "", { type: "number", step: "1", inputmode: "numeric", required: k === 1 }), k === 1 ? {} : { optional: true }))),
+    h("div", { class: "grid" },
+      field("term", "掲載の期間", input("term", "", { maxlength: 60, placeholder: "例: 2027年4月〜2028年3月" }), { optional: true }),
+      field("validUntil", "見積もりの有効期限", input("validUntil", addDays(S.today, P.quoteValidDays || 30), { type: "date", required: true }))),
+    field("note", "備考", h("input", { id: "f-note", name: "quoteNote", class: "full", maxlength: 200, placeholder: "例: 内容や期間は、ご相談に合わせて調整いたします。" }), { optional: true })],
+    onSubmit: async (f0) => {
+      const f = f0.elements;
+      const quote = { lines: rows.map((k) => ({ item: f["item" + k].value, amount: f["amount" + k].value })), term: f.term.value, validUntil: f.validUntil.value, note: f.quoteNote.value };
+      const r = await call("/api/billing/quote", { id: x.id, quote });
+      toast(`${r.quote.no} を作りました`); render();
+      setTimeout(() => showQuote(S.pipeline.leads.find((y) => y.id === x.id), r.quote), 0); // 入力の画面が閉じてから開く
+    },
+  });
+}
+function showQuote(x, q) {
+  const b = S.pipeline.billing;
+  const sheet = h("article", { class: "invoice-sheet" },
+    h("h1", null, "御見積書"),
+    h("div", { class: "inv-meta" }, h("p", null, `見積番号: ${q.no}`), h("p", null, `発行日: ${fullDate(q.issuedAt)}`)),
+    docParties(x, b),
+    h("p", null, "下記のとおり、お見積もり申し上げます。"),
+    h("p", { class: "inv-total" }, "お見積もり金額 ", h("b", null, money(q.total)), "(税込)"),
+    h("table", { class: "inv-table" },
+      h("thead", null, h("tr", null, h("th", null, "品目"), h("th", null, "金額(税込)"))),
+      h("tbody", null, q.lines.map((l) => h("tr", null, h("td", null, l.item), h("td", { class: "num" }, money(l.amount))))),
+      h("tfoot", null, h("tr", null, h("th", null, "合計"), h("td", { class: "num" }, money(q.total))))),
+    h("dl", { class: "inv-bank" },
+      q.term ? [h("dt", null, "掲載の期間"), h("dd", null, q.term)] : "",
+      h("dt", null, "有効期限"), h("dd", null, fullDate(q.validUntil)),
+      h("dt", null, "お支払い"), h("dd", null, "ご請求書をお送りします(銀行振込)。時期は、ご相談に合わせます。")),
+    q.note ? h("p", { class: "inv-note" }, q.note) : "",
+    q.status === "void" ? h("p", { class: "inv-void" }, "この見積書は取り消しました") : "");
+  docView({ label: `見積書 ${q.no}`, fileName: `見積書_${q.no}`, sheet });
+}
+async function quoteMailOut(x, q) {
+  try {
+    const { mail: m } = await call("/api/billing/mail", { id: x.id, no: q.no, kind: "quote" });
+    if (x.email) { openMail(x.email, m.subject, m.body); toast("メールを書く画面を開きました。見積書の PDF を添付して、送ってください"); }
+    else copyText(`件名: ${m.subject}\n\n${m.body}`, "文面をコピーしました。見積書の PDF を添えて送ってください");
+  } catch (err) { fail(err); }
+}
+async function setQuote(x, q, status) {
+  if (status === "void" && !(await confirmBox({ title: `見積書 ${q.no} を取り消しますか?`, body: `「${x.name}」あて ${yen(q.total)}`, danger: true, ok: "取り消す", points: [["local", "このPCの記録だけを変えます。相手に送った見積書は、自分で取り消しを伝えてください。"], ["undo", "「有効に戻す」で戻せます。"]] }))) return;
+  try { await call("/api/billing/quote-status", { id: x.id, no: q.no, status }); toast("変更しました"); render(); }
+  catch (err) { fail(err); }
+}
+function quoteBox(x) {
+  const qs = (x.quotes || []).slice().reverse();
+  if (x.stage === "lost" && !qs.length) return "";
+  const P = S.pipeline;
+  return h("details", { class: "more", open: qs.some((q) => q.status === "open") && x.stage !== "won" ? true : null }, h("summary", null, `見積書(${qs.length}件)`),
+    qs.length ? h("ul", { class: "plan-rows" }, qs.map((q) => h("li", null, h("span", { class: "t" }, `${q.no} ・ ${q.lines[0].item}${q.lines.length > 1 ? ` ほか${q.lines.length - 1}行` : ""} ・ ${yen(q.total)}`),
+      badge(q.status === "void" ? "mut" : q.validUntil < S.today ? "warn" : "info", q.status === "void" ? P.quoteStatus.void : q.validUntil < S.today ? "期限切れ" : P.quoteStatus.open),
+      h("span", { class: "mut small" }, `発行 ${jpDate(q.issuedAt)} ・ 有効期限 ${jpDate(q.validUntil)}`),
+      h("span", { class: "bar" },
+        h("button", { class: "btn sm", onclick: () => showQuote(x, q) }, "見積書を表示(PDF に保存)"),
+        q.status !== "void" ? h("button", { class: "btn sm", onclick: () => quoteMailOut(x, q) }, x.email ? "送るメールを開く" : "送る文面をコピー") : "",
+        q.status !== "void" && x.stage === "won" ? h("button", { class: "btn sm tonal", disabled: !P.billingReady, onclick: () => newInvoice(x, null, { item: q.lines.length === 1 ? q.lines[0].item : `${q.lines[0].item} ほか(見積書 ${q.no})`, amount: q.total }) }, "この金額で請求書を作る") : "",
+        q.status === "open" ? h("button", { class: "btn sm quiet", onclick: () => setQuote(x, q, "void") }, "取り消す") : h("button", { class: "btn sm quiet", onclick: () => setQuote(x, q, "open") }, "有効に戻す"))))) : h("p", { class: "mut small" }, "まだ見積書はありません。"),
+    x.stage !== "lost" ? h("div", { class: "bar" }, h("button", { class: "btn sm tonal", onclick: () => newQuote(x) }, "見積書を作る")) : "");
+}
+
+// 領収書: 入金済みの請求書から作る(番号は 請求番号-R、領収日は入金を確かめた日)
+function showReceipt(x, i) {
+  const b = S.pipeline.billing;
+  const sheet = h("article", { class: "invoice-sheet" },
+    h("h1", null, "領収書"),
+    h("div", { class: "inv-meta" }, h("p", null, `領収書番号: ${i.no}-R`), h("p", null, `領収日: ${fullDate(i.paidAt)}`)),
+    docParties(x, b),
+    h("p", { class: "inv-total rcpt-total" }, "金額 ", h("b", null, `${i.amount.toLocaleString("ja-JP")}円`), "(税込)"),
+    h("dl", { class: "inv-bank" },
+      h("dt", null, "但し"), h("dd", null, `${i.item}として`),
+      h("dt", null, "掲載の期間"), h("dd", null, periodText(i)),
+      h("dt", null, "お支払いの方法"), h("dd", null, "銀行振込"),
+      h("dt", null, "請求番号"), h("dd", null, i.no)),
+    h("p", { class: "rcpt-line" }, "上記の金額を、正に領収いたしました。"));
+  docView({ label: `領収書 ${i.no}-R`, fileName: `領収書_${i.no}-R`, sheet, hint: "PDF をメールで送る領収書に、収入印紙は貼りません。紙に印刷して渡すときは、金額によって印紙が要ることがあります(税務署にお確かめください)。" });
+}
+async function receiptMailOut(x, i) {
+  try {
+    const { mail: m } = await call("/api/billing/mail", { id: x.id, no: i.no, kind: "receipt" });
+    if (x.email) { openMail(x.email, m.subject, m.body); toast("メールを書く画面を開きました。領収書の PDF を添付して、送ってください"); }
+    else copyText(`件名: ${m.subject}\n\n${m.body}`, "文面をコピーしました。領収書の PDF を添えて送ってください");
+  } catch (err) { fail(err); }
+}
+// 請求書
+function showInvoice(x, i) {
+  const b = S.pipeline.billing;
   const sheet = h("article", { class: "invoice-sheet" },
     h("h1", null, "請求書"),
     h("div", { class: "inv-meta" }, h("p", null, `請求番号: ${i.no}`), h("p", null, `請求日: ${fullDate(i.issuedAt)}`)),
@@ -184,15 +297,7 @@ function showInvoice(x, i) {
     h("p", { class: "inv-note" }, b.feeNote),
     h("p", { class: "inv-note" }, "ご入金を確かめたあとに、掲載を始めます。"),
     i.status === "void" ? h("p", { class: "inv-void" }, "この請求書は取り消しました") : "");
-  const close = () => { box.remove(); back?.focus?.(); };
-  const box = h("div", { id: "invoice-view", class: "invoice-view", role: "dialog", "aria-modal": "true", "aria-label": `請求書 ${i.no}`, onkeydown: (ev) => { if (ev.key === "Escape") close(); } },
-    h("div", { class: "bar inv-tools" },
-      h("button", { class: "btn primary", onclick: () => window.print() }, "印刷する(「PDF に保存」を選ぶ)"),
-      h("button", { class: "btn", onclick: close }, "閉じる"),
-      h("span", { class: "mut small" }, `ファイル名の例: 請求書_${i.no}.pdf`)),
-    sheet);
-  document.body.append(box);
-  box.querySelector(".btn").focus();
+  docView({ label: `請求書 ${i.no}`, fileName: `請求書_${i.no}`, sheet });
 }
 function billingPanel() {
   const P = S.pipeline, B = P.billingSummary, won = P.leads.filter((x) => x.stage === "won").length;
@@ -209,7 +314,7 @@ function billingPanel() {
       h("button", { class: "btn sm tonal", disabled: !P.billingReady, onclick: () => newInvoice(lead(r.id), addMonth(r.to, 1)) }, "次の月の請求書を作る"))))] : "",
     B.publishReady.length ? h("p", { class: "mut small" }, `入金済みで、今月が掲載の期間の相手: ${B.publishReady.map((r) => r.name).join("、")}。協賛枠に載っているか確かめてください(載せるのは、Claude に「協賛枠に○○を載せて」と頼めます)。`) : "",
     Object.keys(B.paidByMonth).length ? h("p", { class: "mut small" }, "入金の合計: ", Object.entries(B.paidByMonth).sort().reverse().slice(0, 3).map(([m, v]) => `${monthLabel(m)} ${yen(v)}`).join(" ・ "), "(「目標・収益」の「実績を入れる」の、協賛・有料プランの収入に入れる目安)") : "",
-    more("請求の流れ", h("p", { class: "mut" }, "契約したら請求書を作る → PDF にしてメールで送る → 入金を確かめたら「入金を確かめた」→ 掲載を始める → 終わりの2週間前に更新の連絡。前払いなので、入金の前には掲載しません。")));
+    more("請求の流れ", h("p", { class: "mut" }, "(求められたら)相手のカードの「見積書」で見積書を作る → 契約したら請求書を作る → PDF にしてメールで送る → 入金を確かめたら「入金を確かめた」→ (求められたら)領収書を送る → 掲載を始める → 終わりの2週間前に更新の連絡。前払いが基本です。支払いの時期を相手に合わせたときは、期限の日付を変えてください。")));
 }
 function billingBox(x) {
   const P = S.pipeline;
@@ -222,6 +327,8 @@ function billingBox(x) {
         i.status === "unpaid" ? h("button", { class: "btn sm tonal", onclick: () => setInvoice(x, i, "paid") }, "入金を確かめた") : "",
         h("button", { class: "btn sm", onclick: () => showInvoice(x, i) }, "請求書を表示(PDF に保存)"),
         i.status !== "void" ? h("button", { class: "btn sm", onclick: () => invoiceMailOut(x, i) }, x.email ? "送るメールを開く" : "送る文面をコピー") : "",
+        i.status === "paid" ? h("button", { class: "btn sm", onclick: () => showReceipt(x, i) }, "領収書を表示(PDF に保存)") : "",
+        i.status === "paid" ? h("button", { class: "btn sm", onclick: () => receiptMailOut(x, i) }, x.email ? "領収書を送るメールを開く" : "領収書を送る文面をコピー") : "",
         i.status === "unpaid" ? h("button", { class: "btn sm quiet", onclick: () => setInvoice(x, i, "void") }, "取り消す") : "",
         i.status !== "unpaid" ? h("button", { class: "btn sm quiet", onclick: () => setInvoice(x, i, "unpaid") }, "入金待ちに戻す") : "")))) : h("p", { class: "mut small" }, "まだ請求書はありません。"),
     x.stage === "won" ? h("div", { class: "bar" }, h("button", { class: "btn sm tonal", disabled: !P.billingReady, onclick: () => newInvoice(x) }, "請求書を作る"), !P.billingReady ? h("span", { class: "mut small" }, "先に「請求の設定」で振込先を入れてください") : "") : "");
@@ -259,6 +366,7 @@ function leadCard(x, dueSet) {
       h("button", { class: "btn", onclick: () => editLead(x), "aria-label": `${x.name} を編集` }, "編集"),
       !["lost", "won"].includes(x.stage) ? h("button", { class: "btn quiet", onclick: () => moveLead(x, "lost") }, "見送り") : "",
       x.stage === "won" ? h("button", { class: "btn quiet", onclick: () => moveLead(x, "lost") }, "契約が終わった") : ""),
+    quoteBox(x),
     billingBox(x),
     x.body ? h("details", { class: "more", open: x.stage === "candidate" ? true : null }, h("summary", null, "送る文案"),
       h("p", null, h("b", null, "件名: "), x.subject || ""),

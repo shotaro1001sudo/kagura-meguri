@@ -21,7 +21,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, pr
 import { fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
-import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS } from "./billing.mjs";
+import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
 import { phoneKey, resetPhoneKey, sameKey, cookieValue, detectPhoneHost, qrSvg } from "./phone.mjs";
@@ -87,7 +87,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     const billing = loadBilling(root);
     return { leads: pl.leads, updated: pl.updated, stages: STAGES, kinds: KINDS, offers: OFFERS, followDays: FOLLOW_DAYS, summary: pipelineSummary(pl, loadPlan(root, today())?.kpis ?? [], today()),
       // 請求と入金(振込先は analytics/billing.json。このPCだけ)
-      billing, billingReady: billingReady(billing), billingSummary: billingSummary(pl.leads, today()), invoiceStatus: INVOICE_STATUS, renewDays: RENEW_NOTICE_DAYS };
+      billing, billingReady: billingReady(billing), billingSummary: billingSummary(pl.leads, today()), invoiceStatus: INVOICE_STATUS, renewDays: RENEW_NOTICE_DAYS, quoteStatus: QUOTE_STATUS, quoteValidDays: QUOTE_VALID_DAYS, quoteMaxLines: QUOTE_MAX_LINES };
   };
 
   // Gmail から、新しい申請・問い合わせを読み込む(画面のボタンと、定期の更新の両方から)
@@ -272,11 +272,32 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       if (r.error) return [r.code, { error: r.error }];
       return { state: await state() };
     }),
+    // 送るメールの文面。kind: invoice(既定。請求書)/ quote(見積書)/ receipt(領収書。入金済みの請求書だけ)
     "POST /api/billing/mail": (body) => serial(async () => {
       const lead = loadPipeline(root).leads.find((y) => y.id === body.id);
+      if (body.kind === "quote") {
+        const q = lead?.quotes?.find((y) => y.no === body.no);
+        if (!q) return [404, { error: "見積書が見つかりません" }];
+        return { mail: quoteMail(lead, q, loadBilling(root)) };
+      }
       const inv = lead?.invoices?.find((i) => i.no === body.no);
       if (!inv) return [404, { error: "請求書が見つかりません" }];
+      if (body.kind === "receipt") {
+        const mail = receiptMail(lead, inv, loadBilling(root));
+        return mail ? { mail } : [400, { error: "領収書は、入金済みの請求書にだけ作れます" }];
+      }
       return { mail: invoiceMail(lead, inv, loadBilling(root)) };
+    }),
+    // 見積書を作る / 取り消す・有効に戻す
+    "POST /api/billing/quote": (body) => serial(async () => {
+      const r = addQuote(root, body.id, body.quote ?? {}, today());
+      if (r.error) return [r.code, { error: r.error, fields: r.fields }];
+      return { quote: r.quote, state: await state() };
+    }),
+    "POST /api/billing/quote-status": (body) => serial(async () => {
+      const r = setQuoteStatus(root, body.id, body.no, body.status, today());
+      if (r.error) return [r.code, { error: r.error }];
+      return { state: await state() };
     }),
 
     // スマホで開く: QR コード(鍵入りのアドレス)と、鍵の作り直し。PC の画面からだけ(スマホからは 403)
