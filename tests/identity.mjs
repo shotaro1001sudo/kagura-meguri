@@ -68,7 +68,7 @@ export function identityTests({ ok, section, OUT, build }) {
   const D = "dist-test-identity", TEST_ADDR = "owner@example.com";
   const r = build("tests/fixtures/events.test.json", D, { TEST_FORM_OFF: "1", TEST_CONTACT: TEST_ADDR });
   const fallback = leaksOf(TEST_ADDR)(D).map((f) => f.replace(/\\/g, "/").replace(`${D}/`, ""));
-  ok(r.status === 0 && fallback.length === 3 && fallback.every((f) => ["submit.html", "contact.html", "apply.html"].includes(f)), "送信先が未設定の間、アドレスの一部が入るのは、フォームのページ(予備のメール作成用)だけ", fallback.join(", "));
+  ok(r.status === 0 && fallback.length === 2 && fallback.every((f) => ["submit.html", "contact.html"].includes(f)), "送信先が未設定の間、アドレスの一部が入るのは、フォームのページ(予備のメール作成用)だけ", fallback.join(", "));
   for (const f of ["about.html", "privacy.html", "disclaimer.html", "organizers.html", "guide.html"]) ok(!read(join(D, f)).includes("owner"), `${f}: 送信先が未設定でも、アドレスを載せない(連絡はお問い合わせフォームへ)`);
   rmSync(D, { recursive: true, force: true });
   ok(!/@/.test(read("scripts/collect.mjs").match(/const UA = `([^`]*)`/)?.[1] ?? "@"), "自動収集で名乗る名前(User-Agent)に、メールアドレスを入れない");

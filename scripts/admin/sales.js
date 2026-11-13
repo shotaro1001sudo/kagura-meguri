@@ -137,7 +137,7 @@ function newInvoice(x, period) {
   const b = S.pipeline.billing;
   const per = period || (x.contract?.to ? addMonth(x.contract.to, 1) : addMonth(curMonth(), 1));
   const due = addDays(S.today, b.payDays || 10);
-  const offerName = { "MON-2": "協賛枠", "MON-1": "有料プラン" }[x.offer] || "掲載";
+  const offerName = { "MON-2": "協賛枠", "MON-1": "協賛枠(神楽団・主催者向け)" }[x.offer] || "掲載";
   const form = openForm({
     title: `請求書を作る: ${x.name}`, ok: "請求書を作る",
     intro: h("p", { class: "mut" }, "前払いです。作ったあと、請求書が開きます。印刷の画面で「PDF に保存」を選び、メールに添えて送ります。"),

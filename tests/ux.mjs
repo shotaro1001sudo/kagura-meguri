@@ -149,7 +149,7 @@ export async function uxTests({ ok, section, OUT }) {
   ok(org(".opoints li").length === 3 && org(".ocards li").length === 5 && org(".oways .oway").length === 3 && org("ol.steps li").length === 3 && org(".faq details summary").length === 3, "主催者の方へ: 要点のカード3つ・載る場所5つ・送り方3つ・番号つきの手順・開閉式のよくあるご質問");
   { const $k = page("kagura/石見神楽.html"), html = $k.html(), jumps = $k("main .kagura-summary .kagura-jumps a").map((_, a) => $k(a).attr("href")).get();
     ok($k("main h2").first().text() === "石見神楽とは" && jumps.join() === "#k-history,#k-features,#k-programs,#k-viewing,#k-schedule" && jumps.every((h) => $k(h).length === 1), "種類のページ: 冒頭に要約(〇〇とは)と、詳しい解説・開催予定へのページ内リンク(飛び先がある)");
-    ok(html.indexOf('id="k-schedule"') < html.indexOf('id="k-history"') && ['class="adwrap"', 'class="aff', 'class="pr-slot'].every((m) => !html.includes(m) || html.indexOf('id="k-viewing"') < html.indexOf(m)), "種類のページ: 詳しい解説は開催予定のすぐ下、広告より上"); }
+    ok(html.indexOf('id="k-schedule"') < html.indexOf('id="k-history"') && ['class="adwrap"', 'class="aff'].every((m) => !html.includes(m) || html.indexOf('id="k-viewing"') < html.indexOf(m)), "種類のページ: 詳しい解説は開催予定のすぐ下、広告より上"); }
   { const iw = page("kagura/石見神楽.html"), html = iw("main").html();
     ok(iw("main .kagura-lead").length === 1 && html.indexOf("kagura-lead") < html.indexOf(">開催予定</h2>") && (!iw("main .aff").length || html.indexOf(">開催予定</h2>") < html.indexOf('class="aff')), "種類のページ: 見出しのすぐ下に一言の紹介、宿の枠は開催予定のあと"); }
 }

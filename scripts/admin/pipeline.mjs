@@ -10,7 +10,7 @@ export const STAGES = { candidate: "候補", sent: "送信済み", replied: "返
 // 返事を待つ・やりとりの途中の段階(連絡する日を見張る)
 export const ACTIVE = ["sent", "replied", "talking"];
 export const KINDS = ["神楽団", "主催者・保存会", "観光協会・自治体", "宿", "会場・施設", "その他"];
-export const OFFERS = { "MON-1": "有料プラン(団体ページ)", "MON-2": "協賛・記事広告", "MON-3": "送客(観覧・体験)", other: "その他" };
+export const OFFERS = { "MON-1": "神楽団・主催者向けの協賛(半額)", "MON-2": "協賛・記事広告", "MON-3": "送客(観覧・体験)", other: "その他" };
 // 送ってから返事がないとき、次に連絡する日の目安
 export const FOLLOW_DAYS = 7;
 

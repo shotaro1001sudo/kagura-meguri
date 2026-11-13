@@ -41,10 +41,21 @@ export function sponsorTests({ ok, section, OUT }) {
     ok(cfgP.annual < cfgP.monthly * 12 + cfgP.article * 2 && lines[2][2].includes("記事広告を二本") && lines[2][2].includes("年に一度"), "年間協賛は、協賛枠1年分と記事広告2本を別々に頼むより安く、請求は年に一度");
     ok(($(".sp-menu .sp-try").length === 1) === (cfgP.trial === true) && (!cfgP.trial || $(".sp-menu > li").first().find(".sp-try").text().includes("無料でお試し")), "協賛枠のお試し(はじめのひと月は無料)は、sponsorPrices.trial が true のときだけ書く");
     const est = cheerio.load(`<main>${sponsorHtml({ esc: (s) => s, siteName: "神楽めぐり", prices: {} })}</main>`);
-    ok(est(".sp-menu .price").map((_, x) => est(x).text()).get().join() === "お見積もり,お見積もり,お見積もり" && est(".sp-try").length === 0 && est(".sp-group").length === 0, "料金を決めていないときは「お見積もり」と書き、お試しも団体ページの案内も出さない");
+    ok(est(".sp-menu .price").map((_, x) => est(x).text()).get().join() === "お見積もり,お見積もり,お見積もり" && est(".sp-try").length === 0 && est(".sp-group").length === 0, "料金を決めていないときは「お見積もり」と書き、お試しも主催者の方の料金も出さない");
   }
-  // 神楽団・保存会の団体ページ(料金は partner.plans)は、メニューのすぐ下で案内する
-  ok($(".sp-group a[href='/apply.html']").length === 1 && $(".sp-group a[href='/partner/sample.html']").length === 1 && /月額[\d,]+円\(税込\)から/.test($(".sp-group").text()), "団体ページは、いちばん安いプランの料金と、見本・申し込みへのリンクで案内する", $(".sp-group").text());
+  // 神楽団・保存会・主催者の方は、同じメニューを値引きする(sponsorPrices.organizerRate。0.5 = 半額)。団体ページ(月額のプラン)は、やめた
+  {
+    const cfg = JSON.parse(read("config.json")), cfgP = cfg.sponsorPrices ?? {}, g = $(".sp-group").text();
+    const half = (n) => Math.round(n * cfgP.organizerRate).toLocaleString("ja-JP") + "円";
+    ok(cfgP.organizerRate === 0.5 && $(".sp-menu-box + .sp-group").length === 1 && $(".sp-group-h").text() === "神楽団・保存会・主催者の方は、どのメニューも半額です"
+      && g.includes(`協賛枠 月額${half(cfgP.monthly)}`) && g.includes(`記事広告 1本${half(cfgP.article)}`) && g.includes(`年間協賛 年額${half(cfgP.annual)}(税込)`) && g.includes("ご負担は、できるだけ小さく"),
+      "神楽団・保存会・主催者の方は、同じ3つのメニューが半額。メニューのすぐ下に、3つの額を出す", g);
+    const other = cheerio.load(`<main>${sponsorHtml({ esc: (s) => s, siteName: "神楽めぐり", prices: { ...cfgP, organizerRate: 0.7 } })}</main>`);
+    ok(other(".sp-group-h").text().includes("3割引き") && other(".sp-group").text().includes(`月額${Math.round(cfgP.monthly * 0.7).toLocaleString("ja-JP")}円`), "割合を変えると、言い方(◯割引き)と額がそれに合う");
+    ok(!existsSync(join(OUT, "apply.html")) && !existsSync(join(OUT, "tokushoho.html")) && !existsSync(join(OUT, "partner")) && !/apply\.html|tokushoho\.html|\/partner\//.test(read(join(OUT, "sitemap.xml")))
+      && $('main a[href="/apply.html"], main a[href^="/partner/"]').length === 0 && cheerio.load(read(join(OUT, "index.html")))('footer a[href="/tokushoho.html"]').length === 0 && !cfg.partner && !text.includes("団体ページ"),
+      "団体ページ(月額のプラン)はやめた: 申し込み・見本・特定商取引法に基づく表記のページを作らず、どこからも案内しない");
+  }
 
   // 「載るページの例」が、実在する県・種類・開催・定期公演のページを指す
   const egs = $(".sp-eg a").map((_, a) => [[$(a).attr("href"), $(a).text()]]).get();
@@ -73,9 +84,8 @@ export function sponsorTests({ ok, section, OUT }) {
   {
     const rows = [...JSON.parse(read("data/events.json")), ...JSON.parse(read("data/regular.json"))];
     const names = [...new Set(rows.flatMap((e) => [e.kagura, e.organizer, e.performer, ...(Array.isArray(e.performers) ? e.performers : [])]).filter((x) => typeof x === "string" && x.length >= 3))];
-    const partnerNames = (existsSync("data/partners.json") ? JSON.parse(read("data/partners.json")) : []).map((p) => p.name);
     const sampleText = $(".sp-sample, .sp-asks, .sp-menu").text() + prPage("main").text();
-    const found = [...names, ...partnerNames].filter((n) => sampleText.includes(n));
+    const found = names.filter((n) => sampleText.includes(n));
     ok(sampleText.includes("◯◯") && found.length === 0, "見本・メニュー・相談の例に、特定の神楽の名前・団体の名前を使っていない", found.join(", "));
   }
   ok($('.sp-menu a[href="/pr/sample.html"]').length === 1 && /noindex/.test(prPage('meta[name="robots"]').attr("content")) && !read(join(OUT, "sitemap.xml")).includes("/pr/sample.html") && prPage("title").text() === "記事広告の見本 | 神楽めぐり", "記事広告の見本ページへメニューから案内する。見本ページは検索に載せない(noindex・サイトマップに入れない)");

@@ -77,35 +77,6 @@ ${consent(cfg)}
 <noscript><p class="empty">このフォームの送信には、JavaScriptが必要です。お手数ですが、JavaScriptを有効にしてください。</p></noscript>`;
 }
 
-// 団体ページ(有料のプラン)の申し込みフォーム。プランの選択肢は config.json の partner.plans から作る
-export function applyForm(cfg, plans) {
-  const [u, d] = mailParts(cfg);
-  return `<form class="form" id="apply-form" data-form="apply" data-u="${esc(u)}" data-d="${esc(d)}" novalidate>
-<fieldset><legend>1. プラン</legend>
-${select("plan", "お申し込みのプラン", plans.map((p) => `${p.name}(${p.priceText})`), { required: true })}
-${field("start_month", "掲載を始めたい月", { max: 20, placeholder: "例: 2027年1月から" })}
-</fieldset>
-<fieldset><legend>2. 団体の情報</legend>
-${field("group", "団体名", { required: true, max: 60, placeholder: "例: 〇〇神楽団" })}
-<div class="f-row">${select("prefecture", "都道府県", PREFECTURES, { required: true })}
-${field("kagura", "神楽の種類", { required: true, max: 40, placeholder: "例: 〇〇神楽" })}</div>
-${field("url", "公式サイト・SNSのURL", { type: "url", max: 300, placeholder: "https://" })}
-${area("message", "載せたい内容", { max: 1000, rows: 5, hint: "写真・動画・演目の紹介など、載せたいものをお書きください。写真などのファイルは、ご返信のメールでお送りいただきます。" })}
-</fieldset>
-<fieldset><legend>3. ご担当者</legend>
-${field("sender", "お名前", { required: true, max: 60, autocomplete: "name" })}
-${field("email", "メールアドレス", { type: "email", required: true, max: 120, autocomplete: "email", hint: "請求書と、原稿のご相談のご連絡に使います。サイトには表示しません。" })}
-${field("tel", "電話番号", { type: "tel", max: 20, autocomplete: "tel", hint: "メールが届かないときのご連絡にだけ使います。" })}
-</fieldset>
-<div class="f consent"><label><input type="checkbox" id="rights" name="rights" required> <span>載せる写真・動画・文章は、団体が権利を持つもの、または使う了解を得たものです</span></label><small class="err" id="rights-e" role="alert"></small></div>
-${guard(cfg)}
-${consent(cfg)}
-<button class="btn" type="submit" id="send">申し込む</button>
-<p class="status" id="status" role="status" aria-live="polite"></p>
-</form>
-<noscript><p class="empty">このフォームの送信には、JavaScriptが必要です。お手数ですが、JavaScriptを有効にしてください。</p></noscript>`;
-}
-
 // フォームの送信先が、使える状態か(Web3Forms は、アクセスキーがないと使えない)
 export const formReady = (cfg) => { const f = cfg.form ?? {}; return !!f.endpoint && (!/web3forms/i.test(f.endpoint) || !!f.accessKey); };
 
@@ -125,7 +96,7 @@ function err(id,m){var e=$(id+'-e');if(e)e.textContent=m||'';var i=$(id);if(i)i.
 // 1つの欄を確かめて、誤りがあればその欄の下に出す(なければ消す)。誤りの文を返す
 function one(el){
   var m='',v=el.value.trim();
-  if(el.required){if(el.type==='checkbox'){if(!el.checked)m=el.id==='rights'?'確認のうえ、チェックを入れてください':'同意が必要です'}else if(!v)m='入力してください'}
+  if(el.required){if(el.type==='checkbox'){if(!el.checked)m='同意が必要です'}else if(!v)m='入力してください'}
   if(!m&&el.id==='email'&&v&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v))m='メールアドレスの形式を確認してください';
   if(!m&&(el.id==='url'||el.id==='target')&&v&&!/^https:\\/\\/[^\\s]+$/.test(v))m='https:// で始まるURLを入力してください';
   if(!m&&el.id==='time_end'){var tm=$('time_start');if(tm&&tm.value&&el.value&&el.value<tm.value)m='終了時刻は、開始時刻より後にしてください'}
@@ -162,7 +133,7 @@ function jsonBlock(){
 function say(m,bad){st.textContent=m;st.className='status'+(bad?' bad':' ok')}
 function mailto(){
   var to=(form.dataset.u||'')+'@'+(form.dataset.d||'');
-  var subject=kind==='submit'?'開催情報の掲載依頼: '+val('name'):kind==='apply'?'団体ページの申し込み: '+val('group'):'お問い合わせ: '+val('topic');
+  var subject=kind==='submit'?'開催情報の掲載依頼: '+val('name'):'お問い合わせ: '+val('topic');
   var body=lines().join('\\n')+(kind==='submit'?'\\n\\n【events.json 用】\\n'+jsonBlock():'');
   if(body.length>1700)body=body.slice(0,1700)+'\\n…(長いため省略。続きは別途お送りします)';
   location.href='mailto:'+to+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
@@ -176,7 +147,7 @@ form.addEventListener('submit',function(ev){
   if(Date.now()-last<30000){say('連続での送信はできません。30秒ほどあけてください。',true);return}
   if(!C.endpoint){say('メールの作成画面を開きます。メールを送信して、ご依頼を完了してください。');mailto();return}
   btn.disabled=true;say('送信しています…');
-  var payload={access_key:C.accessKey||undefined,subject:'【'+C.site+'】'+(kind==='submit'?'開催情報の掲載依頼: '+val('name'):kind==='apply'?'団体ページの申し込み: '+val('group'):'お問い合わせ: '+val('topic')),
+  var payload={access_key:C.accessKey||undefined,subject:'【'+C.site+'】'+(kind==='submit'?'開催情報の掲載依頼: '+val('name'):'お問い合わせ: '+val('topic')),
     from_name:val('sender'),email:val('email'),message:lines().join('\\n')+(kind==='submit'?'\\n\\n【events.json 用】\\n'+jsonBlock():'')};
   var ctl=new AbortController(),to=setTimeout(function(){ctl.abort()},15000);
   fetch(C.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload),signal:ctl.signal,referrerPolicy:'no-referrer',credentials:'omit'})

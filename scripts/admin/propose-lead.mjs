@@ -1,7 +1,7 @@
 // 週次の分析(Claude の定期タスク)が、営業の候補を「候補」の段階で analytics/pipeline.json に足すための入口。
 //   使い方: node scripts/admin/propose-lead.mjs <候補の JSON ファイル>
 //   JSON は配列(3件まで)。各候補: { name, kind, offer, url, contact, email, formUrl, phone, subject, body, memo }
-//   kind は 神楽団 / 主催者・保存会 / 観光協会・自治体 / 宿 / 会場・施設 / その他。offer は MON-1 / MON-2 / other。
+//   kind は 神楽団 / 主催者・保存会 / 観光協会・自治体 / 宿 / 会場・施設 / その他。offer は MON-1(神楽団・保存会・主催者向け。同じメニューを半額で)/ MON-2 / other。
 // 送るのは運営者(管理者用ページの「営業」で確かめてから)。このスクリプトは足すだけで、既存の相手は変えない。
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

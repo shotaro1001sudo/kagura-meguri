@@ -1,7 +1,9 @@
 // 「広告・協賛のご案内」(/sponsor.html)の本文。媒体資料を兼ねる(MON-2)。2026-11-14 に、0から作り直した。
 // 考え方: 細かく書かない。メニューと料金は「目安」として短く見せ、内容・期間・ご予算は相談しながら決められることを、いちばん強く伝える。
 // 並び: 書き出し(型は決まっていない) → メニューと料金の目安(品書きの形) → こんなご相談も、お受けします → 数字 → 流れ → お約束 → 相談の入口。
-//   ・メニュー: 協賛枠(月額)・記事広告(1本)・年間協賛(年額)。料金は config.json の sponsorPrices。神楽団・保存会の団体ページは、その下で案内する(料金は partner.plans)。
+//   ・メニュー: 協賛枠(月額)・記事広告(1本)・年間協賛(年額)。料金は config.json の sponsorPrices。
+//   ・神楽団・保存会・主催者の方は、同じメニューを値引きする(sponsorPrices.organizerRate。0.5 = 半額。2026-11-14 運営者の判断: 神楽を続ける側には、できるだけ負担をかけない)。
+//     団体ページ(月額のプラン・申し込みフォーム・特定商取引法に基づく表記)は、同じ日にやめた。
 //   ・「載るページの例」は、サイトに実在するページだけにする(tests/sponsor.mjs で確認)。
 //   ・数字を書くのは、メニュー(.sp-menu・.sp-group)と「数字で見る」(.sp-stats)だけ。ほかの文には数字を書かない(「ひと月」「一本」と書く)。
 //       - 掲載の件数は、ビルドの時点の実数(サイトの作りの事実)。
@@ -40,7 +42,12 @@ export const SPONSOR_CSS = `<style>
 .prose .sp-try{margin:8px 0 0;font-size:var(--fs-s);color:var(--ac)}
 .prose .sp-any{margin:18px 0 0;font-family:var(--serif);font-size:var(--fs-l);line-height:1.9;text-wrap:balance;word-break:auto-phrase}
 .prose .sp-terms{margin:6px 0 0;font-size:var(--fs-s);color:var(--mut);line-height:1.9}
-.prose .sp-group{margin:16px 0 0;max-width:none;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.9}
+.sp-group{margin:16px 0 0;padding:18px 26px 16px;border:1px solid color-mix(in srgb,var(--ac) 35%,var(--line));border-radius:var(--radius);background:color-mix(in srgb,var(--ac) 4%,var(--card))}
+.prose .sp-group-h{margin:0 0 4px;font-family:var(--serif);font-size:var(--fs-l);line-height:1.7;letter-spacing:.06em;text-wrap:balance;word-break:auto-phrase}
+.sp-group-h span{display:inline-block}
+.prose .sp-half{list-style:none;margin:4px 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:2px 22px;font-family:var(--serif);font-size:var(--fs-l);color:var(--ac);font-variant-numeric:tabular-nums}
+.prose .sp-half li{margin:0;white-space:nowrap}.sp-half small{font-family:var(--sans);font-size:var(--fs-xs);color:var(--mut);margin-left:2px}
+.prose .sp-group ul+p{margin:0;max-width:44em;font-size:var(--fs-s);line-height:1.9}
 .sp-look{display:grid;gap:18px 32px;margin:36px 0 0;align-items:start}
 @media(min-width:760px){.sp-look{grid-template-columns:minmax(0,5fr) minmax(0,6fr)}}
 .prose .sp-look h3{margin:0 0 6px}.prose .sp-look p{margin:0 0 8px;font-size:var(--fs-s);line-height:1.9}
@@ -68,7 +75,7 @@ export const SPONSOR_CSS = `<style>
 .prose .sp-end .sp-open{margin-bottom:10px}
 .prose .sp-end .sp-cta{margin-top:20px}.sp-end .btn{margin:0 4px 8px}
 @media(max-width:480px){.sp-row{display:block}.sp-dots{display:none}.prose .sp-row .price{margin-top:2px}}
-@media(max-width:640px){.sp-menu-box{padding:2px 18px 16px}.sp-cta .btn{display:flex;width:100%;margin-right:0}.sp-end{padding:28px 6px 0}}
+@media(max-width:640px){.sp-group{padding:16px 18px 14px}.sp-menu-box{padding:2px 18px 16px}.sp-cta .btn{display:flex;width:100%;margin-right:0}.sp-end{padding:28px 6px 0}}
 .sp-article-by{font-size:var(--fs-xs);color:var(--mut)}
 .pr-byline{font-size:var(--fs-s);color:var(--mut)}
 .prose .pr-photo{margin:20px 0}.pr-photo-box{display:grid;place-items:center;min-height:180px;padding:16px;border:1px dashed var(--mut);border-radius:var(--radius);color:var(--mut);font-size:var(--fs-s);text-align:center;background:var(--card)}.pr-photo figcaption{font-size:var(--fs-xs);color:var(--mut);margin-top:6px}
@@ -102,12 +109,11 @@ const jpShort = (d) => d.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, "$1月$2日");
 /**
  * @param {{ esc: (s:string)=>string, siteName: string,
  *   pref?: { name: string, href: string }, kagura?: { name: string, href: string }, ev?: { name: string, href: string }, reg?: { name: string, href: string },
- *   plans?: { name: string, monthly: number, priceText: string }[],   神楽団・保存会の団体ページのプラン(config.json の partner.plans)
- *   prices?: { monthly?: number, article?: number, annual?: number, trial?: boolean },   協賛枠(月額)・記事広告(1本)・年間協賛(年額)。税込。無いものは「お見積もり」。trial: 協賛枠のはじめのひと月を無料にする
+ *   prices?: { monthly?: number, article?: number, annual?: number, trial?: boolean, organizerRate?: number },   協賛枠(月額)・記事広告(1本)・年間協賛(年額)。税込。無いものは「お見積もり」。trial: 協賛枠のはじめのひと月を無料にする。organizerRate: 神楽団・保存会・主催者の方の料金の割合(0.5 = 半額)
  *   facts?: { events: number, prefs: number, kaguras: number, regular: number },
  *   stats?: { updated: string, search?: { from: string, to: string, impressions: number, clicks: number, impressions7?: number, clicks7?: number }, analytics?: { from: string, to: string, pageviews: number, users: number } } | null }} x
  */
-export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], prices = {}, facts, stats }) {
+export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, prices = {}, facts, stats }) {
   const yen = (n) => `${Number(n).toLocaleString("ja-JP")}円`;
   const ok = (n) => Number.isFinite(n) && n > 0;
   const price = (n, unit) => (ok(n) ? `${unit}${yen(n)}<small>(税込)</small>` : "お見積もり");
@@ -120,7 +126,10 @@ export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, plans = [], 
 <p class="sp-for">${who}</p>
 </li>`;
   const egs = [pref, kagura, ev, reg].filter(Boolean);
-  const cheapest = plans.filter((p) => ok(p.monthly)).sort((x, y) => x.monthly - y.monthly)[0];
+  // 神楽団・保存会・主催者の方の料金(同じメニューを、決めた割合で。3つとも料金が決まっているときだけ出す)
+  const rate = prices.organizerRate, org = (n) => yen(Math.round(n * rate));
+  const orgOff = ok(rate) && rate < 1 && ok(prices.monthly) && ok(prices.article) && ok(prices.annual);
+  const orgLabel = rate === 0.5 ? "半額" : `${Math.round((1 - rate) * 10)}割引き`;
   const cta = (ghost = "") => `<p class="sp-cta octa"><a class="btn" href="/contact.html">協賛・広告について相談する</a>${ghost}</p>`;
 
   return `
@@ -139,7 +148,7 @@ ${line("年間協賛", price(prices.annual, "年額"), "一年を通した協賛
 <p class="sp-any">ここにない形も、どうぞご相談ください。</p>
 <p class="sp-terms">金額・期間・内容は、ご事情に合わせて調整します。お見積書・ご請求書・領収書をお出しします。お支払いは、掲載の前に、銀行振込でお願いしています。時期や分け方も、ご相談ください。</p>
 </div>
-${cheapest ? `<p class="sp-group"><b>神楽団・保存会・主催者の方へ</b><br>写真・動画・演目の紹介をまとめた団体ページを、${esc(cheapest.priceText)}からご用意しています。<a href="/partner/sample.html">団体ページの見本</a>・<a href="/apply.html">団体ページのお申し込み</a></p>` : ""}
+${orgOff ? `<div class="sp-group"><p class="sp-group-h"><span>神楽団・保存会・主催者の方は、</span><span>どのメニューも${orgLabel}です</span></p><ul class="sp-half"><li>協賛枠 月額${org(prices.monthly)}</li><li>記事広告 1本${org(prices.article)}</li><li>年間協賛 年額${org(prices.annual)}<small>(税込)</small></li></ul><p>公演のお知らせ、団員や後援会の募集、団の紹介記事などにお使いいただけます。神楽を受け継ぐ皆さまのご負担は、できるだけ小さくしたいと考えています。ご予算に合わせた載せ方も、ご相談ください。</p></div>` : ""}
 
 <div class="sp-look">
 <div>

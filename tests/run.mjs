@@ -43,7 +43,6 @@ import { englishTests } from "./english.mjs";
 import { organizersTests } from "./organizers.mjs";
 import { sponsorTests } from "./sponsor.mjs";
 import { eventSeoTests } from "./event-seo.mjs";
-import { partnersTests } from "./partners.mjs";
 import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
 import { homeTests } from "./home.mjs";
@@ -66,7 +65,7 @@ import { billingTests } from "./billing.mjs";
 
 const NOW = "2026-10-09T12:00"; // 日本時間で固定(テストが日付に左右されないように)
 const build = (events, out, extra = {}) =>
-  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", PARTNERS_FILE: "tests/fixtures/partners.empty.json", MEDIA_STATS_FILE: "tests/fixtures/media-stats.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
+  spawnSync("node", ["scripts/build.mjs"], { env: { ...process.env, EVENTS_FILE: events, REGULAR_FILE: "tests/fixtures/regular.test.json", MEDIA_STATS_FILE: "tests/fixtures/media-stats.test.json", OUT_DIR: out, BUILD_NOW: NOW, TEST_AFF_OFF: "1", TEST_PLANNING_OFF: "1", TEST_GOATCOUNTER: "", TEST_GA: "", TEST_CB: "", TEST_ADS_OFF: "1", ...(extra.TEST_AFF_TRAVEL ? {TEST_ADS_OFF:"",TEST_CB:"test-consent-id"} : {}), ...extra }, encoding: "utf8" });
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -105,7 +104,7 @@ ok(privacyText.includes("12か月") && privacyText.includes("運営者が受け�
 ok(privacyText.includes("複数の国・地域") && privacyText.includes("CleanTalk") && privacyText.includes("Akismet"), "国外処理と迷惑送信対策の再委託先を明示する");
 ok(privacyPage.includes('href="https://web3forms.com/privacy"') && privacyPage.includes('rel="noopener"'), "Web3Forms公式プライバシーポリシーへの安全なリンクを表示する");
 ok(!privacyText.includes("事業者のサーバーには保存されません"), "Web3Formsが送信データを保存しないという旧記述が存在しない");
-ok(privacyText.includes("2026年10月22日 Web3Formsの保存期間") && privacyText.includes("最終更新: 2026年11月8日"), "従来の改定履歴を残し、団体ページの申し込みの追記後の最終更新日を記載する");
+ok(privacyText.includes("2026年10月22日 Web3Formsの保存期間") && privacyText.includes("最終更新: 2026年11月14日") && !privacyText.includes("団体ページのお申し込みフォームでは"), "従来の改定履歴を残し、団体ページの受付を終えた後の最終更新日を記載する(申し込みフォームの記載は消す)");
 // ---------- 2. 各ページの基本品質 ----------
 section("各ページの基本(title / description / canonical / h1 / lang)");
 const titles = new Map();
@@ -349,7 +348,6 @@ await organizersTests({ ok, section, OUT, build });
 sponsorTests({ ok, section, OUT });
 eventSeoTests({ ok, section, build });
 pastEventsTests({ ok, section, build });
-partnersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
 sourcesTests({ ok, section });

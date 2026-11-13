@@ -968,25 +968,6 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 #cc-main { --cc-font-family: system-ui, sans-serif; --cc-bg: #f8f5ee; --cc-primary-color: #302c26; --cc-secondary-color: #514b43; --cc-btn-primary-bg: #4c594b; --cc-btn-primary-hover-bg: #384437; --cc-btn-primary-color: #fff; --cc-btn-primary-border-color: #4c594b; --cc-btn-secondary-bg: #e8e3d9; --cc-btn-secondary-color: #302c26; --cc-btn-secondary-border-color: #d3ccbf; --cc-toggle-on-bg: #4c594b; --cc-cookie-category-block-bg: #eee9df; --cc-modal-border-radius: 10px; }
 #cc-main button { min-height: 44px; }
 
-/* 団体ページ(有料)・PR枠(MON-1): 開催情報のカードと見分けがつくよう、点線の枠と「PR」の印をつける */
-.pr-slot{margin:32px 0;padding:14px 18px;border:1px dashed var(--mut);border-radius:var(--radius-s)}
-.pr-slot-h{margin:0 0 8px;font-size:var(--fs-s);color:var(--mut)}
-.pr-slot ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.pr-slot li{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;min-height:44px}
-.pr-slot li a{font-weight:500}.pr-slot li span{font-size:var(--fs-s);color:var(--mut)}
-.pr-slot-note,.meta-s{margin:8px 0 0;font-size:var(--fs-xs);color:var(--mut);line-height:1.8}
-.pr-note{padding:10px 14px;border:1px dashed var(--mut);border-radius:var(--radius-s);font-size:var(--fs-s);color:var(--mut)}
-.partner-photos{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));margin:20px 0}
-.partner-photos figure{margin:0}.partner-photos img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius-s)}
-.partner-photos figcaption{font-size:var(--fs-xs);color:var(--mut);margin-top:4px}
-/* スマホ: 1枚目を大きく、2枚目からは2列に(写真が縦に長く続いて、紹介文が遠くならないように) */
-@media(max-width:560px){.partner-photos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.partner-photos figure:first-child{grid-column:1/-1}}
-.ph-sample{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card);color:var(--mut);font-size:var(--fs-s)}
-.partner-reps>div{padding:10px 0;border-top:1px solid var(--line)}.partner-reps dt{font-weight:500}.partner-reps dd{margin:4px 0 0}
-.partner-links li{min-height:44px}
-.ocards.plans li{padding:16px 18px}.plan-price{display:block;font-family:inherit;font-size:var(--fs-s);color:var(--ac);margin-top:2px}
-.tokushoho th{white-space:nowrap;vertical-align:top}
-/* 広告・協賛のご案内(/sponsor.html): 数字で見る・メニューの比べ・見え方の見本 */
 /* 広告・協賛のご案内(/sponsor.html)と記事広告の見本(/pr/sample.html)だけの CSS(.sp-stats・.sp-menu・.sp-sample・.pr-* など)は、
    scripts/lib/sponsor.mjs の SPONSOR_CSS にあり、その2ページの <head> だけに入れる(その2ページでしか使わないため) */
 /* 定期公演の休演中(秋祭りの間など): 曜日の目印を「休演中」にし、次の公演日を本文の先頭に出す */
