@@ -111,7 +111,7 @@ html{scroll-padding-top:84px}
 /* 面(パネル): 一覧のカード・要点の枠・宿や旅の案内・入口のタイルなど、ひとまとまりの情報を載せる箱。
    枠・角の丸み・影・地色は、この1か所で決める(部品ごとに書かない)。中の余白だけを、部品の側で決める */
 :where(.card,.keyinfo,.stay,.aff,.side-summary,.side-box,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
-  .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details,.toc:not(.gnav)){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+  .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.ended-note,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details,.toc:not(.gnav)){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 
 /* 一覧のカード: 左に日付、右に題 → 時刻と場所 → 会場・料金・予約 → 種類。カード全体が詳細へのリンク */
 .card{display:flex;gap:24px;padding:18px 22px;margin:0 0 12px;position:relative;transition:border-color var(--t-s) var(--ease)}
@@ -587,6 +587,8 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .about{max-width:680px;margin:8px 0 4px}.about h2{margin-top:36px}
 /* 日程を県のページへ任せる神楽ページ: 日程への入口(SEO-20261107-1) */
 .schedule-hub{max-width:680px;margin:18px 0 8px;padding:14px 16px}.schedule-hub p{margin:0 0 10px}
+.past-more{margin:28px 0 8px}.past-more summary{cursor:pointer;font-weight:500;padding:10px 0;min-height:44px}.past-more .monthlist{margin-top:8px}
+.ended-note{margin:0 0 18px;padding:14px 16px;border-left:4px solid var(--ac)}.ended-note p{margin:0 0 8px}.ended-note p:last-child{margin-bottom:0}.ended-note .actions{margin:4px 0 10px}
 /* 町ごとに分けた開催予定(花祭など。SEO-20261107-2) */
 .town-group h3{margin-top:24px}
 /* 公式の日ごとの日程表がある定期公演(神楽門前湯治村など。SEO-20261107-5) */

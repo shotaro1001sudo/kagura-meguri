@@ -14,6 +14,7 @@ import './cookie-metadata-test.mjs';
 import './vc-sdk-harness-test.mjs';
 import './bounded-cdp-test.mjs';
 import { upcomingSummaryTests } from './upcoming-summary.mjs';
+import { pastEventsTests } from './past-events.mjs';
 import { reservationTests } from './reservation.mjs';
 // 自動テスト: node tests/run.mjs   (npm test)
 // 1) テスト用データと固定の日時でビルド → 2) 出力を機械的に検査 → 3) 0件・不正データの挙動も検査
@@ -254,11 +255,11 @@ ok(cheerio.load(read(join(OUT, "map.html")))(".top nav a[aria-current='page']").
 // ---------- 10. 検索・速度・外部ライブラリ ----------
 section("検索(noindex)・外部ライブラリ(SRI)・速度");
 const robotsMeta = (p) => cheerio.load(read(join(OUT, p)))('meta[name="robots"]').attr("content");
-ok(robotsMeta("events/t-past.html") === "noindex,follow", "終了したイベントは noindex");
+ok(/^index,follow/.test(robotsMeta("events/t-past.html")), "終了したイベントでも、説明があり次の回がなければ index される(tests/past-events.mjs)");
 ok(/^index,follow/.test(robotsMeta("events/t-full.html")), "開催前のイベントは index される");
 ok(robotsMeta("404.html") === "noindex,follow", "404 は noindex");
 ok(/^index,follow/.test(robotsMeta("pref/島根県.html")), "開催予定のある県ページは index される");
-ok(!locs.some((u) => u.includes("t-past")), "終了したイベントはサイトマップに入れない");
+ok(locs.some((u) => u.includes("t-past")), "検索に残す終了したイベントは、サイトマップに入れる");
 ok(locs.some((u) => u.includes("t-full")), "開催前のイベントはサイトマップに入れる");
 ok(cheerio.load(read(join(OUT, "events/t-full.html")))("script[src^='https://unpkg.com'], link[href^='https://unpkg.com']").length === 0, "開催ページは、地図の外部ライブラリを読み込まない");
 for (const f of ["map.html"]) {
@@ -347,6 +348,7 @@ englishTests({ ok, section, OUT });
 await organizersTests({ ok, section, OUT, build });
 sponsorTests({ ok, section, OUT });
 eventSeoTests({ ok, section, build });
+pastEventsTests({ ok, section, build });
 partnersTests({ ok, section, OUT, build });
 identityTests({ ok, section, OUT, build });
 await homeTests({ ok, section, OUT, build });
