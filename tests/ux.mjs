@@ -226,7 +226,9 @@ export async function uxTests({ ok, section, OUT }) {
     ok(!bad.first.length, "種類のページ: 冒頭は「〇〇とは」と概要、その下に折り畳み", bad.first.join(" "));
     ok(!bad.ad.length, "種類のページ: 宿・広告の枠は、折り畳み(開催予定)より下", bad.ad.join(" "));
     const kh = kinds.map((f) => read(join(OUT, "kagura", f)));
-    ok(kh.some((h) => /<p class="meta no-info">情報がありません。<\/p>/.test(h)) && !kh.some((h) => h.includes("kagura-jumps")), "データのない欄は「情報がありません。」と書く(ページ内の案内のリンクは、折り畳みに置き換えた)");
+    // いまは全部の欄が埋まっているので、作りの側で確かめる(データが空なら「情報がありません。」)
+    const bsrc = read("scripts/build.mjs");
+    ok(/const NO_INFO = `<p class="meta no-info">情報がありません。<\/p>`/.test(bsrc) && /if \(!v\?\.length\) return NO_INFO;/.test(bsrc) && /schedule \|\| NO_INFO/.test(bsrc) && !kh.some((h) => h.includes("kagura-jumps")), "データのない欄は「情報がありません。」と書く(ページ内の案内のリンクは、折り畳みに置き換えた)");
     const tk = new JSDOM(kh[0], { url: "https://kagurameguri.jp/kagura/x.html#k-programs", runScripts: "dangerously", beforeParse(w) { w.HTMLElement.prototype.scrollIntoView = () => {}; w.matchMedia = () => ({ matches: false, addEventListener() {} }); } });
     await new Promise((r) => setTimeout(r, 20));
     ok(tk.window.document.getElementById("k-programs").open === true && tk.window.document.getElementById("k-history").open === false, "「#k-programs」のようなリンクで来たら、その欄を開く");
