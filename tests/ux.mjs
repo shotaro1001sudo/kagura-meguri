@@ -82,7 +82,13 @@ export async function uxTests({ ok, section, OUT }) {
 
   section("UI: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
-  ok(full(".keyinfo table.info").length === 1 && full(".keyinfo").next(".desc-lead").next(".actions").length === 1 && page("regular/r-weekly.html")(".keyinfo").next(".desc-lead").next(".actions").length === 1, "要点(日時・会場・料金)の帯 → 説明 → 「公式情報を見る」のボタンの順(開催・定期公演とも)");
+  // 2026-11-14 運営者の依頼: 説明と「公式情報を見る」のボタンを、要点(日時・会場・料金)の枠の上に出す
+  ok(full(".keyinfo table.info").length === 1 && full(".d-top > .desc-lead").next(".actions").next(".keyinfo").length === 1 && page("regular/r-weekly.html")(".d-top > .desc-lead").next(".actions").next(".keyinfo").length === 1, "説明 → 「公式情報を見る」のボタン → 要点(日時・会場・料金)の枠の順(開催・定期公演とも)");
+  { // 本・ふるさと納税の紹介は、右の列ではなく、本文の下のほう(周辺体験のあと)に出す(2026-11-14 運営者の依頼。右の列を宿・レンタカーだけにして、画面に収める)
+    const src = read("scripts/build.mjs");
+    ok(!/<div class="d-side">[^\n]*(learnBlock|furusatoBlock)/.test(src) && ["event", "regular"].every((k) => new RegExp(`offerCards\\(visitorPlanning,'experiences',[er],today,'${k}_experiences'\\)\\}\\$\\{learnBlock\\([^\\n]*"${k}_learn"\\)\\}\\$\\{furusatoBlock\\([^\\n]*"${k}_furusato"\\)\\}`).test(src)),
+      "本・ふるさと納税の紹介は、右の列に置かず、周辺体験のあとに置く(開催・定期公演とも)");
+  }
   // 違和感の点検(PR 1): 右の列の固定・区切りの「・」・日付と時刻の割れ・終了済みのカレンダー・カッコと時刻の書き方
   ok(!/\.d-side\{[^}]*(position:sticky|max-height|overflow-y)/.test(css), "PCの右の列は固定せず、高さの上限も付けない(画面より長いと下が切れて中だけスクロールするため)");
   const textSep = ($, sel) => $(sel).toArray().some((x) => /・/.test($(x).clone().children(".sl").remove().end().text()));

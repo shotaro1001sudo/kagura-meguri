@@ -83,7 +83,7 @@ export function consistencyTests({ ok, section, OUT, build }) {
     const ah2 = a("main h2").map((_, h) => a(h).text()).get();
     ok(ah2.join("|") === "このサイトについて|掲載情報について|収益について" && (a("main").text().match(/出典の名前と確認した日/g) ?? []).length === 1, "運営者情報: 出典・更新・訂正の説明は「掲載情報について」の1か所にまとめる", ah2.join("|"));
     ok(a("table.info a.textlink[href='/contact.html']").length === 1 && /\.toc:not\(\.gnav\)/.test(src) && /\.toc a\{[^}]*min-height:var\(--tap\)/.test(src), "連絡先のリンクと、英語ガイドの目次のリンクも、押せる範囲を 44px に(目次はほかの面と同じ枠)");
-    ok(read("scripts/build.mjs").replace(/\r\n/g, "\n").includes('公式情報を見る</a></p>` : ""}\n${noteBlock(e)}\n') && !/<div class="d-rest">\n\$\{noteBlock\(e\)\}/.test(read("scripts/build.mjs").replace(/\r\n/g, "\n")), "開催ページ: 「この開催のポイント」は、公式情報のボタンのすぐあと(スマホで、宿や旅の案内の列より先)に出す");
+    ok(read("scripts/build.mjs").replace(/\r\n/g, "\n").includes('${glossHtml(e, { esc })}</div>\n${noteBlock(e)}\n') && !/<div class="d-rest">\n\$\{noteBlock\(e\)\}/.test(read("scripts/build.mjs").replace(/\r\n/g, "\n")), "開催ページ: 「この開催のポイント」は、要点の枠のすぐあと(スマホで、宿や旅の案内の列より先)に出す");
     const o = page("organizers.html");
     const sendLead = o("main h2").filter((_, h) => o(h).text() === "送り方").next("p").text();
     ok(sendLead.length > 0 && !sendLead.includes("SNS") && o(".oway").first().find("details.tech li").length === 4 && o(".oway").first().text().includes("SNSの自動巡回は行っていません"), "主催者の方へ: 「送り方」は3つの方法を先に見せ、SNS の投稿の決まりは1件ずつの送り方の中にまとめる", sendLead);
