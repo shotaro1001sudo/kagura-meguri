@@ -10,6 +10,8 @@ import { join } from "node:path";
 import * as cheerio from "cheerio";
 import YAML from "yaml";
 import { guardEvent, reconcile, DEFAULTS } from "../scripts/lib/collect-core.mjs";
+// 速いテスト(npm run test:quick)では、時間のかかる統合テストを飛ばす。npm test・GitHub の自動チェックでは、全部を動かす
+const QUICK = process.env.TEST_QUICK === "1";
 
 const NOW = new Date("2026-10-12T05:00:00+09:00");
 const week = (n) => new Date(NOW.getTime() + n * 7 * 864e5);
@@ -135,6 +137,8 @@ export async function collectTests({ ok, section }) {
   ok(!JSON.stringify(ical).includes("取り込まない本文"), "説明文(DESCRIPTION)は、取り込まない");
 
   // ---------- 4. collect.mjs を、実際に動かす ----------
+  if (QUICK) section("(速いテストでは省略。npm test で確かめる) 自動収集: 週ごとに変わるページを、実際に取得して、掲載・取り下げ(統合テスト)");
+  else {
   section("自動収集: 週ごとに変わるページを、実際に取得して、掲載・取り下げ(統合テスト)");
   const T = "tests/.tmp-collect";
   rmSync(T, { recursive: true, force: true }); mkdirSync(T, { recursive: true });
@@ -239,6 +243,8 @@ export async function collectTests({ ok, section }) {
   b = buildWith();
   ok(b.status === 0 && cheerio.load(read(`${T}/site/events/${identityId}.html`))("body").text().includes("20:30"), "収集を経た補完済み公演を、同じURLで20:30表示としてビルドできる");
   server.close(); rmSync(T, { recursive: true, force: true });
+
+  } // 速いテストでは省略、ここまで
 
   // ---------- 5. 週次ワークフローの安全装置 ----------
   section("自動収集: 週次ワークフロー(GitHub Actions)の安全装置");

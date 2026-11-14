@@ -7,6 +7,8 @@ import { createServer } from "node:net";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { buildMessage, shortDate, MAX_ITEMS } from "../scripts/lib/notify-message.mjs";
 import { transportOptions } from "../scripts/notify-mail.mjs";
+// 速いテスト(npm run test:quick)では、時間のかかる統合テストを飛ばす。npm test・GitHub の自動チェックでは、全部を動かす
+const QUICK = process.env.TEST_QUICK === "1";
 
 const USER = "bot@example.com", PASS = "abcd efgh ijkl mnop", TO = "owner@example.com";
 
@@ -66,6 +68,8 @@ export async function notifyTests({ ok, section }) {
   ok(threw, "ポート番号が不正なら、送らない");
 
   // ---------- 3. 実際に動かす(手元のメールサーバー) ----------
+  if (QUICK) section("(速いテストでは省略。npm test で確かめる) メール通知: 送信(手元のメールサーバーで確認)");
+  else {
   section("メール通知: 送信(手元のメールサーバーで確認)");
   const T = "tests/.tmp-notify";
   rmSync(T, { recursive: true, force: true }); mkdirSync(T, { recursive: true });
@@ -136,4 +140,5 @@ export async function notifyTests({ ok, section }) {
   ok(smtp.mails[0]?.subject.includes("🧪 試運転"), "試運転(dry_run)でも、結果が届く(通知の確認に使える)");
 
   server.close(); rmSync(T, { recursive: true, force: true });
+  } // 速いテストでは省略、ここまで
 }

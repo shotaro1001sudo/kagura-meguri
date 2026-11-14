@@ -8,6 +8,8 @@ import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs
 import { join } from "node:path";
 import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { cspFor } from "../scripts/lib/csp.mjs";
+// 速いテスト(npm run test:quick)では、時間のかかる統合テストを飛ばす。npm test・GitHub の自動チェックでは、全部を動かす
+const QUICK = process.env.TEST_QUICK === "1";
 
 const read = (p) => readFileSync(p, "utf8");
 const text = (f) => { const $ = cheerio.load(read(f)); $("script,style").remove(); return $("main").text().replace(/\s+/g, " "); };
@@ -92,6 +94,8 @@ export async function policyTests({ ok, section, OUT, build }) {
   ok(ds.includes("アフィリエイト(成果報酬)の契約を結んでおらず"), "免責事項に、現在、成果報酬を得ていないことが書かれている");
   ok(text(join(OUT, "about.html")).includes("収益を得ていません"), "運営者情報にも、現在は収益を得ていないことが書かれている");
 
+  if (QUICK) section("(速いテストでは省略。npm test で確かめる) ポリシー: 設定を有効にしたときだけ、項目が現れる");
+  else {
   section("ポリシー: 設定を有効にしたときだけ、項目が現れる");
   { // 広告
     const d = sub("ads", { TEST_ADSENSE: "ca-pub-0000000000000000" }); const p = text(join(d, "privacy.html")), s = text(join(d, "disclaimer.html")), a = text(join(d, "about.html"));
@@ -197,6 +201,8 @@ export async function policyTests({ ok, section, OUT, build }) {
     : ds.includes("自動で取得して掲載することはしていません"),
   `本番の収集元の設定と、免責事項の記載が、一致している(有効な収集元 ${active.length} 件が、すべて載り、無効なものは載らない)`);
   for (const n of ["ads", "ga", "aff", "form", "auto", "autooff", "none", "noform"]) rmSync(`${D}-${n}`, { recursive: true, force: true });
+
+  } // 速いテストでは省略、ここまで
 
   section("CSP: 外部サービスが必要とする許可");
   const dirOf = (csp, k) => (csp.split(";").map((x) => x.trim()).find((x) => x.startsWith(k + " ")) ?? "").split(/\s+/).slice(1);

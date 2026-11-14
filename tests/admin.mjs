@@ -13,6 +13,8 @@ import { execFileSync } from "node:child_process";
 import { request as httpRequest } from "node:http";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
+// 速いテスト(npm run test:quick)では、時間のかかる統合テストを飛ばす。npm test・GitHub の自動チェックでは、全部を動かす
+const QUICK = process.env.TEST_QUICK === "1";
 
 const SITE = "神楽めぐり";
 const read = (p) => readFileSync(p, "utf8");
@@ -608,6 +610,8 @@ export async function adminTests({ ok, section }) {
     rmSync(ROOT, { recursive: true, force: true });
   }
 
+  if (QUICK) section("(速いテストでは省略。npm test で確かめる) 管理者用ページ: 保存と同時の公開(コミットと push)");
+  else {
   section("管理者用ページ: 保存と同時の公開(コミットと push)");
   // 本物の GitHub の代わりに、PC の中に、送り先のリポジトリを作って確かめる
   const T = mkdtempSync(join(tmpdir(), "kagura-pub-"));
@@ -642,11 +646,11 @@ export async function adminTests({ ok, section }) {
     ok(!p.ok && p.step === "build", "サイトを作れないときは、送らない");
     // サイトは作れても、開催データのテスト(GitHub の公開処理で走る npm test の一部)が落ちるなら、送らない
     mkdirSync(join(A, "scripts")); writeFileSync(join(A, "scripts/build.mjs"), "");
-    mkdirSync(join(A, "tests")); writeFileSync(join(A, "tests/held-review.mjs"), "console.error('保留の判断と合わない'); process.exit(1);");
+    mkdirSync(join(A, "tests")); writeFileSync(join(A, "tests/social-evidence.mjs"), "console.error('保留の判断と合わない'); process.exit(1);");
     const before = g(A, "rev-parse", "HEAD");
     p = await publish(A, "x", { git, check: true });
-    ok(!p.ok && p.step === "test" && p.log.includes("tests/held-review.mjs") && p.log.includes("保留の判断と合わない") && g(A, "rev-parse", "HEAD") === before, "開催データのテストが落ちるときは、コミットも送信もせず、どのテストかを知らせる", JSON.stringify(p));
-    ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test.startsWith("npm run test:data && "), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
+    ok(!p.ok && p.step === "test" && p.log.includes("tests/social-evidence.mjs") && p.log.includes("保留の判断と合わない") && g(A, "rev-parse", "HEAD") === before, "開催データのテストが落ちるときは、コミットも送信もせず、どのテストかを知らせる", JSON.stringify(p));
+    ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test === "node tests/all.mjs" && read("tests/all.mjs").includes("DATA_TESTS"), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
   } finally { rmSync(T, { recursive: true, force: true }); }
 
   section("管理者用ページ: 定期の更新(GitHub の最新の取り込み)");
@@ -674,6 +678,8 @@ export async function adminTests({ ok, section }) {
       rmSync(W, { recursive: true, force: true });
     }
   }
+
+  } // 速いテストでは省略、ここまで
 
   section("管理者用ページ: 概要(運営の状況)の集計");
   {

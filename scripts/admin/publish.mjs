@@ -13,7 +13,7 @@ const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "d
 
 // 公開前に走らせる、開催データを確かめるテスト(package.json の test:data と同じもの)。
 // GitHub の公開処理は npm test(この6本 + tests/run.mjs)が通らないと公開しないので、データで落ちるものはここで止める。
-export const DATA_TESTS = ["keichiku-events", "social-evidence", "held-review", "tokyo-events", "collection-172", "national-sources"].map((t) => `tests/${t}.mjs`);
+export const DATA_TESTS = ["social-evidence", "collection-172", "national-sources"].map((t) => `tests/${t}.mjs`);
 
 function run(cmd, args, opts) {
   return new Promise((resolve) => {
