@@ -23,7 +23,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   for(const url of ['https://hb.afl.rakuten.co.jp/hgc/test.rental/','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2F','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2F','https://hb.afl.rakuten.co.jp/hgc/test.rental/?pc=https%3A%2F%2Fcars.travel.rakuten.co.jp.evil.test%2F'])ok(!validOffer({...rakutenRental,url},today),'レンタカーに宿泊・市場・不明遷移を流用しない');
   ok(!validOffer({...rental,scope:'national'},today)&&!validOffer({...experience,scope:'national'},today),'地域限定の既存案件を全国へ拡大しない');
   const nationalRental=cheerio.load(offerCards(rentalSettings,'rental',{},today,'guide_rental'));
-  ok(nationalRental('a[rel~=sponsored]').attr('href')===rakutenRental.url&&nationalRental.root().text().includes('全国の店舗を検索'),'全国レンタカーは全国検索と広告を明示し発行URLを保持');
+  ok(nationalRental('a[rel~=sponsored]').attr('href')===rakutenRental.url&&nationalRental('a[rel~=sponsored]').attr('aria-label').endsWith('(広告)')&&nationalRental('details.pc-more').length===0,'全国レンタカーは広告を明示し発行URLを保持(「詳しく・注意」は置かない。2026-11-14 運営者の依頼)');
   ok(!validOffer({...rental,url:rental.url.replace('rentacar','hotel')},today),'宿泊向けの遷移先をレンタカーへ流用しない');
   ok(!validOffer({...rental,provider:'vc-asoview'},today),'広告主とカテゴリが一致しないリンクを非表示');
   ok(offersFor(settings,'experiences',context,today).length===1&&offersFor(settings,'experiences',{prefecture:'宮崎県',city:'延岡市'},today).length===0,'県だけで別の市町村へ体験広告を広げない');
@@ -118,7 +118,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   const cars=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
   const shareLink=cars('[data-affiliate-partner=rakuten-carshare]');
   ok(validOffer(carshare,today)&&shareLink.length===1&&shareLink.attr('href')===CARSHARE_BANNER.url&&shareLink.find('img').attr('src')===CARSHARE_BANNER.imageUrl,'カーシェアも本人発行のURLと画像を保持');
-  ok(shareLink.attr('aria-label').includes('カーシェア')&&!shareLink.attr('aria-label').includes('レンタカー')&&shareLink.closest('article').text().includes('対応エリア・ステーション'),'サービス名と対応エリアの確認を案内しレンタカーと混同しない');
+  ok(shareLink.attr('aria-label').includes('カーシェア')&&!shareLink.attr('aria-label').includes('レンタカー')&&shareLink.closest('article').find('h3').text()==='カーシェアを探す','サービス名で案内しレンタカーと混同しない');
   ok(!validOffer({...carshare,provider:'rakuten-rental'},today)&&!validOffer({...ownerRental,provider:'rakuten-carshare'},today)&&!validOffer({...carshare,imageUrl:RENTAL_BANNER.imageUrl},today),'カーシェアとレンタカーのコード・画像の取り違えを拒否');
   ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},today).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},today).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
