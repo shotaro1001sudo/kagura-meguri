@@ -85,7 +85,14 @@ export async function uxTests({ ok, section, OUT }) {
   // 2026-11-14 運営者の依頼: 説明と「公式情報を見る」のボタンを、要点(日時・会場・料金)の枠の上に出す
   ok(full(".keyinfo table.info").length === 1 && full(".d-lead > .desc-lead").next(".actions").length === 1 && full(".d-lead").next(".d-top").children().first().is(".keyinfo") && page("regular/r-weekly.html")(".d-lead > .desc-lead").next(".actions").length === 1 && page("regular/r-weekly.html")(".d-lead").next(".d-top").children().first().is(".keyinfo"), "説明 → 「公式情報を見る」のボタン → 要点(日時・会場・料金)の枠の順(開催・定期公演とも)");
   // PC では、説明とボタン(d-lead)を右の列より上の段に置き、要点の枠と右の列の上端をそろえる
-  ok(/.dpage{[^}]*grid-template-areas:"lead ." "top side" "rest side"/.test(read("scripts/style.css")) && /.d-side .stay,.d-side .aff{margin:0 0 16px}/.test(read("scripts/style.css")), "PC: 要点の枠と、右の列の最初の枠(宿)の上端がそろう");
+  { // PC の並び(2026-11-14 運営者の依頼)
+    const css = read("scripts/style.css");
+    ok(css.includes('grid-template-areas:"lead lead" "top side" "rest side"') && css.includes(".d-side .stay,.d-side .aff{margin:0 0 16px}"), "PC: 説明は右端まで使い、要点の枠と右の列の最初の枠(宿)の上端がそろう");
+    const wk = page("weekend.html"), tm = page("this-month.html");
+    ok([wk, tm].every((p) => p(".d-lead.narrow > h2").length === 1 && p(".d-top").children().first().is(".card")) && css.includes(".d-lead.narrow{grid-column:1}.d-lead.narrow~.d-side{margin-top:0}"), "今週末・今月: 見出しは上の段(左の列)に置き、最初の開催のカードと右の宿の枠の上端をそろえる");
+    ok(/:where\([^)]*\.more-picks,/.test(css) && /\.more-picks\{margin:40px 0;padding:18px 22px\}/.test(css), "本・ふるさと納税の紹介も、ほかの広告と同じ枠にする");
+    ok(/@media\(min-width:641px\)\{html:not\(\[lang=en\]\) \.home-hero \.copy\{margin-left:/.test(css), "トップの縦書きの見出しは、PC・タブレットで少し右に寄せる");
+  }
   { // 本・ふるさと納税の紹介は、右の列ではなく、本文の下のほう(周辺体験のあと)に出す(2026-11-14 運営者の依頼。右の列を宿・レンタカーだけにして、画面に収める)
     const src = read("scripts/build.mjs");
     ok(!/<div class="d-side">[^\n]*(learnBlock|furusatoBlock)/.test(src) && ["event", "regular"].every((k) => new RegExp(`offerCards\\(visitorPlanning,'experiences',[er],today,'${k}_experiences'\\)\\}\\$\\{learnBlock\\([^\\n]*"${k}_learn"\\)\\}\\$\\{furusatoBlock\\([^\\n]*"${k}_furusato"\\)\\}`).test(src)),
@@ -131,7 +138,7 @@ export async function uxTests({ ok, section, OUT }) {
   // スマホでは、右の列(宿・本などの広告)が、要点と本文のあいだに入る。説明文は要点の帯の中に置き、広告より先に読めるようにする
   const descFirst = (p) => { const h = p("main").html(); return p(".d-lead .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
   ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点の枠の上(スマホでは広告の列より前)に出る");
-  { const h = reg("main").html(); ok(reg(".d-rest .share").length === 1 && h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("planning-links"), "定期公演ページも、共有のボタンは、説明・周辺体験などの本文のあと"); }
+  { const h = reg("main").html(); ok(reg(".d-top > .share").length === 1 && h.indexOf('class="share"') > h.indexOf('class="keyinfo"') && h.indexOf('class="share"') < h.indexOf("planning-links"), "定期公演ページも、共有のボタンは、公演内容の枠の下、周辺体験の上"); }
   { // 見出しの下の「明日開催」などは、並ぶタグと文字の大きさ・そろえ方が違うと、スマホで高さと位置がずれる
     const rule = (sel) => (css.match(new RegExp(`(?:^|[}\\s/])${sel.replace(/\./g, "\\.")}\\{([^}]*)\\}`)) ?? [])[1] ?? "";
     const fs = (r) => (r.match(/font-size:([^;}]+)/) ?? [])[1];

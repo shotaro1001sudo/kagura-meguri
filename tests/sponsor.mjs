@@ -69,15 +69,15 @@ export function sponsorTests({ ok, section, OUT }) {
   ok(!/[0-9０-９]/.test($m.root().text()), "数字は、メニューの料金と「数字で見る」の中だけ(ほかの文は「ひと月」「二本」と書く)", ($m.root().text().match(/.{0,10}[0-9０-９].{0,10}/) ?? [""])[0]);
   ok(!/読者の(多く|大半|ほとんど)/.test(text), "確かめていない読者の傾向を書いていない");
 
-  // 数字で見る: 掲載の件数は実数、アクセスは概数(約)と期間・出典つき。丸めていない数字を出さない
+  // 数字で見る: 掲載の件数は実数、アクセスは「1か月間」と「総アクセス数」の概数(約)だけ(2026-11-14 運営者の依頼)。丸めていない数字を出さない
   const st = $(".sp-stats");
   const tiles = st.find(".sp-tiles li").map((_, li) => [[$(li).find(".k").text(), $(li).find(".v").text()]]).get();
   const tv = (k) => (tiles.find(([x]) => x.includes(k)) ?? [, ""])[1];
   ok(/^\d+件$/.test(tv("これからの開催")) && /^\d+都道府県$/.test(tv("掲載している地域")) && /^\d+種類$/.test(tv("神楽の種類")) && /^\d+か所$/.test(tv("定期公演")), "掲載している情報: 開催・都道府県・神楽の種類・定期公演の件数", JSON.stringify(tiles));
-  ok(tv("検索結果に表示") === "約2.3万回" && tv("検索から訪れた") === "約1,900回" && tv("閲覧数") === "約5,200回" && st.text().includes("うち直近1週間で約8,100回"), "アクセス: 概数(約)で、直近1週間も添える", JSON.stringify(tiles));
-  ok(st.find(".sp-tiles .v").get().every((v) => /^約/.test($(v).text()) || /^\d+\D+$/.test($(v).text())) && !/23000|1900|5200/.test(st.text()), "アクセスの数字は、すべて「約」つきの概数");
-  ok(st.text().includes("Google Search Console(9月8日〜10月5日)") && st.text().includes("Googleアナリティクス(9月10日〜10月7日)") && st.text().includes("2026年10月8日更新") && st.text().includes("計測に同意した方の分だけ"), "出典・集計期間・更新日・閲覧数の計り方を書く");
-  ok(st.text().includes("ご相談の際にお伝えします") && text.includes("神楽に特化"), "売りは「神楽に特化したサイト」。地域のページごとの数字は、相談の際に伝えると書く");
+  ok(tv("1か月間のアクセス数") === "約5,200回" && tv("総アクセス数") === "約1.2万回" && st.text().includes("2026年9月の計測開始から") && !tv("検索") && !st.text().includes("検索"), "アクセス: 1か月間のアクセス数と総アクセス数だけを、概数(約)で出す(検索の回数は出さない)", JSON.stringify(tiles));
+  ok(st.find(".sp-tiles .v").get().every((v) => /^約/.test($(v).text()) || /^\d+\D+$/.test($(v).text())) && !/23000|1900|5200|12000/.test(st.text()), "アクセスの数字は、すべて「約」つきの概数");
+  ok(st.find(".sp-src").length === 0 && !st.text().includes("Search Console") && !st.text().includes("上から2桁") && !st.text().includes("ご相談の際に"), "数字の下に、出典・丸め方・地域ごとの数字の注記の文を置かない");
+  ok(text.includes("神楽に特化"), "売りは「神楽に特化したサイト」");
 
   // 協賛枠の見え方の見本(架空の提供者。特定の神楽の名前・団体の名前を使わない)
   ok($(".sp-sample .sponsor-slot").length === 1 && $(".sp-sample a").length === 0 && $(".sp-sample .sponsor-slot .pr").first().text() === "PR" && $(".sp-sample figcaption").text().includes("見本") && $(".sp-sample figcaption").text().includes("架空"), "協賛枠の見え方の見本(リンクなし・「見本」「架空」と書く・PR の印)");
@@ -127,7 +127,8 @@ function mediaStatsTests({ ok, section }) {
   for (let i = 0; i < 20; i++) Object.assign(days[day(i + 8)], { pv: 333, users: 100 });
   const s = computeMediaStats({ days }, { snapshot: { gscPages28: { "/": [99, 1], "/a.html": [5, 9], "/b.html": [7, 1] } } }, "2026-10-30");
   ok(s.search?.impressions === 28000 && s.search.clicks === 2800 && s.search.from === "2026-10-01" && s.search.to === "2026-10-28" && s.search.impressions7 === 7100, "検索: 直近28日と直近7日を、丸めて出す", JSON.stringify(s.search));
-  ok(!s.analytics, "閲覧数: 値のある日が24日に満たなければ載せない(欠けた期間で見せない)");
+  ok(s.analytics?.pageviews === 6600 && s.analytics.from === "2026-09-29" && s.total?.pageviews === 6600 && s.total.from === "2026-10-09", "アクセス: 直近30日(1か月間)と、計測の開始からの合計を、丸めて出す", JSON.stringify([s.analytics, s.total]));
+  { const few = {}; for (let i = 0; i < 13; i++) few[day(i)] = { pv: 50, users: 10 }; ok(!computeMediaStats({ days: few }, {}, "2026-10-30").analytics, "アクセス: 値のある日が14日に満たなければ載せない"); }
   ok(s.topPages.join() === "/b.html,/a.html", "よく読まれているページ: 検索から訪れた数の順。トップページは除く。数字は持たない");
   ok(mediaStatsErrors(s).length === 0 && mediaStatsErrors({ ...s, search: { ...s.search, impressions: 28378 } }).length > 0 && mediaStatsErrors({ ...s, raw: 1 }).length > 0, "丸めていない数字・知らない項目があれば、ビルドを止める");
   const live = existsSync("data/media-stats.json") ? JSON.parse(read("data/media-stats.json")) : null;
@@ -135,7 +136,7 @@ function mediaStatsTests({ ok, section }) {
   ok(statsFresh(s, "2026-12-20") && !statsFresh(s, "2027-01-10") && !statsFresh(null, "2026-10-30"), "集計が60日より古ければ、ページに出さない");
   const html = sponsorHtml({ esc: String, siteName: "神楽めぐり", stats: null, facts: { events: 3, prefs: 2, kaguras: 2, regular: 1 } });
   const $ = cheerio.load(html);
-  ok($(".sp-stats .sp-tiles").length === 1 && !$(".sp-stats").text().includes("約") && $(".sp-stats").text().includes("ご相談の際に"), "アクセスの集計が無いときは、件数だけ出して、数字は相談の際に伝えると書く");
+  ok($(".sp-stats .sp-tiles").length === 1 && !$(".sp-stats").text().includes("約"), "アクセスの集計が無いときは、件数だけ出す");
 }
 
 function sponsorSlotTests({ ok, section, OUT }) {

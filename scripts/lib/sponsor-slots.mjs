@@ -91,7 +91,7 @@ export function sponsorSlot(active, page, ctx, { esc, side = false }) {
   const item = (s) => {
     const external = /^https:/.test(s.url);
     const label = s.kind === "article" ? "PR記事" : "PR";
-    return `<li class="sp-item" data-sponsor="${esc(s.id)}"><span class="pr">${label}</span><a href="${esc(s.url)}" rel="sponsored${external ? " noopener" : ""}"${external ? ' target="_blank"' : ""} data-goatcounter-click="sponsor/${esc(s.id)}" data-goatcounter-title="sponsor/${esc(s.id)}">${esc(s.title)}</a>${s.text ? `<p>${esc(s.text)}</p>` : ""}<p class="sp-by">提供: ${esc(s.sponsor)}</p></li>`;
+    return `<li class="sp-item" data-sponsor="${esc(s.id)}"><a href="${esc(s.url)}" rel="sponsored${external ? " noopener" : ""}"${external ? ' target="_blank"' : ""} data-goatcounter-click="sponsor/${esc(s.id)}" data-goatcounter-title="sponsor/${esc(s.id)}">${esc(s.title)}</a>${s.text ? `<p>${esc(s.text)}</p>` : ""}<p class="sp-by">提供: ${esc(s.sponsor)}</p><span class="pr pr-foot">${label}</span></li>`;
   };
   return `<aside class="sponsor-slot${side ? " side" : ""}" aria-label="地域の協賛(PR)"><p class="sp-head">地域の協賛</p><ul>${hit.map(item).join("")}</ul><p class="sp-note">協賛の有無で、開催情報の掲載や並び順は変わりません。<a href="/sponsor.html">広告・協賛のご案内</a></p></aside>`;
 }

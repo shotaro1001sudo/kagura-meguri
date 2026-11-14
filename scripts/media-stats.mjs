@@ -22,6 +22,7 @@ console.log([
   "data/media-stats.json を書きました",
   line("検索の表示回数", stats.search, "impressions"),
   line("検索からの訪問", stats.search, "clicks"),
-  line("ページの閲覧数", stats.analytics, "pageviews"),
+  line("1か月間のアクセス数", stats.analytics, "pageviews"),
+  line("総アクセス数", stats.total, "pageviews"),
   `よく読まれているページ: ${stats.topPages.join(", ") || "なし"}`,
 ].join("\n"));

@@ -9,6 +9,17 @@
   "impressions7": 4900,
   "clicks7": 450
  },
+ "analytics": {
+  "from": "2026-10-11",
+  "to": "2026-11-09",
+  "pageviews": 1700,
+  "users": 460
+ },
+ "total": {
+  "from": "2026-10-19",
+  "to": "2026-11-09",
+  "pageviews": 1700
+ },
  "topPages": [
   "/pref/広島県.html",
   "/kagura/遠山の霜月祭.html",

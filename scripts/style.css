@@ -91,6 +91,7 @@ html{scroll-padding-top:84px}
 /* 見出しは縦書き(2行)。絵にかかる部分も読めるよう、文字のまわりを地色で、うっすらぼかす */
 .home-hero .copy{flex:none;writing-mode:vertical-rl;display:flex;flex-direction:column;text-shadow:0 0 10px var(--bg),0 0 18px var(--bg)}
 .home-hero h1{margin:0;font-size:var(--fs-2xl);line-height:1.75;letter-spacing:.14em;white-space:nowrap}
+@media(min-width:641px){html:not([lang=en]) .home-hero .copy{margin-left:clamp(24px,6vw,88px)}}
 @media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
 @media(max-width:640px){
   main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
@@ -110,7 +111,7 @@ html{scroll-padding-top:84px}
 
 /* 面(パネル): 一覧のカード・要点の枠・宿や旅の案内・入口のタイルなど、ひとまとまりの情報を載せる箱。
    枠・角の丸み・影・地色は、この1か所で決める(部品ごとに書かない)。中の余白だけを、部品の側で決める */
-:where(.card,.keyinfo,.stay,.aff,.side-summary,.side-box,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
+:where(.card,.keyinfo,.stay,.aff,.side-summary,.side-box,.more-picks,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
   .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.ended-note,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details,.toc:not(.gnav)){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 
 /* 一覧のカード: 左に日付、右に題 → 時刻と場所 → 会場・料金・予約 → 種類。カード全体が詳細へのリンク */
@@ -346,7 +347,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 説明文: 本文より少し大きく、要点のすぐ後の「何の公演か」を読みやすく */
 .desc-lead{font-size:var(--fs-l);line-height:1.9;margin:8px 0 24px}
 .desc-lead p{margin:0 0 .9em}.desc-lead p:last-child{margin-bottom:0}.desc-lead:empty{display:none}
-.d-rest .share{margin-top:40px}
+.d-top .share{margin-top:24px}
 /* 開催ページの交通・体験のカード: 列が狭いため、文字と余白を詰め、選び方の注意は小さく */
 .d-rest .planning-card{padding:16px 18px}.d-rest .planning-card :is(h3,h4){font-size:var(--fs-m);margin-bottom:8px}
 .d-rest .planning-card p{margin:6px 0 10px;font-size:var(--fs-s)}.d-rest .planning-card dl{font-size:var(--fs-xs);line-height:1.75;color:var(--mut)}.d-rest .planning-card dd{margin-bottom:8px}
@@ -355,9 +356,10 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .planning-card.compact h3{margin-bottom:10px}.planning-card.compact .planning-banner span{font-size:var(--fs-2xs);color:var(--mut)}
 .planning-card.compact{display:flex;flex-direction:column}.planning-card.compact .pc-more{order:2;margin-top:10px}
 @media(min-width:960px){
-  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"lead ." "top side" "rest side";grid-template-rows:auto auto 1fr;column-gap:48px}
-  /* 説明と公式情報のボタン(d-lead)は右の列より上の段に置き、要点の枠と右の列の上端をそろえる(2026-11-14 運営者の依頼) */
-  .d-lead{grid-area:lead}.d-top{grid-area:top}.d-rest{grid-area:rest}
+  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"lead lead" "top side" "rest side";grid-template-rows:auto auto 1fr;column-gap:48px}
+  /* 説明と公式情報のボタン(d-lead)は右の列より上の段に置き、右端まで使う。要点の枠と右の列の上端をそろえる(2026-11-14 運営者の依頼)。
+     今週末・今月のページは、見出しだけを上の段(左の列)に置き、最初の開催のカードと右の宿の枠の上端をそろえる */
+  .d-lead{grid-area:lead}.d-lead.narrow{grid-column:1}.d-lead.narrow~.d-side{margin-top:0}.d-top{grid-area:top}.d-rest{grid-area:rest}
   /* 右の列は、スクロールに合わせてついて来る(side-follow.js が止まる位置 --side-top を決めて .follow を付ける)。
      画面より長い列は、下端が画面の下に届いてから止まる。列の中だけをスクロールさせる箱にはしない */
   .d-side{grid-area:side;align-self:start;margin-top:16px}
@@ -387,7 +389,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .sponsor-slot.side{margin:4px 0 16px}
 .sponsor-slot .sp-head{margin:0 0 8px;font-size:var(--fs-xs);letter-spacing:.1em;color:var(--mut)}
 .sponsor-slot ul{list-style:none;margin:0;padding:0}.sponsor-slot .sp-item{padding:8px 0}.sponsor-slot .sp-item+.sp-item{border-top:1px solid var(--line)}
-.sponsor-slot .sp-item a{font-weight:500}.sponsor-slot .sp-item p{margin:4px 0 0;font-size:var(--fs-s)}
+.sponsor-slot .sp-item a{font-weight:500}.sponsor-slot .sp-item>.pr-foot{margin-top:6px}.sponsor-slot .sp-item p{margin:4px 0 0;font-size:var(--fs-s)}
 .sponsor-slot .sp-by,.sponsor-slot .sp-note{font-size:var(--fs-xs);color:var(--mut)}.sponsor-slot .sp-note{margin:8px 0 0}
 
 /* フォーム・ボタン */
@@ -926,6 +928,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 
 /* 今週末・今月の宿の帯、本・ふるさと納税の紹介 */
 .trip-band{margin-top:32px}
+.more-picks{margin:40px 0;padding:18px 22px}.more-picks h2{margin:0 0 8px;font-size:var(--fs-l)}.more-picks h2:after{display:none}.more-picks>p:not(.pr-foot){margin:0 0 4px;color:var(--mut);font-size:var(--fs-s)}
 .more-picks .picks{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 
 /* 右の列の小さな枠(本・ふるさと納税) */

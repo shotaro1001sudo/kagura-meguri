@@ -110,8 +110,8 @@ export function consistencyTests({ ok, section, OUT, build }) {
     const gloss = terms(".keyinfo .gloss dt").map((_, x) => terms(x).text()).get();
     ok(gloss.join("|") === "御初穂料・御神前(ご神前)|神楽宿(かぐらやど)" && terms(".keyinfo .gloss dd").first().text().includes("受付で納める") && oct(".gloss").length === 0 && terms('main a[href^="/guide.html"]').length === 0, "開催ページ: その開催に出てくる専門の言葉(御初穂料・神楽宿など)だけを、要点の枠の下で短く説明する(ガイドへのリンクは置かない)", gloss.join("|"));
     ok(rd("pref/宮崎県.html")(".card .gloss").length === 0 && rd("index.html")(".gloss").length === 0, "ことばの説明は、一覧のカードには出さない");
-    const calShort = terms(".keyinfo .calendar-notice").text();
-    ok(calShort.includes("終了時刻は未確認") && calShort.includes("入力用") && !calShort.includes("必要に応じて予定を編集") && new URL(terms("a.tocal").attr("href")).searchParams.get("details").includes("公演の終了時刻ではありません"), "日時の欄のカレンダーの注意書きは、ページでは要点だけ。カレンダーの予定の説明には全文を入れる", calShort);
+    // 2026-11-14 運営者の依頼: 日時の欄に、仮の終了(開始の2時間後)の注意書きは出さない。カレンダーの予定の説明には全文を入れる
+    ok(terms(".calendar-notice").length === 0 && !terms("main").text().includes("入力用に仮の終了") && new URL(terms("a.tocal").attr("href")).searchParams.get("details").includes("公演の終了時刻ではありません"), "日時の欄にカレンダーの注意書きを出さない。カレンダーの予定の説明には全文を入れる");
     const regp = rd("regular/rd-regular.html");
     const feeLines = regp(".keyinfo tr").filter((_, tr) => regp(tr).find("th").text() === "料金").find(".line").map((_, x) => regp(x).text()).get();
     ok(feeLines.length === 3 && feeLines[0] === "昼の公演: おとな1,200円・こども500円(1回目の終了後に入るときは800円。こどもは300円)。" && feeLines.join("") === "昼の公演: おとな1,200円・こども500円(1回目の終了後に入るときは800円。こどもは300円)。夜の公演: おとな800円。おとなは高校生以上", "要点の表: 2文以上の値は文ごとに行を分ける(かっこの中の「。」では分けない。文言は1字も変えない)", JSON.stringify(feeLines));

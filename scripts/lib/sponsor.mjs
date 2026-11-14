@@ -8,8 +8,9 @@
 //   ・「載るページの例」は、サイトに実在するページだけにする(tests/sponsor.mjs で確認)。
 //   ・数字を書くのは、メニュー(.sp-menu・.sp-group)と「数字で見る」(.sp-stats)だけ。ほかの文には数字を書かない(「ひと月」「一本」と書く)。
 //       - 掲載の件数は、ビルドの時点の実数(サイトの作りの事実)。
-//       - アクセスは、data/media-stats.json の概数だけ(上から2桁で切り捨て。scripts/lib/media-stats.mjs)。集計期間・出典を必ず添える。
-//       - 集計が古い・無いときは、アクセスの数字を出さず、「ご相談の際にお伝えします」とだけ書く。
+//       - アクセスは、data/media-stats.json の概数だけ(上から2桁で切り捨て。scripts/lib/media-stats.mjs)。
+//         出すのは「1か月間のアクセス数」(直近30日)と「総アクセス数」(計測の開始から)の2つ。期間は各数字の下に短く書く。出典の注記の文は置かない(2026-11-14 運営者の依頼)。
+//       - 集計が古い・無いときは、アクセスの数字を出さない。
 //   ・読者の傾向は、確かめていないことを書かない。
 //   ・中立の方針(掲載は無料・協賛で掲載や並び順を変えない・PRの表示)は、「主催者の方へ」と食い違わないようにする。
 //   ・見本には、特定の神楽の名前・団体の名前を使わない(「◯◯温泉旅館」のように書く。tests/sponsor.mjs で確認)。
@@ -104,8 +105,7 @@ export const SAMPLE_SPONSOR = {
 /** お問い合わせフォームの「ご用件」の選択肢の名前(tests/sponsor.mjs が、実物のフォームと照らす) */
 export const SPONSOR_TOPIC = "広告・取材などのご相談";
 
-const jpDay = (d) => d.replace(/^(\d{4})-0?(\d+)-0?(\d+)$/, "$1年$2月$3日");
-const jpShort = (d) => d.replace(/^\d{4}-0?(\d+)-0?(\d+)$/, "$1月$2日");
+const jpMonth = (d) => d.replace(/^(\d{4})-0?(\d+)-\d+$/, "$1年$2月");
 
 /**
  * @param {{ esc: (s:string)=>string, siteName: string,
@@ -119,7 +119,8 @@ export function sponsorHtml({ esc, siteName, pref, kagura, ev, reg, prices = {},
   const ok = (n) => Number.isFinite(n) && n > 0;
   const price = (n, unit) => (ok(n) ? `${unit}${yen(n)}<small>(税込)</small>` : "お見積もり");
   const S = SAMPLE_SPONSOR;
-  const s = stats?.search, a = stats?.analytics;
+  // 数字で見る: アクセスは「1か月間」と「総アクセス数」だけ(2026-11-14 運営者の依頼。検索の表示回数・検索からの訪問と、出典の注記は出さない)
+  const a = stats?.analytics, t = stats?.total;
   const tile = (label, value, unit, note = "") => `<li><span class="k">${label}</span><span class="v">${value}<small>${unit}</small></span>${note ? `<span class="n">${note}</span>` : ""}</li>`;
   const line = (name, priceHtml, desc, who, extra = "") => `<li>
 <div class="sp-row"><h3>${name}</h3><span class="sp-dots" aria-hidden="true"></span><p class="price">${priceHtml}</p></div>
@@ -160,7 +161,7 @@ ${egs.length ? `<p class="sp-eg">載るページの例: ${egs.map((x) => `<a hre
 <figure class="sp-sample">
 <figcaption>見本(提供者のお名前は架空のものです)</figcaption>
 <div class="sponsor-slot" aria-hidden="true"><p class="sp-head">地域の協賛</p><ul>
-<li class="sp-item"><span class="pr">PR</span><span class="sp-title">${esc(S.inn.title)}</span><p>${esc(S.inn.text)}</p><p class="sp-by">提供: ${esc(S.inn.name)}</p></li>
+<li class="sp-item"><span class="sp-title">${esc(S.inn.title)}</span><p>${esc(S.inn.text)}</p><p class="sp-by">提供: ${esc(S.inn.name)}</p><span class="pr pr-foot">PR</span></li>
 </ul></div>
 </figure>
 </div>
@@ -183,14 +184,11 @@ ${facts ? `${tile("これからの開催", facts.events.toLocaleString("ja-JP"),
 ${tile("掲載している地域", String(facts.prefs), "都道府県")}
 ${tile("神楽の種類", String(facts.kaguras), "種類")}
 ${tile("毎週・毎晩の定期公演", String(facts.regular), "か所")}` : ""}
-</ul>${s || a ? `
+</ul>${a || t ? `
 <ul class="sp-tiles">` : ""}
-${s ? tile("Googleの検索結果に表示された回数", approx(s.impressions), "回", `直近4週間${s.impressions7 ? `。うち直近1週間で${approx(s.impressions7)}回` : ""}`) : ""}
-${s ? tile("検索から訪れた回数", approx(s.clicks), "回", `直近4週間${s.clicks7 ? `。うち直近1週間で${approx(s.clicks7)}回` : ""}`) : ""}
-${a ? tile("ページの閲覧数", approx(a.pageviews), "回", "直近4週間。計測に同意した方の分だけ") : ""}
-${s || a ? "</ul>" : ""}
-${s || a ? `<p class="sp-src">${[s && `検索: Google Search Console(${jpShort(s.from)}〜${jpShort(s.to)})`, a && `閲覧数: Googleアナリティクス(${jpShort(a.from)}〜${jpShort(a.to)})`].filter(Boolean).join("・")}。数字は上から2桁で切り捨てた概数です(${jpDay(stats.updated)}更新)。載せたい地域のページごとの数字は、ご相談の際にお伝えします。</p>`
-    : `<p class="sp-src">アクセスの数字は、ご相談の際に、載せたい地域のページについてお伝えします。</p>`}
+${a ? tile("1か月間のアクセス数", approx(a.pageviews), "回", "直近30日のページの閲覧数") : ""}
+${t ? tile("総アクセス数", approx(t.pageviews), "回", `${jpMonth(t.from)}の計測開始から`) : ""}
+${a || t ? "</ul>" : ""}
 </section>
 
 <h2>掲載までの流れ</h2>

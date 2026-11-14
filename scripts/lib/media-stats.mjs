@@ -9,7 +9,11 @@
 
 export const STATS_WINDOW = 28;
 export const STATS_MIN_DAYS = 24;
-export const STATS_MAX_AGE_DAYS = 60; // これより古い集計は、ページに出さない
+export const STATS_MAX_AGE_DAYS = 60;
+// 2026-11-14 運営者の依頼: ページに出すのは「1か月間のアクセス数」(直近30日の閲覧数)と「総アクセス数」(計測を始めてからの閲覧数)だけ。
+// GA4 は計測に同意した方の分だけで、取得が止まった日もあるため、値のある日が14日以上あれば出す(欠けた日の分は少なめに出るだけで、多くは見せない)
+export const MONTH_WINDOW = 30;
+export const MONTH_MIN_DAYS = 14; // これより古い集計は、ページに出さない
 const TOP_PAGES = 6;
 
 /** 上から2桁を残して切り捨てる(4876 → 4800、19234 → 19000、87 → 87) */
@@ -55,8 +59,12 @@ export function computeMediaStats(series, state, today) {
     const w = windowSum(days, ["gscImpr", "gscClicks"], 7, 7);
     if (w && w.to === g.to) Object.assign(out.search, { impressions7: roundDown2(w.gscImpr), clicks7: roundDown2(w.gscClicks) });
   }
-  const a = windowSum(days, ["pv", "users"]);
+  const a = windowSum(days, ["pv", "users"], MONTH_WINDOW, MONTH_MIN_DAYS);
   if (a && a.pv > 0) out.analytics = { from: a.from, to: a.to, pageviews: roundDown2(a.pv), users: roundDown2(a.users) };
+  // 総アクセス数: 閲覧数の値がある最初の日から、最後の日まで
+  const pvDays = Object.keys(days).filter((d) => Number.isFinite(days[d]?.pv)).sort();
+  const total = pvDays.reduce((n, d) => n + days[d].pv, 0);
+  if (out.analytics && total > 0) out.total = { from: pvDays[0], to: pvDays.at(-1), pageviews: roundDown2(total) };
   const pages = state?.snapshot?.gscPages28 ?? {};
   out.topPages = Object.entries(pages)
     .filter(([p, v]) => p.startsWith("/") && p !== "/" && Array.isArray(v) && Number.isFinite(v[0]))
@@ -82,8 +90,9 @@ export function mediaStatsErrors(s) {
   };
   block("search", ["impressions", "clicks", "impressions7", "clicks7"]);
   block("analytics", ["pageviews", "users"]);
+  block("total", ["pageviews"]);
   if (s.topPages != null && (!Array.isArray(s.topPages) || s.topPages.some((p) => typeof p !== "string" || !/^\/[^\s"'<>]*$/.test(p)))) errs.push("media-stats.topPages: サイト内のパスの配列");
-  for (const k of Object.keys(s)) if (!["updated", "window", "search", "analytics", "topPages"].includes(k)) errs.push(`media-stats: 知らない項目 ${k}`);
+  for (const k of Object.keys(s)) if (!["updated", "window", "search", "analytics", "total", "topPages"].includes(k)) errs.push(`media-stats: 知らない項目 ${k}`);
   return errs;
 }
 

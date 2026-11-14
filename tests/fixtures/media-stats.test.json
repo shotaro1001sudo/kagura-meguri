@@ -1,7 +1,28 @@
 {
  "updated": "2026-10-08",
  "window": 28,
- "search": { "from": "2026-09-08", "to": "2026-10-05", "impressions": 23000, "clicks": 1900, "impressions7": 8100, "clicks7": 640 },
- "analytics": { "from": "2026-09-10", "to": "2026-10-07", "pageviews": 5200, "users": 1700 },
- "topPages": ["/pref/島根県.html", "/events/no-such-page.html", "/kagura/石見神楽.html"]
+ "search": {
+  "from": "2026-09-08",
+  "to": "2026-10-05",
+  "impressions": 23000,
+  "clicks": 1900,
+  "impressions7": 8100,
+  "clicks7": 640
+ },
+ "analytics": {
+  "from": "2026-09-10",
+  "to": "2026-10-07",
+  "pageviews": 5200,
+  "users": 1700
+ },
+ "topPages": [
+  "/pref/島根県.html",
+  "/events/no-such-page.html",
+  "/kagura/石見神楽.html"
+ ],
+ "total": {
+  "from": "2026-09-10",
+  "to": "2026-10-07",
+  "pageviews": 12000
+ }
 }
