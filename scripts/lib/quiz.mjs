@@ -97,6 +97,9 @@ export const traditions = [
   { kind: '都々古別神社の御神楽', evidence: [['rite', 'tagline'], ['music', 'features.0']] },
   { kind: '湯立神楽', evidence: [['yudate', 'tagline'], ['together', 'programs.2.text'], ['monster', 'features.2']] },
   { kind: '番楽', evidence: [['dynamic', 'features.2'], ['classic', 'features.1'], ['rite', 'features.4']] },
+  // 2026-11-14 追加(11月の調査で掲載した椎葉神楽と、城南宮の巫女神楽。根拠は各解説の本文)
+  { kind: '椎葉神楽', evidence: [['allnight', 'tagline'], ['rite', 'features.1'], ['dynamic', 'features.2'], ['monster', 'features.2'], ['classic', 'history.1'], ['together', 'viewing.0']] },
+  { kind: '巫女神楽', evidence: [['rite', 'tagline'], ['music', 'programs.0.text'], ['easy', 'viewing.0']] },
 ];
 // 解説はあるが、診断の対象にしない神楽と、その理由(週次の点検が「対象外」として扱う)
 export const QUIZ_EXCLUDED = {

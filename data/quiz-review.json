@@ -1,5 +1,5 @@
 {
-  "reviewed": "2026-11-10",
+  "reviewed": "2026-11-14",
   "evidence": {
     "石見神楽/tagline": "dad63a9d03ab",
     "石見神楽/intro~1": "e2589d628622",
@@ -102,6 +102,14 @@
     "湯立神楽/features.2": "5f885dd6890a",
     "番楽/features.2": "a0d9b6654e11",
     "番楽/features.1": "cfd2edeea742",
-    "番楽/features.4": "c410c2134ecb"
+    "番楽/features.4": "c410c2134ecb",
+    "椎葉神楽/tagline": "8f8d664ed254",
+    "椎葉神楽/features.1": "da8193294947",
+    "椎葉神楽/features.2": "a2103c6bbe07",
+    "椎葉神楽/history.1": "0d2e0a69eed4",
+    "椎葉神楽/viewing.0": "2d038b3250da",
+    "巫女神楽/tagline": "e5c2e21a3f6e",
+    "巫女神楽/programs.0.text": "1099d16b195f",
+    "巫女神楽/viewing.0": "a1a87dabfb39"
   }
 }
