@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-10",
+ "updated": "2026-11-14",
  "window": 28,
  "search": {
   "from": "2026-10-11",
@@ -11,10 +11,10 @@
  },
  "topPages": [
   "/pref/広島県.html",
-  "/events/npo-hiroshima-c63449d5cb.html",
-  "/kagura/庄内神楽.html",
-  "/month/2026-11.html",
   "/kagura/遠山の霜月祭.html",
-  "/kagura/広島神楽.html"
+  "/kagura/広島神楽.html",
+  "/events/tohyama-shimotsuki-kamimachi-2026.html",
+  "/history/",
+  "/kagura/花祭.html"
  ]
 }
