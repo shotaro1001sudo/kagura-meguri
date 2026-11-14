@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { questions,features,traditions,quizEngine,evidenceWeight,evidenceText } from '../scripts/lib/quiz.mjs';
-import { quizHealth,acceptBaseline,evidenceHashes,QUIZ_STALE_DAYS } from '../scripts/lib/quiz-health.mjs';
+import { quizHealth,acceptBaseline,evidenceHashes,kaguraPageGaps,QUIZ_STALE_DAYS } from '../scripts/lib/quiz-health.mjs';
 import { reviewMetrics,decideActions,renderReview } from '../scripts/lib/weekly-review.mjs';
 export function quizTests({ok,section,OUT}) {
   section('診断: 根拠付き推薦・好みの近さ・任意条件');
@@ -140,6 +140,18 @@ export function quizTests({ok,section,OUT}) {
     const keys=decideActions(m,null).filter(a=>a.key.startsWith('quiz-'));
     ok(['quiz-evidence-missing','quiz-evidence-changed','quiz-new-kinds','quiz-uncovered','quiz-stale'].every(k=>keys.some(a=>a.key===k))&&keys.every(a=>a.owner==='Claude'),'点検で見つかったことを、Claude の「今週やること」にする');
     ok(!decideActions(reviewMetrics({events:[],todayJst:today,quiz:h}),null).some(a=>a.key.startsWith('quiz-'))&&!decideActions(reviewMetrics({events:[],todayJst:today}),null).some(a=>a.key.startsWith('quiz-')),'問題がない週・点検の結果がない週は、診断の項目を出さない');
+    // 種類のページの空いた欄(2026-11-15 運営者の依頼): 新しい神楽(掲載1件から)も、一部の欄だけ空いた神楽も、週次の「やること」にする
+    {
+      const gi={揃った神楽:{intro:'概要。',history:['歴史。'],features:['特徴。'],programs:[{name:'演目',text:'説明。'}],viewing:['コツ。']},演目なし:{intro:'概要。',history:['歴史。'],features:['特徴。'],programs:[],viewing:['コツ。']},終わった神楽:{intro:'概要。'}};
+      const gev=[ev('p1','新しい神楽','2026-12-01'),ev('p2','演目なし','2026-12-01'),ev('p3','演目なし','2026-12-02'),ev('p4','揃った神楽','2026-12-01'),ev('p5','終わった神楽','2026-10-01'),ev('p6','保留だけ','2026-12-01','pending')];
+      const gaps=kaguraPageGaps({info:gi,events:gev,regular:[{kagura:'定期だけ',status:'published'},{kagura:'やめた定期',status:'published',until:'2026-01-01'}],todayJst:today});
+      ok(JSON.stringify(gaps.map(g=>[g.kind,g.fields.join('・'),g.n]))===JSON.stringify([['演目なし','主な演目',2],['新しい神楽','概要・歴史・特徴・主な演目・観賞のコツ',1],['終わった神楽','歴史・特徴・主な演目・観賞のコツ',0],['定期だけ','概要・歴史・特徴・主な演目・観賞のコツ',0]]),'ページのある神楽の空いた欄を、これからの掲載が多い順に挙げる(保留中だけ・終わった定期公演の神楽はページがないので除く)',JSON.stringify(gaps));
+      const gm=reviewMetrics({events:[],todayJst:today,quiz:{...h,pageGaps:gaps,uncovered:[{kind:'新しい神楽',n:3}]}});
+      const ga=decideActions(gm,null).find(a=>a.key==='kagura-page-gaps');
+      ok(ga?.owner==='Claude'&&ga.text.includes('演目なし(主な演目)')&&!ga.text.includes('新しい神楽(')&&ga.text.includes('data/kagura-info.json'),'空いた欄は Claude の「今週やること」に(解説がまったくない神楽は quiz-uncovered と重ねない)',ga?.text);
+      ok(renderReview(gm,null,[],[]).includes('種類のページに「情報がありません。」の欄がある神楽: 演目なし(主な演目)'),'振り返りの Issue に、空いた欄のある神楽を載せる');
+      ok(!decideActions(reviewMetrics({events:[],todayJst:today,quiz:{...h,pageGaps:[]}}),null).some(a=>a.key==='kagura-page-gaps'),'空いた欄がなければ、項目を出さない');
+    }
     const md=renderReview(m,null,[],[]);
     ok(md.includes('### 好み診断')&&md.includes('対象 31 種類')&&md.includes('いま掲載中の公演がない対象'),'振り返りの Issue に、診断の点検の数字を載せる');
   }

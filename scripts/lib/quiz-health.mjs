@@ -45,7 +45,28 @@ export function quizHealth({ info = {}, events = [], regular = [], todayJst, bas
     checkedDaysAgo: dayNum(todayJst) - dayNum(checked),
     reviewed: baseline?.reviewed ?? "",
     missing, changed, newKinds, uncovered, noShows,
+    pageGaps: kaguraPageGaps({ info, events, regular, todayJst, count }),
   };
+}
+
+// 種類のページの欄(2026-11-15 運営者の依頼)。データのない欄は、ページに「情報がありません。」と出る
+export const PAGE_FIELDS = [["intro", "概要"], ["history", "歴史"], ["features", "特徴"], ["programs", "主な演目"], ["viewing", "観賞のコツ"]];
+
+/**
+ * 種類のページがあるのに、欄が空いている神楽(掲載1件からでも挙げる。新しい神楽も、一部の欄だけ空いた神楽も)。
+ * ページは、掲載中の開催(終わったものも含む)か、続いている定期公演がある神楽に作られる(scripts/build.mjs と同じ)。
+ * 返り値: [{ kind, fields: ["主な演目", …], n: これからの掲載件数 }](これからの掲載が多い順)
+ */
+export function kaguraPageGaps({ info = {}, events = [], regular = [], todayJst, count = null }) {
+  const live = count ?? events.filter((e) => e.status === "published" && (e.end || e.start).slice(0, 10) >= todayJst).reduce((c, e) => (e.kagura && (c[e.kagura] = (c[e.kagura] ?? 0) + 1), c), {});
+  const kinds = new Set([
+    ...events.filter((e) => e.status === "published").map((e) => e.kagura),
+    ...regular.filter((r) => (r.status ?? "published") === "published" && (!r.until || r.until >= todayJst)).map((r) => r.kagura),
+  ].filter(Boolean));
+  return [...kinds]
+    .map((kind) => ({ kind, fields: PAGE_FIELDS.filter(([f]) => !info[kind]?.[f]?.length).map(([, t]) => t), n: live[kind] ?? 0 }))
+    .filter((g) => g.fields.length)
+    .sort((a, b) => b.n - a.n || a.kind.localeCompare(b.kind, "ja"));
 }
 
 /** data/quiz-review.json に残す「確認済み」の記録 */

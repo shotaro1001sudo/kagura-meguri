@@ -56,6 +56,7 @@
 | 根拠の本文が、確認済みから変わった | quiz-evidence-changed | 特徴の当てはめがまだ正しいか見直し、`node scripts/quiz-review.mjs --accept` |
 | 解説(出典・一言紹介・特徴2つ以上)があるのに対象外 | quiz-new-kinds | 根拠を付けて traditions に加えるか、`QUIZ_EXCLUDED` に理由を書く |
 | 今後の掲載が3件以上あるのに解説がない神楽 | quiz-uncovered | 出典つきの解説を kagura-info.json に足す(診断と SNS の読み物に使える) |
+| 種類のページに「情報がありません。」の欄がある神楽(掲載1件から。一部の欄だけ空いた神楽も) | kagura-page-gaps | 公式の情報で出典つきに調べ、kagura-info.json の空いた欄を埋める(解説がまったくない神楽は quiz-uncovered が受け持つ) |
 | 全体の見直し(`QUIZ_CHECKED`)から120日超 | quiz-stale | 質問・対象・完了率を見直し、`QUIZ_CHECKED` を更新 |
 
 確認済みの記録は [data/quiz-review.json](../data/quiz-review.json)(根拠の本文の指紋だけ。本文そのものや数字は入らない)。いまの状態は `node scripts/quiz-review.mjs` で見られる。根拠を足したら `--accept` する(テストが、すべての根拠が確認済みに載っているかを確かめる)。

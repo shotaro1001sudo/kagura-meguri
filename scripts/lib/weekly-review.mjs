@@ -135,6 +135,9 @@ export function decideActions(m, prev) {
     if (q.changed.length) add("quiz-evidence-changed", "Claude", `好み診断の根拠にしている解説の本文が変わりました(${few(q.changed)})。特徴の当てはめがまだ正しいか見直し、node scripts/quiz-review.mjs --accept で確認済みにする`);
     if (q.newKinds.length) add("quiz-new-kinds", "Claude", `解説がそろったのに、好み診断の対象外の神楽があります(${few(q.newKinds)})。根拠を付けて scripts/lib/quiz.mjs に加えるか、対象外の理由を QUIZ_EXCLUDED に書く`);
     if (q.uncovered.length) add("quiz-uncovered", "Claude", `掲載が多いのに解説がなく、好み診断に入れられない神楽: ${q.uncovered.slice(0, 5).map((u) => `${u.kind}(${u.n}件)`).join("、")}。出典つきの解説を data/kagura-info.json に足すと、診断と SNS の読み物に使える`);
+    // 種類のページの空いた欄(「情報がありません。」)。掲載1件の新しい神楽も、一部の欄だけ空いた神楽も挙げる
+    const gaps = (q.pageGaps ?? []).filter((g) => !q.uncovered.some((u) => u.kind === g.kind)); // 解説がまったくない神楽は quiz-uncovered が受け持つ
+    if (gaps.length) add("kagura-page-gaps", "Claude", `種類のページに「情報がありません。」の欄がある神楽が ${gaps.length} 種類: ${gaps.slice(0, 5).map((g) => `${g.kind}(${g.fields.join("・")})`).join("、")}${gaps.length > 5 ? ` ほか ${gaps.length - 5} 種類` : ""}。公式の情報で出典つきに調べ、data/kagura-info.json に足す(紹介文の文を変えたら scripts/lib/quiz.mjs の intro~N も見直す。docs/quiz.md)`);
     if (q.checkedDaysAgo > QUIZ_STALE_DAYS) add("quiz-stale", "Claude", `好み診断の全体の見直しから ${q.checkedDaysAgo} 日(目安 ${QUIZ_STALE_DAYS} 日)。質問の分かりやすさ、完了率・シェア(PCの分析で GA4 の quiz_start→quiz_complete)、対象の広げ方を見直し、QUIZ_CHECKED を更新する`);
   }
   if (prev && prev.listing && m.listing.upcoming30 < prev.listing.upcoming30 * 0.7) add("listing-drop", "Claude", `今後30日の掲載が先週の ${prev.listing.upcoming30} 件から ${m.listing.upcoming30} 件へ大きく減少。収集元の取りこぼしを確認する`);
@@ -228,6 +231,7 @@ export function renderReview(m, prev, actions, carried = [], progress = null) {
   if (m.quiz) {
     const q = m.quiz;
     lines.push("### 好み診断", "", `対象 ${q.kinds} 種類 / 根拠の本文の変更 ${q.changed.length} 件 / 解説があるのに対象外 ${q.newKinds.length} 件 / 全体の見直し ${q.checked}(${q.checkedDaysAgo} 日前)`, "");
+    if (q.pageGaps?.length) lines.push(`種類のページに「情報がありません。」の欄がある神楽: ${q.pageGaps.map((g) => `${g.kind}(${g.fields.join("・")})`).join("、")}`, "");
     if (q.noShows.length) lines.push(`いま掲載中の公演がない対象: ${q.noShows.join("、")}(結果の画面では、条件で観られる別の神楽を案内します)`, "");
   }
   lines.push(...renderPerformance(s.performance));
