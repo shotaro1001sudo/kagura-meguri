@@ -12,7 +12,6 @@ import { nextEdition, keepPastIndexed, recentPast, editionKey } from './lib/past
 // 2026-10-21: event-handoff smoke marker (comment only; no functional or output change).
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import * as cheerio from "cheerio";
 import { cspFor, FRAME_BUSTER } from "./lib/csp.mjs";
 import { submitForm, contactForm, formScript, formReady } from "./lib/form.mjs";
 import { privacyHtml, privacyUpdated, disclaimerHtml, termsHtml } from "./lib/policy.mjs";
@@ -227,7 +226,8 @@ const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 // 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
 const tripBand = (id, heading) => { const b = stayBanners(id); return b ? `<aside class="aff trip-band" aria-labelledby="${id}-stay-h"><h2 id="${id}-stay-h">${heading}</h2><p class="stay-cond"><span>開催地の近くで探す</span></p>${b}${prNote(true)}</aside>` : ""; };
-const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotation">PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p>` : "");
+// 広告の印は、枠ごとに1つ、枠の下に「PR」だけを置く(2026-11-14 運営者の依頼。上の「広告」・リンクの「(広告)」とくり返さない)
+const prNote = (on) => (on ? `<span class="pr pr-foot">PR</span><p class="meta annotation">PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p>` : "");
 
 // 会場の近くの宿(楽天トラベルの施設検索 API。公開のたびに scripts/fetch-hotels.mjs が取る。無い・古いときは出さない)
 const HOTELS_FILE = process.env.NEARBY_HOTELS_FILE ?? "data/nearby-hotels.json";
@@ -338,22 +338,11 @@ const ogUrl = (en) => `${cfg.baseUrl}/${en ? "og-en.jpg" : "og.jpg"}`;
 const EN_NAV = [["/en/", "Home", ["/en/"]], ["/en/guide.html", "First-timer's guide", ["/en/guide.html"]], ["/en/kagura.html", "Kagura styles", ["/en/kagura.html"]], ["/en/history.html", "History", ["/en/history.html"]], ["/", "日本語", ["/"]]];
 const EN_FOOTER = `<footer><p class="fnote">Event listings are in Japanese, but your browser can translate them.</p><p class="flinks"><a href="/calendar.html" hreflang="ja">Calendar</a><a href="/map.html" hreflang="ja">Map</a></p><p class="flinks"><a href="/about.html" hreflang="ja">About (Japanese)</a><a href="/contact.html" hreflang="ja">Contact (Japanese)</a><a href="/privacy.html" hreflang="ja">Privacy policy (Japanese)</a><a href="/disclaimer.html" hreflang="ja">Disclaimer (Japanese)</a></p><p class="copy">© Kagura Meguri</p></footer>`;
 // 出典・注釈・広告の説明(.meta.annotation)は、本文の途中から抜き出し、ページの下部に小さくまとめる。
-// 広告そのものの印(リンクの「(広告)」・バッジの「PR」)は、広告の場所に残す。スクリプトの中と、id のある注釈(入力欄の説明)は動かさない
+// 広告そのものの印(枠の下の「PR」)は、広告の場所に残す。スクリプトの中と、id のある注釈(入力欄の説明)は動かさない
 const NOTE_RE = /<p class="meta annotation"(?![^>]*\bid=)[^>]*>([\s\S]*?)<\/p>/g;
-// 広告の注記: ページの先頭ではなく、最初の広告の枠(宿・本・体験など)のすぐ上に置く。先頭に置くと、本文より前に毎回大きく出て、雰囲気を壊すため。
-// 広告の原本(発行タグ)を1文字も変えないよう、HTMLを作り直さず、元の文字列の位置に差し込む
-const VC_DISCLOSURE = '<p class="vc-disclosure"><strong>広告</strong> このページにはアフィリエイト広告が含まれます。じゃらんの広告表示時には外部への通信が発生します。</p>';
-const withAdDisclosure = (html) => {
-  if (!html.includes("data-vc-ad=")) return html;
-  const $ = cheerio.load(html, { sourceCodeLocationInfo: true }, false);
-  // 協賛枠(PR)はアフィリエイトではないので、注記の位置の目印にしない
-  let el = $('a[rel~="sponsored"], [data-vc-ad], .vc-ad, .pr').filter((_, x) => !$(x).closest(".sponsor-slot").length).first();
-  if (!el.length) return VC_DISCLOSURE + html;
-  // 本文・右の列の直下(なければページの直下)にある、広告の枠そのものまでさかのぼる
-  while (el.parent()[0]?.type === "tag" && !el.parent().is(".d-top, .d-side, .d-rest")) el = el.parent();
-  const at = el[0].sourceCodeLocation.startOffset;
-  return html.slice(0, at) + VC_DISCLOSURE + html.slice(at);
-};
+// 2026-11-14 運営者の依頼: 広告の枠の上に置いていた「広告 このページにはアフィリエイト広告が…」の1行はやめた(各枠の下の「PR」と重なるため)。
+// じゃらんの広告(同意のあとに読み込む発行タグ)があるページでは、外部への通信のことを、ページ下の広告の注記に書き添える
+const VC_NOTE = "じゃらんの広告表示時には外部への通信が発生します。";
 // 公演の説明: 長い文は、スマホで1つの塊にならないよう、2文ずつの段落に分ける(文は変えない)
 const descParas = (s = "") => {
   const sentences = String(s).match(/[^。]+。?/g)?.map((x) => x.trim()).filter(Boolean) ?? [];
@@ -363,20 +352,20 @@ const descParas = (s = "") => {
   for (let i = 0; i < sentences.length; i += 2) out.push(sentences.slice(i, i + 2).join(""));
   return out.map((t) => `<p>${esc(t)}</p>`).join("");
 };
-// ページ下の注記: ほかの場所(宿の枠の条件、各広告の「PR」「(広告)」の印、免責事項のページ)で伝わっている注意はくり返さない。
-// 広告の注記は、ページごとに1行へまとめる(各広告の印と、ページ上の「広告」の注記はそのまま残る)
+// ページ下の注記: ほかの場所(宿の枠の条件、各広告の枠の「PR」、免責事項のページ)で伝わっている注意はくり返さない。
+// 広告の注記は、ページごとに1行へまとめる(各広告の枠の「PR」はそのまま残る)
 const NOTE_DROP = [/^営業状況・空き・価格はリアルタイム表示ではありません/, /^会場の公式アクセスと公共交通を先に確認し/, /泊・大人2名で検索します。/, /^掲載情報確認: /, /^県内全域の一覧です。/];
 const NOTE_AD = [/^PR: 宿の案内は広告/, /^<span class="pr">広告<\/span>\s*外部サービスの広告です/, /^<span class="pr">PR<\/span>\s*紹介している商品・返礼品のリンクは広告/];
-const AD_NOTE = '<span class="pr">広告</span> 宿・交通・体験・商品などのリンクは広告(アフィリエイトリンク)を含みます。予約・購入・寄付で当サイトに報酬が入ることがあります。';
-const tidyNotes = (notes) => {
+const AD_NOTE = '<span class="pr">PR</span> 宿・交通・体験・商品などのリンクは広告(アフィリエイトリンク)を含みます。予約・購入・寄付で当サイトに報酬が入ることがあります。';
+const tidyNotes = (notes, vc = false) => {
   const plain = (n) => n.replace(/<[^>]+>/g, "");
-  let ad = false;
+  let ad = vc;
   const kept = notes.filter((n) => {
     if (NOTE_AD.some((re) => re.test(n))) { ad = true; return false; }
     if (NOTE_DROP.some((re) => re.test(plain(n)))) { if (/広告|アフィリエイト/.test(n)) ad = true; return false; }
     return true;
   });
-  return ad ? [...kept, AD_NOTE] : kept;
+  return ad ? [...kept, AD_NOTE + (vc ? VC_NOTE : "")] : kept;
 };
 const collectNotes = (body) => {
   const notes = [];
@@ -385,7 +374,7 @@ const collectNotes = (body) => {
     if (t && !notes.includes(t)) notes.push(t);
     return "";
   }).replace(/<details[^>]*><summary>[^<]*<\/summary>\s*<\/details>/g, ""))).join("");
-  const shown = tidyNotes(notes);
+  const shown = tidyNotes(notes, body.includes("data-vc-ad="));
   return shown.length ? `${out}<section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2>${shown.map((n) => `<p>${n}</p>`).join("")}</section>` : out;
 };
 const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
@@ -413,7 +402,7 @@ ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
-<div class="wrap${wide ? " wide" : ""}"><main id="main">${withAdDisclosure(en ? body : collectNotes(body))}</main>
+<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>

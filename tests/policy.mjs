@@ -123,13 +123,15 @@ export async function policyTests({ ok, section, OUT, build }) {
     const rk = $('.d-side .stay a.stay-banner[data-banner-partner="rakuten"]'), jl = $('.d-side .stay [data-vc-ad][data-banner-partner="jalan"]');
     ok(rk.length === 1 && rk.attr("href").startsWith("https://hb.afl.rakuten.co.jp/hsc/") && rk.find("img").attr("src").startsWith("https://hbb.afl.rakuten.co.jp/") && /sponsored/.test(rk.attr("rel")) && jl.length === 1 && $(".stay .pr").length === 1, "本番: 開催ページの宿は、楽天トラベル(楽天アフィリエイト)・じゃらん(バリューコマース)の発行済みバナーで案内する(sponsored・PR表記つき)");
     ok($(".d-side .staylinks, .d-side .stay-btn").length === 0, "本番: 開催ページの宿に、文字だけのボタンは残さない");
-    { // 広告の注記: ページの先頭ではなく、最初の広告の枠のすぐ上に1回だけ。どの広告よりも前に出る
-      const html = $("main").html(), at = html.indexOf('class="vc-disclosure"');
-      const firstAd = Math.min(...['sponsored', 'data-vc-ad=', 'class="vc-ad', 'class="pr"'].map((k) => html.indexOf(k)).filter((i) => i >= 0));
-      ok($("main .vc-disclosure").length === 1 && !$("main").children().first().is(".vc-disclosure") && $(".vc-disclosure").next().is(".d-side .stay") && at >= 0 && at < firstAd,
-        "本番: 広告の注記は、ページの先頭ではなく、最初の広告の枠(宿)のすぐ上に1回だけ出る");
+    { // 広告の印(2026-11-14 運営者の依頼): 上の「広告」の1行・リンクの「(広告)」はやめ、各枠の下に「PR」を1つだけ。じゃらんの外部通信はページ下の注記で伝える
       const reg = cheerio.load(read(join(d, "regular/r-weekly.html")));
-      ok(reg(".vc-disclosure").length === 1 && reg(".vc-disclosure").next().find('[data-vc-ad], a[rel~="sponsored"], .pr').length > 0, "本番: 定期公演ページも、注記の直後が広告の枠");
+      for (const [name, p] of [["開催", $], ["定期公演", reg]]) {
+        const boxes = p(".d-side").children().filter((_, x) => p(x).find('[data-vc-ad], a[rel~="sponsored"]').length > 0 && !p(x).is(".sponsor-slot"));
+        ok(p(".vc-disclosure").length === 0 && !/[(（]広告[)）]/.test(p("main").clone().find(".page-notes").remove().end().text()), `本番: ${name}ページに、上の「広告」の1行・「(広告)」の文字を出さない`);
+        ok(boxes.length > 0 && boxes.toArray().every((x) => p(x).find(".pr").length === 1 && p(x).find(".pr").is(".pr-foot") && p(x).find(".pr").text() === "PR" && p(x).find(".pr").nextAll().not("script,template").length === 0),
+          `本番: ${name}ページの右の列の広告の枠は、どれも枠の下に「PR」が1つだけ`);
+        ok(p(".page-notes").text().includes("じゃらんの広告表示時には外部への通信が発生します。") && p(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), `本番: ${name}ページのじゃらんの外部通信は、ページ下の広告の注記で伝える`);
+      }
     }
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
     ok(['楽天グループ株式会社','バリューコマース株式会社','hbb.afl.rakuten.co.jp','ba.afl.rakuten.co.jp','ad.jp.ap.valuecommerce.com'].every(v=>p.includes(v)), '本番: 広告サービス提供会社と画像ホストを開示');

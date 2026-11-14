@@ -35,7 +35,7 @@ export function moreOffersTests({ ok, section }) {
   ok(side("aside.side-box h2").text() === "石見神楽をもっと楽しむ" && side("a[data-affiliate-placement=event_learn]").length === 2, "右の列用の小さな枠でも、同じ広告を出す");
   const $ = cheerio.load(learnBlock(settings, { kagura: "石見神楽" }, today, "kagura_learn"));
   const a = $("a");
-  ok($("h2").text() === "石見神楽をもっと楽しむ" && a.length === 2 && a.first().attr("href") === book.url && a.toArray().every((x) => /sponsored/.test($(x).attr("rel")) && $(x).attr("data-affiliate-placement") === "kagura_learn") && $(".pr").length === 3, "本の紹介: 発行URLのまま、sponsored と PR 表示・計測の印つき");
+  ok($("h2").text() === "石見神楽をもっと楽しむ" && a.length === 2 && a.first().attr("href") === book.url && a.toArray().every((x) => /sponsored/.test($(x).attr("rel")) && $(x).attr("data-affiliate-placement") === "kagura_learn") && $(".pick .pr").length === 0 && $(".more-picks>.pr.pr-foot:last-child").text() === "PR", "本の紹介: 発行URLのまま、sponsored と計測の印つき。PR は商品ごとでなく、枠の下に1つ");
   const f = cheerio.load(furusatoBlock(settings, { prefecture: "広島県", towns: ["山県郡北広島町"] }, today, "pref_furusato"));
   ok(f("h2").text() === "神楽の町を応援する" && f("a").attr("data-affiliate-category") === "furusato" && f("small").text().includes("北広島町") && f(".annotation").text().includes("寄付"), "ふるさと納税: 町の名前と、広告であることを示す");
   const esc = cheerio.load(learnBlock({ ...settings, offers: [{ ...book, title: "<img src=x onerror=alert(1)>" }] }, { kagura: "石見神楽" }, today, "kagura_learn"));

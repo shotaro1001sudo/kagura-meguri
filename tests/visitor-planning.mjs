@@ -32,7 +32,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(offerCards({categories:{},offers:settings.offers},'rental',context,today,'event_rental')===''&&offerCards({categories:{rental:{enabled:true}},offers:[]},'rental',context,today,'event_rental')==='','未設定で空枠・仮カードを出さない');
   const escaped=cheerio.load(offerCards({...settings,offers:[{...supplies,title:'<img src=x onerror=alert(1)>',reason:'<script>bad()</script>'}]},'supplies',{},today,'guide_supplies'));
   ok(escaped('img,script,[onerror]').length===0&&escaped('h3').text().includes('<img'),'設定の文章をHTMLとして実行しない');
-  ok(escaped('a[rel~=sponsored][rel~=noopener][target=_blank]').length===1&&escaped('a').text().includes('楽天市場')&&escaped('a').text().includes('広告'),'リンク先名と広告を明示し安全な外部リンクにする');
+  ok(escaped('a[rel~=sponsored][rel~=noopener][target=_blank]').length===1&&escaped('a').text().includes('楽天市場')&&escaped('a').attr('aria-label').endsWith('(広告)')&&!escaped('a').text().includes('広告')&&escaped('.planning-ads>.pr.pr-foot:last-child').text()==='PR'&&escaped('.pr').length===2,'リンク先名を出し、広告は枠の下の「PR」1つで示す(読み上げには「(広告)」)。安全な外部リンクにする');
   ok(experiencesFor(context,today).length===2&&experiencesFor({prefecture:'大分県',city:'高千穂町'},today).length===0,'公式確認済みの2体験を当該地域だけへ接続');
   ok(experiencesFor(context,'2027-02-01').length===0,'90日を超えた未再確認の体験を出し続けない');
   // 休止の案内は、公式で確認できた時点のものだけを出す。10/25・26の台風による休止は、10/30に公式の営業カレンダーで終了を確認した

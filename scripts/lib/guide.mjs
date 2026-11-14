@@ -38,7 +38,7 @@ export function guideHtml({ esc, kaguraLink, supplies = [], rentalHtml = '' }) {
   // 持ち物の「たとえば」: 広告の商品を、合う持ち物のカードの中に、1つずつ添える(別の広告欄にまとめない)
   const PROVIDER = { "rakuten-ichiba": "楽天市場" };
   const slotOf = (o) => (/blanket/.test(o.id) ? 0 : /cushion|seat/.test(o.id) ? 1 : /battery/.test(o.id) ? 2 : -1);
-  const pickHtml = (o) => `<p class="pick"><span class="pr">PR</span>たとえば <a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-supplies/${o.id}" data-affiliate-category="supplies" data-affiliate-partner="${o.provider}" data-affiliate-placement="guide_supplies" data-affiliate-id="${o.id}">${esc(o.title)}</a><small>${esc(PROVIDER[o.provider] ?? "")} ・ ${esc(o.criteria)}</small></p>`;
+  const pickHtml = (o) => `<p class="pick">たとえば <a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-supplies/${o.id}" data-affiliate-category="supplies" data-affiliate-partner="${o.provider}" data-affiliate-placement="guide_supplies" data-affiliate-id="${o.id}">${esc(o.title)}</a><small>${esc(PROVIDER[o.provider] ?? "")} ・ ${esc(o.criteria)}</small><span class="pr pr-foot">PR</span></p>`;
   const pick = (i) => supplies.filter((o) => slotOf(o) === i).map(pickHtml).join("");
   const others = supplies.filter((o) => slotOf(o) < 0);
   const rest = others.length ? `<div class="picks">${others.map(pickHtml).join("")}</div>` : "";

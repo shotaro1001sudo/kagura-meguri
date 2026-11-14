@@ -378,6 +378,9 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .hotel-card img{flex:none;width:96px;height:72px;object-fit:cover;border-radius:2px;background:var(--line)}.hotel-body{display:flex;flex-direction:column;gap:2px;min-width:0}.hotel-body b{font-size:var(--fs-s);line-height:1.4}.hotel-price{font-weight:600}.hotel-review,.hotel-body small{font-size:var(--fs-xs);color:var(--mut)}.stay-note{margin:8px 0 4px}.stay-note summary{cursor:pointer;font-size:var(--fs-xs);color:var(--mut)}.stay-note[open] summary{margin-bottom:2px}
 .d-side .stay{padding:16px}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
+/* 広告の枠の印: 枠ごとに1つ、枠の下の右端に「PR」だけ(2026-11-14 運営者の依頼) */
+.pr-foot{display:block;width:fit-content;margin:10px 0 0 auto;line-height:1.6}
+.planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
 .sponsor-slot.side{margin:4px 0 16px}
@@ -874,7 +877,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .stay-cond{display:flex;flex-wrap:wrap;margin:0 0 12px!important;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--mut)}
 .stay-cond span+span::before{content:"・";margin:0 .2em}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
-.stay .pr+*{margin-top:0}.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
+.stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
 /* たたんだ注意書き: 小さく、薄く */
 :is(.stay-note,.pc-more){margin:8px 0 4px}
 :is(.stay-note,.pc-more) summary{cursor:pointer;width:fit-content;font-size:var(--fs-xs);color:var(--mut);padding:9px 0;min-height:var(--tap);list-style-position:inside}
@@ -894,7 +897,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 /* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */
 .planning-card:has(.pick){display:flex;flex-direction:column}
 .pick{margin:auto 0 0!important;padding:10px 12px;background:var(--bg);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--radius-s);font-size:var(--fs-s);line-height:1.6}
-.pick .pr{margin-right:8px}.pick a{font-weight:500}
+.pick a{font-weight:500}
 .pick small{display:block;margin-top:2px;color:var(--mut);font-size:var(--fs-2xs);line-height:1.6}
 .picks{display:grid;gap:8px;margin:12px 0}
 .guide .planning-card>.meta{margin:0}.guide .planning-card :is(h3,h4){margin:2px 0 6px}.guide .planning-card>p:not(.meta,.pick){margin:0 0 12px}
@@ -939,7 +942,6 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .pick.has-img a span{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .pick.has-img a:hover span{color:var(--ac);text-decoration-color:var(--ac)}
 .pick.has-img small{margin-left:82px}
-.pick.has-img>.pr{display:inline-block;margin:0 0 6px}
 .quiz-offer.quiz-offer-inline{position:static;inset:auto;grid-column:1/-1;width:min(340px,100%);margin:16px 0;box-shadow:none}
 /* 診断の任意条件。ネイティブ入力と明示的な「次へ」でキーボード・タッチを共通化。 */
 #quiz-region,.quiz-date-label input{display:block;width:100%;max-width:32rem;min-height:48px;box-sizing:border-box;font:inherit;padding:10px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:var(--radius-s)}
@@ -956,10 +958,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius-s);text-decoration:none}
 :is(a.stay-btn,.vc-ad.stay-btn>a):hover{border-color:var(--ac)}
 /* 広告の注記: 最初の広告の枠のすぐ上に、小さく控えめに(「広告」の文字は、地の文と区別できるように) */
-.vc-disclosure{font-size:var(--fs-xs);line-height:1.7;color:var(--mut);margin:0 0 8px}
-.vc-disclosure strong{font-weight:500;color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-right:4px}
 /* 注記と広告の枠を、ひと続きに見せる(枠の上の余白で、注記だけが離れて見えないように) */
-.vc-disclosure+*,.vc-disclosure+.pref-stay>.aff{margin-top:0}
 
 /* Quiet footer entry; local CookieConsent owns the popup and all consent choices. */
 .cookie-settings{text-align:center;margin:-36px 0 20px;color:var(--mut);font-size:var(--fs-s);overflow-wrap:anywhere}

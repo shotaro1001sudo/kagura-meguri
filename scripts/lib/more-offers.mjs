@@ -97,7 +97,9 @@ export function moreOffersFor(settings, category, context, today) {
   return index.today === today ? index.select(category,context) : [];
 }
 
-const pick = (o, placement) => `<p class="pick${o.imageUrl ? " has-img" : ""}"><span class="pr">PR</span><a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-${o.category}/${o.id}" data-affiliate-category="${o.category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl ? `<img src="${esc(o.imageUrl)}" alt="" width="72" height="72" loading="lazy" decoding="async">` : ""}<span>${esc(o.title)}</span></a><small>${esc(PROVIDERS[o.provider].name)}${o.category === "furusato" ? ` ・ ${esc(cityOf(o.city))}` : ""} ・ ${esc(o.note)}</small></p>`;
+const pick = (o, placement) => `<p class="pick${o.imageUrl ? " has-img" : ""}"><a href="${esc(o.url)}" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="more-${o.category}/${o.id}" data-affiliate-category="${o.category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl ? `<img src="${esc(o.imageUrl)}" alt="" width="72" height="72" loading="lazy" decoding="async">` : ""}<span>${esc(o.title)}</span></a><small>${esc(PROVIDERS[o.provider].name)}${o.category === "furusato" ? ` ・ ${esc(cityOf(o.city))}` : ""} ・ ${esc(o.note)}</small></p>`;
+// 広告の印: 枠の下に「PR」を1つだけ(2026-11-14 運営者の依頼。商品ごとには付けない)
+const PR_FOOT = `<span class="pr pr-foot">PR</span>`;
 const adNote = '<p class="meta annotation"><span class="pr">PR</span> 紹介している商品・返礼品のリンクは広告(アフィリエイトリンク)です。購入・寄付で当サイトに報酬が入ることがあります。</p>';
 
 /** 本・映像・グッズ: 発行リンクがあれば紹介(PR)、なければ枠を省略。side: 右の列の小さな枠 */
@@ -106,7 +108,7 @@ export function learnBlock(settings, context, today, placement, { side = false }
   if (!list.length) return "";
   const kw = context.kagura && context.kagura !== "*" ? context.kagura : "神楽";
   const title = kw === "神楽" ? "神楽をもっと知る" : `${esc(kw)}をもっと楽しむ`;
-  const inner = `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}`;
+  const inner = `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}${PR_FOOT}`;
   return side
     ? `<aside class="side-box" aria-labelledby="${placement}-h"><h2 id="${placement}-h">${title}</h2><p>本や映像で、物語や背景を。</p>${inner}</aside>`
     : `<section class="more-picks" aria-labelledby="${placement}-h"><h2 id="${placement}-h">${title}</h2><p>観る前後に、本や映像で物語や背景を知っておくと、舞の見え方が変わります。</p>${inner}</section>`;
@@ -116,7 +118,7 @@ export function learnBlock(settings, context, today, placement, { side = false }
 export function furusatoBlock(settings, context, today, placement, { side = false } = {}) {
   const list = moreOffersFor(settings, "furusato", context, today);
   if (!list.length) return "";
-  const inner = `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}`;
+  const inner = `<div class="picks">${list.map((o) => pick(o, placement)).join("")}</div>${adNote}${PR_FOOT}`;
   return side
     ? `<aside class="side-box" aria-labelledby="${placement}-h"><h2 id="${placement}-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ町へ。</p>${inner}</aside>`
     : `<section class="more-picks" aria-labelledby="${placement}-h"><h2 id="${placement}-h">神楽の町を応援する</h2><p>ふるさと納税で、神楽を受け継ぐ${esc(context.prefecture)}の町を応援できます。</p>${inner}</section>`;
