@@ -224,6 +224,8 @@ export function workflowSignal(runs, name, maxHours, nowMs) {
   if (hoursSince(lastOk?.createdAt, nowMs) > maxHours) return { ...base, state: "warn", detail: `予定の間隔(${Math.round(maxHours / 24 * 10) / 10}日)を過ぎても、成功の記録がない` };
   return { ...base, state: "ok", detail: `最新の実行: ${RUN_TEXT[done.conclusion] ?? done.conclusion}` };
 }
+/** PC の起動時に Claude アプリが開かないときの説明(信号と「動いているか」に出す) */
+export const STARTUP_OFF = "PC の起動時に Claude アプリが開く設定が切れています。アプリを開くまで、止まっていた予定タスクを取り戻せません";
 export function opsSection({ runs, site, state, series, tasks, refresh, pending, noteLog, socialPosted, collect, weeklyReview, expiring, today, nowMs }) {
   const S = [];
   const add = (id, label, schedule, sig, extra = {}) => S.push({ id, label, schedule, ...sig, ...extra });
@@ -255,15 +257,18 @@ export function opsSection({ runs, site, state, series, tasks, refresh, pending,
     : { state: "ok", detail: `取得の成功 ${health ? health.successDays7 + "/7 日" : "—"} ・ 最新の数字 ${lastGa ?? "—"}` };
   add("measure", "計測(GA4・Search Console)", "毎朝 7 時台(スプレッドシート)", meas, { last: lastGa });
   const age = state?.updated ? daysBetween(state.updated, today) : null;
-  add("analysis", "週次の分析", "毎週月曜(このPC)", age == null ? { state: "unknown", detail: "まだ分析の記録がありません" }
-    : age <= 8 ? { state: "ok", detail: `前回の分析: ${state.updated}(${age}日前)` } : { state: "warn", detail: `前回の分析から ${age} 日。予定タスクを確かめてください` }, { last: state?.updated });
+  add("analysis", "分析", "3日に1回(このPC。抜けたら次に動いたときに取り戻す)", age == null ? { state: "unknown", detail: "まだ分析の記録がありません" }
+    : age <= 6 ? { state: "ok", detail: `前回の分析: ${state.updated}(${age}日前)` } : { state: "warn", detail: `前回の分析から ${age} 日。予定タスクを確かめてください` }, { last: state?.updated });
   // 予定タスク: 予定どおり動かなかった・途中で止まったものを注意に。ブラウザを使うタスクは、予定の時刻に承認が要ることを添える
   const troubled = (tasks?.tasks ?? []).filter((t) => t.issues?.length || t.missed);
   const browserTasks = (tasks?.tasks ?? []).filter((t) => t.browser);
   const browserNote = browserTasks.length ? ` ・ ブラウザを使うので、予定の時刻に承認が要る: ${browserTasks.map((t) => t.title).join("・")}` : "";
+  // PC の起動時にアプリが開かないと、止まっていた回は、アプリを開くまで取り戻せない
+  const startupNote = tasks?.startup === false ? `${STARTUP_OFF}。` : "";
   add("tasks", "予定タスク(PC の Claude)", "Note・分析・月次の調査など", !tasks?.found ? { state: "unknown", detail: "予定タスクの記録が見つかりません" }
     : tasks.error ? { state: "unknown", detail: tasks.error }
-    : troubled.length ? { state: "warn", detail: troubled.map((t) => `${t.title}: ${(t.issues ?? [])[0] ?? "動いていません"}`).join(" / ") + browserNote }
+    : troubled.length ? { state: "warn", detail: startupNote + troubled.map((t) => `${t.title}: ${(t.issues ?? [])[0] ?? "動いていません"}`).join(" / ") + browserNote }
+    : startupNote ? { state: "warn", detail: startupNote + browserNote.replace(/^ ・ /, "") }
     : { state: "ok", detail: `${tasks.tasks.filter((t) => t.enabled).length} 件、予定どおり${browserNote}` });
   const note = noteLog ?? {};
   const nAge = note.lastPost ? daysBetween(note.lastPost, today) : null;

@@ -48,6 +48,7 @@ function tasksPart() {
   const done = T.tasks.filter((t) => t.finished);
   return [
     T.error ? note("warn", T.error) : "",
+    T.startup === false ? note("warn", "PC の起動時に Claude アプリが開く設定が切れています。このままだと、PC を起動しても、アプリを開くまで止まっていた回を取り戻せません。Windows の「設定」→「アプリ」→「スタートアップ」で、「Claude」をオンにしてください。") : "",
     T.missed || T.attention ? "" : allClear("止まっている予定タスクはありません。"),
     T.tasks.filter((t) => !t.finished).map(card),
     done.length ? more(`終わった1回だけのタスク(${done.length})`, done.map(card)) : "",
@@ -62,7 +63,7 @@ export function statusView() {
     h("section", { "aria-labelledby": "st-ops" }, h("h2", { id: "st-ops", class: "sec" }, "自動の仕組み"), opsPart(),
       h("p", { class: "mut small" }, "GitHub の実行とサイトの表示は、10分ごとに確かめ直します。")),
     h("section", { "aria-labelledby": "st-tasks" }, h("h2", { id: "st-tasks", class: "sec" }, "予定タスク"),
-      h("p", { class: "mut" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です(Note の投稿・3日に1回の分析など)。PC が起動していて、アプリが開いているときだけ動きます。予定の変更は、PC のアプリで行います。"),
+      h("p", { class: "mut" }, "Claude デスクトップアプリが、このPCで決まった時刻に動かす作業です(Note の投稿・3日に1回の分析など)。PC が起動していて、アプリが開いているときだけ動きます。PC やアプリが切れていて抜けた回は、次にアプリが開いたときに取り戻します(分析と月初の調査は、毎日、やる日かどうかを確かめてから動きます)。予定の変更は、PC のアプリで行います。"),
       tasksPart()),
   ];
 }

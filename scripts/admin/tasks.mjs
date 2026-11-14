@@ -5,6 +5,7 @@
 //   (タスクの指示文・許可した操作・作業フォルダなどは出さない)。
 // 時刻はすべて日本時間で考える(このPCは日本時間で動かしている前提。アプリの予定もこのPCの時刻で動く)
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 
 const JST = 9 * 3600e3;
@@ -77,7 +78,34 @@ export function describeCron(expr) {
   if (/^\*\/\d+$/.test(dom) && dow === "*") return `${dom.slice(2)}日に1回 ${at}`;
   if (dom === "*" && /^[0-7](,[0-7])*$/.test(dow)) return `毎週${dow.split(",").map((d) => WD[+d % 7]).join("・")}曜 ${at}`;
   if (/^\d+$/.test(dom) && dow === "*") return `毎月${+dom}日 ${at}`;
+  const r = dom.match(/^(\d+)-(\d+)$/);
+  if (r && dow === "*") return `毎月${+r[1]}〜${+r[2]}日 ${at}`;
   return `cron: ${expr}`;
+}
+
+// ---------- PC の起動時に Claude アプリが開くか ----------
+// アプリは、開いたときに、止まっていた(PC やアプリが切れていた)予定を1回動かして取り戻す。
+// それには、PC の起動時にアプリが開く必要がある。Windows の「スタートアップ」の設定(Claude のパッケージの ClaudeStartup)を読む
+const STARTUP_KEY = "HKCU\\Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData\\Claude_pzs8sxrjxfjjc\\ClaudeStartup";
+/** reg query の出力から、起動時に開くか(true / false)。読めなければ null。State: 0・1・3 = 切れている、2・4 = 入っている */
+export function parseStartupState(text) {
+  const m = String(text ?? "").match(/\bState\s+REG_DWORD\s+0x([0-9a-f]+)/i);
+  if (!m) return null;
+  const v = parseInt(m[1], 16);
+  return v === 2 || v === 4 ? true : v === 0 || v === 1 || v === 3 ? false : null;
+}
+let startupCache = null;
+/** PC の起動時に Claude アプリが開く設定か(Windows だけ。ほかは null)。5分おぼえる */
+export function claudeStartup({ platform = process.platform, run = null, nowMs = Date.now() } = {}) {
+  if (platform !== "win32") return null;
+  if (!run && startupCache && nowMs - startupCache.at < 5 * 60e3) return startupCache.v;
+  let v = null;
+  try {
+    const out = (run || ((args) => execFileSync("reg", args, { encoding: "utf8", windowsHide: true, timeout: 5000, stdio: ["ignore", "pipe", "ignore"] })))(["query", STARTUP_KEY, "/v", "State"]);
+    v = parseStartupState(out);
+  } catch { v = false; } // 記録がない = 一度も入れていない(最初は切れている)
+  if (!run) startupCache = { at: nowMs, v };
+  return v;
 }
 
 // ブラウザを操作するタスクか(ブラウザの操作は、予定タスクでも毎回その場での承認が要る。人がいない時刻だと、承認待ちで止まる)
@@ -121,7 +149,7 @@ export function missedSlots(cron, { now, floor = null, runStarts = [], lastSched
  * 予定タスクの一覧。runs: true なら、各タスクの最近の実行(セッションの記録)も読む。
  * 返すのは画面に出してよい項目だけ。
  */
-export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = false } = {}) {
+export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = false, startup = () => claudeStartup() } = {}) {
   if (!file) return { found: false, tasks: [] };
   let raw;
   try { raw = JSON.parse(readFileSync(file, "utf8")); } catch (err) { return { found: true, error: `予定タスクの記録を読めませんでした(${err.code || err.message})`, tasks: [] }; }
@@ -166,7 +194,10 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
   });
   // 有効なものを先に、次回が近い順
   tasks.sort((a, b) => (b.enabled - a.enabled) || (a.nextRun ?? "9").localeCompare(b.nextRun ?? "9"));
-  return { found: true, tasks, missed: tasks.filter((t) => t.missed).length, attention: tasks.filter((t) => t.issues.length).length };
+  // startup: PC の起動時にアプリが開くか(false なら、PC を起動してもアプリを開くまで、止まっていた回を取り戻さない)
+  let st = null;
+  try { st = startup(); } catch { st = null; }
+  return { found: true, tasks, missed: tasks.filter((t) => t.missed).length, attention: tasks.filter((t) => t.issues.length).length, startup: st };
 }
 
 /** タスクが動かしたセッションの記録から、開始時刻・結果・ひとことだけを集める(新しい順) */

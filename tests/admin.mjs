@@ -5,7 +5,7 @@ import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem, toDirectItem, DIRECT_TOPICS, SERVICE_DOMAINS, ignoredSender, ignoreKey, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals, reviewChecks, reviewIssueDate } from "../scripts/admin/store.mjs";
 import { startAdmin, codeStamp } from "../scripts/admin/server.mjs";
-import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
+import { loadTasks, cronStep, describeCron, missedSlots, parseStartupState, claudeStartup } from "../scripts/admin/tasks.mjs";
 import { pipelineSummary, addSuggestedLeads, leadSummary } from "../scripts/admin/pipeline.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
 import { publish, pendingChanges, findGit, DATA_TESTS } from "../scripts/admin/publish.mjs";
@@ -102,7 +102,7 @@ export async function adminTests({ ok, section }) {
   const NOW = J("2026-11-08T10:00");
   ok(new Date(cronStep("0 18 */2 * *", NOW)).getTime() === J("2026-11-09T18:00") && cronStep("0 18 */2 * *", NOW - 7200e3, -1) === J("2026-11-07T18:00"), "予定: 「2日に1回 18時」の次回と前回を、日本時間で求める");
   ok(cronStep("0 9 * * 1", NOW) === J("2026-11-09T09:00") && cronStep("0 9 1 * *", NOW) === J("2026-12-01T09:00") && cronStep("30 23 31 12 *", J("2026-12-31T23:30")) === J("2027-12-31T23:30"), "予定: 毎週・毎月・年をまたぐ次回");
-  ok(describeCron("0 18 */2 * *") === "2日に1回 18:00" && describeCron("0 9 * * 1") === "毎週月曜 9:00" && describeCron("0 9 1 * *") === "毎月1日 9:00" && describeCron("5 4 1-3 * *") === "cron: 5 4 1-3 * *", "予定を、ふつうの日本語で書く");
+  ok(describeCron("0 18 */2 * *") === "2日に1回 18:00" && describeCron("0 9 * * 1") === "毎週月曜 9:00" && describeCron("0 9 1 * *") === "毎月1日 9:00" && describeCron("5 4 1-3 * *") === "毎月1〜3日 4:05" && describeCron("0 9 * * *") === "毎日 9:00" && describeCron("0 9 1-10 * 1") === "cron: 0 9 1-10 * 1", "予定を、ふつうの日本語で書く");
   const TT = loadTasks({ file: TF, now: NOW, runs: true });
   const tk = Object.fromEntries(TT.tasks.map((t) => [t.id, t]));
   ok(tk.note.missed && tk.note.missedAt === new Date(J("2026-11-07T18:00")).toISOString() && TT.missed === 1, "前回の予定の時刻に動いた記録がなければ「動いていない」とする", JSON.stringify(tk.note));
@@ -150,6 +150,40 @@ export async function adminTests({ ok, section }) {
   ok(tk.once.finished && !tk.note.finished && tk.note.issues.some((x) => /途中で止まりました.*Note にログインする/.test(x)) && TT.attention >= 1, "1回だけのタスクで動き終えたものは「完了」。前回の実行が途中で止まったものは、人がやることを添えて知らせる", JSON.stringify(tk.note.issues));
   writeFileSync(join(TD, "note/SKILL.md"), "---\nname: note\ndescription: 記事を公開する\n---\nスキル anthropic-skills:chrome-browser を読む\n");
   ok(loadTasks({ file: TF, now: NOW }).tasks.find((t) => t.id === "note").browser === true && loadTasks({ file: TF, now: NOW }).tasks.find((t) => t.id === "weekly").browser === false, "ブラウザを使うタスクを見分ける(予定の時刻に、その場での承認が要る)");
+  // PC の起動時に Claude アプリが開くか(開かないと、止まっていた回を取り戻せない)
+  {
+    const reg = (v) => `\r\nHKEY_CURRENT_USER\\...\\ClaudeStartup\r\n    State    REG_DWORD    0x${v}\r\n`;
+    ok(parseStartupState(reg(2)) === true && parseStartupState(reg(4)) === true && parseStartupState(reg(0)) === false && parseStartupState(reg(1)) === false && parseStartupState("") === null,
+      "起動時に開く設定: 2・4 は入っている、0・1 は切れている、読めなければ不明");
+    ok(claudeStartup({ platform: "win32", run: () => reg(2) }) === true && claudeStartup({ platform: "win32", run: () => { throw new Error("none"); } }) === false && claudeStartup({ platform: "linux" }) === null,
+      "起動時に開く設定: 記録が無ければ切れている(最初は切れている)。Windows 以外は不明");
+    ok(loadTasks({ file: TF, now: NOW, startup: () => false }).startup === false && loadTasks({ file: TF, now: NOW, startup: () => { throw new Error("x"); } }).startup === null, "予定タスクの一覧に、起動時に開く設定を添える(読めなくても止まらない)");
+    const { opsSection, STARTUP_OFF } = await import("../scripts/admin/overview.mjs");
+    const sigOf = (t) => opsSection({ tasks: t, today: "2026-11-08", nowMs: NOW }).signals.find((s) => s.id === "tasks");
+    const okTasks = { found: true, tasks: [{ id: "a", title: "A", enabled: true, issues: [] }] };
+    ok(sigOf({ ...okTasks, startup: false }).state === "warn" && sigOf({ ...okTasks, startup: false }).detail.includes(STARTUP_OFF) && sigOf({ ...okTasks, startup: true }).state === "ok" && sigOf({ ...okTasks, startup: null }).state === "ok",
+      "起動時に開く設定が切れていれば、予定タスクの信号を「注意」にする(不明のときは注意にしない)");
+  }
+  // 取り戻し: 毎日動く予定タスクが、最初に「今回やるか」を決める
+  {
+    const { dueCheck, lastReport } = await import("../scripts/admin/due.mjs");
+    const DR = join(TD, "due-root"); mkdirSync(join(DR, "analytics"), { recursive: true });
+    const at = (d) => J(d + "T09:05");
+    ok(dueCheck(DR, "analytics", { now: at("2026-11-14") }).due === true && lastReport(join(DR, "analytics")) === null, "分析: レポートが1つも無ければ、やる");
+    writeFileSync(join(DR, "analytics/weekly-2026-11-10.md"), "x"); writeFileSync(join(DR, "analytics/weekly-2026-11-07.md"), "x"); writeFileSync(join(DR, "analytics/weekly-notes.md"), "x");
+    const d12 = dueCheck(DR, "analytics", { now: at("2026-11-12") }), d13 = dueCheck(DR, "analytics", { now: at("2026-11-13") }), d17 = dueCheck(DR, "analytics", { now: at("2026-11-17") });
+    ok(lastReport(join(DR, "analytics")) === "2026-11-10" && !d12.due && /2026-11-13 以降/.test(d12.reason) && d13.due && d17.due && /7日前/.test(d17.reason), "分析: 前回のレポートから3日たった回だけやる(抜けた日のあとは、次に動いた日に取り戻す)", JSON.stringify([d12, d13, d17]));
+    ok(dueCheck(DR, "analytics", { now: J("2026-11-12T23:30") }).due === false && dueCheck(DR, "analytics", { now: J("2026-11-13T00:30") }).due === true, "分析: 日付は日本時間で数える");
+    ok(dueCheck(DR, "research", { now: at("2026-12-01") }).due === true, "調査: 今月の調査の記録が無ければ、やる");
+    writeFileSync(join(DR, "analytics/research-2026-12.md"), "x");
+    ok(dueCheck(DR, "research", { now: at("2026-12-05") }).due === false && dueCheck(DR, "research", { now: at("2027-01-01") }).due === true, "調査: 月に1回だけ(翌月は、またやる)");
+    let threw = false; try { dueCheck(DR, "note"); } catch { threw = true; }
+    ok(threw, "知らないタスクは、エラーにする");
+    for (const [id, word] of [["kagurameguri-weekly-analytics", "due.mjs analytics"], ["kagurameguri-monthly-research-2", "due.mjs research"]]) {
+      const text = (() => { try { return readFileSync(join(process.env.USERPROFILE || "", `.claude/scheduled-tasks/${id}/SKILL.md`), "utf8"); } catch { return null; } })();
+      if (text) ok(text.includes(word), `予定タスク ${id} は、最初に「今回やるか」を確かめる(毎日動いても、やるのは決めた回だけ)`);
+    }
+  }
 
   section("管理者用ページ: 開催データの保存");
   const base = [{ id: "a-1", name: "A", kagura: "石見神楽", prefecture: "島根県", city: "浜田市", venue: "会館", start: "2026-11-01T18:00", source: "x", checked: "2026-10-01", status: "published", lat: 34.9, lng: 132.1 }];
@@ -191,7 +225,7 @@ export async function adminTests({ ok, section }) {
   const restarts = { n: 0 };
   const { server, token, url } = await startAdmin({ codeDirs: [CODE], canRestart: true, restarter: () => { restarts.n++; }, reviewIssues: async () => { fakeIssues.calls++; return fakeIssues.v; }, root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
-    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
+    commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, startup: () => null, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
     siteCheck: async () => { ovCalls.site++; return { ok: true, status: 200, ms: 120, at: "2026-10-10T01:00:00Z" }; },
