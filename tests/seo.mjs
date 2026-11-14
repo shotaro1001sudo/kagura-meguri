@@ -194,9 +194,9 @@ export function seoTests({ ok, section, OUT, build }) {
   ok(kpage("遠山の霜月祭")("title").text().startsWith("遠山の霜月祭(霜月祭り)20") && kpage("遠山の霜月祭")("title").text().includes("の日程｜12月の各神社の開催一覧"), "遠山の霜月祭: 「霜月祭り」と年をタイトルに");
   { const $ = kpage("広島神楽"), html = $("main").html();
     ok($("title").text().startsWith("広島神楽とは｜系統・見どころ") && !$("title").text().includes("スケジュール"), "広島神楽: 種類のページは「系統・見どころ」の役(県のページと同じ語で競らない)", $("title").text());
-    ok($(`.schedule-hub a.btn[href="/pref/${encodeURIComponent("広島県")}.html"]`).length === 1 && html.indexOf("schedule-hub") < html.indexOf("広島神楽とは") && html.indexOf("広島神楽とは") < html.indexOf(">開催予定</h2>"), "広島神楽: 県のスケジュールへの目立つ入口を先に、説明を開催一覧より前に"); }
+    ok($(`#k-schedule[open] > .kfold-body > .schedule-hub:first-child a.btn[href="/pref/${encodeURIComponent("広島県")}.html"]`).length === 1 && html.indexOf("広島神楽とは") < html.indexOf(">開催予定</h2>"), "広島神楽: 説明を開催一覧より前に、開いた「開催予定」の欄の先頭に県のスケジュールへの入口"); }
   { const $i = kpage("石見神楽"), heads = $i("main h2").map((_, h) => $i(h).text()).get();
-    ok(!$i(".schedule-hub").length && heads[0] === "石見神楽とは" && heads[1] === "開催予定" && heads.indexOf("石見神楽の歴史") > heads.indexOf("開催予定"), "スケジュールの入口のない神楽ページは、冒頭に要約(〇〇とは)、次に開催予定、詳しい解説はその下"); }
+    ok(!$i(".schedule-hub").length && heads.slice(0, 6).join() === "石見神楽とは,歴史,特徴,主な演目,観賞のコツ,開催予定", "スケジュールの入口のない神楽ページも、冒頭に要約(〇〇とは)、その下に歴史〜開催予定の折り畳み(2026-11-15 運営者の依頼で、開催予定は最後)"); }
   section("SEO: 神楽門前湯治村の公演日程(SEO-20261107-5)");
   { const reg = JSON.parse(read("data/regular.json").replace(/^﻿/, "")).find((x) => x.id === "tojimura-kagura");
     const dates = reg?.program?.map((p) => p.date) ?? [];

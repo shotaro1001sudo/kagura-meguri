@@ -60,7 +60,7 @@ export function consistencyTests({ ok, section, OUT, build }) {
   const odd = [...new Set(radii.filter((v) => !/^(var\(--(radius|radius-s|pill)\)|50%|0|2px|4px|8px)$/.test(v)))];
   ok(odd.length === 0, "角の丸みは基準の値(面・小さな角・丸)を使う(小さな印の 2px・4px、広告や商品の画像の 8px だけ別)", odd.join(" / "));
   const chip = (src.match(/:is\(([^{]*)\)\{display:inline-flex;align-items:center;min-height:var\(--tap\)/) ?? [])[1] ?? "";
-  ok([".chip", ".taglist .tag", ".pref-month-nav .tag", ".kagura-jumps a", ".regions button"].every((s) => list(chip).includes(s)), "チップ(月・種類・県・ページ内の行き先・絞り込み)は、どのページでも同じ形・高さ 44px", chip);
+  ok([".chip", ".taglist .tag", ".pref-month-nav .tag", ".regions button"].every((s) => list(chip).includes(s)), "チップ(月・種類・県・絞り込み)は、どのページでも同じ形・高さ 44px", chip);
   ok(/a\.tag,[^{]*\.info \.tomap,\.info \.tocal[^{]*\)::after\{content:"";position:absolute;[^}]*height:var\(--tap\)/.test(src), "小さな札・地図やカレンダーへのリンクは、見た目は小さいまま、押せる範囲を 44px に広げる");
   const phrase = (src.match(/:is\(([^{]*)\)\{word-break:auto-phrase\}/) ?? [])[1] ?? "";
   ok(["h1", "h3", "button", ".btn", ".event-facts", ".info .vn", ".monthlist a"].every((s) => list(phrase).includes(s)) && !list(phrase).some((s) => ["td", "dd", "li", "small", ".meta", "a", "figcaption"].includes(s)), "文節で折り返すのは、見出し・公演名・会場名・ボタン・短いラベルだけ(本文・一覧の長い値・箇条書きは字単位で詰め、スマホで行数を増やさない)", phrase);

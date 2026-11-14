@@ -150,8 +150,8 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .tag.gold{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
 /* チップ: 月・種類・県・ページ内の行き先・絞り込みなど、押して移る丸いボタン。どのページでも同じ形・同じ高さ(44px) */
-:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.kagura-jumps a,.regions button){display:inline-flex;align-items:center;min-height:var(--tap);margin:0;padding:6px 16px;border:1px solid var(--line);border-radius:var(--pill);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-s);text-decoration:none;cursor:pointer;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
-:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.kagura-jumps a,.regions button):hover{border-color:var(--ac);color:var(--ac)}
+:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.regions button){display:inline-flex;align-items:center;min-height:var(--tap);margin:0;padding:6px 16px;border:1px solid var(--line);border-radius:var(--pill);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-s);text-decoration:none;cursor:pointer;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.regions button):hover{border-color:var(--ac);color:var(--ac)}
 /* 押しやすさ: 文字だけの小さなリンク・札は、見た目は小さいまま、押せる範囲だけを上下に広げて 44px にする */
 :is(a.tag,.info .tomap,.info .tocal,.tl-item a,.textlink){position:relative}
 :is(a.tag,.info .tomap,.info .tocal,.tl-item a,.textlink)::after{content:"";position:absolute;left:0;right:0;top:50%;height:var(--tap);translate:0 -50%}
@@ -991,7 +991,16 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 .reg.paused .date b{color:var(--mut);font-size:var(--fs-s);letter-spacing:0;padding-top:.5em;word-break:keep-all}
 .reg-pause{margin:2px 0 4px;font-size:var(--fs-s);font-weight:600;color:var(--fg)}
 .quiz-paused{font-weight:600;color:var(--fg)}
-/* 種類のページの冒頭: 「〇〇とは」の要約と、詳しい解説・開催予定への案内 */
+/* 種類のページ: 「〇〇とは」の概要と、その下の折り畳み(歴史・特徴・主な演目・観賞のコツ・開催予定)。
+   中に開催のカードが入るので、折り畳みは枠で囲まず、上下の線で区切る */
 .kagura-summary h2{margin-top:20px}
-.kagura-jumps ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:12px 0 8px;padding:0}
-.detail [id^="k-"],#k-schedule{scroll-margin-top:80px}
+.kagura-folds{margin:28px 0 8px;border-bottom:1px solid var(--line)}
+.kfold{border-top:1px solid var(--line);scroll-margin-top:80px}
+.kfold>summary{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:56px;padding:10px 4px;cursor:pointer;list-style:none}
+.kfold>summary::-webkit-details-marker{display:none}
+.kfold>summary h2{margin:0;font-size:var(--fs-l);line-height:1.4}
+.kfold>summary:after{content:"+";flex:none;color:var(--ac);font-size:var(--fs-l);line-height:1}
+.kfold[open]>summary:after{content:"−"}
+.kfold>summary:hover h2{color:var(--ac)}
+.kfold-body{padding:0 4px 20px}.kfold-body.detail{margin:0}.kfold-body>:first-child{margin-top:0}
+.kfold-body .no-info{margin:0}

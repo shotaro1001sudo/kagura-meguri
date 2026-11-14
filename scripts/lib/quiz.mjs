@@ -71,7 +71,7 @@ export const traditions = [
   { kind: '広島神楽', evidence: [['spectacle', 'tagline'], ['easy', 'intro~1'], ['dynamic', 'features.0'], ['classic', 'features.2'], ['drama', 'programs.1.text'], ['monster', 'programs.0.text']] },
   { kind: '高千穂神楽', evidence: [['allnight', 'tagline'], ['easy', 'intro~1'], ['rite', 'features.3'], ['classic', 'programs.2.text'], ['together', 'viewing.2']] },
   { kind: '備中神楽', evidence: [['drama', 'tagline'], ['dynamic', 'intro~1'], ['rite', 'intro~1'], ['laugh', 'features.1'], ['classic', 'programs.0.text'], ['easy', 'features.2']] },
-  { kind: '庄内神楽', evidence: [['dynamic', 'intro~2'], ['music', 'intro~2'], ['easy', 'intro~3'], ['monster', 'features.2']] },
+  { kind: '庄内神楽', evidence: [['dynamic', 'intro~1'], ['music', 'intro~1'], ['easy', 'intro~2'], ['monster', 'features.2']] },
   { kind: '御嶽神楽', evidence: [['dynamic', 'tagline'], ['drama', 'intro~1'], ['together', 'intro~3'], ['music', 'features.1'], ['rite', 'features.2']] },
   { kind: '土佐の神楽', evidence: [['rite', 'tagline'], ['laugh', 'features.0'], ['monster', 'features.1'], ['classic', 'features.2'], ['dynamic', 'programs.0.text'], ['drama', 'history.0']] },
   { kind: '伊勢大神楽', evidence: [['laugh', 'tagline'], ['rite', 'features.0']] },
