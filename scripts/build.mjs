@@ -653,7 +653,7 @@ const quizJsVersion = createHash('sha256').update(quizJs).digest('hex').slice(0,
 write('dist/quiz-app.js',quizJs);
 write('dist/quiz.html',layout({
   title:`あなたに近い神楽はどれ？${questions.length}問の好み診断 | ${cfg.siteName}`,
-  desc:padDesc(`${questions.length}問に答えると、舞のテンポ・面や衣装・物語・湯立てや夜神楽などの好みから、${traditions.length}種類の神楽のうち好みに近いものを、出典つきの理由と一緒にご案内します。地域と日程を選べば、観に行ける公演も探せます。登録不要で、回答はブラウザ内だけで計算します。`),
+  desc:padDesc(`${questions.length}問に答えると、舞のテンポ・面や衣装・物語・祭りの空気などの好みから、${traditions.length}種類の神楽のうち好みに近いものを、出典つきの理由と一緒にご案内します。地域と日程を選べば、観に行ける公演も探せます。登録不要で、回答はブラウザ内だけで計算します。`),
   path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
   body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたに近い神楽はどれ？',`${questions.length}問・1分ほどで、${traditions.length}種類の神楽から好みに近いものを探します。`)}
 <p class="lead">好み${questions.filter(q=>q.type==='preference').length}問と、観に行く地域・日程${questions.filter(q=>q.type!=='preference').length}問です。分からない項目は「まだ分からない」で大丈夫です。登録は不要で、回答は保存も外部への送信もしません。</p>
@@ -662,7 +662,6 @@ write('dist/quiz.html',layout({
 <form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
 <section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
 <section class="quiz-about" aria-labelledby="quiz-about-title"><h2 id="quiz-about-title">診断のしくみ</h2>
-<p>各神楽の特徴は、このサイトの解説(出典つき)に書かれていることだけから決めています。たとえば「湯立て」が特徴になるのは、解説に湯立ての記述がある神楽だけです。紹介の中心に書かれた特徴ほど強く数え、特徴の数が多い神楽ほど有利になる、ということがないように比べています。</p>
 <p>結果には、好みと重なった特徴と、その根拠になった解説の本文を示します。点数や一致率は出しません。地域と日程は、好みの順位を変えずに、観に行ける公演を探すためだけに使います。</p>
 <h3>診断の対象(${traditions.length}種類)</h3><div class="taglist">${traditions.map(t=>kaguras.includes(t.kind)?`<a class="tag" href="${kaguraHref(t.kind)}">${esc(t.kind)}</a>`:`<span class="tag">${esc(t.kind)}</span>`).join('')}</div>
 <p class="meta">解説のない神楽は、まだ診断の対象に入っていません。すべての神楽の公演は<a href="/calendar.html">公演カレンダー</a>から探せます。</p></section>

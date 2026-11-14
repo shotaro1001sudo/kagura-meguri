@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
-import { questions,features,traditions,quizEngine,evidenceWeight,evidenceText } from '../scripts/lib/quiz.mjs';
+import { questions,features,traditions,quizEngine,evidenceWeight,evidenceText,QUIZ_GIVEAWAY_WORDS } from '../scripts/lib/quiz.mjs';
 import { quizHealth,acceptBaseline,evidenceHashes,kaguraPageGaps,QUIZ_STALE_DAYS } from '../scripts/lib/quiz-health.mjs';
 import { reviewMetrics,decideActions,renderReview } from '../scripts/lib/weekly-review.mjs';
 export function quizTests({ok,section,OUT}) {
@@ -28,7 +28,12 @@ export function quizTests({ok,section,OUT}) {
   ok(Math.max(...shares)<0.2,'どの種類も、1位になる組み合わせは全体の2割未満(かたよりの上限)',String(Math.max(...shares)));
   const only=(qid,cid)=>{const a=[...unknown];a[questions.findIndex(q=>q.id===qid)]=cid;return engine.scoreAnswers(a);};
   const yu=only('scene','yudate');
-  ok(yu.ranked.length===3&&yu.ranked.every(t=>t.matched.some(e=>e.feature==='yudate'))&&mapped.filter(t=>t.evidence.some(e=>e.feature==='yudate')).length>3,'湯立てだけを選ぶと、湯立ての根拠がある種類だけが上位に来る(特徴の多い種類が割り込まない)');
+  ok(yu.ranked.length===3&&yu.ranked.every(t=>t.matched.some(e=>e.feature==='yudate'))&&mapped.filter(t=>t.evidence.some(e=>e.feature==='yudate')).length>3,'お清めの神事だけを選ぶと、湯立ての根拠がある種類だけが上位に来る(特徴の多い種類が割り込まない)');
+  // 質問の言葉から、特定の神楽が分からないこと(2026-11-15 運営者の依頼)。神楽の名前は、解説と掲載のすべてから
+  const quizWords=questions.flatMap(q=>[q.text,...q.choices.map(c=>c.label)]);
+  const kindNames=[...new Set([...Object.keys(info),...JSON.parse(readFileSync('data/events.json','utf8').replace(/^﻿/,'')).map(e=>e.kagura)].filter(Boolean))];
+  const giveaways=quizWords.flatMap(w=>[...kindNames,...QUIZ_GIVEAWAY_WORDS].filter(x=>w.includes(x)).map(x=>`${w}:${x}`));
+  ok(QUIZ_GIVEAWAY_WORDS.length>0&&giveaways.length===0,'質問と選択肢に、神楽の名前や、特定の神楽に結びつく言葉(大蛇・湯立て・夜通し・餅まき など)を使わない',giveaways.join(' / '));
   const pref=['drama','fast','visual','short','quiet','story','history','unknown','unknown'];
   const scored=engine.scoreAnswers(pref);
   ok(scored.ranked.length===3&&scored.ranked.every(t=>t.matched.length&&t.matched.every(e=>scored.prefs[e.feature]>0)),'最大3種類と、回答に合う根拠だけ');

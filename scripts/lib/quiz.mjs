@@ -1,6 +1,6 @@
 // 神楽の好み診断(PLAN-004 改訂 2026-11-09)。編集上の提案で、性格・適性の判定ではない。
 // 回答はブラウザのメモリ内だけで計算し、保存・送信しない。推薦の根拠は data/kagura-info.json の出典つき本文。
-export const QUIZ_CHECKED = '2026-11-09';
+export const QUIZ_CHECKED = '2026-11-15';
 const choice = (id, label, weights = {}) => ({ id, label, weights });
 const unknown = choice('unknown', 'まだ分からない');
 const preference = (id, text, choices, extra = {}) => ({ id, text, type: 'preference', choices: [...choices, unknown], ...extra });
@@ -21,29 +21,32 @@ export const features = {
   easy:      { label: '気軽に観られる公演', type: '気軽派', note: 'まずは短い時間で、気軽に観てみたい' },
 };
 
+// 質問と選択肢は、答えると特定の神楽が分かってしまう言葉(神楽の名前・大蛇・湯立て・夜通し・餅まき など)を使わない(2026-11-15 運営者の依頼)。
+// 好みの軸(features)と、各神楽の根拠(traditions)は変えない。言葉の一覧は QUIZ_GIVEAWAY_WORDS(テストが確かめる)
+export const QUIZ_GIVEAWAY_WORDS = ['大蛇', 'オロチ', '鬼', '湯立', '釜', '湯しぶき', '夜通し', '夜神楽', '徹夜', '餅まき', '曲芸', '八調子', '六調子', '豪華', '神話', '霜月'];
 export const questions = [
-  preference('scene', '神楽の舞台で、いちばん見てみたい場面は？', [
-    choice('monster', '大蛇や鬼が、舞台いっぱいに暴れる場面', { monster: 1 }),
-    choice('drama', '神話の物語が、芝居のように進む場面', { drama: 1 }),
-    choice('yudate', '釜の湯がたぎる、湯立ての場面', { yudate: 1 }),
-    choice('laugh', '掛け合いや曲芸で、客席がわく場面', { laugh: 1 }),
+  preference('scene', '舞台で、いちばん心が動きそうなのは？', [
+    choice('monster', '息をのむような、迫力のある見せ場', { monster: 1 }),
+    choice('drama', '筋を追いかけたくなる、物語の展開', { drama: 1 }),
+    choice('yudate', 'お清めの神事を、間近で見守るひととき', { yudate: 1 }),
+    choice('laugh', '思わず笑ってしまう、やりとり', { laugh: 1 }),
   ]),
   preference('tempo', '舞のテンポは、どちらが好み？', [
-    choice('fast', '太鼓が速く、激しく勇ましい舞', { dynamic: 1 }),
-    choice('slow', 'ゆったりとした、古式ゆかしい舞', { classic: 1 }),
+    choice('fast', '速く、勇ましい舞', { dynamic: 1 }),
+    choice('slow', 'ゆったりと、落ち着いた舞', { classic: 1 }),
     choice('both', 'どちらも見てみたい', { dynamic: 0.5, classic: 0.5 }),
   ]),
   preference('focus', '目が離せなくなりそうなのは？', [
-    choice('visual', '豪華な衣装や、表情ゆたかな面', { spectacle: 1 }),
-    choice('music', '太鼓や笛、神楽歌の響き', { music: 1 }),
+    choice('visual', '色あざやかな、衣装や面', { spectacle: 1 }),
+    choice('music', '太鼓や笛、歌の響き', { music: 1 }),
     choice('place', '神社や集落の、祭りの空気', { rite: 1 }),
   ]),
   preference('time', '観る時間は、どのくらいがいい？', [
-    choice('short', 'まずは1時間ほどで、気軽に観たい', { easy: 1 }),
-    choice('night', '夜通しの祭りにも、いつか行ってみたい', { allnight: 1 }),
+    choice('short', 'まずは短く、気軽に観たい', { easy: 1 }),
+    choice('night', '時間をかけて、じっくり付き合いたい', { allnight: 1 }),
   ]),
   preference('audience', '客席では、どう楽しみたい？', [
-    choice('join', '餅まきや湯しぶきなど、参加して楽しみたい', { together: 1 }),
+    choice('join', '客席も一緒になって、盛り上がりたい', { together: 1 }),
     choice('cheer', '笑ったり驚いたり、にぎやかに楽しみたい', { laugh: 0.5, dynamic: 0.5 }),
     choice('quiet', '静かに、舞台にじっくり見入りたい', { classic: 0.5, drama: 0.5 }),
   ]),
