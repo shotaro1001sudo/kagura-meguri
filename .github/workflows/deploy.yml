@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15 # 止まったときに長時間動き続けて、実行時間を使い切らないための上限
+    outputs:
+      indexnow_body: ${{ steps.indexnow.outputs.indexnow_body }}
     steps:
       # 外部のアクションは、版の名前(タグ)ではなく、中身を指す番号(コミットSHA)で固定する(タグの付け替えによる、すり替えを防ぐ)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,6 +28,11 @@ jobs:
           RAKUTEN_ACCESS_KEY: ${{ secrets.RAKUTEN_ACCESS_KEY }}
       # データに誤りがあれば、ここでビルドが止まる
       - run: node scripts/build.mjs
+      # IndexNow: いま公開中のサイトマップと比べ、新しいページ・変わったページを決める(送るのは公開のあと)。失敗しても公開は続ける
+      - id: indexnow
+        run: node scripts/indexnow-plan.mjs
+        continue-on-error: true
+        timeout-minutes: 2
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       # v4 以降は、名前が「.」で始まるファイルを、既定で除外する。/.well-known/security.txt を公開するため、含める
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
@@ -46,3 +53,20 @@ jobs:
       - id: deployment-retry
         if: ${{ steps.deployment.outcome == 'failure' }}
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+  # 公開が済んでから、Bing などに新しいページ・変わったページを知らせる(IndexNow)。
+  # 知らせられなくても、公開の結果(このワークフローの成否)は変えない
+  indexnow:
+    needs: [build, deploy]
+    if: ${{ needs.build.outputs.indexnow_body != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    continue-on-error: true
+    permissions: {}
+    steps:
+      - name: notify IndexNow
+        env:
+          BODY: ${{ needs.build.outputs.indexnow_body }}
+        run: |
+          code=$(printf '%s' "$BODY" | curl -sS -m 30 -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json; charset=utf-8' --data-binary @- https://api.indexnow.org/indexnow)
+          echo "IndexNow: HTTP $code"
+          case "$code" in 200|202) ;; *) exit 1 ;; esac

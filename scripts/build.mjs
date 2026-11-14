@@ -25,6 +25,7 @@ import { sponsorHtml, sponsorArticleSampleHtml, SAMPLE_SPONSOR, SPONSOR_CSS } fr
 import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage } from "./lib/sponsor-slots.mjs";
 import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
+import { validKey as validIndexNowKey } from "./lib/indexnow.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
@@ -1312,6 +1313,8 @@ write("dist/404.html", layout({
 
 if (cfg.domain) write("dist/CNAME", cfg.domain + "\n");
 write("dist/robots.txt", `User-agent: *\nAllow: /\nSitemap: ${cfg.baseUrl}/sitemap.xml\n`);
+// IndexNow のキーのファイル(このサイトの持ち主が送ったことを、Bing などが確かめる。公開してよい値)
+if (validIndexNowKey(SEO.indexNowKey)) write(`dist/${SEO.indexNowKey}.txt`, SEO.indexNowKey);
 if (cfg.adsense.client) write("dist/ads.txt", `google.com, ${cfg.adsense.client.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n`);
 // セキュリティ連絡先(RFC 9116)。メールアドレスは、お問い合わせフォームのURLで代える
 const expires = new Date(asMs(nowJst) + 365 * 864e5).toISOString();
