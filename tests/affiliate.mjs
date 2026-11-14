@@ -20,14 +20,10 @@ export function affiliateTests({ ok, section, OUT, build }) {
     ok(html.includes("affiliate_click"), "全ページ共通レイアウトにトラッカーが出る");
     ok($('script[src*="gtag/js"]').length === 0, "明示的な同意前にGA4外部タグを読み込まない");
     ok($('script[data-ga4-id="G-TEST123456"][data-require-statistics-consent]').length === 1, "同意ゲートを持つGA4初期化スクリプトを出力");
-    ok($('.d-side .staylinks a[rel*="sponsored"]').length === 2 && $(".d-side .stay-banner").length === 0, "開催ページの宿は、日付・地域つきのアフィリエイトリンクで案内する");
-    ok($('.d-side .staylinks [data-goatcounter-click]').length === 2, "GoatCounter属性を維持");
+    ok($('.d-side .stay a.stay-banner[rel*="sponsored"]').length === 1 && $(".d-side .staylinks").length === 0, "開催ページの宿は、公式バナー(画像)で案内する(文字だけのボタンは出さない)");
+    ok($('.d-side .stay .stay-banner[data-goatcounter-click^="banner-"]').length === $(".d-side .stay .stay-banner").length, "GoatCounter属性を維持(バナーの配置として数える)");
     const regular = cheerio.load(readFileSync("dist-test-ga4-affiliate/regular/r-nightly.html", "utf8"));
-    const rakuten = regular('a[data-goatcounter-click="aff-rakuten/宮崎県"]');
-    const jalan = regular('[data-vc-ad][data-goatcounter-click="aff-jalan/宮崎県"] a');
-    const target = new URL(new URL(rakuten.attr('href')).searchParams.get('pc'));
-    const jalanTarget = new URL(jalan.attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url');
-    ok(regular('.d-side .stay-banner').length === 0 && target.searchParams.get('f_query') === '高千穂町' && jalanTarget.includes('keyword=') && !target.searchParams.has('f_nen1'), "定期公演も地域指定の宿検索へ進み、未確定の日付は指定しない");
+    ok(regular('.d-side .aff a.stay-banner[data-goatcounter-click="banner-rakuten/r-nightly"]').length === 1 && regular('.d-side .staylinks').length === 0, "定期公演の宿も、公式バナー(画像)で案内する");
     ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"), "追加スクリプトがCSPのハッシュに含まれる");
   }
 

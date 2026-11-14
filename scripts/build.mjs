@@ -1,6 +1,5 @@
 import { socialEvidenceErrors, isSocialEvent, socialDuplicate, SOCIAL_LABELS, socialPlatform } from './lib/social-evidence.mjs';
 import { sameEvent } from './lib/collect-core.mjs';
-import { createRakutenStayResolver } from "./lib/rakuten-stay-issued.mjs";
 import { cookieControls } from './lib/cookie-controls.mjs';
 import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
@@ -27,9 +26,8 @@ import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { validKey as validIndexNowKey } from "./lib/indexnow.mjs";
 import { pngToIco } from "./lib/ico.mjs";
-import { encodeSjisURI } from "./lib/sjis.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
-import { VC, vcEnabled, vcTag } from "./lib/valuecommerce.mjs";
+import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
@@ -220,23 +218,10 @@ const experienceAff = { sid: a.valueCommerceSid, pid: a.jalanActivityPid, allowe
 const hasAffiliate = rakutenOn || jalanOn || amazonOn || !!(experienceAff.sid && experienceAff.pid) || ['supplies','experiences','rental'].some(category=>offersFor(visitorPlanning,category,{guide:true},nowJst.slice(0,10)).length);
 const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
 const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${amazonOn ? `&tag=${a.amazonTag}` : ""}`;
-// 宿の検索(会場の市区町村で探す)。日付があれば、その日の1泊・大人2名で開く。
-// じゃらんはキーワードを Shift_JIS で、楽天トラベルは charset=utf-8 の指定つきで受け取る(どちらも、実際の検索結果で確認済み)
+// 宿の案内に出す地名(会場の市区町村)。
 // 市町村名で探すと遠い宿ばかり出る地域は、近くの宿が出ることを確かめた呼び名で探す(2026-11-11 確認。東栄町 → 奥三河の宿が出る)
 const STAY_AREA = { "東栄町": "奥三河" };
 const stayPlace = (x) => { const c = x.city ? x.city.replace(/^.*郡/, "") : x.prefecture; return STAY_AREA[c] ?? c; };
-const jalanStay = (x, day) => {
-  const q = [`keyword=${encodeSjisURI(stayPlace(x))}`];
-  if (day) q.push(`stayYear=${+day.slice(0, 4)}`, `stayMonth=${+day.slice(5, 7)}`, `stayDay=${+day.slice(8, 10)}`, "stayCount=1", "roomCount=1", "adultNum=2");
-  return `https://www.jalan.net/uw/uwp2011/uww2011init.do?${q.join("&")}`;
-};
-const issuedRakutenStays = createRakutenStayResolver(JSON.parse(readFileSync("data/rakuten-stay-issued.json", "utf8")));
-const rakutenStay = (x, day) => {
-  const q = ["charset=utf-8", `f_query=${encodeURIComponent(stayPlace(x))}`];
-  if (day) { const n = addDays(day, 1); q.push(`f_nen1=${day.slice(0, 4)}`, `f_tuki1=${+day.slice(5, 7)}`, `f_hi1=${+day.slice(8, 10)}`, `f_nen2=${n.slice(0, 4)}`, `f_tuki2=${+n.slice(5, 7)}`, `f_hi2=${+n.slice(8, 10)}`, "f_otona_su=2", "f_heya_su=1"); }
-  const destination = `https://kw.travel.rakuten.co.jp/keyword/Search.do?${q.join("&")}`;
-  return rakutenOn ? issuedRakutenStays.resolve(destination, rakuten) : destination;
-};
 // 外部リンク(アフィリエイト)の属性。報酬の出るリンクは sponsored。クリック数は、アクセス解析(GoatCounter)で数える
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
@@ -244,13 +229,6 @@ const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: j
 const tripBand = (id, heading) => { const b = stayBanners(id); return b ? `<aside class="aff trip-band" aria-labelledby="${id}-stay-h"><h2 id="${id}-stay-h">${heading}</h2><p class="stay-cond"><span>開催地の近くで探す</span></p>${b}${prNote(true)}</aside>` : ""; };
 const prNote = (on) => (on ? `<span class="pr">PR</span><p class="meta annotation">PR: 宿の案内は広告(アフィリエイトリンク)を含みます。</p>` : "");
 
-// 開催ページの宿: 会場の市区町村・開催日の1泊・大人2名の検索結果へ直接つなぐ(バナーは宿のトップへ飛ぶだけなので使わない)。
-// 提携IDがあれば、楽天は楽天アフィリエイト(hgc)、じゃらんはバリューコマース(じゃらんnet・MyLink)を経由する。リダイレクト先が同じ検索になることを確認済み(2026-10-25)
-const stayLinks = (e, day, place) => {
-  const btn = (k, url, name, on) => !on ? "" : k==="jalan" ? vcTag({kind:"stay",destination:url,text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`stay-jalan/${e.id}`}}) : `<a class="stay-btn" href="${esc(url)}" ${affAttrs(on, `stay-${k}/${e.id}`)}>${esc(place)}の宿を${name}で探す</a>`;
-  const btns = [btn("jalan", jalanStay(e, day), "じゃらん", jalanOn), btn("rakuten", rakutenStay(e, day), "楽天トラベル", rakutenOn)].join(" ");
-  return btns ? `<p class="staylinks">${btns}</p>` : "";
-};
 // 会場の近くの宿(楽天トラベルの施設検索 API。公開のたびに scripts/fetch-hotels.mjs が取る。無い・古いときは出さない)
 const HOTELS_FILE = process.env.NEARBY_HOTELS_FILE ?? "data/nearby-hotels.json";
 const nearbyHotels = rakutenOn && existsSync(HOTELS_FILE) ? loadHotels(readFileSync(HOTELS_FILE, "utf8"), nowJst) : null;
@@ -262,25 +240,21 @@ function stayBlock(e) {
   // 時刻や日またぎだけでは夜公演と断定できないため、宿の案内は時間帯に依存しない。
   // 枠の中は見出しと宿のボタンだけにする(公演・会場・検索の条件の説明は置かない。2026-10-30 運営者の判断)
   // 例外(MON-6、2026-11-08 運営者の依頼): 公式の名称・説明に「夜神楽」「夜通し」などがある公演だけ、泊まりが前提になることを一文で伝える
-  const links = stayLinks(e, day, place), night = overnightKagura(e);
+  // 2026-11-14 運営者の依頼: 文字のボタン(開催日・市町村つきの検索)をやめ、楽天トラベル・じゃらんの公式バナー(画像)にする
+  const links = stayBanners(e.id), night = overnightKagura(e);
   return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
 ${night ? `<p class="stay-lead">${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。帰りの交通が限られるため、会場の近くに泊まる予定で計画すると安心です。</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
-<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">${links ? `${jpDate(day)}泊・大人2名で検索します。人数・宿泊日はリンク先で変更できます。` : "宿泊日・人数・地域は、リンク先で指定してください。"}${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
+<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿泊日(${esc(jpDate(day))})・人数・地域は、リンク先で指定してください。${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場近くの宿」、県・種類のページは「◯◯県の宿」 */
-function affiliateBlock(e, { banners = true } = {}) {
+function affiliateBlock(e) {
   if (!rakutenOn && !jalanOn && !amazonOn) return "";
-  const bn = banners ? stayBanners(e.prefecture) : "";
-  // 定期公演(バナーなし): じゃらんと楽天トラベルは、開催ページの宿と同じ書き方・同じ枠線のボタンにそろえる
-  const place = stayPlace(e);
-  const stay = banners ? "" : [
-    jalanOn ? vcTag({kind:"stay",destination:jalanStay(e),text:`${place}の宿をじゃらんで探す`,className:"stay-btn",meta:{"data-goatcounter-click":`aff-jalan/${e.prefecture}`}}) : "",
-    rakutenOn ? `<a class="stay-btn" href="${esc(rakutenStay(e))}" ${affAttrs(true, `aff-rakuten/${e.prefecture}`)}>${esc(place)}の宿を楽天トラベルで探す</a>` : "",
-  ].join("");
+  // 宿は、楽天トラベル・じゃらんの公式バナー(画像)。定期公演のページも同じ(2026-11-14 運営者の依頼で、文字のボタンから置き換え)
+  const bn = stayBanners(e.id ?? e.prefecture);
   const goods = amazonOn ? `<div class="afflist"><a href="${esc(amazon(e.kagura || "神楽"))}" ${affAttrs(true, `aff-amazon/${e.prefecture}`)}><b>神楽の本・グッズ</b><small>Amazon</small></a></div>` : "";
-  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${stay ? `<p class="staylinks">${stay}</p>` : ""}${goods}${bn}${prNote(!!bn || !!stay || amazonOn)}</aside>`;
+  return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -444,7 +418,7 @@ ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催�
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
-${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
+${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="d-side"') ? clientJs("side-follow") : ""}${body.includes('class="experience-region"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる
   return html.replace('<head><meta charset="utf-8">', `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${cspFor(html, cfg)}">`);
 };
@@ -1060,7 +1034,7 @@ for (const r of regular) {
 <div class="desc-lead">${descParas(shownDesc(r, !r.fee || !r.venue || reservationLabel(r) === "要確認"))}</div>
 ${programTable(r)}
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div>
-<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r, { banners: false })}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
+<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${transportSection(visitorPlanning,r,today,'regular_rental')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn", { side: true })}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato", { side: true })}</div><div class="d-rest">
 ${sourceNote(r)}
 ${planningLinks(r,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}
@@ -1345,9 +1319,6 @@ for (const c of sponsorCoverage(sponsorsData, { events, regular, today })) {
   else if (c.short) console.warn(`SPONSOR_ENDS_EARLY: ${c.id} は、契約の終わり(${c.end})より前の ${c.last} の後、載る場所がなくなる見込みです(地域の枠 area にすると続けて載ります)`);
 }
 
-const stayAudit = issuedRakutenStays.audit();
-console.log(`Rakuten stay issued coverage: ${stayAudit.verified.length} verified / ${stayAudit.unverified.length} unverified unique destinations`);
-if (stayAudit.unverified.length) console.warn("RAKUTEN_STAY_ISSUANCE_UNVERIFIED: existing links retained; obtain exact issued URLs", JSON.stringify(stayAudit.unverified));
 
 // Version-pinned local CMP assets, including its MIT license. No CDN runtime dependency.
 mkdirSync(`${OUT}/vendor/cookieconsent-3.2.1`, { recursive: true });

@@ -357,8 +357,10 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 @media(min-width:960px){
   .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
   .d-top{grid-area:top}.d-rest{grid-area:rest}
-  /* 右の列は固定せず、ページと一緒に流す(画面より長いと、固定した列の下が切れて中だけスクロールする箱になるため) */
+  /* 右の列は、スクロールに合わせてついて来る(side-follow.js が止まる位置 --side-top を決めて .follow を付ける)。
+     画面より長い列は、下端が画面の下に届いてから止まる。列の中だけをスクロールさせる箱にはしない */
   .d-side{grid-area:side;align-self:start;margin-top:16px}
+  .d-side.follow{position:sticky;top:var(--side-top,84px)}
   .side-summary.on{display:block}.side-summary{margin:0 0 14px}
   .side-summary p{margin:0}.ss-when{font-family:var(--serif);font-size:var(--fs-l);line-height:1.6}.ss-place{margin-top:6px!important;font-size:var(--fs-s)}.ss-fee{font-size:var(--fs-s);color:var(--mut)}
   .side-summary .btn{display:flex;width:100%;margin-top:12px}
@@ -896,7 +898,12 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .pick small{display:block;margin-top:2px;color:var(--mut);font-size:var(--fs-2xs);line-height:1.6}
 .picks{display:grid;gap:8px;margin:12px 0}
 .guide .planning-card>.meta{margin:0}.guide .planning-card :is(h3,h4){margin:2px 0 6px}.guide .planning-card>p:not(.meta,.pick){margin:0 0 12px}
-.planning-card.compact .planning-banner img{max-width:min(100%,300px)}
+/* レンタカー・カーシェアのバナー(300×250): 画面を占めすぎないよう、本文の列では幅240pxまで。
+   右の列(PC)では2枚を横に並べ、列の高さを抑える(スクロールについて来る列が、画面に収まりやすいように) */
+.planning-card.compact .planning-banner img{max-width:min(100%,240px)}
+.d-side .planning-grid:has(>.planning-card.compact+.planning-card.compact){grid-template-columns:repeat(2,minmax(0,1fr))}
+.d-side .planning-card.compact{padding:10px}.d-side .planning-card.compact .planning-banner img{width:100%;max-width:100%}
+.d-side .planning-card.compact .planning-banner{gap:6px}
 /* 日付・場所で探す: 探し方のタブ */
 .ftabs{display:flex;gap:0;margin:0 0 12px;border-bottom:1px solid var(--line)}
 .ftabs button{border-radius:0;font:inherit;font-size:var(--fs-s);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 14px;min-height:44px;color:var(--mut);cursor:pointer}

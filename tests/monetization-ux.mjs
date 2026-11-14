@@ -173,16 +173,16 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   const bn = STAY_BANNERS;
   if (built.status === 0) {
     const ev = cheerio.load(read("dist-test-revenue-ux/events/t-full.html"));
-    const links = ev(".d-side .staylinks a");
-    ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 0, "開催ページ: サイドの宿カードは、バナーではなく、日付・地域つきの2つの検索リンクにする");
-    const [jl, rk] = links.map((_, x) => ev(x).attr("href")).get();
-    ok(jl.startsWith("//ck.jp.ap.valuecommerce.com/servlet/referral?") && (new URL(jl,"https://kagurameguri.jp").searchParams.get("vc_url") ?? "").includes("stayYear=2026&stayMonth=11&stayDay=20") && rk.startsWith("https://hb.afl.rakuten.co.jp/hgc/") && new URL(rk).searchParams.get("pc").includes("f_nen1=2026&f_tuki1=11&f_hi1=20"), "じゃらんはバリューコマース、楽天トラベルは楽天アフィリエイトを経由し、開催日の検索をそのまま開く");
-    ok(links.toArray().every((x) => ev(x).attr("rel").includes("sponsored") && ev(x).attr("rel").includes("noopener") && ev(x).attr("target") === "_blank" && /^高千穂町の宿を(?:じゃらん|楽天トラベル)で探す$/.test(ev(x).text())), "広告リンクの属性(sponsored・noopener)と、分かる文言がある(じゃらんと楽天トラベルは同じ書き方)");
-    ok(links.map((_, x) => (ev(x).attr("data-goatcounter-click") || ev(x).closest("[data-vc-ad]").attr("data-goatcounter-click"))).get().join() === "stay-jalan/t-full,stay-rakuten/t-full", "GoatCounterのクリック名は stay-◯◯/開催ID");
+    const links = ev(".d-side .stay .stay-banner");
+    ok(links.length === 2 && ev(".d-side .stay h2").length === 1 && ev(".d-side .stay .stay-banners").length === 1 && ev(".d-side .staylinks").length === 0, "開催ページ: サイドの宿カードは、楽天トラベル・じゃらんの公式バナー(画像)にする(2026-11-14 運営者の依頼)");
+    const rk = links.filter("a").attr("href"), jl = links.filter("[data-vc-ad]").find("a").attr("href") ?? "";
+    ok(rk === bn.rakuten.url && jl.includes("//ck.jp.ap.valuecommerce.com/servlet/referral?"), "楽天トラベルは発行済みバナー、じゃらんはバリューコマースの公式タグ");
+    ok(/sponsored/.test(links.filter("a").attr("rel")) && /noopener/.test(links.filter("a").attr("rel")) && links.filter("a").attr("target") === "_blank" && links.filter("a").find("img").attr("alt") === "楽天トラベルの宿泊予約", "広告リンクの属性(sponsored・noopener)と、画像の説明(alt)がある");
+    ok(links.map((_, x) => ev(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/t-full,banner-jalan/t-full", "GoatCounterのクリック名は banner-◯◯/開催ID");
     const csp = cheerio.load(read("dist-test-revenue-ux/weekend.html"))('meta[http-equiv="Content-Security-Policy"]').attr("content");
     const imageSources=csp.split(";").find(d=>d.trim().startsWith("img-src ")).trim().split(/\s+/).slice(1);
     ok(imageSources.includes("https:") && /img-src[^;]*hbb.afl.rakuten.co.jp/.test(csp) && /img-src[^;]*ba.afl.rakuten.co.jp/.test(csp), "CSP: バナーのあるページだけ、画像の配信元(楽天の転送先を含む)を許可する");
-    ok(ev("script[src*='valuecommerce']").length===0 && !ev("noscript").toArray().some(x=>/valuecommerce/.test(ev.html(x))) && ev("img[src*='gifbanner'][height='1'][width='0'][border='0']").length===1, "公式非JSタグの計測画像を保持し、外部JSタグは導入しない");
+    ok(ev("script[src*='valuecommerce']").length===0 && !ev("noscript").toArray().some(x=>/valuecommerce/.test(ev.html(x))) && ev(".stay-banner[data-vc-ad] img[src*='gifbanner'][border='0']").length===1, "公式非JSタグ(バナーの画像)を保持し、外部JSタグは導入しない");
     const wk = cheerio.load(read("dist-test-revenue-ux/weekend.html")), tm = cheerio.load(read("dist-test-revenue-ux/this-month.html"));
     ok(wk(".d-side .trip-band .stay-banner").length === 2 && wk(".trip-band .pr").length >= 1 && wk(".d-top .card").length > 0 && wk(".d-side").prev().hasClass("d-top"), "今週末: 宿のバナー(PR表示つき)は右の列(スマホでは一覧の後)");
     ok(tm(".trip-band .stay-banner").map((_, x) => tm(x).attr("data-goatcounter-click")).get().join() === "banner-rakuten/this-month,banner-jalan/this-month", "今月: 宿のバナーのクリックは、ページ名で数える");

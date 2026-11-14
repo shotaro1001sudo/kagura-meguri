@@ -27,8 +27,8 @@ export function eventSeoTests({ ok, section, build }) {
     ok($('meta[name="description"]').attr("content") === ev.seoDesc, "seoDesc があれば、説明文をそれにする");
     ok($("h1").text().trim() === ev.name, "ページの見出しは、名称のまま");
     const plain = cheerio.load(read(join(out, "events", `${base[0].id}.html`)));
-    const $h = cheerio.load(read(join(out, "events", "t-hana.html"))), hanaBtn = $h("aside.stay a.stay-btn");
-    ok(hanaBtn.length === 1 && hanaBtn.text() === "奥三河の宿を楽天トラベルで探す" && hanaBtn.get().every((a) => { const u = decodeURIComponent(decodeURIComponent($h(a).attr("href"))); return u.includes("奥三河") && !u.includes("東栄町"); }), "花祭(東栄町)の開催ページの宿は、東栄町ではなく奥三河で探す", hanaBtn.text());
+    const $h = cheerio.load(read(join(out, "events", "t-hana.html"))), hanaNote = $h(".page-notes").text();
+    ok(hanaNote.includes("奥三河周辺") && !hanaNote.includes("東栄町周辺"), "花祭(東栄町)の開催ページの宿は、東栄町ではなく奥三河で探すよう案内する", hanaNote);
     ok(!existsSync(join(out, "feature")) && !read(join(out, "sitemap.xml")).includes("/feature/") && !$h("a[href^='/feature/']").length, "特集ページ(/feature/)は作らず、どこからも案内しない");
     ok(plain("title").text().startsWith(base[0].name.slice(0, 10)), "titleName のない開催は、これまでどおり名称から作る");
   } finally {

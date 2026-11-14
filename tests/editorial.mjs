@@ -129,11 +129,10 @@ export function editorialTests({ ok, section, OUT, build }) {
     const $ = page(`events/${e.id}.html`, D), stay = $(".stay");
     ok(stay.length === 1 && stay.find("h2").text() === "会場周辺の宿" && !/夜の公演|夜の観覧後|終演後の帰り道/.test(stay.text() + $(".page-notes").text()), `${e.id}: 宿泊枠に時間帯の断定をしない`);
     ok(stay.find(".stay-cond").length === 0 && !/大人2名/.test(stay.text()) && !$(".page-notes").text().includes("泊・大人2名で検索します"), `${e.id}: 宿の枠は見出しと宿のボタンだけ(宿泊日・人数の検索条件は出さない。2026-10-30 運営者の判断)`);
-    const anchors = stay.find("a.stay-btn,.stay-btn>a");
-    ok(anchors.length === 2 && anchors.toArray().every(a => $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank"), `${e.id}: 既存広告リンク属性を維持`);
-    const jalan = new URL(anchors.eq(0).attr("href"), "https://kagurameguri.jp"), dest = new URL(jalan.searchParams.get("vc_url"));
-    const rakuten = new URL(anchors.eq(1).attr("href")), hotel = new URL(rakuten.searchParams.get("pc"));
-    ok(jalan.searchParams.get("sid") === "3784232" && jalan.searchParams.get("pid") === "892732997" && dest.searchParams.get("stayDay") === "3" && dest.searchParams.get("adultNum") === "2" && hotel.searchParams.get("f_hi1") === "3" && hotel.searchParams.get("f_hi2") === "4" && hotel.searchParams.get("f_query") === e.city.replace(/^.*郡/, ""), `${e.id}: 既存ID・開催初日の1泊・人数・市町村を維持`);
+    // 2026-11-14 運営者の依頼: 宿は文字のボタンをやめ、楽天トラベル・じゃらんの公式バナー(画像)にする
+    const rk = stay.find('a.stay-banner[data-banner-partner="rakuten"]'), jl = stay.find('[data-vc-ad][data-banner-partner="jalan"]');
+    ok(rk.length === 1 && rk.attr("rel").includes("sponsored") && rk.attr("target") === "_blank" && rk.find("img").length === 1 && jl.length === 1 && stay.find(".staylinks,.stay-btn").length === 0, `${e.id}: 宿は公式バナー(画像)だけ。広告リンクの属性を維持`);
+    ok($(".page-notes").text().includes(`${e.city.replace(/^.*郡/, "")}周辺で`), `${e.id}: 注意書きに、宿を探す地域(会場の市町村)を書く`);
   }
   rmSync(F, { force: true }); rmSync(D, { recursive: true, force: true });
 
@@ -154,13 +153,13 @@ export function editorialTests({ ok, section, OUT, build }) {
   if (nightBuild.status === 0) {
     for (const [e, lead] of nightCases) {
       const $ = page(`events/${e.id}.html`, D), stay = $(".stay"), p = stay.find(".stay-lead");
-      if (lead) ok(p.length === 1 && p.text().startsWith(lead) && p.text().includes("泊まる") && stay.find("h2").text() === "泊まりで観る・会場周辺の宿" && p.nextAll(".staylinks").length === 1 && stay.find("a.stay-btn,.stay-btn>a").length === 2, `${e.id}: 泊まりが前提の一文を、宿のボタンの上に出す`);
+      if (lead) ok(p.length === 1 && p.text().startsWith(lead) && p.text().includes("泊まる") && stay.find("h2").text() === "泊まりで観る・会場周辺の宿" && p.nextAll(".stay-banners").length === 1 && stay.find(".stay-banner").length === 2, `${e.id}: 泊まりが前提の一文を、宿のバナーの上に出す`);
       else ok(p.length === 0 && stay.find("h2").text() === "会場周辺の宿" && stay.find(".hotel-card").length === 0, `${e.id}: 時刻だけ・明示の取り消しでは、一文も宿のカードも出さない`);
     }
     const $ = page("events/yk-name.html", D), cards = $(".stay .hotel-card"), html = read(join(D, "events/yk-name.html"));
     ok(cards.length === 3 && cards.toArray().every((a) => $(a).attr("href").startsWith("https://hb.afl.rakuten.co.jp/") && $(a).attr("rel").includes("sponsored") && $(a).attr("target") === "_blank" && $(a).attr("data-goatcounter-click") === "stay-hotel/yk-name"), "宿のカード: 楽天アフィリエイトのリンクだけ・最大3件・PR の属性", cards.length);
     ok(cards.first().find("img").attr("src").startsWith("https://img.travel.rakuten.co.jp/") && cards.first().text().includes("8,800円〜") && cards.first().text().includes("評価 4.3") && $(".stay .hotels").text().includes("10月8日時点") && $(".stay .hotels a[href='https://webservice.rakuten.co.jp/']").text() === "Supported by Rakuten Developers", "宿のカード: 写真・料金(取得日つき)・評価・クレジット");
-    ok($(".stay .hotels").nextAll(".staylinks").length === 1 && $(".stay .pr").length === 1, "宿のカードは検索リンクの上、PR 表示はそのまま");
+    ok($(".stay .hotels").nextAll(".stay-banners").length === 1 && $(".stay .pr").length === 1, "宿のカードはバナーの上、PR 表示はそのまま");
     ok(/img-src[^;]*https:\/\/img\.travel\.rakuten\.co\.jp/.test(html) && !/img-src[^;]*img\.travel\.rakuten/.test(read(join(D, "events/yk-desc.html"))), "CSP: 宿の写真があるページだけ、楽天トラベルの画像を許可");
     ok(page("privacy.html", D)("main").text().includes("img.travel.rakuten.co.jp"), "プライバシーポリシー: 宿の写真の配信先を書く");
   }
