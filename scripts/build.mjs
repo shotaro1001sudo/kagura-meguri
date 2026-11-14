@@ -689,12 +689,13 @@ write("dist/map.html", layout({
   head: LEAFLET,
   ld: [crumbsLd([["ホーム", "/"], ["地図で探す"]]), itemListLd("神楽の開催会場", [...upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...regular.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
   body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を地図で探せます。現在地から近い順にも探せます。")}
-<div class="nearbar"><button type="button" class="btn" id="nearme" hidden>現在地から近くの開催を探す</button><span class="meta" id="nearnote" hidden>位置情報は、この端末の中で距離を計り、地図を動かすためだけに使います(当サイトには送らず、保存もしません)。</span></div>
-<p class="meta" id="nearmsg" aria-live="polite"></p><section id="nearlist" class="nearbox" aria-labelledby="near-h" hidden></section>
+<div class="nearbar"><button type="button" class="btn" id="nearme" hidden>現在地から近くの開催を探す</button></div>
+<p class="meta" id="nearmsg" aria-live="polite"></p>
 <div class="mapbox"><div id="map" role="region" aria-label="開催場所の地図"></div><button type="button" class="maplock" id="maplock" aria-pressed="false" hidden>地図を動かす</button></div>
 <p class="legend meta"><span><span class="pin ev"></span>日付のある開催</span><span><span class="pin reg"></span>定期公演</span><span><span class="pin mix"></span>両方</span><span>数字は、同じ場所での件数です。</span></p>
 <p class="meta" id="mapmsg" aria-live="polite"></p>
-<p class="meta">地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院(淡色地図)</a></p>${adSlot(cfg.adsense.slotList)}
+<p class="meta">地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院(淡色地図)</a></p>
+<section id="nearlist" class="nearbox" aria-labelledby="near-h" hidden></section>${adSlot(cfg.adsense.slotList)}
 ${venueList()}
 ${clientJs("map")}`,
 }));

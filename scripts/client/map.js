@@ -58,9 +58,9 @@ document.addEventListener('DOMContentLoaded', function () {
      ボタンを押したときだけ、ブラウザの位置情報を1回だけ使う。距離は、この端末の中で計算する(直線距離)。
      位置情報は、送らない・保存しない・アクセス解析にも送らない。URL にも残さない */
   function nearby(items, bySpot) {
-    var btn = d.getElementById('nearme'), out = d.getElementById('nearlist'), say = d.getElementById('nearmsg'), note = d.getElementById('nearnote');
+    var btn = d.getElementById('nearme'), out = d.getElementById('nearlist'), say = d.getElementById('nearmsg');
     if (!btn || !out || !say || !navigator.geolocation || window.isSecureContext === false) return;
-    btn.hidden = false; if (note) note.hidden = false;
+    btn.hidden = false;
     var SHOW = 10, FIT = 5, you = null;
     var rad = function (x) { return x * Math.PI / 180; };
     var km = function (a, b, c, e) { var p = Math.sin(rad(c - a) / 2), q = Math.sin(rad(e - b) / 2), h = p * p + Math.cos(rad(a)) * Math.cos(rad(c)) * q * q; return 12742 * Math.asin(Math.min(1, Math.sqrt(h))); };
@@ -76,9 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
           + '<span class="meta">' + esc(x.prefecture + (x.city || '') + (x.venue ? '・' + x.venue : '')) + '</span>'
           + (bySpot[r.k] ? '<button type="button" class="linkbtn nearjump" data-k="' + esc(r.k) + '">地図で見る</button>' : '') + '</li>';
       };
-      out.innerHTML = '<h2 id="near-h">現在地から近い開催</h2><p class="meta">近い順に' + list.length + '件。距離は直線距離で、道のりではありません。行き方は、公式情報や地図アプリでご確認ください。</p><ol class="nearlist">' + list.map(row).join('') + '</ol>';
+      // 説明の文は出さない(2026-11-14 運営者の依頼)。読み上げには、一覧の見出しへ移って知らせる(画面は動かさない)
+      out.innerHTML = '<h2 id="near-h" tabindex="-1">現在地から近い開催</h2><ol class="nearlist">' + list.map(row).join('') + '</ol>';
       out.hidden = false;
-      say.textContent = '現在地から近い開催を、' + list.length + '件表示しました。';
+      say.textContent = '';
+      var h = d.getElementById('near-h'); if (h && h.focus) h.focus({ preventScroll: true });
       out.querySelectorAll('.nearjump').forEach(function (b) {
         b.addEventListener('click', function () { var m = bySpot[b.dataset.k]; if (!m) return; box.scrollIntoView({ block: 'center' }); map.setView(m.getLatLng(), Math.max(map.getZoom(), 12)); m.openPopup(); });
       });

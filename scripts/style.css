@@ -420,9 +420,9 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 @media(prefers-color-scheme:dark){#map .leaflet-tile-pane{filter:invert(.9) hue-rotate(180deg) sepia(.3) saturate(.6)}}
 .mapbox{position:relative;margin-top:32px}
 /* 現在地から近い開催: ボタンと、近い順の一覧(距離・日付・名前・場所・地図で見る) */
-.nearbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:24px 0 0}.nearbar .meta{font-size:var(--fs-xs)}
+.nearbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:24px 0 0}
 #nearmsg:empty{display:none}#nearmsg{margin:10px 0 0}
-.nearbox h2{margin:28px 0 6px}.nearbox>.meta{margin:0 0 8px}
+.nearbox h2{margin:32px 0 10px}.nearbox h2:focus{outline:none}
 .nearlist{list-style:none;margin:0;padding:0}.nearlist li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:12px 0;border-top:1px solid var(--line)}.nearlist li:last-child{border-bottom:1px solid var(--line)}
 .nearlist .km{min-width:5.5em;font-weight:500;color:var(--ac)}.nearlist .pd{min-width:8em;color:var(--mut);font-size:var(--fs-s)}.nearlist a{color:var(--fg);font-weight:500}.nearlist a:hover{color:var(--ac)}.nearlist .meta{flex-basis:100%;margin-left:calc(5.5em + 12px)}.nearlist .nearjump{min-height:40px;padding:4px 0;margin-left:calc(5.5em + 12px)}
 @media(max-width:640px){.nearlist .meta,.nearlist .nearjump{margin-left:0}}
