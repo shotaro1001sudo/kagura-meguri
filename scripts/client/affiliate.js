@@ -24,12 +24,12 @@ document.addEventListener("click", (event) => {
   }
 
   const label = link.getAttribute("data-goatcounter-click") || "";
-  const match = /^(stay|aff|banner)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
+  const match = /^(stay|aff|banner|rail)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
   if (!match || typeof window.gtag !== "function") return;
 
   window.gtag("event", "affiliate_click", {
     affiliate_partner: match[2],
-    affiliate_placement: match[1] === "stay" ? "event_stay" : match[1] === "banner" ? "stay_banner" : "travel_block",
+    affiliate_placement: match[1] === "stay" ? "event_stay" : match[1] === "banner" ? "stay_banner" : match[1] === "rail" ? "side_rail" : "travel_block",
     affiliate_content_id: match[3],
     affiliate_page_path: window.location.pathname
   });

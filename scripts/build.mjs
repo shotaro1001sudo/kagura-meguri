@@ -28,6 +28,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
+import { sideRailHtml, railPage } from "./lib/side-rail.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
@@ -408,7 +409,7 @@ ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
-<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
+${!en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn }, attrs: affAttrs, esc, wide }) : ""}<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
 <p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}</div>

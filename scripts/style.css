@@ -383,6 +383,24 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .pr{display:inline-block;font-size:var(--fs-2xs);letter-spacing:.1em;padding:0 6px;margin-right:6px;border:1px solid var(--mut);border-radius:2px;color:var(--mut)}
 /* 広告の枠の印: 枠ごとに1つ、枠の下の右端に「PR」だけ(2026-11-14 運営者の依頼) */
 .pr-foot{display:block;width:fit-content;margin:10px 0 0 auto;line-height:1.6}
+/* PCの両サイドのPR枠(2026-11-15): 本文の横に余白がある広い画面だけ。画面を動かしても付いてくる。1画面に収まらない分は、下から隠す */
+.side-rail{display:none}
+/* --half: 本文(.wrap の内側)の幅の半分。本文から --rail-gap だけ離して置く */
+@media(min-width:1280px) and (min-height:520px){
+  .side-rail:not(.w){--rail-w:180px;--rail-gap:32px;--half:406px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:96px;width:var(--rail-w)}
+  .side-rail-l:not(.w){left:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}.side-rail-r:not(.w){right:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}
+}
+@media(min-width:1400px) and (min-height:520px){
+  .side-rail.w{--rail-w:160px;--rail-gap:24px;--half:496px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:96px;width:var(--rail-w)}
+  .side-rail-l.w{left:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}.side-rail-r.w{right:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}
+}
+.rail-banner{display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+.rail-banner img{display:block;width:100%;height:auto}
+.side-rail .pr-foot{margin:0 0 0 auto}
+@media(hover:hover){.rail-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
+.rail-banner:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+@media(max-height:719px){.side-rail .rail-banner:nth-of-type(n+3){display:none}}
+@media(max-height:519px){.side-rail .rail-banner:nth-of-type(n+2){display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
