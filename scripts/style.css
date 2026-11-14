@@ -335,7 +335,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 開催・定期公演のページ: 要点・公式情報(左)と、宿のカード(右・スクロールに付いてくる) */
 .wrap.wide{max-width:1040px}
 .dpage{display:grid;grid-template-columns:minmax(0,1fr)}
-.d-side .stay,.d-side .aff{margin:4px 0 16px}
+.d-side .stay,.d-side .aff{margin:0 0 16px}
 /* 開催までの日数(見出しの下のタグの並び)。1週間以内は朱で強める */
 /* ガイドへの案内: リンクの語句を、途中の「・」で2行に割らない */
 /* 開催までの日数: 見出しの下のタグ(.hero .tag)と同じ文字の大きさ・そろえ方にして、高さと位置をそろえる */
@@ -355,8 +355,9 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .planning-card.compact h3{margin-bottom:10px}.planning-card.compact .planning-banner span{font-size:var(--fs-2xs);color:var(--mut)}
 .planning-card.compact{display:flex;flex-direction:column}.planning-card.compact .pc-more{order:2;margin-top:10px}
 @media(min-width:960px){
-  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"top side" "rest side";grid-template-rows:auto 1fr;column-gap:48px}
-  .d-top{grid-area:top}.d-rest{grid-area:rest}
+  .dpage{grid-template-columns:minmax(0,1fr) 380px;grid-template-areas:"lead ." "top side" "rest side";grid-template-rows:auto auto 1fr;column-gap:48px}
+  /* 説明と公式情報のボタン(d-lead)は右の列より上の段に置き、要点の枠と右の列の上端をそろえる(2026-11-14 運営者の依頼) */
+  .d-lead{grid-area:lead}.d-top{grid-area:top}.d-rest{grid-area:rest}
   /* 右の列は、スクロールに合わせてついて来る(side-follow.js が止まる位置 --side-top を決めて .follow を付ける)。
      画面より長い列は、下端が画面の下に届いてから止まる。列の中だけをスクロールさせる箱にはしない */
   .d-side{grid-area:side;align-self:start;margin-top:16px}

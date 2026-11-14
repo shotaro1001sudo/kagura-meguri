@@ -98,7 +98,7 @@ export function editorialTests({ ok, section, OUT, build }) {
     ok(idx(".card").filter((_, c) => idx(c).text().includes("後楽園")).first().find(".meta").text().includes("11:00〜・13:00〜"), "一覧でも、2つの開始時刻を出す");
     ok(o1("table.info td .when").first().text() === "2026年12月20日(日) 19:00〜12月21日(月) 8:00", "日をまたぐ公演は、終わりの日付も曜日つきで(同じ年なら年は省く)。時刻の先頭の0は付けない", o1("table.info td .when").first().text());
     ok(s1(".dates .chip").map((_, a) => s1(a).text()).get().join() === "12月13日(日),1月10日(日)", "くり返しの公演は、開催ページに、ほかの日程を丸いボタンで出す", s1(".dates").text());
-    ok(s1(".d-top .dates").length === 1 && s1(".d-rest .dates").length === 0 && s1(".d-top .actions").nextAll(".dates").length === 1, "ほかの日程は、要点のまとまり(公式情報のボタンのあと)に出す。スマホで、宿や旅の案内の列より先に読める");
+    ok(s1(".d-top .dates").length === 1 && s1(".d-rest .dates").length === 0 && s1(".d-top .keyinfo").nextAll(".dates").length === 1, "ほかの日程は、要点のまとまり(要点の枠のあと)に出す。スマホで、宿や旅の案内の列より先に読める");
     const kr2 = idx(".card").filter((_, c) => idx(c).text().includes("後楽園"));
     ok(kr2.length >= 2 && kr2.find(".rep").length === kr2.length && idx(".card").filter((_, c) => idx(c).text().includes("倉敷")).find(".rep").length === 0, "くり返しの公演には「定例開催」の印。1回だけの開催には付けない");
     const rel = o2("h2").filter((_, h) => o2(h).text() === "あわせて観たい神楽").next("ol").find("li > span > a").map((_, a) => o2(a).text()).get();

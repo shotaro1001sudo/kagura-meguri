@@ -83,7 +83,9 @@ export async function uxTests({ ok, section, OUT }) {
   section("UI: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
   // 2026-11-14 運営者の依頼: 説明と「公式情報を見る」のボタンを、要点(日時・会場・料金)の枠の上に出す
-  ok(full(".keyinfo table.info").length === 1 && full(".d-top > .desc-lead").next(".actions").next(".keyinfo").length === 1 && page("regular/r-weekly.html")(".d-top > .desc-lead").next(".actions").next(".keyinfo").length === 1, "説明 → 「公式情報を見る」のボタン → 要点(日時・会場・料金)の枠の順(開催・定期公演とも)");
+  ok(full(".keyinfo table.info").length === 1 && full(".d-lead > .desc-lead").next(".actions").length === 1 && full(".d-lead").next(".d-top").children().first().is(".keyinfo") && page("regular/r-weekly.html")(".d-lead > .desc-lead").next(".actions").length === 1 && page("regular/r-weekly.html")(".d-lead").next(".d-top").children().first().is(".keyinfo"), "説明 → 「公式情報を見る」のボタン → 要点(日時・会場・料金)の枠の順(開催・定期公演とも)");
+  // PC では、説明とボタン(d-lead)を右の列より上の段に置き、要点の枠と右の列の上端をそろえる
+  ok(/.dpage{[^}]*grid-template-areas:"lead ." "top side" "rest side"/.test(read("scripts/style.css")) && /.d-side .stay,.d-side .aff{margin:0 0 16px}/.test(read("scripts/style.css")), "PC: 要点の枠と、右の列の最初の枠(宿)の上端がそろう");
   { // 本・ふるさと納税の紹介は、右の列ではなく、本文の下のほう(周辺体験のあと)に出す(2026-11-14 運営者の依頼。右の列を宿・レンタカーだけにして、画面に収める)
     const src = read("scripts/build.mjs");
     ok(!/<div class="d-side">[^\n]*(learnBlock|furusatoBlock)/.test(src) && ["event", "regular"].every((k) => new RegExp(`offerCards\\(visitorPlanning,'experiences',[er],today,'${k}_experiences'\\)\\}\\$\\{learnBlock\\([^\\n]*"${k}_learn"\\)\\}\\$\\{furusatoBlock\\([^\\n]*"${k}_furusato"\\)\\}`).test(src)),
@@ -119,7 +121,7 @@ export async function uxTests({ ok, section, OUT }) {
   { const pages = ["events/t-full.html", "events/t-long.html", "regular/r-weekly.html", "weekend.html"].map(page);
     ok(pages.slice(0, 3).every((p) => p(".desc-lead > p").length >= 1), "公演の説明は段落(p)で組む(長い説明は2文ずつに分ける)");
     ok(pages.every((p) => { const t = p(".page-notes").text(); return !/リアルタイム表示ではありません|会場の公式アクセスと公共交通を先に|泊・大人2名で検索します|掲載情報確認:/.test(t) && (t.match(/アフィリエイトリンク/g) || []).length <= 1; }), "ページ下の注記は、ほかで伝わる注意をくり返さず、広告の注記は1行にまとめる"); }
-  ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-top .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
+  ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-lead .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");
   ok(sh.find("a[href^='https://social-plugins.line.me/lineit/share?url=']").attr("rel")?.includes("noopener") && sh.find("button[data-copy]").attr("data-copy") === "https://kagurameguri.jp/events/t-full.html" || /\/events\/t-full\.html$/.test(sh.find("button[data-copy]").attr("data-copy") ?? ""), "共有: LINE で送る・リンクをコピー", sh.text());
   ok(full("#map,#mapbig").length === 0 && full(".keyinfo a.tomap").attr("href")?.startsWith("https://www.google.com/maps/search/"), "開催ページは地図を置かず、会場の欄から Google マップへ");
@@ -127,8 +129,8 @@ export async function uxTests({ ok, section, OUT }) {
   const reg = page("regular/r-weekly.html");
   ok(reg(".keyinfo").length === 1 && reg(".share").length === 1, "定期公演ページも、要点の帯と共有");
   // スマホでは、右の列(宿・本などの広告)が、要点と本文のあいだに入る。説明文は要点の帯の中に置き、広告より先に読めるようにする
-  const descFirst = (p) => { const h = p("main").html(); return p(".d-top .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
-  ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点のすぐあと(スマホでは広告の列より前)に出る");
+  const descFirst = (p) => { const h = p("main").html(); return p(".d-lead .desc-lead").length === 1 && p(".d-rest .desc-lead").length === 0 && h.indexOf("desc-lead") < h.indexOf('class="d-side"'); };
+  ok(full(".d-side").length === 1 && reg(".d-side").length === 1 && descFirst(full) && descFirst(reg), "開催・定期公演ページの説明文は、要点の枠の上(スマホでは広告の列より前)に出る");
   { const h = reg("main").html(); ok(reg(".d-rest .share").length === 1 && h.indexOf('class="share"') > h.indexOf("desc-lead") && h.indexOf('class="share"') > h.indexOf("planning-links"), "定期公演ページも、共有のボタンは、説明・周辺体験などの本文のあと"); }
   { // 見出しの下の「明日開催」などは、並ぶタグと文字の大きさ・そろえ方が違うと、スマホで高さと位置がずれる
     const rule = (sel) => (css.match(new RegExp(`(?:^|[}\\s/])${sel.replace(/\./g, "\\.")}\\{([^}]*)\\}`)) ?? [])[1] ?? "";
