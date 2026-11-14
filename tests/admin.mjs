@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { simpleParser } from "mailparser";
 import { classify, readFields, readJsonBlock, toItem, toDirectItem, DIRECT_TOPICS, SERVICE_DOMAINS, ignoredSender, ignoreKey, leadDomain, isAutoReply, fromLead, siteDomain } from "../scripts/admin/mail.mjs";
 import { validateEvent, upsertEvent, pruneInbox, suggestId, setInboxStatus, addMonetizationProposals, loadProposals, reviewChecks, reviewIssueDate } from "../scripts/admin/store.mjs";
-import { startAdmin } from "../scripts/admin/server.mjs";
+import { startAdmin, codeStamp } from "../scripts/admin/server.mjs";
 import { loadTasks, cronStep, describeCron, missedSlots } from "../scripts/admin/tasks.mjs";
 import { pipelineSummary, addSuggestedLeads, leadSummary } from "../scripts/admin/pipeline.mjs";
 import { weekBuckets, recentWindows, pace, revenueOf, deriveActuals, workflowSignal, parseNoteLog, listingSection, opsSection, revenueSection, isEnded } from "../scripts/admin/overview.mjs";
@@ -185,7 +185,11 @@ export async function adminTests({ ok, section }) {
   const autoFlag = { v: false };
   const fakeReplies = { calls: [], next: [] };
   const fakeIssues = { v: [], calls: 0 };
-  const { server, token, url } = await startAdmin({ reviewIssues: async () => { fakeIssues.calls++; return fakeIssues.v; }, root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
+  // 管理者用ページのプログラムの置き場所の代わり(起動のあとに変わったら、画面で知らせる)
+  const CODE = join(ROOT, "fake-admin-code");
+  mkdirSync(CODE, { recursive: true }); writeFileSync(join(CODE, "a.mjs"), "export const v = 1;\n"); writeFileSync(join(CODE, "note.txt"), "x");
+  const restarts = { n: 0 };
+  const { server, token, url } = await startAdmin({ codeDirs: [CODE], canRestart: true, restarter: () => { restarts.n++; }, reviewIssues: async () => { fakeIssues.calls++; return fakeIssues.v; }, root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
     publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
@@ -212,6 +216,22 @@ export async function adminTests({ ok, section }) {
     ok((await req("/api/state", { headers: { "x-admin-token": "x" } })).status === 403, "合言葉(トークン)が違う操作は断る");
     ok((await req("/api/inbox/update", { body: { id: "1" }, headers: { origin: "https://evil.example" } })).status === 403, "ほかのサイトから送られた操作は断る");
     ok((await req("/api/events/status", { method: "POST", headers: { "content-type": "text/plain" } })).status === 415, "JSON 以外の送信は断る(フォームからの不正な送信を防ぐ)");
+
+    // プログラムの更新: 起動のあとに変わったら知らせ、ショートカットから起動したときは画面から開き直せる
+    let cst = (await req("/api/state")).json;
+    ok(cst.codeChanged === false && cst.canRestart === true, "起動したばかりなら、プログラムは変わっていない");
+    writeFileSync(join(CODE, "note.txt"), "changed but not code");
+    ok((await req("/api/state")).json.codeChanged === false, "プログラムでないファイル(.txt など)が変わっても、知らせない");
+    writeFileSync(join(CODE, "a.mjs"), "export const v = 22;\n");
+    cst = (await req("/api/state")).json;
+    ok(cst.codeChanged === true, "起動のあとにプログラム(.mjs/.js/.html/.css)が変わったら、画面で知らせる(古いプログラムのまま動いているため)");
+    ok((await req("/api/restart", { body: {}, headers: { "x-admin-token": "x" } })).status === 403 && restarts.n === 0, "開き直すのも、合言葉(トークン)がなければ断る");
+    const rs = await req("/api/restart", { body: {} });
+    await new Promise((res) => setTimeout(res, 400));
+    ok(rs.status === 200 && restarts.n === 1, "「開き直す」で、サーバーを起動し直す(ショートカットの start.cmd を、少し待ってから開く)");
+    ok(codeStamp([CODE]) !== codeStamp([join(ROOT, "no-such-dir")]) && codeStamp([join(ROOT, "no-such-dir")]) === "", "プログラムの一覧: 無いフォルダは空として扱う(止まらない)");
+    const startCmd = readFileSync(join("scripts", "admin", "start.cmd"), "utf8");
+    ok(/set KAGURA_ADMIN_START=1/.test(startCmd) && /server\.mjs %\*/.test(startCmd), "ショートカット(start.cmd)は、起動したしるしを付け、引数(--no-open)をそのまま渡す");
 
     // 概要(運営の状況)
     let r = await req("/api/overview");

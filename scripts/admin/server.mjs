@@ -4,6 +4,8 @@
 //   画面のプログラムは、このフォルダの .js(app.js が起動。メニューごとに todo.js・events.js などに分けてある)。ADMIN.md の「画面のプログラムの置き場所」
 //   予定タスク: Claude アプリのスケジュール済みタスクの次回・前回・止まっていないか(読むだけ。tasks.mjs)
 //   運営の状況(売上と目標・集客の推移・運営の信号・掲載の量と鮮度)を数字と信号で(読むだけ。overview.mjs。画面では「目標・収益」「数字」「動いているか」と、「やること」の上の信号に出す)
+//   プログラムの更新: 起動のあとに、管理者用ページのプログラム(scripts/admin・scripts/lib)が変わったら、画面の上で知らせる(古いプログラムのまま動き続けるため)。
+//     デスクトップのショートカット(start.cmd)から起動したときは、画面の「開き直す」で、このサーバーを起動し直せる
 //   定期の更新: 数時間おきに、GitHub の最新の取り込みと Gmail の読み込み・バリューコマースの報酬の読み込みを行う(refreshHours。admin.local.json で変えられる)
 //   広告の報酬: バリューコマースは API で、楽天は予定タスクが Chrome で読んで、analytics/earnings.json に(earnings.mjs)
 // 安全のため: 127.0.0.1 だけで待ち受ける / 起動ごとの合言葉(トークン)がない操作は受け付けない /
@@ -12,7 +14,7 @@
 //            そのアドレスでは、さらにスマホ用の鍵(PC の画面の QR コードで入る Cookie)がないと、画面もデータも出さない(phone.mjs)
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { readdirSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -34,12 +36,33 @@ const ASSETS = { "/": ["app.html", "text/html; charset=utf-8"], "/app.css": ["ap
   ...Object.fromEntries(readdirSync(HERE).filter((f) => /^[a-z]+\.js$/.test(f)).map((f) => [`/${f}`, [f, "text/javascript; charset=utf-8"]])) };
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 const todayJst = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+// 管理者用ページのプログラムの置き場所(ここのファイルが、起動のあとに変わったかを見る)
+export const CODE_DIRS = [HERE, join(HERE, "..", "lib")];
+/** プログラムのファイルの、名前・大きさ・更新日時の一覧(変わったかを比べるためだけ。中身は読まない) */
+export function codeStamp(dirs = CODE_DIRS) {
+  const out = [];
+  for (const d of dirs) {
+    let names = [];
+    try { names = readdirSync(d).filter((f) => /\.(mjs|js|html|css)$/.test(f)).sort(); } catch { continue; }
+    for (const f of names) { try { const st = statSync(join(d, f)); out.push(`${d}/${f}:${st.size}:${Math.round(st.mtimeMs)}`); } catch { out.push(`${d}/${f}:gone`); } }
+  }
+  return out.join("|");
+}
+/** デスクトップのショートカット(start.cmd)を、少し待ってから開き直す(このサーバーが止まって、同じ番号が空いてから) */
+export function restartViaStartCmd() {
+  const cmd = join(HERE, "start.cmd");
+  // /s /c "…": 外側の引用符だけを外して、中はそのまま cmd に渡す(start "" … の引用符を崩さない)。
+  // 新しい黒い画面は cmd /c で開く(.cmd を start でそのまま開くと cmd /K になり、次に開き直したとき、古い画面が閉じずに残る)
+  spawn("cmd.exe", ["/d", "/s", "/c", `"ping -n 3 127.0.0.1 >nul & start "" cmd.exe /c ""${cmd}" --no-open""`], { detached: true, stdio: "ignore", windowsHide: true, windowsVerbatimArguments: true }).on("error", () => {}).unref();
+}
 
 /**
  * サーバーを起動する。テストでは root(作業用のコピー)・fetchMails(偽のメール取得)・geocode・publisher(コミットと push)を差し替える。
  */
-export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite, reviewIssues = loadReviewIssues, vcFetch = globalThis.fetch } = {}) {
+export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fetchFormMails, fetchReplies = fetchLeadReplies, geocode = runGeocode, today = todayJst, publisher = publish, pending = pendingChanges, commitIds = mentionedIds, repoUrl = repoWebUrl, phoneHost = detectPhoneHost, tasks = loadTasks, sync = syncMain, autoChanged = autoDataChanged, refreshHours = loadLocal(root).refreshHours ?? 3, now = () => Date.now(), runs = loadRuns, siteCheck = checkSite, reviewIssues = loadReviewIssues, vcFetch = globalThis.fetch, codeDirs = CODE_DIRS, canRestart = process.platform === "win32" && process.env.KAGURA_ADMIN_START === "1", restarter = () => { restartViaStartCmd(); setTimeout(() => process.exit(0), 300); } } = {}) {
   const token = randomBytes(24).toString("hex");
+  // 起動したときのプログラム。変わったかは、画面を読み込むたびに比べる(ファイルの一覧と日時だけなので軽い)
+  const bootStamp = codeStamp(codeDirs);
   // スマホから使うアドレス(Tailscale の名前)。調べ終わるまでは、スマホからは開けない
   let remoteHost = "";
   const phoneReady = Promise.resolve().then(() => phoneHost(root)).then((h) => { remoteHost = h || ""; }).catch(() => {});
@@ -81,7 +104,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       earnings: earningsStatus(root, { local, today: today(), nowMs: now() }),
-      refresh: { last: lastRefresh, hours: refreshHours } };
+      refresh: { last: lastRefresh, hours: refreshHours }, codeChanged: codeStamp(codeDirs) !== bootStamp, canRestart };
   };
 
   // 営業の台帳(analytics/pipeline.json)。KPI の目標は plan.json から
@@ -183,6 +206,13 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       if (r.skipped) return [400, { error: "バリューコマースのキーが未設定です(ADMIN.md の「広告の報酬」の手順で、admin.local.json に入れてください)" }];
       ext = null;
       return { ...r, state: await state() };
+    }),
+
+    // 管理者用ページを開き直す(ショートカットから起動したときだけ)。保存・公開の途中では止めない
+    "POST /api/restart": () => serial(async () => {
+      if (!canRestart) return [400, { error: "この起動の仕方では、画面から開き直せません。黒い画面を閉じて、デスクトップのショートカットから開いてください。" }];
+      setTimeout(restarter, 200);
+      return { ok: true };
     }),
 
     // いますぐ更新(定期の更新と同じ)

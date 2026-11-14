@@ -1,7 +1,7 @@
 // 管理者用ページの画面の起動: メニューの切り替え・件数の表示・状況の読み直し。
 // 画面ごとの中身は、それぞれのファイルにある(todo.js やること / events.js 開催 / inbox.js 受信箱 / sales.js 営業 / goal.js 目標・収益 /
 // numbers.js 数字 / status.js 動いているか / settings.js 設定)。共通の部品は ui.js、グラフと状況の読み込みは dash.js
-import { h, $, S, setState, view, hooks, render, call, toast, fail, typing, at, inboxOpen, note, busy } from "./ui.js";
+import { h, $, S, setState, view, hooks, render, call, toast, fail, typing, at, inboxOpen, note, busy, TOKEN } from "./ui.js";
 import { loadOverview } from "./dash.js";
 import { todoView, todoCount } from "./todo.js";
 import { eventsView, republish } from "./events.js";
@@ -39,7 +39,10 @@ hooks.render = () => {
   setCount("more", goalN + statusN);
   // まだサイトに送っていない変更(保存はできている)は、どの画面でも上に出す
   const unpublished = !!(S.pending && (S.pending.uncommitted || S.pending.unpushed));
-  $("#banner").replaceChildren(...(unpublished ? [note("warn", "サイトに送っていない変更があります(保存はできています)。 ", h("button", { class: "btn sm", onclick: republish }, "もう一度公開する"))] : []));
+  $("#banner").replaceChildren(
+    ...(S.codeChanged ? [note("warn", "管理者用ページのプログラムが新しくなりました。いまは古いプログラムのまま動いているので、開き直してください。 ",
+      S.canRestart ? h("button", { class: "btn sm", onclick: restartAdmin }, "開き直す") : "黒い画面(Kagura Meguri Admin)を閉じて、デスクトップのショートカットから開きます。")] : []),
+    ...(unpublished ? [note("warn", "サイトに送っていない変更があります(保存はできています)。 ", h("button", { class: "btn sm", onclick: republish }, "もう一度公開する"))] : []));
   $("#loaded").textContent = view.loadedAt ? `${at(view.loadedAt)} の状況` : "";
   // 描き直しても、キーボードの位置(フォーカス)を失わない: 同じボタンがあればそこへ、なくなっていれば本文の先頭へ
   const a = document.activeElement, keep = main.contains(a) && a !== main;
@@ -62,6 +65,21 @@ addEventListener("popstate", () => { const tab = tabFromHash(); if (PAGES[tab] &
 $("#more-btn").addEventListener("click", () => $("#more").showModal());
 $("#more").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget || ev.target.closest("a")) ev.currentTarget.close(); });
 $("#ask").addEventListener("click", (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); }); // 確認の画面は、外を押すと「やめる」
+
+// ---------- 開き直す(サーバーを起動し直して、新しいプログラムで動かす) ----------
+async function restartAdmin(ev) {
+  ev.currentTarget.disabled = true;
+  try { await call("/api/restart", {}); } catch (err) { ev.currentTarget.disabled = false; return fail(err); }
+  toast("開き直しています…(10秒ほど)", { busy: true });
+  // 止まってから、新しいサーバーが応答するまで待って、画面を読み込み直す(新しい合言葉の画面になる)
+  const t0 = Date.now();
+  await new Promise((r) => setTimeout(r, 2500));
+  while (Date.now() - t0 < 60e3) {
+    try { const r = await fetch("/", { cache: "no-store" }); if (r.ok && !(await r.text()).includes(TOKEN)) { location.reload(); return; } } catch {}
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  toast("開き直せませんでした。黒い画面(Kagura Meguri Admin)が開いているかを確かめて、デスクトップのショートカットから開いてください。", true);
+}
 
 // ---------- 状況の読み直し ----------
 // 数時間おき・画面に戻ってきたとき。入力の途中は描き直さず、終わってから
