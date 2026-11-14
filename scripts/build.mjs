@@ -688,7 +688,10 @@ write("dist/map.html", layout({
   path: "/map.html", active: "/map.html",
   head: LEAFLET,
   ld: [crumbsLd([["ホーム", "/"], ["地図で探す"]]), itemListLd("神楽の開催会場", [...upcoming.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...regular.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-  body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を地図で探せます。")}<div class="mapbox"><div id="map" role="region" aria-label="開催場所の地図"></div><button type="button" class="maplock" id="maplock" aria-pressed="false" hidden>地図を動かす</button></div>
+  body: `${crumbNav([["ホーム", "/"], ["地図で探す"]])}${hero("地図で探す", "これから開催される神楽と、定期公演の会場を地図で探せます。現在地から近い順にも探せます。")}
+<div class="nearbar"><button type="button" class="btn" id="nearme" hidden>現在地から近くの開催を探す</button><span class="meta" id="nearnote" hidden>位置情報は、この端末の中で距離を計り、地図を動かすためだけに使います(当サイトには送らず、保存もしません)。</span></div>
+<p class="meta" id="nearmsg" aria-live="polite"></p><section id="nearlist" class="nearbox" aria-labelledby="near-h" hidden></section>
+<div class="mapbox"><div id="map" role="region" aria-label="開催場所の地図"></div><button type="button" class="maplock" id="maplock" aria-pressed="false" hidden>地図を動かす</button></div>
 <p class="legend meta"><span><span class="pin ev"></span>日付のある開催</span><span><span class="pin reg"></span>定期公演</span><span><span class="pin mix"></span>両方</span><span>数字は、同じ場所での件数です。</span></p>
 <p class="meta" id="mapmsg" aria-live="polite"></p>
 <p class="meta">地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院(淡色地図)</a></p>${adSlot(cfg.adsense.slotList)}
@@ -1300,7 +1303,7 @@ const securityTxt = `Contact: ${cfg.baseUrl}/contact.html\nExpires: ${expires}\n
 write("dist/.well-known/security.txt", securityTxt);
 write("dist/security.txt", securityTxt);
 // GitHub Pages は無視するが、Cloudflare Pages / Netlify へ移したときに、本物のHTTPヘッダになる設定
-write("dist/_headers", `/*\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()\n  Cross-Origin-Opener-Policy: same-origin\n`);
+write("dist/_headers", `/*\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()\n  Cross-Origin-Opener-Policy: same-origin\n`);
 console.log(`built: ${events.length} events (${upcoming.length} upcoming), ${regular.length} regular, ${urls.length} pages`);
 // 協賛枠: 契約の終わりまで載り続けるか(祭りの時期が過ぎて、載る場所がなくなる契約を知らせる。公開は止めない)
 for (const c of sponsorCoverage(sponsorsData, { events, regular, today })) {

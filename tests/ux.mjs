@@ -78,7 +78,51 @@ export async function uxTests({ ok, section, OUT }) {
   const road = markers.find((m) => m.ll[0] === 34.6), takahashi = markers.find((m) => m.ll[0] === 34.79);
   ok(road?.o.icon.className === "pin ev" && road.o.icon.html === "2" && /11月1日.*12月1日/s.test(road.popup), "まとめたピン: 件数を数字で出し、吹き出しに日付順の一覧");
   ok(takahashi?.o.icon.className === "pin mix", "日付のある開催と定期公演が同じ場所なら、両方の色");
+  ok(mdom.window.document.getElementById("nearme")?.hidden === true, "位置情報が使えないブラウザでは「現在地から近くの開催を探す」を出さない");
   mdom.window.close();
+
+  // 現在地から近い開催: ボタンを押したときだけ位置情報を1回使い、端末の中で近い順に並べる(送らない)
+  ok(mp("#nearme[hidden]").length === 1 && mp("#nearnote[hidden]").length === 1 && mp("#nearmsg[aria-live=polite]").length === 1 && mp("#nearlist[hidden]").length === 1, "現在地のボタン・説明・知らせ・一覧は、最初は隠す(使えるときだけ出す)");
+  ok(/geolocation=\(self\)/.test(read(join(OUT, "_headers"))), "Permissions-Policy で、位置情報はこのサイトの中だけ使える");
+  ok(/現在地から近くの開催を探す[^<]*ボタンを押したときだけ/.test(read(join(OUT, "privacy.html"))) && /当サイトにも外部のサービスにも送らず、保存もしません/.test(read(join(OUT, "privacy.html"))), "プライバシーポリシーに、現在地の使い方(送らない・保存しない)を書く");
+  const asked = [], fetched = [], circles = [], nearMarkers = [];
+  let geoAnswer = null;
+  const ndom = new JSDOM(read(join(OUT, "map.html")), {
+    url: "https://kagurameguri.jp/map.html",
+    runScripts: "dangerously",
+    beforeParse(w) {
+      w.matchMedia = () => ({ matches: false, addEventListener() {} });
+      w.Element.prototype.scrollIntoView = () => {};
+      w.fetch = (u) => { fetched.push(String(u)); return Promise.resolve({ ok: true, json: () => Promise.resolve(String(u).includes("events") ? evs : regsJ) }); };
+      Object.defineProperty(w.navigator, "geolocation", { configurable: true, value: { getCurrentPosition(ok, ng, o) { asked.push(o); geoAnswer = { ok, ng }; } } });
+      const mapObj = { setView() { return mapObj; }, fitBounds(b, o) { mapObj.fit = { b, o }; }, on() {}, getZoom() { return 6; }, removeLayer() {}, scrollWheelZoom: { enable() {}, disable() {} }, dragging: { enable() {}, disable() {} } };
+      w.L = {
+        map: () => mapObj, tileLayer: () => ({ addTo() {} }),
+        divIcon: (o) => o,
+        marker: (ll, o) => { const m = { ll, o, addTo() { nearMarkers.push(m); return m; }, bindPopup() { return m; }, getLatLng() { return ll; }, openPopup() { m.opened = true; } }; return m; },
+        circleMarker: (ll, o) => { const c = { ll, o, addTo() { circles.push(c); return c; }, bindTooltip() { return c; } }; return c; },
+      };
+    },
+  });
+  await new Promise((r) => setTimeout(r, 40));
+  const nd = ndom.window.document, nbtn = nd.getElementById("nearme");
+  ok(nbtn.hidden === false && nd.getElementById("nearnote").hidden === false && asked.length === 0, "位置情報が使えるときはボタンを出すが、押すまで位置情報は求めない");
+  nbtn.click();
+  ok(asked.length === 1 && asked[0].enableHighAccuracy === false && nbtn.disabled === true && /調べています/.test(nd.getElementById("nearmsg").textContent), "押すと1回だけ求める(高い精度は求めない)。調べている間はボタンを押せない");
+  geoAnswer.ok({ coords: { latitude: 34.78, longitude: 133.6 } });
+  const rows = [...nd.querySelectorAll("#nearlist .nearlist li")];
+  ok(nd.getElementById("nearlist").hidden === false && rows.map((li) => li.querySelector("a").textContent).join(",") === "C,R,A,B", "近い順に並べる(同じ場所なら日付のある開催が先、その中は日付順)", rows.map((li) => li.querySelector("a")?.textContent).join(","));
+  ok(rows.every((li) => /^(1km未満|約[\d.]+km)$/.test(li.querySelector(".km").textContent)) && /^約\d+km$/.test(rows[3].querySelector(".km").textContent), "距離は「約◯km」(10km 以上は整数、1km 未満は「1km未満」)");
+  ok(rows[0].querySelector("a").getAttribute("href") === "/events/c.html" && rows[1].querySelector("a").getAttribute("href") === "/regular/r.html" && /直線距離/.test(nd.getElementById("nearlist").textContent), "各行から開催・定期公演のページへ。直線距離であることを書く");
+  ok(nbtn.disabled === false && /4件表示しました/.test(nd.getElementById("nearmsg").textContent), "結果の件数を、読み上げ用の知らせにも出す");
+  ok(circles.length === 1 && circles[0].ll[0] === 34.78 && ndom.window.L.map().fit?.o?.maxZoom === 12, "地図に現在地の印をつけ、近い会場が入るように合わせる");
+  rows[2].querySelector(".nearjump").click();
+  ok(nearMarkers.find((m) => m.ll[0] === 34.6)?.opened === true, "「地図で見る」で、その会場のピンの吹き出しを開く");
+  ok(fetched.length === 2 && fetched.every((u) => /^\/(events|regular)\.json$/.test(u)) && !/34\.78|133\.6/.test(ndom.window.location.href), "現在地は、どこへも送らない・URL にも残さない");
+  nbtn.click();
+  geoAnswer.ng({ code: 1 });
+  ok(nbtn.disabled === false && /許可されていません/.test(nd.getElementById("nearmsg").textContent), "位置情報を断られたら、理由と別の探し方を伝え、ボタンは押せるまま");
+  ndom.window.close();
 
   section("UI: 開催ページ・定期公演ページ");
   const full = page("events/t-full.html");
