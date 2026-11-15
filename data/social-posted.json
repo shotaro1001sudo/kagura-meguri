@@ -426,5 +426,59 @@
     "dueAt": "2026-11-16T10:00:00.000Z",
     "bufferId": "6af8a3f5c5b364e0620ac1d3",
     "date": "2026-11-16"
+  },
+  {
+    "id": "r:program:岩手の神楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-16T14:00:00.000Z",
+    "bufferId": "6af9ffd0e5a113497a08732b",
+    "date": "2026-11-16"
+  },
+  {
+    "id": "r:kind:椎葉神楽",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-16T18:00:00.000Z",
+    "bufferId": "6af9ffd04f0276ab9457e965",
+    "date": "2026-11-16"
+  },
+  {
+    "id": "unnan-kagura-509d9251dc",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-16T22:00:00.000Z",
+    "bufferId": "6af9ffd0c5b364e0627635aa",
+    "date": "2026-11-17"
+  },
+  {
+    "id": "r:kind:番楽",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-17T02:00:00.000Z",
+    "bufferId": "6af9ffd0e5a113497a08736a",
+    "date": "2026-11-17"
+  },
+  {
+    "id": "r:program:岩手の神楽:2",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "dueAt": "2026-11-17T06:00:00.000Z",
+    "bufferId": "6af9ffd1ee359588b5476b43",
+    "date": "2026-11-17"
+  },
+  {
+    "id": "hamada-mimata-yokagura-2026-11-21",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "dueAt": "2026-11-17T10:00:00.000Z",
+    "bufferId": "6af9ffd1b9a106584ccab636",
+    "date": "2026-11-17"
   }
 ]
