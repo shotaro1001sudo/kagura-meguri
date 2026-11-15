@@ -431,6 +431,12 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .strip-banner img{display:block;height:150px;width:auto;max-width:none}
 /* 画像のない広告(文字のリンク)は、同じ高さの文字のタイルにする */
 .strip-banner.strip-text:not([hidden]){display:flex;align-items:center;justify-content:center;width:150px;padding:12px;border:1px solid var(--line);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.7;text-align:center;text-decoration:none;word-break:auto-phrase}
+/* 一覧の途中の帯の先頭のマス(直前の5件に合わせた宿・協賛・協賛の募集。2026-11-15)。日付・場所を上に大きく、押した先を下に小さく */
+.strip-banner.strip-text:is(.strip-stay,.strip-sp,.strip-recruit):not([hidden]){flex-direction:column;gap:2px;width:168px;line-height:1.5}
+.strip-text:is(.strip-stay,.strip-sp,.strip-recruit) b{color:var(--fg);font-weight:600}
+.strip-text.strip-stay span{color:var(--fg);font-size:var(--fs-m);font-family:var(--serif)}
+.strip-text:is(.strip-stay,.strip-sp,.strip-recruit) small{margin-top:6px;color:var(--ac2);font-size:var(--fs-2xs);text-decoration:underline;text-underline-offset:3px}
+.strip-text.strip-sp{background:var(--card)}.strip-text.strip-recruit{border-style:dashed}
 /* じゃらん・JTB・日本旅行(バリューコマースの発行コード。画像に大きさの指定がない)は正方形なので、読み込みの前から場所を取っておく */
 .vc-ad.strip-banner>a{display:block;height:150px}.vc-ad.strip-banner img{aspect-ratio:1/1}
 .strip-banner:focus-visible,.strip-banner>a:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}

@@ -97,6 +97,18 @@ export function sponsorSlot(active, page, ctx, { esc, side = false }) {
 }
 
 /**
+ * 一覧(今週末・今月・日付と場所で探す)の途中の帯に入れる、協賛のマス(2026-11-15)。
+ * その開催・定期公演のページに載る協賛(area・event・regular の置き場所)と同じものを、1件だけ(始まった日・ID の順で先のもの)。なければ空文字。
+ * 契約を data/sponsors.json に登録すれば、次のビルドから自動で出る。
+ */
+export function listSponsorTile(active, page, ctx, { esc }) {
+  const s = active.find((x) => x.placements.some((p) => matches(p, page, ctx)));
+  if (!s) return "";
+  const external = /^https:/.test(s.url), name = `sponsor/${esc(s.id)}/inlist`;
+  return `<a class="strip-banner strip-text strip-sp" href="${esc(s.url)}" rel="sponsored${external ? " noopener" : ""}"${external ? ' target="_blank"' : ""} data-sponsor="${esc(s.id)}" data-goatcounter-click="${name}" data-goatcounter-title="${name}"><b>${esc(s.title)}</b><small>提供: ${esc(s.sponsor)}</small></a>`;
+}
+
+/**
  * 協賛が「どこに・いつまで」載るかの見込み(契約の終わりまで載り続けるかを確かめる)。
  * 今日以降に載る契約(approved・end が今日以降)ごとに、いま載るページの数(種類ごと)と、載る場所が続く最後の日を返す。
  * - 開催のページは、その開催の日まで。定期公演のページは until まで(なければ続く)。

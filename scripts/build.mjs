@@ -20,7 +20,7 @@ import { englishPages, CHECKED as EN_CHECKED, SITE_EN } from "./lib/english.mjs"
 import { historyPages, historyReader, ERAS as HISTORY_ERAS, CHECKED as HISTORY_CHECKED } from "./lib/history.mjs";
 import { organizersHtml } from "./lib/organizers.mjs";
 import { sponsorHtml, sponsorArticleSampleHtml, SAMPLE_SPONSOR, SPONSOR_CSS } from "./lib/sponsor.mjs";
-import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage } from "./lib/sponsor-slots.mjs";
+import { sponsorErrors, activeSponsors, sponsorSlot, sponsorCoverage, listSponsorTile } from "./lib/sponsor-slots.mjs";
 import { mediaStatsErrors, statsFresh } from "./lib/media-stats.mjs";
 import { REGIONS, regionOf } from "./lib/util.mjs";
 import { validKey as validIndexNowKey } from "./lib/indexnow.mjs";
@@ -28,7 +28,8 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY } from "./lib/side-rail.mjs";
+import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS } from "./lib/side-rail.mjs";
+import { inlistLead, inlistCount } from "./lib/inlist-pr.mjs";
 import { phraseParts, topicGroups, phrasesHtml } from "./lib/phrases.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
@@ -246,10 +247,23 @@ const stayPlace = (x) => { const c = x.city ? x.city.replace(/^.*郡/, "") : x.p
 const prStrip = (x, placement) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, lead: rentalStripItems(visitorPlanning, x, today, placement) });
 // 探すページ(今週末・今月・日付と場所・地図・種類・都道府県)の帯。中身は、そのページの両サイドのPR枠と同じバナー。wide: 本文が広いページか。skip: すぐ上の枠と重なるバナー
 const prStripFor = (path, { wide = false, skip = [] } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path, { skip }) });
-// 一覧の途中にはさむ帯(2026-11-15 運営者の依頼)。k: 何本目か(先頭のバナーをずらす)。中身は楽天のバナーだけ
-const inlistStrip = (path, k, { wide = false } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path), inlist: true, rotate: k });
-// 開催のカードの並びに、5件ごとに帯をはさむ(あとに続くカードがあるときだけ。最後のカードのあとには入れない)
-const withStrips = (cards, path, opts) => cards.map((c, i) => c + ((i + 1) % STRIP_EVERY === 0 && i + 1 < cards.length ? inlistStrip(path, Math.floor(i / STRIP_EVERY), opts) : "")).join("");
+// 一覧の途中にはさむ帯(2026-11-15 運営者の依頼)。k: 何本目か(先頭のバナーをずらす)。バナーは楽天のものだけ。
+// 先頭(lead)に、直前の5件に合わせた宿と、協賛(なければ協賛の募集)を置く(inlist-pr.mjs)。毎日のビルドで、その日の一覧から作り直す
+const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}` } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path), inlist: true, rotate: k, lead, tag });
+// 協賛の募集のマス(料金は config.json の sponsorPrices。@N@ は帯の番号)
+const recruitTile = () => { const m = cfg.sponsorPrices?.monthly; const name = "sponsor-recruit/list@N@"; return `<a class="strip-banner strip-text strip-recruit" href="/sponsor.html" data-goatcounter-click="${name}" data-goatcounter-title="${name}"><b>ここに、地域の宿・お店の案内を載せませんか</b>${Number.isFinite(m) && m > 0 ? `<small>協賛枠 月額${m.toLocaleString("ja-JP")}円から</small>` : "<small>広告・協賛のご案内</small>"}</a>`; };
+// 一覧の1件の、帯の中身を決めるための値(場所・日付・協賛の当てはまり)。page: event か regular
+const listItem = (x, day, page) => ({ prefecture: x.prefecture, city: x.city, day: day < today ? today : day, id: x.id, page, x });
+const leadOpts = () => ({ affId: rakutenOn ? a.rakutenAffiliateId : "", today, stayArea: STAY_AREA, esc, recruit: recruitTile(), sponsorTile: (it) => listSponsorTile(sponsorsNow, it.page, it.x, { esc }) });
+// 一覧の並び(entries: [{ html, item }])に、5件ごとに帯をはさむ(あとに続く件があるときだけ。最後の件のあとには入れない)
+const withStrips = (entries, path, opts) => {
+  const total = inlistCount(entries.length, STRIP_EVERY), o = leadOpts();
+  return entries.map(({ html }, i) => {
+    if ((i + 1) % STRIP_EVERY !== 0 || i + 1 >= entries.length) return html;
+    const k = Math.floor(i / STRIP_EVERY), lead = rakutenOn ? inlistLead(entries.slice(i + 1 - STRIP_EVERY, i + 1).map((e) => e.item), k, total, o) : [];
+    return html + inlistStrip(path, k, { ...opts, lead });
+  }).join("");
+};
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 // 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
@@ -726,8 +740,15 @@ ${clientJs("map")}`,
 // ---------- 日付・場所で探す(/calendar.html。URL は前のカレンダーのまま) ----------
 // 「いつ」(今週末・今月・来月・日付の範囲)と「どこ」(地方 → 都道府県)で、開催予定を絞り込む。条件は URL に残す(共有・戻るで同じ結果)
 const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some((e) => e.prefecture === p))]).filter(([, ps]) => ps.length);
-// 検索の結果の途中にはさむ帯(スクリプトの中に文字として持つ。「<」は、スクリプトの終わりと見まちがえられないように書き換える)
-const finderStrips = JSON.stringify([0, 1, 2, 3].map((k) => inlistStrip("/calendar.html", k)).filter(Boolean)).replace(/</g, "\\u003c");
+// 検索の結果の途中にはさむ帯(スクリプトの中に文字として持つ。「<」は、スクリプトの終わりと見まちがえられないように書き換える)。
+// 帯の形は、先頭のバナーをずらした数だけ持つ。先頭のマス(@LEAD@: 直前の5件に合わせた宿・協賛)と帯の番号(@N@)は、ブラウザで検索の結果から入れる(inlist-pr.mjs の inlistLead を、そのままスクリプトに入れる)
+const jsVal = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
+const finderBannerN = stripIdsFor("/calendar.html").filter((id) => !RAIL_BANNERS.find((b) => b.id === id)?.vc).length;
+const finderStrips = jsVal(Array.from({ length: finderBannerN }, (_, k) => inlistStrip("/calendar.html", k, { lead: ["@LEAD@"], tag: "list@N@" })).filter(Boolean));
+// 契約中の協賛が当てはまる開催だけ(開催のID → 協賛のマス)。協賛がなければ空
+const finderSponsors = jsVal(Object.fromEntries(upcoming.map((e) => [e.id, listSponsorTile(sponsorsNow, "event", e, { esc })]).filter(([, h]) => h)));
+const finderLead = `var LO={affId:${jsVal(rakutenOn ? a.rakutenAffiliateId : "")},today:'',stayArea:${jsVal(STAY_AREA)},recruit:${jsVal(recruitTile())},esc:esc,sponsorTile:function(x){return SP[x.id]||''}},SP=${finderSponsors};
+${inlistLead}`;
 write("dist/calendar.html", layout({
   title: `日付・場所で神楽を探す | 開催日程の検索 | ${cfg.siteName}`,
   desc: clip(`全国の神楽の開催予定を、公演名・会場・市町村・出演団体のキーワードと、日付・地域で絞り込めます。今週末・今月の開催もすぐに探せます。公式情報をもとに日程を掲載しています。`),
@@ -767,6 +788,7 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){r
 var p2=function(n){return String(n).padStart(2,'0')};
 var ymd=function(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
 var WD=['日','月','火','水','木','金','土'];
+${finderLead}
 f.hidden=false;
 // 期間: [はじめ, おわり](日付の文字列。空は「制限なし」)。今週末は、土曜と日曜(日曜に見たときは、その日だけ)
 function span(){
@@ -797,7 +819,8 @@ function draw(){
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
   out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+rows(byM[m])+'</ol></details>'}).join('');
   // 5件ごとに、帯をはさむ(その月に、まだ続きがあるときだけ)
-  function rows(xs){var o='';xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length)o+='<li class="pr-li">'+strips[Math.floor(i/EVERY)%strips.length]+'</li>'});return o}
+  // 帯の先頭には、その帯の直前の5件に合わせた宿・協賛を入れる。帯の番号(list1・list2…)は、クリックの名前に入る
+  function rows(xs){var o='',tot=Math.max(0,Math.floor((xs.length-1)/EVERY));LO.today=ymd(new Date());xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=Math.floor(i/EVERY),its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO).join('');o+='<li class="pr-li">'+strips[k%strips.length].replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
     return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
@@ -1095,7 +1118,7 @@ ${cardFacts(r)}${kaguraTag(r.kagura)}</div></div>`;
 const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${list.map(({ r, closed }) => regCard(r) + (closed.length ? `<p class="meta">※ ${closed.map(mdLabel).join("・")}は、休演です。</p>` : "")).join("")}` : "");
 
 {
-  const items = [...wkEvents.map((e) => ({ k: e.start, html: card(e) })), ...wkRegs.flatMap(({ r, dates }) => dates.map((d) => ({ k: `${d}T${timeOf(r)}`, html: occCard(r, d) })))].sort((a, b) => a.k.localeCompare(b.k));
+  const items = [...wkEvents.map((e) => ({ k: e.start, html: card(e), item: listItem(e, e.start.slice(0, 10), "event") })), ...wkRegs.flatMap(({ r, dates }) => dates.map((d) => ({ k: `${d}T${timeOf(r)}`, html: occCard(r, d), item: listItem(r, d, "regular") })))].sort((a, b) => a.k.localeCompare(b.k));
   const after = upcoming.filter((e) => e.start.slice(0, 10) > wk.end).slice(0, 5);
   const names = [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)];
   const weekendRegions = [...new Set(names.map(x=>x.prefecture).filter(Boolean))];
@@ -1109,7 +1132,7 @@ const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${lis
 <p class="lead">この週末に観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
 ${weekendRegions.length ? `<nav class="weekend-regions chiprow" aria-label="この週末に開催のある県"><span class="meta">各県の全日程を見る</span>${weekendRegions.map(p=>`<a class="chip" href="${prefHref(p)}">${esc(p)}</a>`).join('')}</nav>` : ''}
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2></div><div class="d-top">
-${withStrips(items.map((x) => x.html), "/weekend.html", { wide: true }) || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
+${withStrips(items, "/weekend.html", { wide: true }) || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
 ${dailyBlock(wkDaily)}
 </div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}${prStripFor("/weekend.html", { wide: true })}</div>` : ""}<div class="d-rest">
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
@@ -1127,7 +1150,7 @@ ${otherWays("/weekend.html")}</div></div>`,
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
 <p class="lead">今日から月末までに観られる神楽を、日付順に並べています。</p>
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2></div><div class="d-top">
-${withStrips(tmEvents.map((e) => card(e)), "/this-month.html", { wide: true }) || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
+${withStrips(tmEvents.map((e) => ({ html: card(e), item: listItem(e, e.start.slice(0, 10), "event") })), "/this-month.html", { wide: true }) || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
 ${months.includes(mk) ? `<p class="meta"><a class="textlink" href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
