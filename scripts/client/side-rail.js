@@ -3,8 +3,9 @@
 // スクリプトが動かないときは、ずっと 96px(CSS の既定)。
 (() => {
   const rails = document.querySelectorAll(".side-rail");
-  // 日付・場所で探すページは宿の枠がないので、探す条件の枠(.finder)の上端に、地図で探すページは地図(.mapbox)の上端にそろえる
-  const anchor = document.querySelector("main .stay, main aside.aff, main .finder, main .mapbox");
+  // 日付・場所で探すページは宿の枠がないので、探す条件の枠(.finder)の上端に、地図で探すページは地図(.mapbox)の上端に、
+  // 種類で探すページは最初のカードの並び(.kagura-region .cardgrid)の上端にそろえる
+  const anchor = document.querySelector("main .stay, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid");
   if (!rails.length || !anchor) return;
   const place = () => {
     // 開催ページの右の列は画面に付いてくる(上から約97px で止まる)ので、そのあいだも宿の枠と同じ高さになる
