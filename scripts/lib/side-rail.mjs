@@ -71,11 +71,28 @@ export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = ""
     const banners = railBannersFor(path, s).filter((b) => on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
       ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner, "data-vc-media": railMedia(wide) } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
+    // 自分たちのバナー(左 = 協賛のご案内、右 = 公演の掲載のご案内)を、上から3つ目に。画面の高さが 720px 未満で消える位置(SELF_RAIL)
+    const self = SELF_RAIL[s];
+    if (banners.length) banners.splice(SELF_RAIL_AT, 0, selfBannerHtml(self, "rail-banner rail-self", `pr-self/rail-${self}`, esc));
     const items = s === "right" && car ? [car, ...banners] : banners;
     return items.length ? `<aside class="side-rail side-rail-${s === "left" ? "l" : "r"}${wide ? " w" : ""}" aria-label="広告">${items.join("")}<span class="pr pr-foot">PR</span></aside>` : "";
   };
   return side("left") + side("right");
 }
+
+/**
+ * 自分たちの PR バナー(2026-11-15 運営者の依頼「保存会等へのPRもしたいので協賛ページへ」「公演掲載のPRも。主催者の方へのページへ」)。
+ * 画像は assets/pr-sponsor.svg・assets/pr-organizers.svg(Claude が作った 600×600 の SVG。料金は入れない)。
+ * サイトの中のリンクなので、広告の印(sponsored)・別タブにしない。クリックの名前は pr-self/<置き場所>-<sponsor|organizers>(GA4 の広告のクリックには数えない)。
+ */
+export const SELF_BANNERS = {
+  sponsor: { href: "/sponsor.html", img: "/pr-sponsor.svg", alt: "神楽を観に来る人に、地域の案内を届けませんか。宿・お店・観光の案内も、保存会・神楽団の告知も。協賛のご案内を見る" },
+  organizers: { href: "/organizers.html", img: "/pr-organizers.svg", alt: "神楽の公演情報を無料で掲載します。神楽団・保存会・主催者の方へ。掲載のご案内を見る" },
+};
+/** 両サイドの PR 枠の、自分たちのバナー: 左 = 協賛、右 = 公演の掲載。上から SELF_RAIL_AT 番目(0 から)に入れる */
+export const SELF_RAIL = { left: "sponsor", right: "organizers" };
+export const SELF_RAIL_AT = 2;
+export const selfBannerHtml = (key, cls, name, esc) => { const s = SELF_BANNERS[key]; return `<a class="${cls}" href="${s.href}" data-self-pr="${key}" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"><img src="${s.img}" alt="${esc(s.alt)}" width="600" height="600" loading="lazy" decoding="async"></a>`; };
 
 // 両サイドの PR 枠が出る画面の条件(style.css の @media と同じ)。バリューコマースの広告は、この条件に合う画面でだけ読み込む(スマホでは読み込まない)
 export const railMedia = (wide) => `(min-width:${wide ? 1400 : 1280}px) and (min-height:520px)`;
@@ -106,31 +123,34 @@ export const stripIdsFor = (path, { skip = [] } = {}) => (RAIL_ORDER[path] ? [..
 const STRIP_DEFAULT = ["jr-hotel", "rentacar", "bus", "experiences", "onsen-rotenburo", "onsen"];
 /**
  * 一覧の途中にはさむ帯(2026-11-15 運営者の依頼「一覧の途中(5件ごと)に帯をはさむ」。今月・今週末・日付と場所で探すページ)。inlist: true で作る。
- * - 中身は1個だけ(ほかの帯と同じ)。楽天のバナーか、先頭のマス(宿・協賛・募集)。
- * - 4本目からは、はさむたびに、候補のバナーを1つずつずらす(rotate。毎回同じ絵が出ないように)。
+ * - 中身は1個だけ(ほかの帯と同じ)。楽天のバナーか、自分たちのバナー(公演の掲載・協賛のご案内)か、当てはまる契約中の協賛。
+ * - 5本目からは、はさむたびに、候補のバナーを1つずつずらす(rotate。毎回同じ絵が出ないように)。
  * - 見出しは h2 にしない(一覧の途中に、同じ見出しが何度も入らないように)。
  * - 何本目かで中身を分ける(INLIST_THEMES)。先頭(lead)のマスは scripts/lib/inlist-pr.mjs。
  */
 export const STRIP_EVERY = 5;
 /**
  * 一覧の途中の帯は、何本目かで中身を分ける(2026-11-15 運営者の依頼「案3」)。
- * 1本目: 宿(直前の5件に合わせた宿の検索。出せないときは宿のバナー)、2本目: 地域の協賛(なければ協賛の募集)、
- * 3本目: 体験・行き方(楽天の観光体験)、4本目から: そのページの候補のバナーを、1つずつずらして。
- * 先頭のマス(宿・協賛・募集)は inlist-pr.mjs の inlistLead が決める。契約中の協賛が当てはまる帯では、協賛がいちばん先(1個だけなので、協賛を出す)。
+ * 同日「宿は特定の場所の宿でなくてよい。バナー画像を」「協賛ページへ飛ばすバナー」「公演掲載のPRも(1本目)」で、次の並びにした:
+ * 1本目: 公演の掲載のご案内(自分たちのバナー → 主催者の方へ)、2本目: 宿(楽天の宿のバナー)、
+ * 3本目: 地域の協賛(自分たちのバナー → 協賛のご案内)、4本目: 体験・行き方(楽天の観光体験)、5本目から: そのページの候補のバナーを、1つずつずらして。
+ * self: 自分たちのバナー(SELF_BANNERS)。契約中の協賛が当てはまる帯では、協賛がいちばん先(inlist-pr.mjs の inlistLead。1個だけなので、協賛を出す)。
  */
 export const INLIST_THEMES = [
+  { h: "公演を掲載しませんか", ids: [], self: "organizers" },
   { h: "宿を探す", ids: ["onsen-rotenburo", "onsen-gensen", "station"] },
-  { h: "地域の協賛", ids: [] },
+  { h: "地域の協賛", ids: [], self: "sponsor" },
   { h: "体験・行き方", ids: ["experiences", "rentacar", "bus"] },
 ];
 /** k 本目(0 から)の帯の見出しとバナー。rotate: 先頭をずらす数 */
 export const inlistTheme = (path, k) => (k < INLIST_THEMES.length ? { ...INLIST_THEMES[k], rotate: 0 } : { h: "旅の手配", ids: stripIdsFor(path), rotate: k - INLIST_THEMES.length });
 // tag: クリックの名前の、バナーのIDの前につける印(ふだんは strip。一覧の途中の帯は list1・list2…で、何本目かを見分ける。inlist-pr.mjs)。heading: 一覧の途中の帯の見出し
-export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip", heading = "旅の手配" }) {
+// self: 楽天のバナーの代わりに出す、自分たちのバナー(SELF_BANNERS のキー)
+export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip", heading = "旅の手配", self = "" }) {
   let list = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner] && !b.vc);
   if (list.length) { const k = rotate % list.length; list = [...list.slice(k), ...list.slice(0, k)]; }
   const b = list[0];
-  const one = lead.find(Boolean) ?? (b ? `<a class="strip-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>` : "");
+  const one = lead.find(Boolean) ?? (self ? selfBannerHtml(self, "strip-banner sq strip-self", `pr-self/${tag}-${self}`, esc) : b ? `<a class="strip-banner sq" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>` : "");
   if (!one) return "";
   const h = inlist ? heading : "旅の手配";
   return `<aside class="pr-strip${wide ? " w" : ""}${inlist ? " inlist" : ""}" aria-label="${h}(広告)">${inlist ? `<p class="pr-strip-h">${h}</p>` : `<h2>${h}</h2>`}<div class="pr-strip-one">${one}</div><span class="pr pr-foot">PR</span></aside>`;
