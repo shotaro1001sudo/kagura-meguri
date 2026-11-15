@@ -7,11 +7,12 @@
   // - 公演ページ(開催・定期公演)と今週末・今月: 右の列(.d-side)の上端 = 要点の枠(日時・会場)の上端。宿の枠がない公演でも同じ高さになる
   // - 終了した開催: 右の列がないので、要点の枠(.keyinfo)の上端
   // - 都道府県: 宿の枠。日付・場所で探す: 探す条件の枠。地図で探す: 地図。種類で探す: 最初のカードの並び
-  // - 神楽の種類(各神楽のページ): 「歴史」の枠(くわしい情報の最初の枠 .kagura-folds。2026-11-15 運営者の依頼。はじめは「◯◯とは」の枠、その前はページの下のほうの宿の枠にそろえていた)
+  // - 神楽の種類(各神楽のページ): 「◯◯県の宿」の枠(県のページと同じ。2026-11-15 運営者の依頼。その日のうちに「◯◯とは」→「歴史」→ 宿の枠 と変わった)
   // - トップ: 開催予定の、月の最初の公演のカード(同日の依頼)
   // - 月別のページ: 最初の公演のカード(トップと同じ。同日の監査で、月別のページにも PR 枠を出した)
-  // 各神楽のページは、宿・体験の枠を「歴史」より上に置いた(同日「県のページと同じ並びに」)ので、「歴史」の枠を先に探す
-  const anchor = document.querySelector("main .d-side") || document.querySelector("main .kagura-folds") ||
+  // 各神楽のページは、同日「県のページと同じ並びに」で宿の枠が「歴史」より上に来たので、県のページと同じく宿の枠(aside.aff)にそろう
+  // (運営者の判断「宿の高さにして」。「歴史」の高さのままだと、PCの最初の画面にPR枠が出なかった)
+  const anchor = document.querySelector("main .d-side") ||
     document.querySelector("main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card, main h2.sr + .card");
   if (!rails.length || !anchor) return;
   const place = () => {
