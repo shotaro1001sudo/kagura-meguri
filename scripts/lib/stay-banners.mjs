@@ -34,8 +34,8 @@ export function expBannersHtml({ on, id, attrs, esc }) {
   const items = [];
   if (on.rakuten) items.push(`<a class="stay-banner" href="${esc(EXP_BANNER.url)}" ${attrs(true, `experience-rakuten/pref-${id}`)} ${data(ga("rakuten", "pref-rakuten-experiences"))}><img src="${esc(EXP_BANNER.imageUrl)}" alt="現地の観光体験を楽天トラベルで探す" width="486" height="60" loading="lazy" decoding="async"></a>`);
   if (on.vc) {
+    // 同日「体験のバナーが3つになって見づらい、2つにして」: 宿の枠と同じ 楽天+じゃらん の2つにした(アソビューの 468×60 は発行済みだが、ここには出さない)
     items.push(vcTag({ kind: "activityWide", className: "stay-banner", meta: { "data-goatcounter-click": `experience-jalan/pref-${id}`, ...ga("vc-jalan-activity", "pref-jalan-activity") } }));
-    items.push(vcTag({ kind: "asoviewWide", className: "stay-banner", meta: { "data-goatcounter-click": `experience-asoview/pref-${id}`, ...ga("vc-asoview", "pref-asoview") } }));
   }
   return items.length ? `<div class="stay-banners">${items.join("")}</div>` : "";
 }

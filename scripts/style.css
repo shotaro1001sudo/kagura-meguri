@@ -150,8 +150,8 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .tag.gold{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,var(--line))}
 /* チップ: 月・種類・県・ページ内の行き先・絞り込みなど、押して移る丸いボタン。どのページでも同じ形・同じ高さ(44px) */
-:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.regions button){display:inline-flex;align-items:center;min-height:var(--tap);margin:0;padding:6px 16px;border:1px solid var(--line);border-radius:var(--pill);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-s);text-decoration:none;cursor:pointer;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
-:is(.chip,.taglist .tag,.pref-month-nav .tag,.viewing-preparation .tag,.regions button):hover{border-color:var(--ac);color:var(--ac)}
+:is(.chip,.taglist .tag,.regions button){display:inline-flex;align-items:center;min-height:var(--tap);margin:0;padding:6px 16px;border:1px solid var(--line);border-radius:var(--pill);background:var(--card);color:var(--fg);font:inherit;font-size:var(--fs-s);text-decoration:none;cursor:pointer;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
+:is(.chip,.taglist .tag,.regions button):hover{border-color:var(--ac);color:var(--ac)}
 /* 押しやすさ: 文字だけの小さなリンク・札は、見た目は小さいまま、押せる範囲だけを上下に広げて 44px にする */
 :is(a.tag,.info .tomap,.info .tocal,.tl-item a,.textlink){position:relative}
 :is(a.tag,.info .tomap,.info .tocal,.tl-item a,.textlink)::after{content:"";position:absolute;left:0;right:0;top:50%;height:var(--tap);translate:0 -50%}
@@ -953,22 +953,19 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 @media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
   #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
 
-/* チップの行(.chiprow): 小さな言葉+チップの並び(広島県の「開催月から探す」、今週末の「各県の全日程を見る」)。
+/* チップの行(.chiprow): 小さな言葉+チップの並び(今週末の「各県の全日程を見る」など)。
    スマホでは1行にして横に送り、右端を薄くして続きがあることを示す(すぐ下の一覧を、最初の画面に近づけるため) */
-.chiprow,.viewing-preparation{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-:is(.chiprow,.viewing-preparation) .meta{margin-right:4px;font-size:var(--fs-xs)}
-.pref-month-nav{margin:20px 0 6px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.chiprow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.chiprow .meta{margin-right:4px;font-size:var(--fs-xs)}
 .weekend-regions,.kagura-regions{margin:0 0 4px}.month-regions{margin:0 0 20px}
 /* カードの格子(種類の一覧): 広い画面では2列にして、長い一覧を短くする */
 .cardgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}.cardgrid>.card{margin:0}
 .kagura-region h2{scroll-margin-top:94px}.kagura-regions+.kagura-region h2{margin-top:36px}
-.viewing-preparation{margin:12px 0 0}
 @media(max-width:560px){
   .chiprow{flex-wrap:nowrap;overflow-x:auto;margin-left:-18px;margin-right:-18px;padding:4px 18px;scrollbar-width:none;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 36px),transparent)}
   .chiprow::-webkit-scrollbar{display:none}
   .chiprow>*{flex:none}
-  .pref-month-nav{padding-top:10px;padding-bottom:10px}
   /* 種類で探すの「地方から探す」は、横に送らず、同じ大きさのボタンを2列の格子に並べて、全部の地方を一目で見せる
      (2026-11-15 運営者の依頼「横に隠れていて、スライドすればいいのか分からない」。運営者が格子のボタンを選んだ) */
   .chiprow.kagura-regions{display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:visible;margin:0 0 4px;padding:0;-webkit-mask-image:none;mask-image:none}
@@ -1000,11 +997,8 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .aff .stay-banners{flex-wrap:nowrap}.aff .stay-banner{flex:1 1 0;min-width:0}.aff .stay-banner img{width:100%}
 .d-side .aff .stay-banners{flex-direction:column}
 @media(max-width:560px){.aff .stay-banners{flex-direction:column}}
-/* 県のページの「◯◯県の体験」: 宿の枠のすぐ下に、同じ形の枠で続ける */
+/* 県のページの「◯◯県の体験」: 宿の枠のすぐ下に、同じ形の枠で続ける。バナーは宿の枠と同じ 楽天+じゃらん の2つ(横並び。スマホは縦。同意がなく楽天だけのときは全幅) */
 :is(.aff,.pref-stay)+.aff-exp{margin-top:16px}
-/* バナーは3つ(楽天・じゃらん・アソビュー)。宿の枠(2つ横並び)と同じ大きさにするため、1段に2つまで。同意がなく楽天だけのときは、宿の枠の楽天と同じく全幅 */
-@media(min-width:561px){.aff-exp .stay-banners{flex-wrap:wrap;justify-content:center}.aff-exp .stay-banner{flex:0 1 calc(50% - 5px)}
-.aff-exp .stay-banners:not(:has(.vc-ad:not([hidden]))) .stay-banner{flex-basis:100%}}
 /* 種類・県の解説、ガイドの囲み */
 .about{padding:4px 0}
 /* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */

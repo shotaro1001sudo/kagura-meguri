@@ -26,5 +26,5 @@ export function stayPlanningTests({ ok, section }) {
   const hiroshima = load(readFileSync('dist-test-ga4-affiliate/events/t-timeunknown.html', 'utf8'));
   ok(hiroshima('.viewing-preparation,.guide-link').length === 0, '広島の公演のページも、観覧前に確認を置かない');
   const pref = load(readFileSync('dist-test-ga4-affiliate/pref/広島県.html', 'utf8'));
-  ok(pref('.stay-planning,.stay-cond').length === 0 && pref('.viewing-preparation').length === 1, '県のページは変えない(公演固有の案内を混ぜず、広島の観覧準備の案内は残す)');
+  ok(pref('.stay-planning,.stay-cond').length === 0 && pref('.viewing-preparation').length === 0, '県のページは、公演固有の案内を混ぜない(広島の「観覧前に確認」も、2026-11-15 運営者の依頼で削除)');
 }

@@ -1,6 +1,6 @@
 import { reservationLabel } from '../scripts/lib/reservation.mjs';
 // Revenue UX regression: keep editorial navigation helpful and sponsored links intact.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { runInNewContext } from "node:vm";
@@ -32,33 +32,28 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "スマホの元のヒーローサイズとレイアウトを保持する");
   ok(!css.includes(".home-find{") &&
     !css.includes("main .home-hero{min-height:clamp(") &&
-    css.includes(".pref-month-nav") &&
+    !css.includes(".pref-month-nav") && !css.includes(".viewing-preparation") &&
     !css.includes(".home-search-link") && !css.includes(".discovery-prefs"),
-    "置かなくなった検索入口(.home-find・.home-search-link・.discovery-prefs)の CSS を残さず、月別の配置(.pref-month-nav)は保つ");
+    "置かなくなった入口(.home-find・.home-search-link・.discovery-prefs・広島県の「開催月から探す」「観覧前に確認」)の CSS を残さない");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
   ok(h("title").text().startsWith("広島神楽スケジュール") &&
     h("h1").text().trim() === "広島県の神楽" &&
     (h('meta[name="description"]').attr("content") || "").includes("公式情報をご確認ください"),
     "広島のスケジュールを示すmetadataと既存H1・公式情報への案内");
+  { // 2026-11-15 運営者の依頼: 県のページの冒頭の説明は、その県の代表的な神楽と特徴の概要(3行程度。調べた参考つき)。data/pref-leads.json
+    const leads = JSON.parse(read("data/pref-leads.json"));
+    const badData = Object.entries(leads).filter(([, l]) => !(typeof l.text === "string" && (l.text.match(/。/g) || []).length >= 2 && (l.text.match(/。/g) || []).length <= 4 && l.text.endsWith("。") && Array.isArray(l.refs) && l.refs.length >= 1 && l.refs.every((r) => r.name && /^https?:\/\//.test(r.url)))).map(([p]) => p);
+    const pages = readdirSync(join(OUT, "pref")).filter((f) => f.endsWith(".html")).map((f) => [f.replace(/\.html$/, ""), cheerio.load(read(join(OUT, "pref", f)))]);
+    const badPage = pages.filter(([p, $$]) => leads[p] && !($$("main p.lead").length === 1 && $$("main p.lead").text() === leads[p].text && $$("main p.lead a").toArray().every((a) => /^\/kagura\//.test($$(a).attr("href"))) && leads[p].refs.every((r) => $$(`a[href="${r.url}"]`).length >= 1))).map(([p]) => p);
+    ok(Object.keys(leads).length > 0 && badData.length === 0 && pages.some(([p]) => leads[p]) && badPage.length === 0, "県のページの冒頭は、その県の代表的な神楽と特徴の概要(2〜4文。参考の出典つき。神楽の種類の名前は種類のページへのリンク)", [...badData, ...badPage].join(" "));
+  }
   const months = h(".pref-month");
-  const nav = h(".pref-month-nav a[href^='#hiroshima-2']");
-  ok(h(".pref-month-nav .meta").length === 1 &&
-    h(".pref-month-nav a").toArray().every((x) => h(x).hasClass("tag")),
-    "広島の目次を従来のtagとmeta書式で表示する");
-  ok(months.length > 0 && months.length === nav.length,
-    "開催月の目次リンク数と月別セクション数が一致する");
-  const hrefs = nav.map((_, a) => h(a).attr("href").slice(1)).get();
+  // 2026-11-15 運営者の依頼: 「開催月から探す」の目次は削除(月別の見出しのまとまりは残す)
   const ids = months.map((_, s) => h(s).find("h2").first().attr("id")).get();
-  ok(hrefs.join() === ids.join() && new Set(ids).size === ids.length,
-    "各月のリンク先が存在し、重複しない");
-  ok(months.toArray().every((node) => {
-    const section = h(node);
-    const id = section.find("h2").attr("id");
-    const count = section.find(".card").length;
-    const linkText = h(".pref-month-nav a[href='#" + id + "']").text();
-    return count > 0 && linkText.includes(count + "件");
-  }), "各月の表示件数と、実際の公演カード数が一致する");
+  ok(h(".pref-month-nav").length === 0 && h("main").text().indexOf("開催月から探す") === -1 &&
+    months.length > 0 && new Set(ids).size === ids.length && months.toArray().every((node) => h(node).find(".card").length > 0),
+    "広島: 「開催月から探す」の目次は置かず、月別の見出しのまとまり(重複しない・空でない)は残す");
   ok(months.toArray().every((node) => {
     const section = h(node);
     const key = section.find("h2").attr("id").replace("hiroshima-", "");
@@ -87,9 +82,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "出典には安全な外部リンクを使用する");
   ok(css.includes(".event-facts a{position:relative;z-index:1}"),
     "出典リンクがカード全体の詳細リンクに遮られない");
-  ok(h(".pref-month-nav a[href='#hiroshima-stay']").length === 0 &&
-    h("#hiroshima-stay .aff").length === 0,
-    "広告設定がない場合は宿探しの目次と枠を表示しない");
+  ok(h("#hiroshima-stay .aff").length === 0,
+    "広告設定がない場合は宿探しの枠を表示しない");
 
   const other = cheerio.load(read(join(OUT, "pref/宮崎県.html")));
   ok(other(".pref-month-nav,.pref-month").length === 0 && other(".event-facts").length === other(".card").length &&
@@ -101,18 +95,10 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     ok(page('.event-facts').length === page('.card').length, `${path}: 公演比較情報が各カードに1回表示される`);
   }
 
-  section("広島県: 日程から既存の観覧準備情報へ案内");
-  const guide = cheerio.load(read(join(OUT, "guide.html")));
-  const preparation = h(".viewing-preparation");
-  ok(preparation.length === 1 && preparation.attr("aria-label") === "観覧前の準備" &&
-    preparation.find("a").length === 2,
-    "広島県一覧の公演情報付近に観覧準備の案内を1か所置く");
-  ok(preparation.find("a").toArray().every((node) => {
-    const href = h(node).attr("href");
-    return href.startsWith("/guide.html#") && guide(`[id='${href.split("#")[1]}']`).length === 1;
-  }), "案内先は既存ガイドの実在する章で、リンク切れがない");
-  ok(other(".viewing-preparation").length === 0 && home(".viewing-preparation").length === 0,
-    "他県一覧とトップには観覧準備リンクを追加しない");
+  section("観覧前に確認の案内は置かない");
+  // 2026-11-15 運営者の依頼: 広島県の一覧の「観覧前に確認」も削除した
+  ok(h(".viewing-preparation").length === 0 && other(".viewing-preparation").length === 0 && home(".viewing-preparation").length === 0 && h("main").text().indexOf("観覧前に確認") === -1,
+    "県の一覧(広島を含む)とトップに、観覧前に確認の案内を置かない");
   // 公演のページには、観覧前に確認・ガイドへの案内を置かない(2026-10-30 運営者の判断。広島県の一覧の案内は残す)
   const mapped = cheerio.load(read(join(OUT, "events/t-timeunknown.html")));
   ok(mapped(".viewing-preparation").length === 0 && mapped("a[href='#venue-access'],#venue-access").length === 0 &&
@@ -155,9 +141,9 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
   if (built.status === 0) {
     const a = cheerio.load(read("dist-test-revenue-ux/pref/広島県.html"));
     const links = a("#hiroshima-stay .stay-banner");
-    ok(a(".pref-month-nav a[href='#hiroshima-stay']").length === 1 &&
+    ok(a(".pref-month-nav").length === 0 &&
        a("#hiroshima-stay").length === 1,
-       "広告を設定すると月の目次から宿探しへ移動できる");
+       "広告を設定すると宿探しの枠を出す(月の目次は 2026-11-15 に削除)");
     ok(links.length === 2 &&
        links.toArray().every((x) => { const link=a(x).is("a")?a(x):a(x).find("a"); return link.length===1 && link.attr("rel")?.includes("sponsored") && link.attr("rel")?.includes("noopener") && (!a(x).is("[data-vc-ad]") || link.attr("rel")?.includes("nofollow")); }),
        "じゃらん・楽天トラベルの広告リンクとPR属性を維持する");
