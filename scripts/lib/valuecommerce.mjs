@@ -1,11 +1,14 @@
 // Owner-issued public ad tags, checked 2026-10-25. Do not reuse text PID 892725735 for MyLink.
-export const VC = Object.freeze({sid:'3784232',stay:'892732997',activity:'892732911',banner:'892732859'});
+// rail: PC の両サイドの PR 枠の じゃらんnet バナー(広告ID 2761812「じゃらん限定プラン」250x250。2026-11-15 に本人のアカウントで発行)
+export const VC = Object.freeze({sid:'3784232',stay:'892732997',activity:'892732911',banner:'892732859',rail:'892748424'});
+const BANNERS=new Set(['banner','rail']);
+const BANNER_ALT={banner:'じゃらんnetの宿泊予約',rail:'じゃらん限定プランの宿をじゃらんnetで探す'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const vcEnabled=(aff,kind)=>aff?.allowed===true && aff.sid===VC.sid && aff.pid===VC[kind];
 export function vcHref(kind,destination) {
-  if(!['stay','activity','banner'].includes(kind))throw Error('Unknown VC placement');
+  if(!['stay','activity',...BANNERS].includes(kind))throw Error('Unknown VC placement');
   let suffix='';
-  if(kind!=='banner') {
+  if(!BANNERS.has(kind)) {
     const u=new URL(destination);
     if(u.origin!=='https://www.jalan.net'||u.username||u.password||u.hash||
       (kind==='stay'?u.pathname!=='/uw/uwp2011/uww2011init.do':!/^\/activity\/\d{6}\/$/.test(u.pathname)))throw Error('Invalid issued MyLink destination');
@@ -21,6 +24,7 @@ export function vcTag({kind,destination,text,meta={},className='',id=''}) {
     if(!/^data-(goatcounter-(click|title)|affiliate-(category|partner|placement|id)|banner-partner)$/.test(key))throw Error('Invalid VC wrapper metadata');
     return `${key}="${esc(value)}"`;
   }).join(' ');
-  const img=`<img src="//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=${VC.sid}&amp;pid=${pid}"${kind==='banner'?'':' height="1" width="0"'} border="0" alt="${kind==='banner'?'じゃらんnetの宿泊予約':''}">`;
-  return `<span data-vc-ad="${kind}" class="vc-ad ${esc(className)}"${id?` id="${esc(id)}"`:''} ${attrs} hidden><template><a href="${esc(href)}" rel="nofollow sponsored noopener noreferrer" target="_blank">${img}${kind==='banner'?'':esc(text)}</a></template></span>`;
+  const banner=BANNERS.has(kind);
+  const img=`<img src="//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=${VC.sid}&amp;pid=${pid}"${banner?'':' height="1" width="0"'} border="0" alt="${banner?BANNER_ALT[kind]:''}">`;
+  return `<span data-vc-ad="${kind}" class="vc-ad ${esc(className)}"${id?` id="${esc(id)}"`:''} ${attrs} hidden><template><a href="${esc(href)}" rel="nofollow sponsored noopener noreferrer" target="_blank">${img}${banner?'':esc(text)}</a></template></span>`;
 }

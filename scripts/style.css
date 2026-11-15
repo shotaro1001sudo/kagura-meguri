@@ -398,9 +398,10 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .rail-banner img{display:block;width:100%;height:auto}
 .side-rail .pr-foot{margin:0 0 0 auto}
 @media(hover:hover){.rail-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
-.rail-banner:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
-@media(max-height:719px){.side-rail .rail-banner:nth-of-type(n+3){display:none}}
-@media(max-height:519px){.side-rail .rail-banner:nth-of-type(n+2){display:none}}
+:is(.rail-banner,.rail-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+/* 数えるのは、見えているバナーだけ(じゃらんは広告の同意がないと hidden のまま) */
+@media(max-height:719px){.side-rail .rail-banner:nth-child(n+3 of .rail-banner:not([hidden])){display:none}}
+@media(max-height:519px){.side-rail .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
