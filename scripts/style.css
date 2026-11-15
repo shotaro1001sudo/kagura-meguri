@@ -195,13 +195,16 @@ a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .planning-nearby .nearby-main:not(:has(>.vc-ad:not([hidden]))){display:none}
 /* 体験の予約サービスの画像バナー(2026-11-15 運営者の依頼): 枠の幅いっぱいに、縦に並べる */
 .planning-nearby .nearby-others{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
-.planning-nearby .nearby-banner:not([hidden]){display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
-.planning-nearby .nearby-banner img{display:block;width:100%;height:auto}
+:is(.planning-nearby,.experience-banner) .nearby-banner:not([hidden]){display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+:is(.planning-nearby,.experience-banner) .nearby-banner img{display:block;width:100%;height:auto}
 /* じゃらん・アソビュー(バリューコマースの発行コード。画像に大きさの指定がない)は、読み込みの前から場所を取っておく */
-.planning-nearby .vc-ad.nearby-banner>a{display:block}
-.planning-nearby .vc-ad.nearby-banner[data-vc-ad="activityBanner"] img{aspect-ratio:3/1}.planning-nearby .vc-ad.nearby-banner[data-vc-ad="asoview"] img{aspect-ratio:6/1}
-@media(hover:hover){.planning-nearby .nearby-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
-.planning-nearby :is(.nearby-banner,.nearby-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+:is(.planning-nearby,.experience-banner) .vc-ad.nearby-banner>a{display:block}
+:is(.planning-nearby,.experience-banner) .vc-ad.nearby-banner[data-vc-ad="activityBanner"] img{aspect-ratio:3/1}.planning-nearby .vc-ad.nearby-banner[data-vc-ad="asoview"] img{aspect-ratio:6/1}
+@media(hover:hover){:is(.planning-nearby,.experience-banner) .nearby-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
+:is(.planning-nearby,.experience-banner) :is(.nearby-banner,.nearby-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+/* 周辺体験のページ: 都道府県の一覧の上に、じゃらん遊び・体験の画像バナーを1つ(広告の同意がないと出ないので、そのときは場所も取らない) */
+.experience-banner{max-width:420px;margin:18px 0 6px}
+.experience-banner:not(:has(>.vc-ad:not([hidden]))){display:none}
 .planning-nearby .nearby-sub{display:flex;flex-direction:column;align-items:flex-start;margin:12px 0 0;padding:6px 0 0;border-top:1px solid var(--line)}
 .planning-nearby .nearby-sub:empty{display:none}
 .planning-nearby .nearby-sub>.nearby-more,.planning-nearby .nearby-sub>.pc-more>summary{display:flex;align-items:center;gap:8px;width:fit-content;min-height:var(--tap);padding:4px 0;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;list-style:none;cursor:pointer}
@@ -254,10 +257,10 @@ a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .experience-region>summary:hover b{color:var(--ac)}
 .experience-region>summary:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:var(--radius)}
 .experience-region>.experience-areas{padding:2px 18px 18px}
-.experience-areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.experience-areas{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
 .experience-area{display:flex;min-width:0;scroll-margin-top:170px}
 .experience-area>.vc-ad:not([hidden]){display:flex;width:100%}
-.experience-area :is(.vc-ad>a,.experience-unavailable){display:flex;align-items:center;width:100%;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.6;text-decoration:none}
+.experience-area :is(.vc-ad>a,.experience-unavailable){display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--tap);padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.6;text-decoration:none}
 .experience-area :is(.vc-ad>a,.experience-unavailable):hover{border-color:var(--ac);color:var(--ac)}
 .experience-area:target :is(.vc-ad>a,.experience-unavailable){outline:2px solid var(--ac);outline-offset:2px}
 @media(max-width:640px){.planning-links,.planning-grid{grid-template-columns:minmax(0,1fr)}

@@ -10,7 +10,7 @@ const experienceArea = p => experienceRegions.find(x=>x.prefecture===p);
 const areaId = x => 'experience-pref-'+new URL(x.url).pathname.split('/')[2];
 // 体験(じゃらん遊び・体験)専用にバリューコマースで発行したpid。宿のpidは使わない。aff={sid,pid}が揃うときだけ広告リンクにする。
 const affOn = aff => vcEnabled(aff,"activity");
-const areaTag = (x,placement,className='') => vcTag({kind:'activity',destination:x.url,text:x.prefecture+'の体験をじゃらんで探す',className,meta:{'data-goatcounter-click':'experience-jalan/'+areaId(x).replace('experience-pref-',''),'data-affiliate-category':'experiences','data-affiliate-partner':'vc-jalan-activity','data-affiliate-placement':placement,'data-affiliate-id':areaId(x)}});
+const areaTag = (x,placement,className='',text=x.prefecture+'の体験をじゃらんで探す') => vcTag({kind:'activity',destination:x.url,text,className,meta:{'data-goatcounter-click':'experience-jalan/'+areaId(x).replace('experience-pref-',''),'data-affiliate-category':'experiences','data-affiliate-partner':'vc-jalan-activity','data-affiliate-placement':placement,'data-affiliate-id':areaId(x)}});
 const adNote = aff => affOn(aff)?'<span class="pr">広告</span> じゃらん遊び・体験へのアフィリエイトリンクです。予約で当サイトに報酬が入ることがあります。':'広告リンクではありません。';
 // 広告の印: 枠ごとに1つ、枠の下に「PR」だけを置く(2026-11-14 運営者の依頼。リンクの文に「(広告)」は付けない。読み上げの aria-label には残す)
 export const PR_FOOT = '<span class="pr pr-foot">PR</span>';
@@ -19,9 +19,12 @@ const prFoot = aff => affOn(aff)?PR_FOOT:'';
 const shortPref = p => p==='北海道'?p:p.replace(/[都府県]$/,'');
 // 広告(同意が要る)を読み込めないときは、同じ県の「じゃらん遊び・体験」へ広告ではない普通のリンクで案内する(押せない飾りにしない。報酬は発生しない)
 // 47都道府県は地方ごとに折りたたむ。広告の文は発行原本のままなので、並べ方で探しやすくする。
+// 2026-11-15 運営者の依頼: 一覧の上に、じゃらん遊び・体験の公式の画像バナーを1つ置く(飛び先は全国のトップ)。県ごとのリンクは、県名だけの文字にする(飛び先は県ごと)。
+// 県ごとのリンクに画像は付けない: MyLink に付けてよいのは「じゃらんのサイトの中にある画像」だけで、公式バナー(バリューコマースのサーバーにある)は当たらないため
 export function experienceDirectory(aff) {
   if (!affOn(aff)) return "";
-  return `<section class="planning-section" aria-labelledby="experience-area-h"><h2 id="experience-area-h">訪問先の都道府県から探す</h2><p>全国47都道府県の体験一覧へ進めます。神楽の種類や、このサイトの公演掲載の有無にかかわらず利用できます。</p><p class="meta annotation">リンク先は「じゃらん遊び・体験」です。県内全域の検索なので、会場からの距離・市町村・体験日・所要時間をリンク先で確認してください。${adNote(aff)}</p><div class="experience-regions">${REGIONS.map(([name,prefs],i)=>`<details id="experience-region-${i}" class="experience-region"><summary><b>${esc(name)}</b><span>${prefs.map(shortPref).map(esc).join('・')}</span></summary><div class="experience-areas">${prefs.map(p=>{const x=experienceArea(p);return `<div class="experience-area" id="${areaId(x)}">${areaTag(x,'experience_directory')}<a class="experience-unavailable" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(p)}</a></div>`;}).join('')}</div></details>`).join('')}</div><p class="meta annotation">地域リンクの出典: <a href="${directory.source}" target="_blank" rel="noopener noreferrer">じゃらん遊び・体験の全国エリア一覧</a> ／ 確認日: ${directory.checked}。プラン数・価格・空き状況はこのサイトで表示していません。</p>${PR_FOOT}</section>`;
+  const banner=vcTag({kind:'activityBanner',className:'nearby-banner',meta:{'data-goatcounter-click':'experience-jalan/directory-banner','data-affiliate-category':'experiences','data-affiliate-partner':'vc-jalan-activity','data-affiliate-placement':'experience_directory','data-affiliate-id':'jalan-activity-banner'}});
+  return `<section class="planning-section" aria-labelledby="experience-area-h"><h2 id="experience-area-h">訪問先の都道府県から探す</h2><p>全国47都道府県の体験一覧へ進めます。神楽の種類や、このサイトの公演掲載の有無にかかわらず利用できます。</p><div class="experience-banner">${banner}</div><p class="meta annotation">リンク先は「じゃらん遊び・体験」です。県内全域の検索なので、会場からの距離・市町村・体験日・所要時間をリンク先で確認してください。${adNote(aff)}</p><div class="experience-regions">${REGIONS.map(([name,prefs],i)=>`<details id="experience-region-${i}" class="experience-region"><summary><b>${esc(name)}</b><span>${prefs.map(shortPref).map(esc).join('・')}</span></summary><div class="experience-areas">${prefs.map(p=>{const x=experienceArea(p);return `<div class="experience-area" id="${areaId(x)}">${areaTag(x,'experience_directory','',p)}<a class="experience-unavailable" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(p)}</a></div>`;}).join('')}</div></details>`).join('')}</div><p class="meta annotation">地域リンクの出典: <a href="${directory.source}" target="_blank" rel="noopener noreferrer">じゃらん遊び・体験の全国エリア一覧</a> ／ 確認日: ${directory.checked}。プラン数・価格・空き状況はこのサイトで表示していません。</p>${PR_FOOT}</section>`;
 }
 export const CHECKED = '2026-10-25';
 const esc = (s='') => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

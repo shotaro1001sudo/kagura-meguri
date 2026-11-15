@@ -187,8 +187,12 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   section('楽天の車移動・じゃらん体験: 実際の生成リンクのGA4回帰');
   const directoryHtml=experienceDirectory(aff);
   const directoryPage=cheerio.load(directoryHtml);
-  const areaIds=directoryPage('[data-affiliate-id]').toArray().map(a=>directoryPage(a).attr('data-affiliate-id'));
+  const areaIds=directoryPage('.experience-area [data-affiliate-id]').toArray().map(a=>directoryPage(a).attr('data-affiliate-id'));
   ok(areaIds.length===47&&new Set(areaIds).size===47&&areaIds.every(id=>/^experience-pref-\d{6}$/.test(id)), '体験IDは既存の公開地域コードから作り、47県で重複しない');
+  // 2026-11-15 運営者の依頼: 一覧の上に、じゃらん遊び・体験の公式の画像バナーを1つ。県ごとのリンクは、県名だけの文字(飛び先は県ごと。画像は付けない)
+  { const bn=directoryPage('.experience-banner [data-vc-ad="activityBanner"]'),links=directoryPage('.experience-area [data-vc-ad] a');
+    ok(bn.length===1&&bn.find('a').attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid='+VC.activityBanner&&bn.find('img').attr('src')==='//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid='+VC.activityBanner&&bn.attr('data-affiliate-placement')==='experience_directory'&&bn.attr('data-affiliate-partner')==='vc-jalan-activity'&&directoryPage('.experience-banner').nextAll('.experience-regions').length===1,'周辺体験のページ: 都道府県の一覧の上に、じゃらん遊び・体験の画像バナーを1つ(発行コードのまま)');
+    ok(links.length===47&&links.toArray().every(a=>PREFECTURES.includes(directoryPage(a).text())&&directoryPage(a).find('img').length===1&&directoryPage(a).find('img').attr('width')==='0'&&new URL(directoryPage(a).attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===experienceRegions.find(x=>x.prefecture===directoryPage(a).text()).url)&&!directoryHtml.includes('の体験をじゃらんで探す'),'周辺体験のページ: 県ごとのリンクは県名だけの文字で、飛び先はその県の体験(バナー画像は付けない)'); }
   const nearbyHtml=experienceSection({prefecture:'高知県'},today,aff);
   ok(cheerio.load(nearbyHtml)('[data-affiliate-id]').attr('data-affiliate-id')===directoryPage('[data-affiliate-id=experience-pref-390000]').attr('data-affiliate-id'),'同じ地域のIDは全国入口と公演内で安定している');
   const rendered=[

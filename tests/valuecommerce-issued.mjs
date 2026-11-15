@@ -12,7 +12,7 @@ export function valuecommerceIssuedTests({ok,section}) {
   const fallbackDom=new JSDOM('<style>'+readFileSync('scripts/style.css','utf8')+'</style>'+emptyDirectory,{runScripts:'outside-only'});
   const fw=fallbackDom.window,fd=fw.document;
   const fallbackCount=()=>[...fd.querySelectorAll('.experience-unavailable')].filter(n=>fw.getComputedStyle(n).display!=='none').length;
-  const activeLinks=()=>fd.querySelectorAll('[data-vc-ad] > a').length;
+  const activeLinks=()=>fd.querySelectorAll('.experience-area [data-vc-ad] > a').length; // 県ごとのリンク(一覧の上の画像バナーは数えない)
   ok(fallbackCount()===47&&activeLinks()===0&&fd.querySelectorAll('img').length===0,'広告/CMPスクリプト停止時も47県の非広告案内があり外部画像なし');
   ok([...fd.querySelectorAll('a.experience-unavailable')].length===47&&[...fd.querySelectorAll('a.experience-unavailable')].every(a=>/^https:\/\/www\.jalan\.net\/activity\/\d{6}\/\?fromPage=search-area$/.test(a.getAttribute('href'))&&!/sponsored/.test(a.getAttribute('rel'))&&!a.hasAttribute('data-affiliate-category'))&&!fd.querySelector('.experience-display-help'),'広告を読み込めないときは、同じ県の体験一覧へ広告ではない普通のリンクで案内する(技術的な説明文は出さない)');
   fw.eval(readFileSync('scripts/client/valuecommerce-consent.js','utf8'));
@@ -44,7 +44,7 @@ export function valuecommerceIssuedTests({ok,section}) {
   const policy=cspFor(ads.join(''),cfg),strict=cspFor(ads.join(''),{...cfg,adsense:{client:''}});
   ok(policy.split(';').find(x=>x.trim().startsWith('img-src ')).split(' ').includes('https:')&&!strict.includes('ad.jp.ap.valuecommerce.com')&&!strict.split(';').find(x=>x.trim().startsWith('img-src ')).split(' ').includes('https:'),'本番既存HTTPS許可を利用し厳格CSPにVCドメインを追加しない');
   const directory=experienceDirectory({sid:VC.sid,pid:VC.activity,allowed:true}),areas=cheerio.load(directory);
-  ok(areas('[data-vc-ad]').length===47 && experienceRegions.every(x=>areas(`a[href*="${encodeURIComponent(x.url)}"]`).length===1),'47県は正式MyLinkと既存の地域対応を維持');
+  ok(areas('.experience-area [data-vc-ad]').length===47 && areas('.experience-banner [data-vc-ad="activityBanner"]').length===1 && areas('[data-vc-ad]').length===48 && experienceRegions.every(x=>areas(`a[href*="${encodeURIComponent(x.url)}"]`).length===1),'47県は正式MyLinkと既存の地域対応を維持');
   ok(experienceDirectory({sid:VC.sid,pid:VC.activity,allowed:false})==='','CSP/同意管理構成が未対応なら非表示');
   const script=readFileSync('scripts/client/valuecommerce-consent.js','utf8');
   for (const ready of [false,true]) for (const marketing of [false,true]) {
