@@ -24,7 +24,7 @@ document.addEventListener("click", (event) => {
   }
 
   const label = link.getAttribute("data-goatcounter-click") || "";
-  const match = /^(stay|aff|banner|rail)-(jalan|rakuten|amazon)\/(.+)$/.exec(label);
+  const match = /^(stay|aff|banner|rail)-(jalan|rakuten|amazon|jtb|nta)\/(.+)$/.exec(label);
   if (!match || typeof window.gtag !== "function") return;
 
   window.gtag("event", "affiliate_click", {

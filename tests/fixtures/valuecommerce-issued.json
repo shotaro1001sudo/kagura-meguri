@@ -65,6 +65,20 @@
       "issuedAt": "2026-11-15",
       "note": "じゃらんnet 広告ID 2761812(250x250 じゃらん限定プラン)。管理画面の「広告作成」で発行した非JSのコード",
       "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748424\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748424\" border=\"0\"></a>"
+    },
+    {
+      "kind": "railJtb",
+      "text": "",
+      "issuedAt": "2026-11-15",
+      "note": "JTB 国内宿泊(プログラムID 2024978)広告ID 2444891(300x300 温泉宿 温泉旅行)",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748443\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748443\" border=\"0\"></a>"
+    },
+    {
+      "kind": "railNta",
+      "text": "",
+      "issuedAt": "2026-11-15",
+      "note": "日本旅行(プログラムID 2023030)広告ID 2769016(250x250 JR・新幹線+ホテルパック)",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748444\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748444\" border=\"0\"></a>"
     }
   ]
 }

@@ -29,7 +29,7 @@ export function valuecommerceIssuedTests({ok,section}) {
   for(const example of evidence.examples) {
     const original=cheerio.load(example.code), href=original('a').attr('href');
     const destination=new URL(href,'https://kagurameguri.jp').searchParams.get('vc_url');
-    const markup=vcTag({...example,destination,meta:{'data-goatcounter-click':example.kind==='banner'?'banner-jalan/test':example.kind==='rail'?'rail-jalan/test':'stay-jalan/test'}});
+    const markup=vcTag({...example,destination,meta:{'data-goatcounter-click':example.kind==='banner'?'banner-jalan/test':example.kind.startsWith('rail')?'rail-jalan/test':'stay-jalan/test'}});
     const generated=cheerio.load(markup),img=generated('img');
     ok(generated('a').attr('href')===href && img.attr('src')===original('img').attr('src'),'公式原本hrefと画像URLが完全一致: '+example.text);
     ok(['height','width','border'].every(k=>img.attr(k)===original('img').attr(k)),'計測画像寸法を変更/省略しない');

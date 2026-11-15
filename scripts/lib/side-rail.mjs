@@ -19,8 +19,10 @@ export const RAIL_BANNERS = [
     ...rk({ hs: "59865281.e4d6d731.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"3","ban":2475223,"amp":false}' }) },
   // じゃらんnet: バリューコマースの発行コード(公式の非JSタグ)を、広告の同意があるときだけ出す(vcTag)。宿泊 1.1%(2026-11-15 管理画面)
   { id: "ryokan", side: "left", partner: "jalan", name: "じゃらんnet", vc: "rail", rate: "宿泊 1.1%" },
+  { id: "onsen", side: "left", partner: "jtb", name: "JTB", vc: "railJtb", rate: "国内宿泊 2.09%" },
   { id: "onsen-gensen", side: "left", partner: "rakuten", name: "楽天トラベル", alt: "源泉掛け流しの温泉宿を楽天トラベルで探す", size: 240, rate: "宿泊 1%",
     ...rk({ hs: "59865325.85ae46a1.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"3","ban":615619,"amp":false}' }) },
+  { id: "jr-hotel", side: "right", partner: "nta", name: "日本旅行", vc: "railNta", rate: "国内パッケージ成約 3.3%(2026-12-31 までのキャンペーン。ふだんは 2.2%)" },
   { id: "rentacar", side: "right", partner: "rakuten", name: "楽天トラベル レンタカー", alt: "レンタカーを楽天トラベルで予約する", size: 300, rate: "レンタカー 2%(専用のバナー経由)",
     ...rk({ hs: "59865392.63f8ca10.585fa57b.dad29d3a", me: "2100017", raw: '{"page":"shop","type":"pict","col":1,"cat":"1","ban":2762506,"amp":false}' }) },
   { id: "experiences", side: "right", partner: "rakuten", name: "楽天トラベル 観光体験", alt: "現地の観光体験を楽天トラベルで予約する", size: 250, rate: "観光体験 2%(専用のバナー経由)",
@@ -31,7 +33,7 @@ export const RAIL_BANNERS = [
 export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path);
 
 /**
- * 両サイドの PR 枠。on: { rakuten, jalan }(提携IDが設定されているか)。attrs(on, name): 外部リンクの属性。wide: 本文が広いページか
+ * 両サイドの PR 枠。on: { rakuten, jalan, jtb, nta }(提携IDが設定されているか。jtb・nta はバリューコマースのサイトIDと同意の仕組みがそろっているか)。attrs(on, name): 外部リンクの属性。wide: 本文が広いページか
  * 枠ごとに、下の右端に「PR」を1つ(ほかの広告の枠と同じ決まり)。
  */
 export function sideRailHtml({ on, attrs, esc, wide = false }) {

@@ -18,7 +18,7 @@ const KAGURA_ANALYTICS_SYNC = Object.freeze({
   AFF_ROUTE: "^/(?:(?:events|regular)/[-a-z0-9]{1,80}\\.html|(?:kagura|pref)/[^/?#\\s]{1,60}\\.html|month/\\d{4}-\\d{2}\\.html|history/(?:[-a-z0-9]{1,40}\\.html)?|(?:index|guide|experiences|weekend|this-month|map|calendar)\\.html)?$",
   // Values the site itself sends (scripts/client/affiliate.js). "(not set)" = before the GA4
   // custom dimension was registered, or the parameter was missing; it is not a partner.
-  AFF_PARTNERS: ["jalan","rakuten","amazon","rakuten-ichiba","vc-asoview","vc-jalan-rental","rakuten-rental","rakuten-carshare","vc-jalan-activity","rakuten-books","rakuten-furusato"],
+  AFF_PARTNERS: ["jalan","rakuten","amazon","jtb","nta","rakuten-ichiba","vc-asoview","vc-jalan-rental","rakuten-rental","rakuten-carshare","vc-jalan-activity","rakuten-books","rakuten-furusato"],
   AFF_PLACEMENTS: ["event_stay","stay_banner","travel_block","guide_supplies","guide_rental","experience_guide","experience_directory","nearby_experiences","event_experiences","event_rental","regular_experiences","regular_rental","kagura_learn","history_learn","pref_furusato","kagura_furusato","event_learn","event_furusato","regular_learn","regular_furusato"],
   DAILY: "12_計測日次", DETAIL: "13_計測内訳", RUNS: "14_計測実行",
   DAILY_HEADER: ["ID","source","date","timezone","active_users","sessions","PV","engagement_rate","clicks","impressions","CTR","position","quality","fetched_at_JST"],

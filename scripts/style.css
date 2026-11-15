@@ -400,6 +400,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 @media(hover:hover){.rail-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 :is(.rail-banner,.rail-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 /* 数えるのは、見えているバナーだけ(じゃらんは広告の同意がないと hidden のまま) */
+@media(max-height:899px){.side-rail .rail-banner:nth-child(n+4 of .rail-banner:not([hidden])){display:none}}
 @media(max-height:719px){.side-rail .rail-banner:nth-child(n+3 of .rail-banner:not([hidden])){display:none}}
 @media(max-height:519px){.side-rail .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}

@@ -220,6 +220,7 @@ const a = cfg.affiliate;
 // 報酬の出るリンクか(ID が未設定の間は、報酬のない、ふつうのリンクとして動く)。バリューコマースは、サイトID(sid)と、提携先ごとのID(pid)の両方が要る
 const vcAllowed = !!cfg.adsense.client; // Existing CSP only; no new hosts or consent bypass.
 const rakutenOn = !!a.rakutenAffiliateId, jalanOn = vcEnabled({sid:a.valueCommerceSid,pid:a.jalanPid,allowed:vcAllowed},"stay"), amazonOn = !!a.amazonTag;
+const vcRailOn = vcAllowed && a.valueCommerceSid === VC.sid; // PR枠の JTB・日本旅行(発行コードは valuecommerce.mjs に固定)
 const experienceAff = { sid: a.valueCommerceSid, pid: a.jalanActivityPid, allowed:vcAllowed }; // 体験は宿と別案件のpid
 const hasAffiliate = rakutenOn || jalanOn || amazonOn || !!(experienceAff.sid && experienceAff.pid) || ['supplies','experiences','rental'].some(category=>offersFor(visitorPlanning,category,{guide:true},nowJst.slice(0,10)).length);
 const rakuten = (url) => (rakutenOn ? `https://hb.afl.rakuten.co.jp/hgc/${a.rakutenAffiliateId}/?pc=${encodeURIComponent(url)}&m=${encodeURIComponent(url)}` : url);
@@ -392,7 +393,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   const consentBootstrap = `<link rel="stylesheet" href="/vendor/cookieconsent-3.2.1/cookieconsent.css"><script defer src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"></script><script defer src="/consent-manager.js"></script>`;
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}" data-require-statistics-consent="">${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, attrs: affAttrs, esc, wide }) : "";
+  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide }) : "";
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${(body + rail).includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>${consentBootstrap}
 <script>${HEAD_MOTION}</script>
