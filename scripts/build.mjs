@@ -250,7 +250,8 @@ const prStripFor = (path, { wide = false, skip = [] } = {}) => prStripHtml({ on:
 // 一覧の途中にはさむ帯(2026-11-15 運営者の依頼)。k: 何本目か(先頭のバナーをずらす)。広告のバナーは楽天のものだけ。
 // 何本目かで中身を分ける(1本目 公演の掲載のご案内・2本目 宿・3本目 協賛のご案内・4本目 体験と行き方・5本目から そのページの帯のバナー。INLIST_THEMES)。
 // 先頭(lead)に、直前の5件に当てはまる契約中の協賛を置く(inlist-pr.mjs)。毎日のビルドで、その日の一覧から作り直す
-const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}` } = {}) => { const t = inlistTheme(path, k); return prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: t.ids, inlist: true, rotate: t.rotate, lead, tag, heading: t.h, self: t.self || "" }); };
+// land: 横長(今週末・今月。同日「公演カードと同じくらいの横長のバナーに」)
+const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}`, land = false } = {}) => { const t = inlistTheme(path, k); return prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: t.ids, inlist: true, rotate: t.rotate, lead, tag, heading: t.h, self: t.self || "", land }); };
 // 一覧の1件の、帯の中身を決めるための値(協賛の当てはまり)。page: event か regular
 const listItem = (x, day, page) => ({ prefecture: x.prefecture, city: x.city, day: day < today ? today : day, id: x.id, page, x });
 const leadOpts = () => ({ sponsorTile: (it) => listSponsorTile(sponsorsNow, it.page, it.x, { esc }) });
@@ -260,7 +261,7 @@ const withStrips = (entries, path, opts) => {
   return entries.map(({ html }, i) => {
     if ((i + 1) % STRIP_EVERY !== 0 || i + 1 >= entries.length) return html;
     const k = Math.floor(i / STRIP_EVERY), lead = inlistLead(entries.slice(i + 1 - STRIP_EVERY, i + 1).map((e) => e.item), k, total, o);
-    return html + inlistStrip(path, k, { ...opts, lead });
+    return html + inlistStrip(path, k, { ...opts, lead, land: true });
   }).join("");
 };
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
@@ -1333,7 +1334,7 @@ write("dist/feed.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<feed xmlns="htt
 write("dist/events.ics", vcal(upcoming));
 mkdirSync(OUT, { recursive: true });
 // 運営者のシンボル(ヘッダー・ファビコン・ホーム画面・構造化データのロゴ)。元画像から作ったものを assets/ に置いている
-for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg", "washi.svg", "washi-dark.svg", "pr-sponsor.svg", "pr-organizers.svg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
+for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-icon.png", "hero-pc.webp", "hero-sp.webp", "og.jpg", "og-en.jpg", "washi.svg", "washi-dark.svg", "pr-sponsor.svg", "pr-organizers.svg", "pr-sponsor-wide.svg", "pr-organizers-wide.svg"]) copyFileSync(`assets/${f}`, `${OUT}/${f}`);
 // 検索エンジンや古いブラウザは、/favicon.ico を直接見に行く。シンボルの画像から作って置く
 writeFileSync(`${OUT}/favicon.ico`, pngToIco(readFileSync("assets/favicon-48.png")));
 

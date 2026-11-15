@@ -71,9 +71,10 @@ export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = ""
     const banners = railBannersFor(path, s).filter((b) => on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
       ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner, "data-vc-media": railMedia(wide) } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
-    // 自分たちのバナー(左 = 協賛のご案内、右 = 公演の掲載のご案内)を、上から3つ目に。画面の高さが 720px 未満で消える位置(SELF_RAIL)
+    // 自分たちのバナー(左 = 協賛のご案内、右 = 公演の掲載のご案内)を、上から3つ目に(SELF_RAIL)。
+    // 公演ページ(開催・定期公演)には出さない(同日、運営者の依頼「協賛ページ・主催者ページへの案内は、各公演ページには不要」)
     const self = SELF_RAIL[s];
-    if (banners.length) banners.splice(SELF_RAIL_AT, 0, selfBannerHtml(self, "rail-banner rail-self", `pr-self/rail-${self}`, esc));
+    if (banners.length && !/^\/(events|regular)\//.test(path)) banners.splice(SELF_RAIL_AT, 0, selfBannerHtml(self, "rail-banner rail-self", `pr-self/rail-${self}`, esc));
     const items = s === "right" && car ? [car, ...banners] : banners;
     return items.length ? `<aside class="side-rail side-rail-${s === "left" ? "l" : "r"}${wide ? " w" : ""}" aria-label="広告">${items.join("")}<span class="pr pr-foot">PR</span></aside>` : "";
   };
@@ -92,7 +93,8 @@ export const SELF_BANNERS = {
 /** 両サイドの PR 枠の、自分たちのバナー: 左 = 協賛、右 = 公演の掲載。上から SELF_RAIL_AT 番目(0 から)に入れる */
 export const SELF_RAIL = { left: "sponsor", right: "organizers" };
 export const SELF_RAIL_AT = 2;
-export const selfBannerHtml = (key, cls, name, esc) => { const s = SELF_BANNERS[key]; return `<a class="${cls}" href="${s.href}" data-self-pr="${key}" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"><img src="${s.img}" alt="${esc(s.alt)}" width="600" height="600" loading="lazy" decoding="async"></a>`; };
+// land: 横長(720×300。今週末・今月の一覧の途中で、公演のカードと同じ横幅に出す。画像は assets/pr-<種類>-wide.svg)
+export const selfBannerHtml = (key, cls, name, esc, land = false) => { const s = SELF_BANNERS[key]; return `<a class="${cls}" href="${s.href}" data-self-pr="${key}" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"><img src="${land ? s.img.replace(".svg", "-wide.svg") : s.img}" alt="${esc(s.alt)}" width="${land ? 720 : 600}" height="${land ? 300 : 600}" loading="lazy" decoding="async"></a>`; };
 
 // 両サイドの PR 枠が出る画面の条件(style.css の @media と同じ)。バリューコマースの広告は、この条件に合う画面でだけ読み込む(スマホでは読み込まない)
 export const railMedia = (wide) => `(min-width:${wide ? 1400 : 1280}px) and (min-height:520px)`;
@@ -146,11 +148,16 @@ export const INLIST_THEMES = [
 export const inlistTheme = (path, k) => (k < INLIST_THEMES.length ? { ...INLIST_THEMES[k], rotate: 0 } : { h: "旅の手配", ids: stripIdsFor(path), rotate: k - INLIST_THEMES.length });
 // tag: クリックの名前の、バナーのIDの前につける印(ふだんは strip。一覧の途中の帯は list1・list2…で、何本目かを見分ける。inlist-pr.mjs)。heading: 一覧の途中の帯の見出し
 // self: 楽天のバナーの代わりに出す、自分たちのバナー(SELF_BANNERS のキー)
-export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip", heading = "旅の手配", self = "" }) {
+// land: 横長にする(2026-11-15 運営者の依頼「今週末・今月の一覧の中のPRは、公演カードと同じくらいの横長のバナーに」)。
+//   自分たちのバナーは横長の絵(720×300)。楽天のバナーは正方形しかないので、左に絵・右に文字の横長のカード(strip-card)にする
+export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip", heading = "旅の手配", self = "", land = false }) {
   let list = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner] && !b.vc);
   if (list.length) { const k = rotate % list.length; list = [...list.slice(k), ...list.slice(0, k)]; }
   const b = list[0];
-  const one = lead.find(Boolean) ?? (self ? selfBannerHtml(self, "strip-banner sq strip-self", `pr-self/${tag}-${self}`, esc) : b ? `<a class="strip-banner sq" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>` : "");
+  const rk = (b) => land
+    ? `<a class="strip-banner strip-card" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"><span><b>${esc(b.alt)}</b><small>${esc(b.name)}で見る ›</small></span></a>`
+    : `<a class="strip-banner sq" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`;
+  const one = lead.find(Boolean) ?? (self ? selfBannerHtml(self, `strip-banner ${land ? "strip-land" : "sq"} strip-self`, `pr-self/${tag}-${self}`, esc, land) : b ? rk(b) : "");
   if (!one) return "";
   const h = inlist ? heading : "旅の手配";
   return `<aside class="pr-strip${wide ? " w" : ""}${inlist ? " inlist" : ""}" aria-label="${h}(広告)">${inlist ? `<p class="pr-strip-h">${h}</p>` : `<h2>${h}</h2>`}<div class="pr-strip-one">${one}</div><span class="pr pr-foot">PR</span></aside>`;

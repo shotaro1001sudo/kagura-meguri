@@ -430,6 +430,15 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .pr-strip-one>.strip-banner:not([hidden]){display:block;width:100%;max-width:480px;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12)}
 .pr-strip-one>.strip-banner.sq:not([hidden]){max-width:260px}
 .pr-strip-one>.strip-banner img{display:block;width:100%;height:auto}
+/* 今週末・今月の一覧の途中は、公演のカードと同じくらいの横長(2026-11-15 運営者の依頼)。自分たちのバナーは横長の絵(タブレットでは、カードより高くならないよう 400px まで)、
+   楽天のバナーは、左に絵・右に文字の横長のカード */
+.pr-strip-one>.strip-banner.strip-land:not([hidden]){max-width:400px}
+.pr-strip-one>.strip-banner.strip-card:not([hidden]){display:flex;align-items:center;gap:14px;max-width:none;padding:10px 14px 10px 10px;border:1px solid var(--line);background:var(--bg);box-shadow:none;color:var(--fg);line-height:1.6;text-decoration:none}
+.pr-strip-one>.strip-banner.strip-card img{flex:none;width:112px;border-radius:8px}
+.strip-card>span{display:flex;flex-direction:column;gap:6px;min-width:0;word-break:auto-phrase}
+.strip-card b{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}
+.strip-card small{color:var(--ac2);font-size:var(--fs-2xs);text-decoration:underline;text-underline-offset:3px}
+@media(hover:hover){.pr-strip-one>.strip-banner.strip-card:hover{border-color:var(--ac2)}}
 /* 画像のない広告(文字のリンク)・契約中の協賛は、枠の幅いっぱいの文字の箱。押した先を下に小さく */
 .pr-strip-one>.strip-banner.strip-text:not([hidden]){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;max-width:none;min-height:96px;padding:16px;border:1px solid var(--line);background:var(--bg);box-shadow:none;color:var(--ac2);font-size:var(--fs-s);line-height:1.6;text-align:center;text-decoration:none;word-break:auto-phrase}
 .strip-text.strip-sp b{color:var(--fg);font-weight:600}
