@@ -1,25 +1,24 @@
-# 週次の自動収集レポート 2026-11-09
+# 週次の自動収集レポート 2026-11-16
 
 **⚠ 確認が必要な項目があります。**  自動掲載: オン
 
 ## 収集元ごとの結果
-- ✅ akitakata(安芸高田市観光ナビ(安芸高田市観光協会)): 取得 2 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 0 / 重複 0 / 過去 0 / 却下済み 2
-- ✅ takachiho-yokagura(高千穂町観光協会 夜神楽日程表): 取得 22 件 → 新規掲載 1 / 保留 0 / 取り下げ 0 / 変更なし 14 / 重複 0 / 過去 0 / 却下済み 7
-- ✅ npo-hiroshima(NPO広島神楽芸術研究所(神楽日程表)): 取得 13 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 9 / 重複 4 / 過去 0 / 却下済み 0
-- ⏸ hanamaki-hayachine: 停止中(enabled: false)
+- ✅ akitakata(安芸高田市観光ナビ(安芸高田市観光協会)): 取得 4 件 → 新規掲載 1 / 保留 0 / 取り下げ 0 / 変更なし 0 / 重複 1 / 過去 0 / 却下済み 2
+- ✅ takachiho-yokagura(高千穂町観光協会 夜神楽日程表): 取得 17 件 → 新規掲載 1 / 保留 0 / 取り下げ 0 / 変更なし 15 / 重複 0 / 過去 0 / 却下済み 1
+- ✅ npo-hiroshima(NPO広島神楽芸術研究所(神楽日程表)): 取得 14 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 9 / 重複 5 / 過去 0 / 却下済み 0
+- ✅ hanamaki-hayachine(花巻観光協会 イベントカレンダー(早池峰神楽・おおはさま神楽の日)): 取得 4 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 2 / 重複 0 / 過去 2 / 却下済み 0
 - ✅ kagura-kaikan-oita(大分県豊後大野市 神楽会館（一般公演のお知らせ）): 取得 2 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 1 / 重複 1 / 過去 0 / 却下済み 0
 - ⏸ miyazaki-kanko-events: 停止中(enabled: false)
 - ⏸ okayama-kanko-kagura: 停止中(enabled: false)
 - ⏸ hamada-yokagura: 停止中(enabled: false)
 - ⏸ shimane-kagura-calendar: 停止中(enabled: false)
 - 🔎 otaru-matsumae: 取得内容の確認待ち（自動掲載なし）。B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。 [原典](https://otaru.gr.jp/event/matsumae-kagura-2026)
-- ⏸ iwate-hanakitatoono: 停止中(enabled: false)
+- ✅ iwate-hanakitatoono(岩手県 花北・遠野応援隊): 取得 13 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 0 / 重複 0 / 過去 13 / 却下済み 0
 - ⏸ morioka-odette: 停止中(enabled: false)
-- 🔎 tanagura-kagura: 取得内容の確認待ち（自動掲載なし）。B：2026/12/12〜13霜月大祭。祭典期間と御神楽の奉納時間を区別。年度更新を確認。 [原典](https://www.town.tanagura.fukushima.jp/kasseika-kannkoubussann/event/page000338.html)
-- 🔎 chichibu-jinja-kagura: 取得内容の確認待ち（自動掲載なし）。B：年間の奉納日を掲載。例年日程だけで当年開催を確定せず、当年告知と開始時刻を確認。 [原典](https://www.chichibu-jinja.or.jp/kagura/)
+- ✅ tanagura-kagura: 更新監視 1 ページ、確認済み内容から変更なし
+- ✅ chichibu-jinja-kagura: 更新監視 1 ページ、確認済み内容から変更なし
 - ⏸ atsugi-satokagura: 停止中(enabled: false)
 - 🔎 toei-hanamatsuri: 取得内容の確認待ち（自動掲載なし）。A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。 [原典](https://www.toeinavi.jp/column/detail/72/)
-- 🔎 hamamatsu-kawai-hanamai: 取得内容の確認待ち（構造化できる公演のみ掲載）。B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。 [原典](https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html)
 - ✅ hamamatsu-kawai-hanamai(浜松市文化財課（川合花の舞）): 取得 1 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 1 / 重複 0 / 過去 0 / 却下済み 0
 - 🔎 ise-daikagura-kandayu: 取得内容の確認待ち（自動掲載なし）。A：公演予定と公演報告が混在。開催予定のみ抽出。団体所在地ではなく実会場の都道府県で登録。非公開訪問を除外。 [原典](https://www.kandayuyamamoto.jp/category/kouen/)
 - 🔎 kitahiroshima-kagura: 取得内容の確認待ち（自動掲載なし）。B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。 [原典](https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html)
@@ -29,9 +28,15 @@
 - ⏸ miyako-keichiku-kagura: 停止中(enabled: false)
 - 🔎 yufu-shonai-kagura: 取得内容の確認待ち（自動掲載なし）。B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。 [原典](https://yufuin.gr.jp/news/news-6903/)
 - ✅ toyama-shimotsuki: 更新監視 2 ページ、確認済み内容から変更なし
+- 🔎 masuda-yokagura: 取得内容の確認待ち（自動掲載なし）。B：令和8年度の年間スケジュールPDF(土曜19:30の定期公演と特別公演)。PDFの差し替え・年度更新を確認し、data/regular.json と特別公演の開催を手で直す。 [原典](https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html)
+- 🔎 tsuwano-yokagura: 取得内容の確認待ち（自動掲載なし）。B：月1回(土曜20:00)の通常公演と出演社中。社中の追記・変更と、2027年度のページ(URLの年)を確認する。 [原典](https://tsuwano-kanko.net/yokagura2026/)
+- ✅ kanagawa-minzoku-geino: 更新監視 1 ページ、確認済み内容から変更なし
+- ✅ unnan-kagura(雲南市観光協会(雲南市内神楽団体 神楽公演スケジュール)): 取得 17 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 6 / 重複 1 / 過去 10 / 却下済み 0
+- ✅ kankomie-kagura(観光三重(三重県観光連盟) イベント検索「神楽」): 取得 1 件 → 新規掲載 0 / 保留 0 / 取り下げ 0 / 変更なし 0 / 重複 1 / 過去 0 / 却下済み 0
 
-## 自動で掲載したもの(1件)
-- **高千穂の夜神楽 三田井（浅ヶ部公民館）**(2026-12-19 宮崎県高千穂町 磐下大権現神社)[公式](https://takachiho-kanko.info/kagura/yokagura/schedule/)
+## 自動で掲載したもの(2件)
+- **2027元就の里神楽共演大会**(2027-02-21 広島県安芸高田市 民文化センタークリスタルアージョ大ホール)[公式](https://akitakata-kankou.jp/event/22609/)
+- **高千穂の夜神楽 黒仁田公民館**(2027-01-30 宮崎県高千穂町 黒仁田公民館)[公式](https://takachiho-kanko.info/kagura/yokagura/schedule/)
 
 ## 保留(掲載していないもの。要確認 0件)
 - なし
@@ -39,11 +44,20 @@
 ## 前回から続く保留(まだ確認していないもの 0件)
 - なし
 
-管理者用ページ(`npm run admin`)の「判断待ち」で、公式情報を確かめて「掲載」か「却下」を選んでください(すぐにサイトに反映します。コマンドなら `node scripts/review.mjs approve <id>` / `reject <id>`)。
+管理者用ページ(`npm run admin`)の「やること」で、公式情報を確かめて「掲載」か「却下」を選んでください(すぐにサイトに反映します。コマンドなら `node scripts/review.mjs approve <id>` / `reject <id>`)。
 
 ## 取り下げたもの(0件)
 - なし
 
 ## アフィリエイトの紐づけ(新しく掲載した開催)
-- 集約診断: {"learn_unconfigured":1,"category_disabled":3,"learn_unmatched":1}
-- ⚠ 高千穂の夜神楽 三田井（浅ヶ部公民館）: 宿 じゃらん・楽天トラベル / 体験 じゃらん遊び・体験 / 移動 レンタカー・カーシェア / 本・グッズ 未一致
+- ⚠ 掲載の再確認期限まで8日: CAPTAIN STAG アプリール フリースブランケット UT-1023(2026-11-24)。リンク先を確かめ、data/visitor-planning.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: THERM-A-REST Zシート ソル 30947(2026-11-24)。リンク先を確かめ、data/visitor-planning.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: ELECOM モバイルバッテリー DE-C45-5000WH(2026-11-24)。リンク先を確かめ、data/visitor-planning.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: レンタカーを探す(2026-11-24)。リンク先を確かめ、data/visitor-planning.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: カーシェアを探す(2026-11-24)。リンク先を確かめ、data/visitor-planning.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: 山陰の神楽写真集(松浦敦男)(2026-11-24)。リンク先を確かめ、data/more-offers.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: DVD 2019 石見神楽東京公演(2026-11-24)。リンク先を確かめ、data/more-offers.json の verifiedAt・expiresAt を更新してください
+- ⚠ 掲載の再確認期限まで8日: DVD 広島神楽(2026-11-24)。リンク先を確かめ、data/more-offers.json の verifiedAt・expiresAt を更新してください
+- 集約診断: {"learn_unconfigured":1,"category_disabled":3,"learn_unmatched":2}
+- ⚠ 2027元就の里神楽共演大会: 宿 じゃらん・楽天トラベル / 体験 じゃらん遊び・体験 / 移動 レンタカー・カーシェア / 本・グッズ 未一致
+- ⚠ 高千穂の夜神楽 黒仁田公民館: 宿 じゃらん・楽天トラベル / 体験 じゃらん遊び・体験 / 移動 レンタカー・カーシェア / 本・グッズ 未一致

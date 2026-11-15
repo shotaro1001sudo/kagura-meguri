@@ -1,7 +1,7 @@
 {
-  "date": "2026-11-09",
+  "date": "2026-11-16",
   "autoPublish": true,
-  "published": 1,
+  "published": 2,
   "held": 0,
   "stillPending": 0,
   "withdrawn": 0,
@@ -13,75 +13,132 @@
       "id": "otaru-matsumae",
       "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
       "reason": "B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。",
-      "digest": "41098ca7e76ac26c4ddf1751fb939001e3a3b07fe2be568f0ece35b67fa47fe9"
-    },
-    {
-      "id": "tanagura-kagura",
-      "url": "https://www.town.tanagura.fukushima.jp/kasseika-kannkoubussann/event/page000338.html",
-      "reason": "B：2026/12/12〜13霜月大祭。祭典期間と御神楽の奉納時間を区別。年度更新を確認。",
-      "digest": "68b19e69250a7ee8379c0c72f22bffc1c87db7eab25fc6ae4c4ce792bebdb666"
-    },
-    {
-      "id": "chichibu-jinja-kagura",
-      "url": "https://www.chichibu-jinja.or.jp/kagura/",
-      "reason": "B：年間の奉納日を掲載。例年日程だけで当年開催を確定せず、当年告知と開始時刻を確認。",
-      "digest": "467684feea9924f4acd444ff304a80f7678c4770486e11377589420ae610e408"
+      "digest": "79fe4f60817ccac687dd3dc8f074cded9c51fd6eb8582de4cc0855c387b44d72"
     },
     {
       "id": "toei-hanamatsuri",
       "url": "https://www.toeinavi.jp/column/detail/72/",
       "reason": "A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。",
-      "digest": "cf4f8ef659b3644543a235cd52104549683320bb789462a3bac9436a8903e2ae"
-    },
-    {
-      "id": "hamamatsu-kawai-hanamai",
-      "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
-      "reason": "B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。",
-      "digest": "42d6218329b01733a7d99418ecdcd79ef60db561bb169886423f751e058f377f"
+      "digest": "b918d57cb5dbfa6d6076e0d76446ddb05e0d24652bee3dc1eaf79f4a359e1c7e"
     },
     {
       "id": "ise-daikagura-kandayu",
       "url": "https://www.kandayuyamamoto.jp/category/kouen/",
       "reason": "A：公演予定と公演報告が混在。開催予定のみ抽出。団体所在地ではなく実会場の都道府県で登録。非公開訪問を除外。",
-      "digest": "2b228d2a09878675639173c9b93a0fae399b507fc8f1d4eb8b76d1ff26dab642"
+      "digest": "066407cb7b0fd4d72eca1618e5afd6286bed5406c907dc3139c9a47b92d6bc48"
     },
     {
       "id": "kitahiroshima-kagura",
       "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
       "reason": "B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。",
-      "digest": "f579f4210d08501d46931fa2520f10036ead0a2d9cf60b9d1d2c4c9b2eb9a1e0"
+      "digest": "0c150cf00f4e903b6fe9aed6ce1e74fc17ae6eb67b8d46bbd06a3b889b08c357"
     },
     {
       "id": "iinan-kaguradan",
       "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
       "reason": "B：日付・会場・演目を掲載。11/14一般観覧不可などは公開公演から除外。催事開演と当団出演時刻を区別。",
-      "digest": "71dca03aa59f7e653349ef488d3de3dc72e474a5346f76e751fcef527f053f13"
+      "digest": "46510837eabb19e83232ebf167bf95e51b3be57338e469d8e10f363f32580afa"
     },
     {
       "id": "niyodogawa-tosa-kagura",
       "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
       "reason": "B：池川神社秋季大祭。神楽時間未定と12〜16時が同ページ内で不一致のため要確認。稽古日を公演に混入しない。",
-      "digest": "cbf0b2753f635b9582a97e7a976769a5085a2950515e84142b3dc8a57862e748"
+      "digest": "f9770f9ea52e118597a48adb96a30be6cb81662cae7c9909b99854f7a128b3d7"
     },
     {
       "id": "yufu-shonai-kagura",
       "url": "https://yufuin.gr.jp/news/news-6903/",
       "reason": "B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。",
-      "digest": "b1efba1cf01b77e4c9d897d3aaa24bd05f6481e0aa6b13c4eea018b2dcd60f21"
+      "digest": "5bd9f6fe0cb7409edea9f94845c52d4c1557d2fff8121c1dcf373a0716b7afbf"
+    },
+    {
+      "id": "masuda-yokagura",
+      "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
+      "reason": "B：令和8年度の年間スケジュールPDF(土曜19:30の定期公演と特別公演)。PDFの差し替え・年度更新を確認し、data/regular.json と特別公演の開催を手で直す。",
+      "digest": "fc278cad1a7193b8b3f33beae0c0fec1ec8cc2c26353db0f2505ca81ce1dba16"
+    },
+    {
+      "id": "tsuwano-yokagura",
+      "url": "https://tsuwano-kanko.net/yokagura2026/",
+      "reason": "B：月1回(土曜20:00)の通常公演と出演社中。社中の追記・変更と、2027年度のページ(URLの年)を確認する。",
+      "digest": "e3d583bf2eff4e8dc8a3da5e1bf5909b02a2d03d0c6a4756683b5afaf23a768a"
     }
   ],
   "affiliate": {
     "missingIds": [],
-    "expiring": [],
+    "expiring": [
+      {
+        "id": "cold-night-blanket",
+        "source": "data/visitor-planning.json",
+        "title": "CAPTAIN STAG アプリール フリースブランケット UT-1023",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "portable-seat-cushion",
+        "source": "data/visitor-planning.json",
+        "title": "THERM-A-REST Zシート ソル 30947",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "portable-phone-battery",
+        "source": "data/visitor-planning.json",
+        "title": "ELECOM モバイルバッテリー DE-C45-5000WH",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "rakuten-rental-national",
+        "source": "data/visitor-planning.json",
+        "title": "レンタカーを探す",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "rakuten-carshare-stations",
+        "source": "data/visitor-planning.json",
+        "title": "カーシェアを探す",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "sanin-kagura-photobook",
+        "source": "data/more-offers.json",
+        "title": "山陰の神楽写真集(松浦敦男)",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "iwami-kagura-tokyo-dvd",
+        "source": "data/more-offers.json",
+        "title": "DVD 2019 石見神楽東京公演",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      },
+      {
+        "id": "hiroshima-kagura-dvd",
+        "source": "data/more-offers.json",
+        "title": "DVD 広島神楽",
+        "expiresAt": "2026-11-24",
+        "days": 8
+      }
+    ],
     "counts": {
       "learn_unconfigured": 1,
       "category_disabled": 3,
-      "learn_unmatched": 1
+      "learn_unmatched": 2
     },
-    "unlinkedTotal": 1,
+    "unlinkedTotal": 2,
     "unlinked": [
       {
-        "id": "takachiho-yokagura-530a848d06",
+        "id": "akitakata-f870bfc54f",
+        "missing": [
+          "本・グッズ"
+        ]
+      },
+      {
+        "id": "takachiho-yokagura-ba91e106b2",
         "missing": [
           "本・グッズ"
         ]
@@ -91,8 +148,15 @@
   "items": {
     "published": [
       {
-        "name": "高千穂の夜神楽 三田井（浅ヶ部公民館）",
-        "start": "2026-12-19T00:00",
+        "name": "2027元就の里神楽共演大会",
+        "start": "2027-02-21T00:00",
+        "prefecture": "広島県",
+        "city": "安芸高田市",
+        "url": "https://akitakata-kankou.jp/event/22609/"
+      },
+      {
+        "name": "高千穂の夜神楽 黒仁田公民館",
+        "start": "2027-01-30T00:00",
         "prefecture": "宮崎県",
         "city": "高千穂町",
         "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/"
