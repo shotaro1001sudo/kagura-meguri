@@ -47,11 +47,13 @@ export async function homeTests({ ok, section, OUT, build }) {
     const fd = new JSDOM(read(join(OUT, "calendar.html")), { runScripts: "dangerously", url: "https://kagurameguri.jp/calendar.html?when=range&from=2026-10-01&to=2026-11-30&pref=%E5%BA%83%E5%B3%B6%E7%9C%8C", beforeParse(w) { w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(evJson)) }); } });
     await new Promise((r) => setTimeout(r, 30));
     ok(fd.window.document.getElementById("weekend-empty").hidden, "検索結果がある場合は空結果専用の週末案内を出さない");
-    const D = fd.window.document, items = () => [...D.querySelectorAll("#results li")].map((li) => li.querySelector(".meta").textContent);
+    // 結果のカードは日付・公演名・会場だけ(2026-11-15)。県は、カードのリンク先の開催から引く
+    const byId = Object.fromEntries(JSON.parse(evJson).map((x) => [x.id, x]));
+    const D = fd.window.document, items = () => [...D.querySelectorAll("#results li.card")].map((li) => byId[li.querySelector("h3 a").getAttribute("href").slice(8, -5)]?.prefecture || "?");
     const all = JSON.parse(evJson).filter((x) => x.up);
     const exp = all.filter((x) => x.prefecture === "広島県" && (x.end || x.start).slice(0, 10) >= "2026-10-01" && x.start.slice(0, 10) <= "2026-11-30").length;
     ok(!D.getElementById("finder").hidden && D.getElementById("range").hidden === false && D.getElementById("region").value === "中国" && items().length === exp && exp > 0 && items().every((t) => t.includes("広島県")) && D.getElementById("count").textContent === `当てはまる開催 ${exp}件`, "URL の条件(期間・県)を戻し、当てはまる開催と件数を出す。県を選ぶと地方も合わせる", `${items().length}/${exp}`);
-    ok([...D.querySelectorAll('#results li')].every(li=>{const f=[...li.querySelectorAll('.comparison-facts>span')].map(x=>x.textContent);return f.length>=1&&f.length<=3&&f[0].startsWith('会場:')&&!f.join('').includes('要確認')}), '検索結果は会場を必ず出し、料金・予約は分かっているときだけ出す(「要確認」を並べない)');
+    ok([...D.querySelectorAll('#results li.card')].every(li=>{const f=[...li.querySelectorAll('.event-facts>div')].map(x=>x.textContent);return li.closest('ol.fcards')&&li.querySelector('.date b')&&li.querySelectorAll('.date small').length===2&&li.querySelectorAll('h3 a').length===1&&f.length===1&&f[0].startsWith('会場:')&&li.querySelectorAll('.tag,.sl,.comparison-facts').length===0&&!/料金|予約/.test(li.textContent)}), '検索結果は1件ずつカード: 日付・公演名・会場だけ(時刻・県・料金・予約・種類は出さない)');
     const rg = D.getElementById("region"); rg.value = "九州・沖縄"; rg.dispatchEvent(new fd.window.Event("change"));
     ok(D.getElementById("pref").value === "" && [...D.querySelectorAll("#pref option[data-r]")].every((o) => o.hidden === (o.dataset.r !== "九州・沖縄")) && items().every((t) => !t.includes("広島県")) && /region=/.test(fd.window.location.search) && !/pref=/.test(fd.window.location.search), "地方を変えると、都道府県の選択肢をその地方だけにし、条件を URL に残す", fd.window.location.search);
     [...D.querySelectorAll("[data-w]")].find((b) => b.dataset.w === "all").click(); rg.value = ""; rg.dispatchEvent(new fd.window.Event("change"));

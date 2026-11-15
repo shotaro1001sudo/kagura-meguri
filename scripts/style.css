@@ -470,11 +470,11 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .self-pair-b:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 /* トップの一覧の途中の帯(同日の依頼。今週末・今月と同じ横長)。置き場所はブラウザが決める(home.js) */
 .home-pr .pr-strip.inlist{margin:0 0 12px}
-/* 日付・場所で探す: 結果の行のあいだにはさむ(行の飾り・押せる範囲の広がりは付けない) */
-.monthlist>.pr-li{display:block;padding:14px 0}.monthlist>.pr-li .pr-strip{margin:0}
-@media(hover:hover){.monthlist>.pr-li:hover{background:none}}
-/* 両サイドのPR枠が出る画面では、はさんだ行ごと出さない(上の決まりより後ろに書く) */
-@media(min-width:1280px) and (min-height:520px){.monthlist>.pr-li{display:none}}
+/* 日付・場所で探す: 結果は1件ずつカード(日付・公演名・会場。2026-11-15 運営者の依頼)。帯はカードのあいだにはさむ */
+.fcards{list-style:none;margin:0;padding:4px 0 16px;display:grid;gap:12px}
+.fcards>.pr-li{display:block}.fcards>.pr-li .pr-strip{margin:0}
+/* 両サイドのPR枠が出る画面では、はさんだ帯ごと出さない(上の決まりより後ろに書く) */
+@media(min-width:1280px) and (min-height:520px){.fcards>.pr-li{display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
@@ -958,8 +958,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
    結果の会場・料金・予約要否は、公演カードと同じく詰めて並べる(料金と予約要否は同じ行。広い画面では会場も同じ行) */
 /* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
    結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
-@media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}
-  #results li{flex-direction:column;gap:2px}#results .md{width:auto}}
+@media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}}
 
 /* チップの行(.chiprow): 小さな言葉+チップの並び(今週末の「各県の全日程を見る」など)。
    スマホでは1行にして横に送り、右端を薄くして続きがあることを示す(すぐ下の一覧を、最初の画面に近づけるため) */

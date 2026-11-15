@@ -48,7 +48,8 @@ export function weekendTests({ ok, section, build }) {
   let wk = $("weekend.html"), tm = $("this-month.html");
   const hrefs = (q) => q("main a").map((_, a) => q(a).attr("href")).get();
   const ld = (q) => q('script[type="application/ld+json"]').map((_, s) => JSON.parse(q(s).text())).get().flat();
-  ok(wk("title").text() === "今週末の神楽(10月10日(土)〜12日(月・祝)) | 神楽めぐり" && wk("h1").text() === "今週末の神楽" && wk(".hero p").text().includes("3連休・スポーツの日"), "今週末: 見出しに、期間・連休・祝日の名前が出る");
+  ok(wk("title").text() === "今週末の神楽(10月10日(土)〜12日(月・祝)) | 神楽めぐり" && wk("h1").text() === "今週末の神楽" && wk(".hero p").length === 0 && wk(".lead").first().text().startsWith("この週末(3連休・スポーツの日)に観られる神楽を"), "今週末: 見出しの下の日付だけの行は出さない(2026-11-15 運営者の依頼)。連休・祝日の名前は、説明の文に出る");
+  ok(tm(".hero p").text() === "本日(10月9日)から月末まで", "今月: 見出しの下は「本日(更新した日)から月末まで」(2026-11-15 運営者の依頼)", tm(".hero p").text());
   ok(hrefs(wk).includes("/events/t-timeunknown.html") && !hrefs(wk).includes("/events/t-ongoing.html") && !hrefs(wk).includes("/events/t-past.html") && !hrefs(wk).includes("/events/t-pending.html"), "今週末: 週末の開催だけが載る(金曜・終了・保留は載らない)");
   ok(hrefs(wk).includes("/regular/r-nightly.html") && !hrefs(wk).includes("/regular/r-weekly.html") && !hrefs(wk).includes("/regular/r-expired.html") && !hrefs(wk).includes("/regular/r-xss.html"), "今週末: 毎晩の公演は載り、水曜の公演・終了した公演・曜日が不明な公演は載らない");
   ok(wk("main").text().includes("2026年10月9日時点") && !wk("main").text().includes("臨時に休演"), "今週末: 時点を示し、くり返しの注意書きは載せない");

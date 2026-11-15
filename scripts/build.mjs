@@ -847,12 +847,13 @@ function draw(){
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
   // 帯の番号は、月をまたいで通して数える(都道府県のページ・トップと同じ。月ごとに1本目に戻ると、同じ「公演を掲載しませんか」が何度も出る。2026-11-15 の監査)
   var K=0,TOT=groups.reduce(function(n,m){return n+Math.max(0,Math.floor((byM[m].length-1)/EVERY))},0);
-  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+rows(byM[m])+'</ol></details>'}).join('');
+  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="fcards">'+rows(byM[m])+'</ol></details>'}).join('');
   // 5件ごとに、帯をはさむ(その月に、まだ続きがあるときだけ)
   // 帯の先頭には、その帯の直前の5件に合わせた宿・協賛を入れる。帯の番号(list1・list2…)は、クリックの名前に入る
   function rows(xs){var o='',tot=TOT;xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=K++,its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO)[0]||'',s=strips[k<THEMES?k:THEMES+(k-THEMES)%Math.max(1,strips.length-THEMES)],v=s?(h?s.l:s.b):'';if(v)o+='<li class="pr-li">'+v.replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
+  // 1件ずつカード(2026-11-15 運営者の依頼): 日付・公演名・会場だけ。日付の段は、ほかの一覧のカードと同じ形
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
+    return '<li class="card"><div class="date"><small>'+(d.getMonth()+1)+'月</small><b>'+d.getDate()+'</b><small>'+WD[d.getDay()]+'曜</small></div><div><h3><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></div></div></div></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
   document.getElementById('weekend-empty').hidden=!(loaded&&!failed&&!hit.length&&tab==='dp'&&when==='weekend');
   var q=new URLSearchParams();if(tab==='kw'){if(kw.value.trim())q.set('q',kw.value.trim())}else{if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value)}
@@ -1176,8 +1177,8 @@ const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${lis
     desc: padDesc(clip(`今週末、${wkLabel}${wkRenkyu ? `の${wkRenkyu}` : ""}に観られる神楽の開催と定期公演を日付順にまとめています。${weekendRegions.length ? `${weekendRegions.slice(0,3).join("、")}${weekendRegions.length>3?"など":""}の開催情報を掲載しています。日時・会場と公式情報を確認できます。` : "開催情報がない週は、その先の開催をご案内します。"}毎日自動で更新しています。`)),
     path: "/weekend.html", active: "/weekend.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]]), itemListLd(`今週末の神楽(${wkLabel})`, [...wkEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...wkRegs, ...wkDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]])}${hero("今週末の神楽", `${esc(wkLabel)}${sub ? ` ・ ${esc(sub)}` : ""}`)}
-<p class="lead">この週末に観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
+    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今週末の神楽"]])}${hero("今週末の神楽")}
+<p class="lead">この週末${sub ? `(${esc(sub)})` : ""}に観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
 ${weekendRegions.length ? `<nav class="weekend-regions chiprow" aria-label="この週末に開催のある県"><span class="meta">各県の全日程を見る</span>${weekendRegions.map(p=>`<a class="chip" href="${prefHref(p)}">${esc(p)}</a>`).join('')}</nav>` : ''}
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2></div><div class="d-top">
 ${withStrips(items, "/weekend.html", { wide: true }) || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
@@ -1195,7 +1196,7 @@ ${otherWays("/weekend.html")}</div></div>`,
     desc: padDesc(clip(`${tmLabel}、今日から月末までに観られる神楽をまとめています。${[tmEvents.length ? `開催${tmEvents.length}件` : "", tmRegs.length + tmDaily.length ? `定期公演${tmRegs.length + tmDaily.length}件の公演日` : ""].filter(Boolean).join("と、").replace(/.+/, (t) => `${t}を載せています`) || "開催情報がないときは、来月の予定をご案内します"}。${names.length ? `${listNames(names)}など。` : ""}毎日自動で更新しています。`)),
     path: "/this-month.html", active: "/this-month.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]]), itemListLd(`今月の神楽(${tmLabel})`, [...tmEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...tmRegs, ...tmDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
+    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `本日(${+today.slice(5, 7)}月${+today.slice(8, 10)}日)から月末まで`)}
 <p class="lead">今日から月末までに観られる神楽を、日付順に並べています。</p>
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2></div><div class="d-top">
 ${withStrips(tmEvents.map((e) => ({ html: card(e), item: listItem(e, e.start.slice(0, 10), "event") })), "/this-month.html", { wide: true }) || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
