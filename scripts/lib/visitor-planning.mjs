@@ -154,10 +154,19 @@ export function rentalSearch(settings,context,today,placement,opts) {
   return ads;
 }
 // 「車で行くなら」の枠。開催・定期公演のページでは、PCの右のPR枠(rail)に置く(2026-11-15 運営者の依頼)。
-// PR枠の中では、枠ごとの「PR」はPR枠の下の1つにまとめる。PR枠が出ない幅の画面向けに、右の列にも同じ枠を置く(class: rail-alt。PR枠が出る画面では隠す)
+// PR枠の中では、枠ごとの「PR」はPR枠の下の1つにまとめる。PR枠が出ない画面(スマホなど)では、同じバナーを帯「旅の手配」の先頭に入れる(rentalStripItems)
 // 見出し「車で行くなら」・説明の1行・「移動の注意」・「掲載情報確認」は出さない(2026-11-15 運営者の依頼)。カードの「レンタカーを探す」「カーシェアを探す」とバナーだけにする
-export function transportSection(settings,context,today,placement,{rail=false,alt=false}={}) {
+export function transportSection(settings,context,today,placement,{rail=false}={}) {
   const ads=rentalSearch(settings,context,today,placement,{verified:false});
   if (!ads) return "";
-  return `<section class="${rail?'rail-car':`planning-section${alt?' rail-alt':''}`}" aria-label="車で行くなら">${rail?ads.replace(PR_FOOT,''):ads}</section>`;
+  return `<section class="${rail?'rail-car':'planning-section'}" aria-label="車で行くなら">${rail?ads.replace(PR_FOOT,''):ads}</section>`;
+}
+// スマホなどの帯「旅の手配」に入れる、レンタカー・カーシェアのバナー(2026-11-15 運営者の依頼。「車で行くなら」の枠を、帯にまとめる)。
+// 発行した href と img のまま。計測は今までどおり(レンタカーの配置 event_rental・regular_rental)。画像は、どちらも 300×250(同日に確かめた大きさ。帯の中で場所を先に取るために書く)
+// 画像のない広告(文字のリンクだけを発行したもの)は、同じ高さの文字のタイルにする
+export function rentalStripItems(settings,context,today,placement) {
+  return offersFor(settings,'rental',context,today).map(o=>{
+    const label=`${providers[o.provider].name}で${o.provider==='rakuten-carshare'?'カーシェア':'レンタカー'}を探す`;
+    return `<a class="strip-banner${o.imageUrl?'':' strip-text'}" href="${esc(o.url)}" aria-label="${esc(label)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/${o.id}" data-affiliate-category="rental" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="${esc(label)}" width="300" height="250" loading="lazy" decoding="async">`:`<span>${esc(label)}</span>`}</a>`;
+  });
 }

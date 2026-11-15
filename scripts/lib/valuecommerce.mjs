@@ -27,7 +27,8 @@ export function vcTag({kind,destination,text,meta={},className='',id=''}) {
   const href=vcHref(kind,destination),pid=VC[kind];
   if(meta["data-goatcounter-click"] && !meta["data-goatcounter-title"])meta={...meta,"data-goatcounter-title":meta["data-goatcounter-click"]};
   const attrs=Object.entries(meta).map(([key,value])=>{
-    if(!/^data-(goatcounter-(click|title)|affiliate-(category|partner|placement|id)|banner-partner)$/.test(key))throw Error('Invalid VC wrapper metadata');
+    // data-vc-media: その広告を出す画面の条件(メディアクエリ)。条件に合わない画面では、同意があっても発行コードを読み込まない(見えない広告の画像を取りに行かない)
+    if(!/^data-(goatcounter-(click|title)|affiliate-(category|partner|placement|id)|banner-partner|vc-media)$/.test(key))throw Error('Invalid VC wrapper metadata');
     return `${key}="${esc(value)}"`;
   }).join(' ');
   const banner=BANNERS.has(kind);

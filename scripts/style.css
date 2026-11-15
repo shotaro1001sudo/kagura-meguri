@@ -111,7 +111,7 @@ html{scroll-padding-top:84px}
 
 /* 面(パネル): 一覧のカード・要点の枠・宿や旅の案内・入口のタイルなど、ひとまとまりの情報を載せる箱。
    枠・角の丸み・影・地色は、この1か所で決める(部品ごとに書かない)。中の余白だけを、部品の側で決める */
-:where(.card,.keyinfo,.stay,.aff,.rail-car,.side-box,.more-picks,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
+:where(.card,.keyinfo,.stay,.aff,.rail-car,.pr-strip,.side-box,.more-picks,.planning-card,.quick a,.planning-links>a,.planning-links>.planning-nearby,.d-side .planning-section,
   .finder,.form fieldset,.gcard,.fig,.checklist,.era,.hnav a,.schedule-hub,.ended-note,.experience-region,.quiz-type,.opoints>li,.ocards>li,.oways>*,.ofix,.faq details,.toc:not(.gnav)){border:1px solid var(--edge);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 
 /* 一覧のカード: 左に日付、右に題 → 時刻と場所 → 会場・料金・予約 → 種類。カード全体が詳細へのリンク */
@@ -421,8 +421,22 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 「車で行くなら」の枠があるPR枠は、その下のバナーを1画面に収まる数だけにする(高さ 800px 以上は2つ、640〜799px は1つ、それより低いと0) */
 @media(max-height:799px){.side-rail:has(>.rail-car) .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
 @media(max-height:639px){.side-rail:has(>.rail-car) .rail-banner{display:none}}
-/* 右のPR枠に「車で行くなら」が出る画面では、右の列の同じ枠(rail-alt)は出さない */
-@media(min-width:1400px) and (min-height:520px){body:has(.side-rail.w>.rail-car) .d-side .rail-alt{display:none}}
+/* 帯「旅の手配」(2026-11-15 運営者の依頼): スマホなど、両サイドのPR枠が出ない画面で、公演ページの宿・体験の枠のすぐ下に1本だけ出す。
+   横に送って見るバナーの列(高さ 150px)。右端は枠の外まで続けて、続きがあることを見せる。画面に固定しない(公演の内容にかぶせない) */
+.pr-strip{margin:0 0 16px;padding:14px 0 12px 16px;overflow:hidden}
+.pr-strip h2{margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.pr-strip h2:after{display:none}
+.pr-strip-row{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-left:0;padding:2px 16px 8px 2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.pr-strip-row:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}
+.strip-banner:not([hidden]){display:block;flex:none;height:150px;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);scroll-snap-align:start}
+.strip-banner img{display:block;height:150px;width:auto;max-width:none}
+/* 画像のない広告(文字のリンク)は、同じ高さの文字のタイルにする */
+.strip-banner.strip-text:not([hidden]){display:flex;align-items:center;justify-content:center;width:150px;padding:12px;border:1px solid var(--line);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.7;text-align:center;text-decoration:none;word-break:auto-phrase}
+/* じゃらん・JTB・日本旅行(バリューコマースの発行コード。画像に大きさの指定がない)は正方形なので、読み込みの前から場所を取っておく */
+.vc-ad.strip-banner>a{display:block;height:150px}.vc-ad.strip-banner img{aspect-ratio:1/1}
+.strip-banner:focus-visible,.strip-banner>a:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}
+.pr-strip .pr-foot{margin:4px 16px 0 auto}
+/* 両サイドのPR枠が出る画面(幅 1400px 以上)では、帯は出さない(同じバナーがPR枠にある) */
+@media(min-width:1400px) and (min-height:520px){.pr-strip{display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}

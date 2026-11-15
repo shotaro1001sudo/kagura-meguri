@@ -68,6 +68,26 @@ export function valuecommerceIssuedTests({ok,section}) {
     w.close();
   }
 
+  { // 2026-11-15: PCの両サイドのPR枠の広告は、PR枠が出る画面でだけ読み込む。スマホの帯の広告は、帯が出る画面でだけ読み込む(見えない広告の画像を取りに行かない)
+    const RAIL_Q='(min-width:1400px) and (min-height:520px)',STRIP_Q='not all and '+RAIL_Q;
+    const railTag=vcTag({kind:'railNta',className:'rail-banner',meta:{'data-goatcounter-click':'rail-nta/jr-hotel','data-vc-media':RAIL_Q}}),stripTag=vcTag({kind:'railNta',className:'strip-banner',meta:{'data-goatcounter-click':'rail-nta/strip-jr-hotel','data-vc-media':STRIP_Q}}),plain=vcTag({kind:'banner',meta:{'data-goatcounter-click':'banner-jalan/test'}});
+    const dom=new JSDOM(`<div id="rail">${railTag}</div><div id="strip">${stripTag}</div><div id="plain">${plain}</div>`,{runScripts:'outside-only'}),w=dom.window;let wide=false;
+    w.matchMedia=q=>({matches:q.startsWith('not all')?!wide:wide});
+    w.eval(script);
+    const imgs=id=>w.document.querySelectorAll('#'+id+' img').length,hidden=id=>w.document.querySelector('#'+id+' [data-vc-ad]').hidden;
+    ok(imgs('rail')+imgs('strip')+imgs('plain')===0,'画面の条件つきの広告も、同意の前は読み込まない');
+    choice(w,true);
+    ok(imgs('rail')===0&&hidden('rail')&&imgs('strip')===1&&!hidden('strip')&&imgs('plain')===1,'スマホの幅: 帯の広告だけを読み込み、両サイドのPR枠の広告は読み込まない(条件のない広告は、いつも読み込む)');
+    wide=true;choice(w,true);
+    ok(imgs('rail')===1&&!hidden('rail')&&imgs('strip')===0&&hidden('strip')&&imgs('plain')===1,'PCの幅に変わったら、両サイドのPR枠の広告を読み込み、帯の広告は外す');
+    wide=false;choice(w,true);const again=w.document.querySelector('#strip img');wide=true;choice(w,true);wide=false;choice(w,true);
+    ok(w.document.querySelector('#strip img')===again&&imgs('rail')===0,'幅が行き来しても、同じ画像を作り直さない');
+    choice(w,false);
+    ok(imgs('rail')+imgs('strip')+imgs('plain')===0,'同意の取り消しで、条件つきの広告も外す');
+    ok(/addEventListener\('resize'/.test(script)&&script.includes("getAttribute('data-vc-media')")&&(()=>{try{vcTag({kind:'banner',meta:{'data-other':'x'}});return false}catch{return true}})(),'画面の大きさが変わったら合わせ直す。広告の外側に付けられる属性は、決めたものだけ');
+    w.close();
+  }
+
   section('VC wrapper GA4: unchanged fields, statistics gate, deduplication');
   const d=new JSDOM(directory,{url:'https://kagurameguri.jp/experiences.html?secret=x',runScripts:'outside-only',pretendToBeVisual:true}),win=d.window,events=[];let notify;
   win.IntersectionObserver=class{constructor(fn){notify=fn}observe(){}unobserve(){}};

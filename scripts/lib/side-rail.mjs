@@ -69,10 +69,31 @@ export const railBannersFor = (path, s) => RAIL_ORDER[path]
 export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = "" }) {
   const side = (s) => {
     const banners = railBannersFor(path, s).filter((b) => on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
-      ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner } })
+      ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner, "data-vc-media": railMedia(wide) } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
     const items = s === "right" && car ? [car, ...banners] : banners;
     return items.length ? `<aside class="side-rail side-rail-${s === "left" ? "l" : "r"}${wide ? " w" : ""}" aria-label="広告">${items.join("")}<span class="pr pr-foot">PR</span></aside>` : "";
   };
   return side("left") + side("right");
+}
+
+// 両サイドの PR 枠が出る画面の条件(style.css の @media と同じ)。バリューコマースの広告は、この条件に合う画面でだけ読み込む(スマホでは読み込まない)
+export const railMedia = (wide) => `(min-width:${wide ? 1400 : 1280}px) and (min-height:520px)`;
+// 帯が出る画面の条件 = 本文が広いページ(公演ページ)で、両サイドの PR 枠が出ない画面
+export const STRIP_MEDIA = `not all and ${railMedia(true)}`;
+
+/**
+ * スマホなど、両サイドの PR 枠が出ない画面向けの帯「旅の手配」(2026-11-15 運営者の依頼)。公演ページ(開催・定期公演)の、宿・体験の枠のすぐ下に1本だけ置く。
+ * 横に送って見るバナーの列。公演の概要・宿・体験より上には置かない(宿・体験は、今後、協賛枠にするかもしれないので、帯は必ずその下)。
+ * 並び: 行き方(レンタカー・カーシェア = lead。「車で行くなら」の枠をここにまとめる)→ JR+ホテル → 高速バス → 温泉宿(JTB)→ 露天風呂の宿(楽天)。
+ * 体験のバナーは、すぐ上の体験の枠と重なるので入れない。宿の枠と重なる宿のバナーは、最後の2つだけ。
+ * クリックの名前は rail-<広告主>/strip-<バナーのID>(GA4 の配置は side_rail のまま。中身のIDの strip- で、帯のクリックと見分ける)
+ */
+export const STRIP_ORDER = ["jr-hotel", "bus", "onsen", "onsen-rotenburo"];
+export function prStripHtml({ on, attrs, esc, lead = [] }) {
+  const banners = STRIP_ORDER.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]).map((b) => b.vc
+    ? vcTag({ kind: b.vc, className: "strip-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/strip-${b.id}`, "data-banner-partner": b.partner, "data-vc-media": STRIP_MEDIA } })
+    : `<a class="strip-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/strip-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
+  const items = [...lead, ...banners];
+  return items.length ? `<aside class="pr-strip" aria-labelledby="pr-strip-h"><h2 id="pr-strip-h">旅の手配</h2><div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
 }

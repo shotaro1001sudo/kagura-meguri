@@ -10,11 +10,18 @@
       return choice.marketing === true ? 'allowed' : 'denied';
     } catch (_) { return 'unknown'; }
   }
+  // data-vc-media のある広告は、その条件に合う画面でだけ読み込む(PCの両サイドのPR枠はスマホで読み込まず、スマホの帯はPCで読み込まない)。
+  // 条件を確かめられないブラウザでは、今までどおり読み込む
+  function wanted(slot) {
+    const query=slot.getAttribute('data-vc-media');
+    if(!query||typeof window.matchMedia!=='function')return true;
+    try { return window.matchMedia(query).matches===true; } catch (_) { return true; }
+  }
   function sync() {
     status.state=readState();
     const display=status.state==='allowed';
     for(const slot of document.querySelectorAll('[data-vc-ad]')) {
-      if(!display) {
+      if(!display||!wanted(slot)) {
         // Requests already initiated cannot be undone. Keep the original nodes only in memory.
         for(const child of [...slot.childNodes])if(child.nodeName!=='TEMPLATE')child.remove();
         slot.hidden=true;
@@ -35,5 +42,11 @@
   document.addEventListener('DOMContentLoaded',sync);
   window.addEventListener('pageshow',sync);
   window.addEventListener('focus',sync);
+  // 画面の大きさ・向きが変わって条件が変わったら、出す広告を合わせ直す(続けて変わるあいだは待つ。条件つきの広告がないページでは何もしない)
+  let timer=0;
+  window.addEventListener('resize',()=>{
+    if(!document.querySelector('[data-vc-ad][data-vc-media]'))return;
+    clearTimeout(timer); timer=setTimeout(sync,200);
+  });
   sync();
 })();

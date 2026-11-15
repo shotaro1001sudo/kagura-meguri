@@ -28,13 +28,13 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { sideRailHtml, railPage } from "./lib/side-rail.mjs";
+import { sideRailHtml, railPage, prStripHtml } from "./lib/side-rail.mjs";
 import { clauseParts, clausesHtml } from "./lib/clauses.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
 import { questions, features, traditions, quizEngine, QUIZ_CHECKED, evidenceWeight, evidenceText } from './lib/quiz.mjs';
-import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection } from './lib/visitor-planning.mjs';
+import { CHECKED as PLANNING_CHECKED, offersFor, offerCards, experienceDirectory, experienceSection, planningLinks, rentalSearch, transportSection, rentalStripItems } from './lib/visitor-planning.mjs';
 
 // テスト用の切り替え: EVENTS_FILE / REGULAR_FILE(データ)/ OUT_DIR(出力先)/ BUILD_NOW(日本時間の現在 "YYYY-MM-DDTHH:mm")
 const OUT = process.env.OUT_DIR ?? "dist";
@@ -240,6 +240,8 @@ const amazon = (kw) => `https://www.amazon.co.jp/s?k=${encodeURIComponent(kw)}${
 const STAY_AREA = { "東栄町": "奥三河" };
 const stayPlace = (x) => { const c = x.city ? x.city.replace(/^.*郡/, "") : x.prefecture; return STAY_AREA[c] ?? c; };
 // 外部リンク(アフィリエイト)の属性。報酬の出るリンクは sponsored。クリック数は、アクセス解析(GoatCounter)で数える
+// スマホなど、両サイドのPR枠が出ない画面向けの帯「旅の手配」(公演ページの、宿・体験の枠のすぐ下。2026-11-15 運営者の依頼)
+const prStrip = (x, placement) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, lead: rentalStripItems(visitorPlanning, x, today, placement) });
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 // 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
@@ -1011,7 +1013,7 @@ ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.ur
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${shareBlock(`/events/${e.id}.html`, e.name)}</div>
-${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${stayBlock(e)}${planningLinks(e,today,experienceAff,{prep:false,rakuten:rakutenOn})}${transportSection(visitorPlanning,e,today,'event_rental',{alt:true})}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${stayBlock(e)}${planningLinks(e,today,experienceAff,{prep:false,rakuten:rakutenOn})}${prStrip(e,'event_rental')}</div>` : ""}<div class="d-rest">
 ${isUpcoming(e) ? "" : related(e)}
 ${sourceNote(e)}
 ${isUpcoming(e)?`${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn")}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato")}`:''}
@@ -1045,7 +1047,7 @@ for (const r of regular) {
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}</div>
-<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false,rakuten:rakutenOn})}${transportSection(visitorPlanning,r,today,'regular_rental',{alt:true})}</div><div class="d-rest">
+<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false,rakuten:rakutenOn})}${prStrip(r,'regular_rental')}</div><div class="d-rest">
 ${sourceNote(r)}
 ${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn")}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato")}
 ${related(r)}
