@@ -5,7 +5,8 @@
 //   場所は会場の市区町村(郡は外す。STAY_AREA の呼びかえも同じ)。日付が今日より前(続いている開催)なら、今日にする。
 // - 協賛: その5件のどれかが、契約中の協賛(data/sponsors.json の area など)の地域に当てはまれば、その協賛を出す。
 //   契約を登録すれば、次のビルドから自動で出る(期間が終われば自動で消える)。
-// - 協賛の募集: 当てはまる協賛がないとき、その一覧の2本目の帯(帯が1本だけなら1本目)に1回だけ出す。料金は config.json の sponsorPrices から。
+// - 協賛の募集: 当てはまる協賛がないとき、その一覧の2本目の帯に1回だけ出す。料金は config.json の sponsorPrices から。
+// - 帯には1個だけ出す(同日「帯ではなく、PRを1個だけ」)。返す並びの先頭が出る: 協賛 → 宿 → 募集。
 // - クリックの名前: 帯の何本目か(list1・list2…)を入れる。宿は rail-rakuten/listN-stay、バナーは rail-rakuten/listN-<バナーのID>
 //   (GA4 の配置は side_rail のまま。中身のIDで見分ける)、協賛は sponsor/<ID>/inlist、募集は sponsor-recruit/listN。
 //
@@ -17,7 +18,7 @@
  * @param {number} total その一覧に入る帯の数
  * @param {{affId?:string, today:string, stayArea?:Record<string,string>, esc:(s:string)=>string, sponsorTile?:(x:object)=>string, recruit?:string}} o
  *   affId: 楽天アフィリエイトのID(なければ宿は出さない)。sponsorTile: その開催に当てはまる協賛のマス(なければ "")。recruit: 募集のマス(@N@ が帯の番号になる)
- * @returns {string[]} 帯の先頭に並べるマス
+ * @returns {string[]} 出す候補のマス(先頭が出る。空なら、その帯のバナー)
  */
 export function inlistLead(items, k, total, o) {
   var WD = ["日", "月", "火", "水", "木", "金", "土"], n = {}, first = {}, best = "", out = [], i, sp = "";
@@ -29,6 +30,9 @@ export function inlistLead(items, k, total, o) {
     if (!first[p] || d < first[p]) first[p] = d;
     if (!best || n[p] > n[best]) best = p;
   }
+  // 協賛がいちばん先(帯には1個だけ出すので、当てはまる協賛があれば協賛を出す)
+  if (o.sponsorTile) for (i = 0; i < items.length && !sp; i++) sp = o.sponsorTile(items[i]) || "";
+  if (sp) out.push(sp);
   if (k === 0 && best && o.affId) {
     var day = first[best] < o.today ? o.today : first[best];
     var t = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10))), u = new Date(t.getTime() + 864e5);
@@ -40,9 +44,7 @@ export function inlistLead(items, k, total, o) {
     out.push('<a class="strip-banner strip-text strip-stay" href="' + o.esc(href) + '" rel="sponsored noopener" target="_blank" data-goatcounter-click="' + name + '" data-goatcounter-title="' + name + '" data-banner-partner="rakuten">'
       + '<b>' + (t.getUTCMonth() + 1) + "月" + t.getUTCDate() + "日(" + WD[t.getUTCDay()] + ")</b><span>" + o.esc(best) + "周辺の宿</span><small>楽天トラベルで探す</small></a>");
   }
-  if (o.sponsorTile) for (i = 0; i < items.length && !sp; i++) sp = o.sponsorTile(items[i]) || "";
-  if (sp) out.push(sp);
-  else if (o.recruit && (k === 1 || (k === 0 && total === 1))) out.push(o.recruit.replace(/@N@/g, String(k + 1)));
+  if (!sp && o.recruit && k === 1) out.push(o.recruit.replace(/@N@/g, String(k + 1)));
   return out;
 }
 

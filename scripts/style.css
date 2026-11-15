@@ -421,26 +421,22 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 「車で行くなら」の枠があるPR枠は、その下のバナーを1画面に収まる数だけにする(高さ 800px 以上は2つ、640〜799px は1つ、それより低いと0) */
 @media(max-height:799px){.side-rail:has(>.rail-car) .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
 @media(max-height:639px){.side-rail:has(>.rail-car) .rail-banner{display:none}}
-/* 帯「旅の手配」(2026-11-15 運営者の依頼): スマホなど、両サイドのPR枠が出ない画面で、公演ページの宿・体験の枠のすぐ下に1本だけ出す。
-   横に送って見るバナーの列(高さ 150px)。右端は枠の外まで続けて、続きがあることを見せる。画面に固定しない(公演の内容にかぶせない) */
-.pr-strip{margin:28px 0;padding:14px 0 12px 16px;overflow:hidden}.d-side .pr-strip{margin:0 0 16px}
+/* スマホなど、両サイドのPR枠が出ない画面のPR「旅の手配」(2026-11-15 運営者の依頼)。はじめは横に送って見るバナーの列(帯)だったが、
+   同日「帯ではなく、PRを1個だけ・枠と同じ横幅で」に変えた。1つの枠に、PRを1個だけ。PRは枠の中の幅いっぱい
+   (画像のバナーは、大きくなりすぎないよう 480px まで、真ん中に)。画面に固定しない(公演の内容にかぶせない) */
+.pr-strip{margin:28px 0;padding:14px 16px 12px}.d-side .pr-strip{margin:0 0 16px}
 .pr-strip :is(h2,.pr-strip-h){margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);line-height:1.7}.pr-strip h2:after{display:none}
-.pr-strip-row{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-left:0;padding:2px 16px 8px 2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
-.pr-strip-row:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}
-.strip-banner:not([hidden]){display:block;flex:none;height:150px;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);scroll-snap-align:start}
-.strip-banner img{display:block;height:150px;width:auto;max-width:none}
-/* 画像のない広告(文字のリンク)は、同じ高さの文字のタイルにする */
-.strip-banner.strip-text:not([hidden]){display:flex;align-items:center;justify-content:center;width:150px;padding:12px;border:1px solid var(--line);background:var(--bg);color:var(--ac2);font-size:var(--fs-s);line-height:1.7;text-align:center;text-decoration:none;word-break:auto-phrase}
-/* 一覧の途中の帯の先頭のマス(直前の5件に合わせた宿・協賛・協賛の募集。2026-11-15)。日付・場所を上に大きく、押した先を下に小さく */
-.strip-banner.strip-text:is(.strip-stay,.strip-sp,.strip-recruit):not([hidden]){flex-direction:column;gap:2px;width:168px;line-height:1.5}
+.pr-strip-one{display:flex;justify-content:center}
+.pr-strip-one>.strip-banner:not([hidden]){display:block;width:100%;max-width:480px;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12)}
+.pr-strip-one>.strip-banner img{display:block;width:100%;height:auto}
+/* 画像のない広告(文字のリンク)・宿・協賛・協賛の募集は、枠の幅いっぱいの文字の箱。日付・場所を大きく、押した先を下に小さく */
+.pr-strip-one>.strip-banner.strip-text:not([hidden]){display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;max-width:none;min-height:96px;padding:16px;border:1px solid var(--line);background:var(--bg);box-shadow:none;color:var(--ac2);font-size:var(--fs-s);line-height:1.6;text-align:center;text-decoration:none;word-break:auto-phrase}
 .strip-text:is(.strip-stay,.strip-sp,.strip-recruit) b{color:var(--fg);font-weight:600}
-.strip-text.strip-stay span{color:var(--fg);font-size:var(--fs-m);font-family:var(--serif)}
+.strip-text.strip-stay span{color:var(--fg);font-size:var(--fs-l);font-family:var(--serif)}
 .strip-text:is(.strip-stay,.strip-sp,.strip-recruit) small{margin-top:6px;color:var(--ac2);font-size:var(--fs-2xs);text-decoration:underline;text-underline-offset:3px}
 .strip-text.strip-sp{background:var(--card)}.strip-text.strip-recruit{border-style:dashed}
-/* じゃらん・JTB・日本旅行(バリューコマースの発行コード。画像に大きさの指定がない)は正方形なので、読み込みの前から場所を取っておく */
-.vc-ad.strip-banner>a{display:block;height:150px}.vc-ad.strip-banner img{aspect-ratio:1/1}
-.strip-banner:focus-visible,.strip-banner>a:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}
-.pr-strip .pr-foot{margin:4px 16px 0 auto}
+.strip-banner:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+.pr-strip .pr-foot{margin:6px 0 0 auto}
 /* 両サイドのPR枠が出る画面では、帯は出さない(同じバナーがPR枠にある)。本文が広いページ(.w = 公演・今週末・今月)は幅 1400px 以上、ほかのページは 1280px 以上 */
 @media(min-width:1400px) and (min-height:520px){.pr-strip.w{display:none}}
 @media(min-width:1280px) and (min-height:520px){.pr-strip:not(.w){display:none}}
