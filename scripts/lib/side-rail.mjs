@@ -79,21 +79,34 @@ export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = ""
 
 // 両サイドの PR 枠が出る画面の条件(style.css の @media と同じ)。バリューコマースの広告は、この条件に合う画面でだけ読み込む(スマホでは読み込まない)
 export const railMedia = (wide) => `(min-width:${wide ? 1400 : 1280}px) and (min-height:520px)`;
-// 帯が出る画面の条件 = 本文が広いページ(公演ページ)で、両サイドの PR 枠が出ない画面
-export const STRIP_MEDIA = `not all and ${railMedia(true)}`;
+// 帯が出る画面の条件 = そのページで、両サイドの PR 枠が出ない画面(本文が広いページは幅 1400px 未満、ほかは 1280px 未満)
+export const stripMedia = (wide) => `not all and ${railMedia(wide)}`;
 
 /**
- * スマホなど、両サイドの PR 枠が出ない画面向けの帯「旅の手配」(2026-11-15 運営者の依頼)。公演ページ(開催・定期公演)の、宿・体験の枠のすぐ下に1本だけ置く。
- * 横に送って見るバナーの列。公演の概要・宿・体験より上には置かない(宿・体験は、今後、協賛枠にするかもしれないので、帯は必ずその下)。
- * 並び: 行き方(レンタカー・カーシェア = lead。「車で行くなら」の枠をここにまとめる)→ JR+ホテル → 高速バス → 温泉宿(JTB)→ 露天風呂の宿(楽天)。
- * 体験のバナーは、すぐ上の体験の枠と重なるので入れない。宿の枠と重なる宿のバナーは、最後の2つだけ。
+ * スマホなど、両サイドの PR 枠が出ない画面向けの帯「旅の手配」(2026-11-15 運営者の依頼)。横に送って見るバナーの列を、ページに1本だけ置く。
+ * 置き場所は、主な内容(公演の概要・一覧・地図・検索の結果)と、宿・体験の枠のあと。それより上には置かない
+ * (宿・体験は、今後、協賛枠にするかもしれないので、帯は必ずその下)。画面には固定しない。
+ * - 公演ページ(開催・定期公演): 並びは STRIP_ORDER。先頭に、行き方(レンタカー・カーシェア = lead。「車で行くなら」の枠をここにまとめる)。
+ *   体験のバナーは、すぐ上の体験の枠と重なるので入れない。
+ * - 探すページ(今週末・今月・日付と場所・地図・種類・都道府県): 並びは stripIdsFor(そのページの両サイドの PR 枠と同じ中身を、右 → 左の順に)。
  * クリックの名前は rail-<広告主>/strip-<バナーのID>(GA4 の配置は side_rail のまま。中身のIDの strip- で、帯のクリックと見分ける)
  */
 export const STRIP_ORDER = ["jr-hotel", "bus", "onsen", "onsen-rotenburo"];
-export function prStripHtml({ on, attrs, esc, lead = [] }) {
-  const banners = STRIP_ORDER.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]).map((b) => b.vc
-    ? vcTag({ kind: b.vc, className: "strip-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/strip-${b.id}`, "data-banner-partner": b.partner, "data-vc-media": STRIP_MEDIA } })
+/** 帯に入れる数の上限(「適度に」。横に送って見るので、多くしすぎない) */
+export const STRIP_MAX = 6;
+/**
+ * 探すページの帯の並び: そのページの両サイドの PR 枠のバナーを、右(行き方・体験)→ 左(宿)の順に。
+ * じゃらんの宿・楽天の源泉の宿は入れない(宿の枠があるページでは重なり、数も増えすぎるため)。skip: すぐ上の枠と重なるもの(都道府県のページの体験など)
+ */
+export const stripIdsFor = (path, { skip = [] } = {}) => (RAIL_ORDER[path] ? [...railBannersFor(path, "right"), ...railBannersFor(path, "left")].map((b) => b.id) : STRIP_DEFAULT)
+  .filter((id) => !["ryokan", "onsen-gensen", ...skip].includes(id)).slice(0, STRIP_MAX);
+// 並びを決めていないページ(都道府県・神楽の種類)の帯。両サイドの PR 枠の中身に、高速バスを足す
+// (同意がないと日本旅行・JTBが出ないので、楽天のバナーが3つ以上残るようにする)
+const STRIP_DEFAULT = ["jr-hotel", "rentacar", "bus", "experiences", "onsen-rotenburo", "onsen"];
+export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER }) {
+  const banners = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]).map((b) => b.vc
+    ? vcTag({ kind: b.vc, className: "strip-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/strip-${b.id}`, "data-banner-partner": b.partner, "data-vc-media": stripMedia(wide) } })
     : `<a class="strip-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/strip-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
   const items = [...lead, ...banners];
-  return items.length ? `<aside class="pr-strip" aria-labelledby="pr-strip-h"><h2 id="pr-strip-h">旅の手配</h2><div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
+  return items.length ? `<aside class="pr-strip${wide ? " w" : ""}" aria-labelledby="pr-strip-h"><h2 id="pr-strip-h">旅の手配</h2><div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
 }
