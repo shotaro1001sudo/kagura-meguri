@@ -27,7 +27,7 @@ import { validKey as validIndexNowKey } from "./lib/indexnow.mjs";
 import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
-import { stayBannersHtml } from "./lib/stay-banners.mjs";
+import { stayBannersHtml, expBannersHtml } from "./lib/stay-banners.mjs";
 import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS, INLIST_THEMES, inlistTheme, selfBannerHtml } from "./lib/side-rail.mjs";
 import { inlistLead, inlistCount } from "./lib/inlist-pr.mjs";
 import { phraseParts, topicGroups, phrasesHtml } from "./lib/phrases.mjs";
@@ -256,14 +256,16 @@ const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}`, l
 const listItem = (x, day, page) => ({ prefecture: x.prefecture, city: x.city, day: day < today ? today : day, id: x.id, page, x });
 const leadOpts = () => ({ sponsorTile: (it) => listSponsorTile(sponsorsNow, it.page, it.x, { esc }) });
 // 一覧の並び(entries: [{ html, item }])に、5件ごとに帯をはさむ(あとに続く件があるときだけ。最後の件のあとには入れない)
-const withStrips = (entries, path, opts) => {
-  const total = inlistCount(entries.length, STRIP_EVERY), o = leadOpts();
-  return entries.map(({ html }, i) => {
-    if ((i + 1) % STRIP_EVERY !== 0 || i + 1 >= entries.length) return html;
-    const k = Math.floor(i / STRIP_EVERY), lead = inlistLead(entries.slice(i + 1 - STRIP_EVERY, i + 1).map((e) => e.item), k, total, o);
-    return html + inlistStrip(path, k, { ...opts, lead, land: true });
-  }).join("");
+// stripAfter: 一覧の i 件目(0 から)のあとに入れる帯を返す関数を作る(一覧が見出しで分かれるページ用。都道府県のページなど)。items: 一覧の全件の listItem(並びの順)
+const stripAfter = (items, path, opts) => {
+  const total = inlistCount(items.length, STRIP_EVERY), o = leadOpts();
+  return (i) => {
+    if ((i + 1) % STRIP_EVERY !== 0 || i + 1 >= items.length) return "";
+    const k = Math.floor(i / STRIP_EVERY), lead = inlistLead(items.slice(i + 1 - STRIP_EVERY, i + 1), k, total, o);
+    return inlistStrip(path, k, { ...opts, lead, land: true });
+  };
 };
+const withStrips = (entries, path, opts) => { const after = stripAfter(entries.map((e) => e.item), path, opts); return entries.map(({ html }, i) => html + after(i)).join(""); };
 // 今週末・今月の右の列(PCの画面)の、自分たちのバナー2つ(協賛のご案内・公演の掲載のご案内)。宿の枠の下に横並び(2026-11-15 運営者の依頼)。
 // スマホなど右の列がない画面では出さない(一覧の途中の帯に出る)
 const selfPair = (page) => `<aside class="self-pair" aria-label="神楽めぐりからのご案内">${["sponsor", "organizers"].map((k) => selfBannerHtml(k, "self-pair-b", `pr-self/${page}-${k}`, esc)).join("")}</aside>`;
@@ -300,6 +302,11 @@ function affiliateBlock(e) {
   const bn = stayBanners(e.id ?? e.prefecture);
   const goods = amazonOn ? `<div class="afflist"><a href="${esc(amazon(e.kagura || "神楽"))}" ${affAttrs(true, `aff-amazon/${e.prefecture}`)}><b>神楽の本・グッズ</b><small>Amazon</small></a></div>` : "";
   return `<aside class="aff"><h2>${e.venue ? "会場近くの宿" : `${esc(e.prefecture)}の宿`}</h2>${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
+}
+/** 都道府県のページの「◯◯県の体験」。宿の枠のすぐ下に、宿の枠と同じ形で(2026-11-15 運営者の依頼) */
+function expBlock(p) {
+  const bn = expBannersHtml({ on: { rakuten: rakutenOn, vc: vcEnabled(experienceAff, "activity") }, id: p, attrs: affAttrs, esc });
+  return bn ? `<aside class="aff aff-exp"><h2>${esc(p)}の体験</h2>${bn}<span class="pr pr-foot">PR</span></aside>` : "";
 }
 // 広告が未設定の間は何も出さない(「広告枠」という仮表示を公開サイトに出さない)。確認用に ADS_PLACEHOLDER=1 で枠を表示できる
 const adSlot = (slot) =>
@@ -487,10 +494,11 @@ ${withFacts ? cardFacts(e) : ""}${withTag ? kaguraTag(e.kagura) : ""}</div></div
 // 休演の時期(秋祭りの間など)は、曜日の決まりだけを見せると、いつでも観られると誤解されるため、「休演中」と次の公演日を出す
 // 県・種類のページの一覧: 月が変わるところに、月の区切りを入れる(2か月以上にまたがるときだけ)。「いつ」を拾いやすくする。
 // 区切りは見出しにせず、カードの見出しの段(h3)は変えない
-const cardsByMonth = (list, withTag = true) => {
+// after(i): i 件目のあとに入れるもの(都道府県のページの、一覧の途中の帯。stripAfter)
+const cardsByMonth = (list, withTag = true, after = () => "") => {
   const multi = new Set(list.map((e) => e.start.slice(0, 7))).size > 1;
   let prev = "";
-  return list.map((e) => { const k = e.start.slice(0, 7); const head = multi && k !== prev ? `<p class="mhead">${k.slice(0, 4) === nowJst.slice(0, 4) ? `${+k.slice(5, 7)}月` : `${+k.slice(0, 4)}年${+k.slice(5, 7)}月`}</p>` : ""; prev = k; return head + card(e, "h3", true, withTag); }).join("");
+  return list.map((e, i) => { const k = e.start.slice(0, 7); const head = multi && k !== prev ? `<p class="mhead">${k.slice(0, 4) === nowJst.slice(0, 4) ? `${+k.slice(5, 7)}月` : `${+k.slice(0, 4)}年${+k.slice(5, 7)}月`}</p>` : ""; prev = k; return head + card(e, "h3", true, withTag) + after(i); }).join("");
 };
 const regPause = (r) => { const st = regularStatus(r, today); return st.paused ? `休演中・${st.next ? `次の公演は${mdLabel(st.next)}` : "次の公演日は未定"}` : ""; };
 const regCard = (r, { withTag = true } = {}) => { const pause = regPause(r); return `<div class="card reg${pause ? " paused" : ""}"><div class="date"><small>定期</small><b>${pause ? "休演中" : esc(r.badge || "毎")}</b></div><div>
@@ -939,12 +947,14 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
   const monthNavigation = isHiroshima && monthKeys.length
     ? `<nav class="pref-month-nav chiprow" aria-label="広島県の神楽公演を開催月から探す"><span class="meta">開催月から探す</span>${monthLinks}${hasAffiliate ? `<a class="tag" href="#hiroshima-stay">遠方からの宿探し</a>` : ""}</nav>`
     : "";
+  // 一覧の途中の帯(スマホなど、両サイドのPR枠が出ない画面だけ。2026-11-15 運営者の依頼「ほかのページに合わせて」)。開催予定と定期公演を通して5件ごと
+  const after = stripAfter([...list.map((e) => listItem(e, e.start.slice(0, 10), "event")), ...reg.map((r) => listItem(r, today, "regular"))], "/pref/", {});
   const scheduleHtml = isHiroshima && list.length
-    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の開催予定</h2><p class="meta"><a class="textlink" href="/month/${key}.html">${esc(monthLabel(key))}の全国日程を見る</a></p>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e, "h3", true)).join("")}</section>`).join("")
-    : list.length ? `<h2>開催予定</h2>${cardsByMonth(list)}` : "";
+    ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の開催予定</h2><p class="meta"><a class="textlink" href="/month/${key}.html">${esc(monthLabel(key))}の全国日程を見る</a></p>${list.filter((e) => e.start.startsWith(key)).map((e) => card(e, "h3", true) + after(list.indexOf(e))).join("")}</section>`).join("")
+    : list.length ? `<h2>開催予定</h2>${cardsByMonth(list, true, after)}` : "";
   const stayHtml = isHiroshima
-    ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>`
-    : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" });
+    ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>${expBlock(p)}`
+    : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }) + expBlock(p);
   // 広島県の説明文の先頭: 今月・来月の開催の件数と、無料の公演の件数(「広島神楽スケジュール」「神楽 広島 無料」で探す人に、最初に答える)
   const thisKey = nowJst.slice(0, 7), nextKey = new Date(Date.UTC(+thisKey.slice(0, 4), +thisKey.slice(5, 7), 1)).toISOString().slice(0, 7);
   const monthCount = (key) => `${+key.slice(5, 7)}月${list.filter((e) => e.start.startsWith(key)).length}件`;
@@ -956,7 +966,7 @@ for (const p of [...new Set([...events, ...regular].map((e) => e.prefecture))]) 
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
 <p class="lead">${esc(p)}で開催される神楽の日程と会場を、公式情報をもとにまとめています。${kinds.length ? `${kinds.map((k) => `<a href="${kaguraHref(k)}">${esc(k)}</a>`).join("、")}の公演を掲載しています。` : ""}</p>${sponsorFor("pref", { prefecture: p })}
-${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map((r) => regCard(r)).join("")}` : ""}${none ? pendingBlock({ label: p, past, near: nearbyUpcoming([p]), pastId: "pref-past" }) : pastMore(past)}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${prStripFor("/pref/", { skip: ["experiences"] })}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}
+${upcomingIntro}${monthNavigation}${isHiroshima && list.length + reg.length ? preparationLinks() : ""}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map((r, j) => regCard(r) + after(list.length + j)).join("")}` : ""}${none ? pendingBlock({ label: p, past, near: nearbyUpcoming([p]), pastId: "pref-past" }) : pastMore(past)}${prefDetail(p)}${list.length+reg.length?experienceSection({prefecture:p},today,experienceAff):''}${prStripFor("/pref/", { skip: ["experiences"] })}${list.length + reg.length ? furusatoBlock(moreOffers, { prefecture: p, towns: [...list, ...reg].map((x) => x.city) }, today, "pref_furusato") : ""}
 ${otherWays()}`,
   }));
 }

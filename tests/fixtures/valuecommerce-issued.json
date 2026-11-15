@@ -45,6 +45,20 @@
       "pid": "892748546",
       "format": "official non-JS",
       "rule": "Nearby-experiences card only; 600x100; destination asoview.com"
+    },
+    "activityWide": {
+      "programId": "2139176",
+      "adId": "2788650",
+      "pid": "892748794",
+      "format": "official non-JS",
+      "rule": "Prefecture page experience box only; 468x60; destination jalan.net/activity/"
+    },
+    "asoviewWide": {
+      "programId": "2130178",
+      "adId": "2697387",
+      "pid": "892748791",
+      "format": "official non-JS",
+      "rule": "Prefecture page experience box only; 468x60; destination asoview.com"
     }
   },
   "examples": [
@@ -107,6 +121,20 @@
       "issuedAt": "2026-11-15",
       "note": "アソビュー!(プログラムID 2130178)広告ID 2697400(600x100)",
       "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748546\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748546\" border=\"0\"></a>"
+    },
+    {
+      "kind": "activityWide",
+      "text": "",
+      "issuedAt": "2026-11-15",
+      "note": "じゃらん 遊び・体験予約(プログラムID 2139176)広告ID 2788650(468x60 汎用バナー)。管理画面の「広告作成」で発行した非JSのコード",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748794\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748794\" border=\"0\"></a>"
+    },
+    {
+      "kind": "asoviewWide",
+      "text": "",
+      "issuedAt": "2026-11-15",
+      "note": "アソビュー!(プログラムID 2130178)広告ID 2697387(468x60)",
+      "code": "<a href=\"//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892748791\" rel=\"nofollow\"><img src=\"//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid=892748791\" border=\"0\"></a>"
     }
   ]
 }

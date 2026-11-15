@@ -1000,6 +1000,11 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .aff .stay-banners{flex-wrap:nowrap}.aff .stay-banner{flex:1 1 0;min-width:0}.aff .stay-banner img{width:100%}
 .d-side .aff .stay-banners{flex-direction:column}
 @media(max-width:560px){.aff .stay-banners{flex-direction:column}}
+/* 県のページの「◯◯県の体験」: 宿の枠のすぐ下に、同じ形の枠で続ける */
+:is(.aff,.pref-stay)+.aff-exp{margin-top:16px}
+/* バナーは3つ(楽天・じゃらん・アソビュー)。宿の枠(2つ横並び)と同じ大きさにするため、1段に2つまで。同意がなく楽天だけのときは、宿の枠の楽天と同じく全幅 */
+@media(min-width:561px){.aff-exp .stay-banners{flex-wrap:wrap;justify-content:center}.aff-exp .stay-banner{flex:0 1 calc(50% - 5px)}
+.aff-exp .stay-banners:not(:has(.vc-ad:not([hidden]))) .stay-banner{flex-basis:100%}}
 /* 種類・県の解説、ガイドの囲み */
 .about{padding:4px 0}
 /* ガイドの持ち物: 「たとえば」の商品は、カードの下に小さく添える(PR表示つき) */

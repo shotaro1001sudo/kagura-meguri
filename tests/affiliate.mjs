@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { VC } from "../scripts/lib/valuecommerce.mjs";
+import { EXP_BANNER, expBannersHtml } from "../scripts/lib/stay-banners.mjs";
 import { stripIdsFor, STRIP_MAX, STRIP_EVERY, prStripHtml, INLIST_THEMES, inlistTheme, RAIL_BANNERS, STRIP_ORDER } from "../scripts/lib/side-rail.mjs";
 import { inlistLead, inlistCount } from "../scripts/lib/inlist-pr.mjs";
 import { activeSponsors, listSponsorTile } from "../scripts/lib/sponsor-slots.mjs";
@@ -31,7 +32,7 @@ export function affiliateTests({ ok, section, OUT, build }) {
     ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"), "追加スクリプトがCSPのハッシュに含まれる");
     // PCの両サイドのPR枠(2026-11-15): 開催・定期公演・県・種類のページだけ。左右の枠ごとに「PR」を1つ
     const rails = ($$) => $$(".side-rail");
-    const dir = "dist-test-ga4-affiliate";
+    const dir = "dist-test-ga4-affiliate", listChecks = []; // listChecks: 都道府県のページの一覧の帯を確かめる(下の、開催の多いテスト用のビルドでも使う)
     // 2026-11-15 運営者の依頼: 今週末・今月・日付と場所で探す・地図で探すページにも出す
     const railPages = ["events/t-full.html", "regular/r-nightly.html", ...readdirSync(join(dir, "pref")).slice(0, 1).map((f) => `pref/${f}`), ...readdirSync(join(dir, "kagura")).slice(0, 1).map((f) => `kagura/${f}`), "weekend.html", "this-month.html", "calendar.html", "map.html", "index.html"];
     const loaded = railPages.map((p) => [p, cheerio.load(readFileSync(join(dir, p), "utf8"))]);
@@ -95,6 +96,27 @@ export function affiliateTests({ ok, section, OUT, build }) {
       // 同日の依頼「各神楽のページの両サイドのPRは『◯◯とは』の高さに」→ さらに「『歴史』タブの高さに」: くわしい情報の枠(最初が「歴史」)が、そろえる相手の中でいちばん先に出てくる
       { const kp = readdirSync(join(dir, "kagura")).filter((f) => f !== "index.html").map((f) => cheerio.load(readFileSync(join(dir, "kagura", f), "utf8")));
         ok(kp.length > 0 && kp.every(($$) => rails($$).length === 2 && $$(RAIL_ANCHOR).first().is(".kagura-folds") && $$(".kagura-folds > .kfold").first().is("#k-history")), "各神楽のページのPR枠は、「歴史」の枠の上端にそろえる", kp.map(($$) => $$(RAIL_ANCHOR).first().attr("class")).join(" / ")); }
+      // 同日の依頼「各◯◯県の神楽のページで、◯◯県の宿の下に、同じ枠の大きさで『◯◯県の体験』を。じゃらんやアソビューなど、宿と同じバナー画像の大きさと配置で」
+      // 「スマホ版の各公演一覧へのPRは、ほかのページに合わせて」(今週末・今月と同じ、5件ごとの横長の帯)
+      { const prefs = readdirSync(join(dir, "pref")).filter((f) => f.endsWith(".html")).map((f) => [f.replace(/\.html$/, ""), cheerio.load(readFileSync(join(dir, "pref", f), "utf8"))]);
+        const ga = (x, partner, $$) => $$(x).attr("data-affiliate-category") === "experiences" && $$(x).attr("data-affiliate-partner") === partner && $$(x).attr("data-affiliate-placement") === "nearby_experiences" && /^[-a-z0-9]{1,48}$/.test($$(x).attr("data-affiliate-id") || "");
+        const badExp = prefs.filter(([p, $$]) => { const ex = $$("main aside.aff.aff-exp"), rk = ex.find("a.stay-banner"), vc = ex.find("[data-vc-ad]");
+          const stay = ex.prev().is("#hiroshima-stay") ? ex.prev().children("aside.aff") : ex.prev();
+          return !(ex.length === 1 && stay.is("aside.aff:not(.aff-exp)") && stay.children("h2").text() === `${p}の宿` && ex.children("h2").text() === `${p}の体験` && ex.children(".stay-banners").length === 1 && ex.children().last().is(".pr.pr-foot") && ex.find(".pr").length === 1
+            && rk.length === 1 && rk.attr("href") === EXP_BANNER.url && rk.find("img").attr("src") === EXP_BANNER.imageUrl && rk.find("img").attr("width") === "486" && rk.find("img").attr("height") === "60" && rk.find("img").attr("alt") && (rk.attr("rel") || "").includes("sponsored") && rk.attr("target") === "_blank" && rk.attr("data-goatcounter-click") === `experience-rakuten/pref-${p}` && ga(rk, "rakuten", $$)
+            && ["", "activityWide,asoviewWide"].includes(vc.toArray().map((x) => $$(x).attr("data-vc-ad")).join()) && vc.toArray().every((x) => { const a = $$(x).find("a"), k = $$(x).attr("data-vc-ad"); return $$(x).is(".stay-banner") && !$$(x).attr("data-vc-media") && a.attr("href") === `//ck.jp.ap.valuecommerce.com/servlet/referral?sid=${VC.sid}&pid=${VC[k]}` && a.find("img").attr("src") === `//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=${VC.sid}&pid=${VC[k]}` && ga(x, k === "activityWide" ? "vc-jalan-activity" : "vc-asoview", $$); }));
+        }).map(([p]) => p);
+        const css = readFileSync("scripts/style.css", "utf8");
+        ok(prefs.length > 0 && badExp.length === 0 && css.includes(":is(.aff,.pref-stay)+.aff-exp{margin-top:16px}") && css.includes(".aff-exp .stay-banner{flex:0 1 calc(50% - 5px)}") && css.includes(".aff-exp .stay-banners:not(:has(.vc-ad:not([hidden]))) .stay-banner{flex-basis:100%}"), "都道府県のページ: 「◯◯県の宿」のすぐ下に、同じ枠で「◯◯県の体験」(楽天 486×60・じゃらん 468×60・アソビュー 468×60 の発行バナー。1段に2つまで、楽天だけのときは全幅。体験の広告として数える)", badExp.join(" "));
+        ok(cheerio.load(expBannersHtml({ on: { rakuten: true, vc: true }, id: "宮崎県", attrs: (_, n) => `rel="sponsored noopener" target="_blank" data-goatcounter-click="${n}"`, esc: (x) => String(x).replace(/&/g, "&amp;").replace(/"/g, "&quot;") }))("[data-vc-ad]").toArray().map((x) => x.attribs["data-vc-ad"]).join() === "activityWide,asoviewWide" && VC.activityWide === "892748794" && VC.asoviewWide === "892748791", "体験の枠のじゃらん・アソビューは、宿と同じ 468×60 で発行したバナー(広告の同意があるときだけ出る)");
+        listChecks.push((d) => readdirSync(join(d, "pref")).filter((f) => f.endsWith(".html")).map((f) => [f, cheerio.load(readFileSync(join(d, "pref", f), "utf8"))]).filter(([, $$]) => { const seq = $$("main .card, main aside.pr-strip.inlist").toArray().filter((x) => !$$(x).closest("details").length), strips = $$("main aside.pr-strip.inlist");
+          if ($$(".ended-note").length) return strips.length !== 0;
+          let n = 0; const at = [];
+          for (const x of seq) { if ($$(x).is(".card")) n++; else at.push(n); }
+          return !(strips.length === inlistCount(n, STRIP_EVERY) && at.every((c, k) => c === (k + 1) * STRIP_EVERY && c < n) && strips.toArray().every((x, k) => { const s = $$(x), o = s.find(".pr-strip-one > *"); return !s.is(".w") && o.length === 1 && s.find("p.pr-strip-h").text() === inlistTheme("/pref/", k).h && (o.is(".strip-land") || o.is(".strip-card") || o.is(".strip-sp")) && !o.is(".sq") && s.find("[data-vc-ad]").length === 0; }));
+        }).map(([p]) => p));
+        const badList = listChecks[0](dir);
+        ok(badList.length === 0 && readFileSync("scripts/build.mjs", "utf8").includes('stripAfter([...list.map((e) => listItem(e, e.start.slice(0, 10), "event")), ...reg.map((r) => listItem(r, today, "regular"))], "/pref/", {})'), "都道府県のページ(スマホ): 開催予定と定期公演を通して5件ごとに、今週末・今月と同じ横長の帯(何本目かで中身を分ける。両サイドのPR枠が出る画面では出さない)", badList.join(" ")); }
       // 同日の依頼「トップの両サイドにもPR。月の公演カードの最初の枠に合わせる。スマホは今週末・今月の一覧と同じ」
       { const ids = ($$, s) => $$(`.side-rail-${s} .rail-banner:not(.rail-self)`).toArray().map((x) => $$(x).attr("data-goatcounter-click").replace(/^rail-[a-z]+\//, ""));
         const home = page("index.html"), rows = home("#list [data-r]"), shown = rows.filter(":not(.ov)").length, placed = home("#list .home-pr"), pool = home("#home-pr-pool"), all = home(".home-pr");
@@ -146,6 +168,8 @@ export function affiliateTests({ ok, section, OUT, build }) {
           const $ = cheerio.load(readFileSync("dist-test-inlist/this-month.html", "utf8")), st = $(".d-top > aside.pr-strip.inlist"), one = (k) => st.eq(k).find(".pr-strip-one > *");
           ok(st.length === 4 && st.toArray().every((x) => $(x).find(".pr-strip-one > *").length === 1) && st.toArray().map((x) => $(x).find("p.pr-strip-h").text()).join() === "公演を掲載しませんか,宿を探す,地域の協賛,体験・行き方" && one(0).is("a.strip-self[href='/organizers.html']") && one(0).attr("data-goatcounter-click") === "pr-self/list1-organizers" && one(1).attr("data-goatcounter-click") === "rail-rakuten/list2-onsen-rotenburo" && one(2).is("a.strip-self[href='/sponsor.html']") && one(2).attr("data-goatcounter-click") === "pr-self/list3-sponsor", "今月: どの帯も1個だけ。1本目 公演の掲載のご案内、2本目 宿のバナー、3本目 協賛のご案内", st.toArray().map((x) => $(x).find(".pr-strip-one > *").attr("data-goatcounter-click")).join(","));
           ok(one(1).is("a.strip-card[data-banner-partner=rakuten]") && one(1).find("b").text() === RAIL_BANNERS.find((b) => b.id === "onsen-rotenburo").alt && one(1).find("img").attr("alt") === "" && one(0).is(".strip-land") && one(0).find("img").attr("src") === "/pr-organizers-wide.svg" && one(2).find("img").attr("src") === "/pr-sponsor-wide.svg", "今月: 一覧の中のPRは横長(楽天は左に絵・右に文字のカード、自分たちのバナーは横長の絵)");
+          { const pf = cheerio.load(readFileSync("dist-test-inlist/pref/島根県.html", "utf8")), st2 = pf("main aside.pr-strip.inlist"), bad = listChecks[0]("dist-test-inlist");
+            ok(st2.length >= 3 && bad.length === 0 && st2.toArray().slice(0, 3).map((x) => pf(x).find("p.pr-strip-h").text()).join() === "公演を掲載しませんか,宿を探す,地域の協賛", "都道府県のページ(開催の多い島根県): 5件ごとに帯。何本目かで中身を分ける(今週末・今月と同じ)", st2.length + "本 " + bad.join(" ")); }
           ok(one(3).is("a.strip-sp[data-sponsor=t-gotsu]") && one(3).attr("data-goatcounter-click") === "sponsor/t-gotsu/inlist" && st.find(".strip-sp").length === 1, "今月: 5件に当てはまる契約中の協賛は、その帯に出る(登録だけで出る。4本目の体験の代わりに)");
           const cal = readFileSync("dist-test-inlist/calendar.html", "utf8"), sp = cal.match(/SP=(\{.*?\});/);
           ok(!!sp && Object.keys(JSON.parse(sp[1])).sort().join() === ["t-inl-15", "t-inl-16", "t-inl-17", "t-inl-18", "t-inl-19"].sort().join() && !JSON.stringify(JSON.parse(sp[1])).includes("contractRef"), "日付と場所で探す: 協賛が当てはまる開催だけ、スクリプトに協賛のマスを持つ(契約の控えは載せない)", sp?.[1].slice(0, 200));
