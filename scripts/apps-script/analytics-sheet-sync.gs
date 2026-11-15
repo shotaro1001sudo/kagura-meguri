@@ -349,3 +349,22 @@ function installKaguraAnalyticsDailyTrigger() {
   ScriptApp.newTrigger("dailyKaguraAnalyticsSync").timeBased().inTimezone("Asia/Tokyo").atHour(7).everyDays(1).create();
   return {status:"installed",schedule:"07:00-08:00 Asia/Tokyo; approximate"};
 }
+/** Same-day retry (2026-11-15 owner request): 2026-11-15 07:31 run hit the 6-minute limit and nothing retried that day.
+ * Runs the daily sync again only when today's run did not finish; otherwise no API requests.
+ * Per-source success guards and the 2 attempts/day limit stay as they are. */
+function retryKaguraAnalyticsSync() {
+  const props=PropertiesService.getScriptProperties(),day=kaguraDay_(new Date(),"Asia/Tokyo",0);
+  const sessionDone=typeof kaguraSyncSessionSnapshot_!=="function"||props.getProperty("KAGURA_SESSION_LAST_SUCCESS")===day;
+  if(props.getProperty("KAGURA_ANALYTICS_LAST_SUCCESS")===day && sessionDone) return {status:"already_synced"};
+  return dailyKaguraAnalyticsSync();
+}
+/** Owner-only, after the daily trigger exists. 08:00-09:00 JST: after the 07 run, before the 09:00 analysis task. */
+function installKaguraAnalyticsRetryTrigger() {
+  const triggers=ScriptApp.getProjectTriggers();
+  if(!triggers.some(t=>t.getHandlerFunction()==="dailyKaguraAnalyticsSync")) throw kaguraFailure_("DAILY_TRIGGER_REQUIRED");
+  const existing=triggers.filter(t=>t.getHandlerFunction()==="retryKaguraAnalyticsSync");
+  if(existing.length>1) throw kaguraFailure_("DUPLICATE_TRIGGERS_REVIEW_REQUIRED");
+  if(existing.length===1) return {status:"already_installed"};
+  ScriptApp.newTrigger("retryKaguraAnalyticsSync").timeBased().inTimezone("Asia/Tokyo").atHour(8).everyDays(1).create();
+  return {status:"installed",schedule:"08:00-09:00 Asia/Tokyo; approximate"};
+}

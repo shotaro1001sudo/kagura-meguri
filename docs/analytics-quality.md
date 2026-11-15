@@ -431,3 +431,13 @@ Googleタグはモックであり、本番受信・複数タブのGAセッショ
 - 反映のあと、週次の分析が7日後に「計測できている / できていない」を判定します。
 
 一次資料: https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FilterExpression / https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema#custom_dimensions
+
+## 2026-11-15: 7時台が止まった日の、8時台の取り直し
+
+- 起きたこと: 11/15 の 7:31 の `dailyKaguraAnalyticsSync` が、Apps Script の上限6分で時間切れになった(取り直しの処理ではなく、毎回 28 日分を取る作り。API の応答が遅かったと見られる)。その日は手で取り戻した。ふだんは 1〜2 分。
+- 直し方(運営者の依頼「足す」): `retryKaguraAnalyticsSync` を足し、8時台 JST のトリガーで毎日動かす。9時の分析タスクより前に終わる。
+  - その日の全体の行が成功(`KAGURA_ANALYTICS_LAST_SUCCESS` が今日)で、訪問の内訳(`KAGURA_SESSION_LAST_SUCCESS`)も今日なら、何もしない(API を呼ばない)。
+  - そろっていない日だけ `dailyKaguraAnalyticsSync` をもう一度動かす。媒体ごとの成功ガードと、1日2回までの上限はそのまま。止まった日は2回目の試行になる。
+  - 7時台の実行がまだ動いているときは、ロックが取れず `SYNC_ALREADY_RUNNING` で止まるだけ(二重に取らない)。
+- トリガーの入れ方: 本人がエディタで `installKaguraAnalyticsRetryTrigger()` を1回実行する。7時台のトリガーがないと作らない。何度実行しても1つのまま。同じハンドラが2つ以上あれば止まって要確認。
+- 確かめ方: Apps Script の「トリガー」に `retryKaguraAnalyticsSync`(日付ベース・午前8時〜9時)が1つあること。「実行数」で、ふだんの日は数秒で `完了` になっていること。

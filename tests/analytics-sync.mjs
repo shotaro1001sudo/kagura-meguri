@@ -227,6 +227,20 @@ export function analyticsSyncTests({ok,section}) {
   trigger.run();trigger.triggers.push({getHandlerFunction:()=>"dailyValueCommerceSync"});
   trigger.context.installKaguraAnalyticsDailyTrigger();trigger.context.installKaguraAnalyticsDailyTrigger();
   ok(trigger.triggers.length===2&&trigger.triggers[1].zone==="Asia/Tokyo"&&trigger.triggers[1].hour===7&&trigger.triggers[1].days===1,"本人起動のトリガー設定は日次7時台で冪等、VCトリガーを維持");
+  // 2026-11-15 運営者の依頼: 7時台が時間切れで止まった日は、8時台にもう一度取り直す(9時の分析より前)。そろっている日は API を呼ばない
+  { const before=trigger.calls.length;
+    ok(trigger.context.retryKaguraAnalyticsSync().status==="already_synced"&&trigger.calls.length===before,"取り直し: その日の分がそろっていれば、APIを呼ばない");
+    trigger.context.installKaguraAnalyticsRetryTrigger();trigger.context.installKaguraAnalyticsRetryTrigger();
+    const retries=trigger.triggers.filter(t=>t.getHandlerFunction()==="retryKaguraAnalyticsSync");
+    ok(trigger.triggers.length===3&&retries.length===1&&retries[0].zone==="Asia/Tokyo"&&retries[0].hour===8&&retries[0].days===1,"取り直しのトリガーは8時台に1つだけ(何度設定しても増えない)、日次・VCのトリガーは維持");
+    const none=harness();none.ready();rejected=false;
+    try{none.context.installKaguraAnalyticsRetryTrigger();}catch(_){rejected=true;}
+    ok(rejected&&none.triggers.length===0,"日次のトリガーがないうちは、取り直しのトリガーを作らない");
+    const cut=harness();cut.ready();cut.props.KAGURA_ANALYTICS_ATTEMPTS_GA4="2026-10-24:1";
+    const res=cut.context.retryKaguraAnalyticsSync();
+    ok(res.status==="success"&&cut.props.KAGURA_ANALYTICS_LAST_SUCCESS==="2026-10-24"&&cut.log("2026-10-24-GA4")[3].includes("attempt=2"),"取り直し: 7時台が途中で止まった日は、同じ処理をもう一度動かす(1日2回までの上限の内)");
+    const both=harness({sessions:true});both.ready();both.run();const n=both.calls.length;
+    ok(both.context.retryKaguraAnalyticsSync().status==="already_synced"&&both.calls.length===n,"取り直し: 訪問の内訳までそろっていれば、APIを呼ばない"); }
   const config=harness();config.ready();config.run();config.props.KAGURA_GA4_PROPERTY_ID="999999";config.run();
   ok(config.calls.filter(c=>c.source==="GA4").length===16,"プロパティ設定変更時に別プロパティの成功記録を流用しない");
   config.props.KAGURA_GA4_PROPERTY_ID="777777";rejected=false;
