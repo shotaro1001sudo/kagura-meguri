@@ -127,7 +127,7 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
   - 上端の高さ(2026-11-15 運営者の依頼): 本文の枠の上端にそろえる。公演ページ(開催・定期公演)は、全ページ同じ決まりで、右の列の上端 = 要点の枠(日時・会場)の上端(同日の依頼「全公演ページで統一」。宿の枠がない公演も、右の列がない終了した開催も同じ。以前は宿の枠にそろえていて、宿の枠がない公演だけ 96px に出ていた)。県は「◯◯県の宿」の枠、各神楽のページは「歴史」の枠(くわしい情報の最初の枠)、トップと月別のページは最初の公演のカード。画面を下へ動かして宿の枠が上へ行ったら、画面の上から 96px に付いてくる(`scripts/client/side-rail.js`)。種類で探すページ(種類の一覧)は宿の枠がないので、最初のカードの並びの上端にそろえる(同日の依頼)。そろえる枠がないページと、スクリプトが動かないときは 96px
 - 楽天は、発行コードの `<a href>` と `<img src>` をそのまま使う(`ut` は JSON を base64 にして `encodeURIComponent` した値)。楽天の提携IDが無いビルドでは出さない。
 - じゃらんnet は、正式な非JSの原本を同意の仕組み(`vcTag`、kind `rail`)を通して出す。広告の同意がない人には出さない(そのぶん枠の数え方も詰める)。原本は `tests/fixtures/valuecommerce-issued.json`。
-- クリックは GoatCounter で `rail-<rakuten|jalan|jtb|nta>/<バナーのID>`、GA4 は配置 `side_rail`(広告主は `jtb`・`nta` も。Apps Script の `AFF_PARTNERS` にも足した)。表示(affiliate_view)も、宿のバナーと同じしくみで `side_rail` として数える(2026-11-15 の監査で足した。それまでは、クリックだけ送っていた)。`side_rail` は Apps Script の `AFF_PLACEMENTS` に入っていなかったので、同日に足した(入っていないと、広告・置き場所別の内訳 aff_detail が、その日まるごと取れなくなる)。**Apps Script の貼り替えが要る**(docs/analytics-quality.md の「運営者の手順」)
+- クリックは GoatCounter で `rail-<rakuten|jalan|jtb|nta>/<バナーのID>`、GA4 は配置 `side_rail`(広告主は `jtb`・`nta` も。Apps Script の `AFF_PARTNERS` にも足した)。表示(affiliate_view)も、宿のバナーと同じしくみで `side_rail` として数える(2026-11-15 の監査で足した。それまでは、クリックだけ送っていた)。`side_rail` は Apps Script の `AFF_PLACEMENTS` に入っていなかったので、同日に足した(入っていないと、広告・置き場所別の内訳 aff_detail が、その日まるごと取れなくなる)。実の Apps Script も同日、運営者の依頼で Claude が直した(台帳の Apps Script の `analytics-sheet-sync.gs` に `"side_rail"` を1つ足して保存。保存後の全文がリポジトリと一致することを確かめた。翌朝7時台の取得から効く)
 - 横長(468×60)の既存のバナーは、細い枠では読めないので使わない。「毎月20日から お得な10日間」のじゃらんのバナーは、ほかの日に出すと内容と合わないので使わない。
 ### 2026-11-15 の監査でそろえたこと(今後、開催・神楽・県を登録したときも、自動で同じ形になる)
 
