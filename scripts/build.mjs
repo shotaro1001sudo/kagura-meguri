@@ -385,7 +385,7 @@ const collectNotes = (body) => {
   const shown = tidyNotes(notes, body.includes("data-vc-ad="));
   return shown.length ? `${out}<section class="page-notes" aria-label="出典・注記・広告について"><h2>出典・注記</h2>${shown.map((n) => `<p>${n}</p>`).join("")}</section>` : out;
 };
-const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false }) => {
+const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = "", noindex = false, withForm = false, ogType = "website", lang = "ja", alts = [], wide = false, railCar = "" }) => {
   const en = lang === "en";
   const quizOffer = !en && !noindex && !withForm && (path === '/' || /^\/(calendar|map|weekend|this-month)\.html$/.test(path) || /^\/(events|regular|pref|month|kagura)\//.test(path));
   // Local CMP loads after parsing; analytics/ads remain closed until an explicit choice.
@@ -393,7 +393,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   const consentBootstrap = `<link rel="stylesheet" href="/vendor/cookieconsent-3.2.1/cookieconsent.css"><script defer src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"></script><script defer src="/consent-manager.js"></script>`;
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}" data-require-statistics-consent="">${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide }) : "";
+  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, car: railCar }) : "";
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${(body + rail).includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>${consentBootstrap}
 <script>${HEAD_MOTION}</script>
@@ -941,11 +941,8 @@ const untilBadge = (e) => {
   const d = daysUntil(e.start.slice(0, 10));
   return `<span class="until${d <= 7 ? " soon" : ""}">${d <= 0 ? "本日開催" : d === 1 ? "明日開催" : `開催まで あと${d}日`}</span>`;
 };
-/** 開催ページの右の列(PCだけ): スクロールしても、日時・会場と、公式情報のボタンが見えるように */
-const sideSummary = (e, when) => `<div class="side-summary"><p class="ss-when">${when}</p><p class="ss-place">${esc(e.venue || `${e.prefecture}${e.city ?? ""}`)}</p>${e.fee ? `<p class="ss-fee">${esc(e.fee)}</p>` : ""}${e.url ? `<a class="btn" data-official-side href="${esc(e.url)}" rel="noopener" target="_blank">公式情報を見る</a>` : ""}</div>`;
-// 要点の表が画面の上に隠れたら、右の列に要点を出す(最初から出すと、すぐ左の表と重なるため)
-const SIDE_SUMMARY_JS = `(function(){var k=document.querySelector('.keyinfo'),s=document.querySelector('.side-summary');if(!k||!s||!window.IntersectionObserver)return;new IntersectionObserver(function(x){s.classList.toggle('on',!x[0].isIntersecting&&x[0].boundingClientRect.top<0)}).observe(k)})()`;
-// 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 説明 → 公式情報のボタン → この開催のポイント・ほかの日程(ここまでが d-top。スマホでは広告の列より先) → 宿・旅の案内(d-side) → 出典・周辺体験・共有 → あわせて観たい神楽 → ほかの探し方 → 広告
+// 右の列にあった、日時・会場と「公式情報を見る」の枠(要点の表が隠れると出る)は、やめた(2026-11-15 運営者の依頼)
+// 開催ページ・定期公演ページの並び(共通): 要点(日時・会場・料金) → 説明 → 公式情報のボタン → この開催のポイント・ほかの日程(ここまでが d-top。スマホでは広告の列より先) → 宿・周辺体験・(PR枠の出ない画面だけ)車で行くなら(d-side) → 出典 → あわせて観たい神楽 → ほかの探し方 → 広告
 // あわせて観たい神楽: 同じ種類の開催予定を先に、同じ県の開催予定を後に(開催・定期公演のどちらのページでも使う)
 const related = (e) => {
   const uniq = (arr) => arr.filter((x, i) => arr.findIndex((y) => seriesKey(y) === seriesKey(x)) === i && seriesKey(x) !== seriesKey(e) && editionKey(x) !== editionKey(e));
@@ -1004,13 +1001,14 @@ ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.ur
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${shareBlock(`/events/${e.id}.html`, e.name)}</div>
-${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${sideSummary(e, when)}${stayBlock(e)}${transportSection(visitorPlanning,e,today,'event_rental')}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${stayBlock(e)}${planningLinks(e,today,experienceAff,{prep:false})}${transportSection(visitorPlanning,e,today,'event_rental',{alt:true})}</div>` : ""}<div class="d-rest">
 ${isUpcoming(e) ? "" : related(e)}
 ${sourceNote(e)}
-${isUpcoming(e)?`${planningLinks(e,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn")}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato")}`:''}
+${isUpcoming(e)?`${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn")}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato")}`:''}
 ${isUpcoming(e) ? related(e) : ""}
 ${otherWays()}
-${adSlot(cfg.adsense.slotDetail)}</div></div>${isUpcoming(e) ? `<script>${SIDE_SUMMARY_JS}</script>` : ""}`,
+${adSlot(cfg.adsense.slotDetail)}</div></div>`,
+    railCar: isUpcoming(e) ? transportSection(visitorPlanning,e,today,'event_rental',{rail:true}) : "",
   }));
 }
 
@@ -1037,12 +1035,13 @@ for (const r of regular) {
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}</div>
-<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${transportSection(visitorPlanning,r,today,'regular_rental')}</div><div class="d-rest">
+<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false})}${transportSection(visitorPlanning,r,today,'regular_rental',{alt:true})}</div><div class="d-rest">
 ${sourceNote(r)}
-${planningLinks(r,today,experienceAff,{prep:false})}${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn")}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato")}
+${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn")}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato")}
 ${related(r)}
 ${otherWays()}
 ${adSlot(cfg.adsense.slotDetail)}</div></div>`,
+    railCar: transportSection(visitorPlanning,r,today,'regular_rental',{rail:true}),
   }));
 }
 

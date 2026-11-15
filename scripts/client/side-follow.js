@@ -19,7 +19,7 @@
     const els = [...side.children].filter((x) => x.offsetHeight > 0);
     const boxes = els.map((x) => { const r = x.getBoundingClientRect(); return { top: r.top - base, bottom: r.bottom - base }; });
     // 最初の広告の枠(宿など。要点・協賛枠より後ろ)より下は、上へ流して隠さない
-    const firstAd = els.findIndex((x) => !x.matches(".side-summary,.sponsor-slot,[class*=sponsor]"));
+    const firstAd = els.findIndex((x) => !x.matches(".sponsor-slot,[class*=sponsor]"));
     for (let k = 0; k < boxes.length; k++) {
       if (height - boxes[k].top > room && k !== firstAd) continue;
       // この枠を見出しの下に合わせる。1つ上の枠の下端は、見出しに隠れる位置まで上げる

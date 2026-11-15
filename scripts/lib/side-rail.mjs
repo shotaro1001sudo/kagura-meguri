@@ -35,12 +35,14 @@ export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path)
 /**
  * 両サイドの PR 枠。on: { rakuten, jalan, jtb, nta }(提携IDが設定されているか。jtb・nta はバリューコマースのサイトIDと同意の仕組みがそろっているか)。attrs(on, name): 外部リンクの属性。wide: 本文が広いページか
  * 枠ごとに、下の右端に「PR」を1つ(ほかの広告の枠と同じ決まり)。
+ * car: 開催・定期公演のページの「車で行くなら」の枠(2026-11-15 運営者の依頼)。右の枠のいちばん上に置き、中身の重なる楽天のレンタカーのバナーは出さない
  */
-export function sideRailHtml({ on, attrs, esc, wide = false }) {
+export function sideRailHtml({ on, attrs, esc, wide = false, car = "" }) {
   const side = (s) => {
-    const items = RAIL_BANNERS.filter((b) => b.side === s && on[b.partner]).map((b) => b.vc
+    const banners = RAIL_BANNERS.filter((b) => b.side === s && on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
       ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
+    const items = s === "right" && car ? [car, ...banners] : banners;
     return items.length ? `<aside class="side-rail side-rail-${s === "left" ? "l" : "r"}${wide ? " w" : ""}" aria-label="広告">${items.join("")}<span class="pr pr-foot">PR</span></aside>` : "";
   };
   return side("left") + side("right");

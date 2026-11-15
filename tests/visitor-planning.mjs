@@ -91,7 +91,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   const fullEvent=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),weekly=cheerio.load(readFileSync(join(OUT,'regular/r-weekly.html'),'utf8'));
   ok([fullEvent,weekly].every(p=>p('.planning-links.solo>a').length===0&&p('.planning-links.solo').children().length===1)&&home('.planning-links.solo').length===0,'開催・定期公演のページは持ち物・行き帰りのカードを置かず周辺体験だけ。トップは3つのまま(2026-10-30 運営者の判断)');
-  ok([fullEvent,weekly].every(p=>p('.d-rest .planning-links>#nearby-experiences').length===1&&p('#nearby-experiences').length===1&&p('.planning-links>a[href="#nearby-experiences"]').length===0&&!p.html().includes('公演の前後も楽しむ')),'開催・定期公演のページでは、周辺体験の欄をカードに集約し、別の欄を作らない');
+  ok([fullEvent,weekly].every(p=>p('.d-side .planning-links>#nearby-experiences').length===1&&p('.d-rest .planning-links').length===0&&p('#nearby-experiences').length===1&&p('.planning-links>a[href="#nearby-experiences"]').length===0&&!p.html().includes('公演の前後も楽しむ')),'開催・定期公演のページでは、周辺体験の欄をカードに集約し、別の欄を作らない');
   ok(guide('#packing .checklist input[type=checkbox]').length===7&&guide('#transport .planning-steps li').length===3,'持ち物はチェックリスト(7項目)、行き帰りは公共交通→貸出返却→会場経路の順で案内');
   ok(guide('.planning-ads').length===0,'本番の新規3カテゴリは未承認なので広告を出さない');
 
@@ -136,7 +136,10 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     if(built.status===0) {
       const g=cheerio.load(readFileSync(join(output,'guide.html'),'utf8')),event=cheerio.load(readFileSync(join(output,'events/t-full.html'),'utf8')),past=cheerio.load(readFileSync(join(output,'events/t-past.html'),'utf8')),other=cheerio.load(readFileSync(join(output,'events/t-xss.html'),'utf8'));
       ok(g('a[data-affiliate-category=supplies]').length===1&&g('a[data-affiliate-category=rental]').length===1,'ガイドの該当箇所に用品・レンタカーを表示');
-      ok(event('a[data-affiliate-category=experiences]').length===1&&event('a[data-affiliate-category=rental]').length===1,'対象公演だけに体験・レンタカーを表示');
+      ok(event('a[data-affiliate-category=experiences]').length===1&&event('.d-side .rail-alt a[data-affiliate-category=rental]').length===1&&event('.side-rail-r .rail-car a[data-affiliate-category=rental]').length===1&&event('a[data-affiliate-category=rental]').length===2,'対象公演だけに体験・レンタカーを表示(レンタカーは、右のPR枠と、PR枠の出ない画面向けの右の列の2か所)');
+      // 2026-11-15 運営者の依頼: 右の列は 宿 → 周辺体験。「車で行くなら」は右のPR枠のいちばん上(PR枠の「PR」1つにまとめ、中身の重なる楽天レンタカーのバナーは出さない)
+      { const side=event('.d-side').children().not('.sponsor-slot').toArray().map(x=>event(x).is('.stay,.aff')?'stay':event(x).is('.planning-links')?'nearby':event(x).is('.rail-alt')?'car':'?').join('>'),rr=event('.side-rail-r'),css=readFileSync('scripts/style.css','utf8');
+        ok(side==='stay>nearby>car'&&rr.children().first().is('.rail-car')&&rr.find('.rail-car .pr-foot').length===0&&rr.find('.pr-foot').length===1&&rr.find('[data-goatcounter-click="rail-rakuten/rentacar"]').length===0&&event('#rental-h').length===1&&event('#rental-rail-h').length===1&&css.includes('body:has(.side-rail.w>.rail-car) .d-side .rail-alt{display:none}'),'右の列は宿→周辺体験。車で行くならは右のPR枠の上(PR枠が出ない画面では右の列に出す)',side); }
       ok(past('.planning-ads,.planning-links,#nearby-experiences').length===0&&other(':is(a[data-affiliate-category=supplies],a[data-affiliate-category=experiences],a[data-affiliate-category=rental])').length===0,'終了済み・地域不一致の公演に広告を出さない(本・ふるさと納税の紹介は別の仕組み)');
       ok(event('.d-side .stay .stay-banner').length===2&&event('[data-official-link]').length===1,'宿のバナー2件と公式情報ボタンを維持');
       ok(event('main').html().indexOf('data-official-link')<event('main').html().indexOf('planning-ads'),'公式予約情報を広告より先に表示');

@@ -135,8 +135,11 @@ export function rentalSearch(settings,context,today,placement) {
   const ads=offerCards(settings,'rental',context,today,placement);
   return ads;
 }
-export function transportSection(settings,context,today,placement) {
+// 「車で行くなら」の枠。開催・定期公演のページでは、PCの右のPR枠(rail)に置く(2026-11-15 運営者の依頼)。
+// PR枠の中では、枠ごとの「PR」はPR枠の下の1つにまとめる。PR枠が出ない幅の画面向けに、右の列にも同じ枠を置く(class: rail-alt。PR枠が出る画面では隠す)
+export function transportSection(settings,context,today,placement,{rail=false,alt=false}={}) {
   const ads=rentalSearch(settings,context,today,placement);
   if (!ads) return "";
-  return `<section class="planning-section" aria-labelledby="rental-h"><h2 id="rental-h">車で行くなら</h2><p class="planning-lead">レンタカーやカーシェアは、ここから探せます。</p><details class="pc-more"><summary>移動の注意</summary><p class="meta annotation">会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p></details>${ads}</section>`;
+  const h=rail?'rental-rail-h':'rental-h';
+  return `<section class="${rail?'rail-car':`planning-section${alt?' rail-alt':''}`}" aria-labelledby="${h}"><h2 id="${h}">車で行くなら</h2><p class="planning-lead">レンタカーやカーシェアは、ここから探せます。</p><details class="pc-more"><summary>移動の注意</summary><p class="meta annotation">会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p></details>${rail?ads.replace(PR_FOOT,''):ads}</section>`;
 }

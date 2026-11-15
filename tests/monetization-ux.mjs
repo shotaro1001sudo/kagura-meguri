@@ -195,8 +195,8 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
 
   section("開催ページ: 見やすさ(開催までの日数・右の列の要点・共有の位置)");
   ok(/^開催まで あと\d+日$|^(本日|明日)開催$/.test(off(".hero .until").text()), "見出しの下に、開催までの日数を出す", off(".hero .until").text());
-  const ss = off(".d-side .side-summary");
-  ok(ss.length === 1 && ss.find("a[data-official-side]").attr("href") === off("[data-official-link]").attr("href") && off("[data-official-link]").length === 1, "右の列に、日時・会場と公式情報のボタン(計測は別の印)を置く");
+  // 2026-11-15 運営者の依頼: 右の列の、日時・会場と「公式情報を見る」の枠はやめた(公式情報のボタンは説明の下の1つだけ)
+  ok(off(".side-summary,[data-official-side]").length === 0 && off("[data-official-link]").length === 1, "右の列に、日時・会場と公式情報のボタンの枠を置かない(公式情報のボタンは1つ)");
   // 2026-11-14 運営者の依頼: 共有のボタンは、公演内容(要点の枠)の下、周辺体験の上
   { const h = off("main").html(); ok(off(".d-top > .share").length === 1 && off(".d-rest .share").length === 0 && h.indexOf('class="share"') > h.indexOf('class="keyinfo"') && h.indexOf('class="share"') < h.indexOf("planning-links"), "共有のボタンは、公演内容の枠の下、周辺体験の上に置く"); }
   ok(off(".desc-lead").length === 1 && off(".d-lead .share").length === 0, "説明文のまとまりには、共有ボタンを置かない");
