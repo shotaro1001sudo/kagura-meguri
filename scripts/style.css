@@ -768,6 +768,8 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 /* 本文の、句読点(、。)までのまとまり(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
    次のまとまりが行の残りに入らないときは、句読点のあとで改行する。まとまりが1行より長いときは、その中で、文節の境目(Chrome・Edge。auto-phrase)で、行の長さをそろえて折り返す(balance。最後の行に2〜3字だけ残さない) */
 .cl{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance}
+/* ガイド・歴史のページ: 句読点が途中にない短い文(表のマス・箇条書きなど。まとまりに分けていない)も、文節の境目で折り返す(「大成さ」「れた」のように語の途中で割らない) */
+.prose:is(.guide,.history) :is(p,li,td,dd,figcaption){word-break:auto-phrase}
 /* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
    見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase)。
    本文(公演の説明・この開催のポイント・要点の表の値・都道府県と種類の解説)は、句読点までのまとまりで折り返す(.cl)。

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import * as cheerio from "cheerio";
 import { JSDOM } from "jsdom";
 import { SOURCES, CHECKED } from "../scripts/lib/guide.mjs";
+import { clausesHtml, unclause, clauseParts } from "../scripts/lib/clauses.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -90,6 +91,34 @@ export function guideTests({ ok, section, OUT, build }) {
     ok(inputs.every((x) => !x.checked) && count.textContent === "0 / 7 用意した" && reset.hidden, "「チェックを外す」で、すべて外せる");
     w.close();
     }
+  }
+
+  // 2026-11-15 運営者の依頼: ガイド・歴史のページも、句読点で改行する。タグの入った文を、文字もタグも変えずに、句読点までのまとまり(.cl)に分ける
+  section("句読点での改行(ガイド・歴史のページ)");
+  {
+    const cite = '<sup class="cite"><a href="#src-1" id="ref-1" aria-label="出典1">[1]</a></sup>';
+    const a = `<p>神楽は、歌と舞です。${cite}古くは「神遊び」とも呼ばれました。</p>`;
+    ok(clausesHtml(a) === `<p><span class="cl">神楽は、</span><span class="cl">歌と舞です。${cite}</span><span class="cl">古くは「神遊び」とも呼ばれました。</span></p>`, "句読点までのまとまりに分け、出典の印([1])は前の文に付ける", clausesHtml(a));
+    const b = '<p>詳しくは<a href="/x">日程、会場の案内</a>を見ます。次の文です。</p>';
+    ok(clausesHtml(b) === '<p><span class="cl">詳しくは<a href="/x">日程、会場の案内</a>を見ます。</span><span class="cl">次の文です。</span></p>', "リンクの中の句読点では分けない(リンクを途中で切らない)", clausesHtml(b));
+    const c = "<p>天鈿女命(『日本書紀』の表記。『古事記』では天宇受売命)が踊り、神々が笑いました。</p>";
+    ok(clausesHtml(c) === '<p><span class="cl">天鈿女命(『日本書紀』の表記。『古事記』では天宇受売命)が踊り、</span><span class="cl">神々が笑いました。</span></p>' && clauseParts("料金は無料(奉納金を持参すると、お返しがあります)。会場は会所です。").length === 2, "かっこの中の句読点では分けない(補足を途中で切らない)", clausesHtml(c));
+    const d = "<li><b>撮影は許可を得てから。</b>フラッシュは避け、三脚は使いません。</li>";
+    ok(clausesHtml(d) === '<li><span class="cl"><b>撮影は許可を得てから。</b></span><span class="cl">フラッシュは避け、</span><span class="cl">三脚は使いません。</span></li>', "強調の中で文が終わったら、その閉じタグのあとで分ける", clausesHtml(d));
+    const keep = ['<p class="meta annotation">注記は、分けません。そのままです。</p>', "<template><p>広告の発行コードは、触りません。そのままです。</p></template>", '<script>var s="、。、。";</script>', '<nav><p>目次は、分けません。そのまま。</p></nav>', "<p>一文だけの段落です。</p>", '<li id="src-1"><a href="https://example.com/">出典、名前。</a>(発行元) <a class="back" href="#ref-1">↩</a></li>', '<li><label><input type="checkbox"> 毛布、カイロ。持ち物です。</label></li>'];
+    ok(keep.every((x) => clausesHtml(x) === x), "注釈・広告の発行コード・スクリプト・目次・出典の一覧・入力欄と、一文だけの段落は、そのまま", keep.filter((x) => clausesHtml(x) !== x).join(" "));
+    const nested = "<li><p>中身は、段落です。分けます。</p><ul><li>子の行も、分けます。</li><li>句読点なし</li></ul></li>";
+    ok(clausesHtml(nested) === '<li><p><span class="cl">中身は、</span><span class="cl">段落です。</span><span class="cl">分けます。</span></p><ul><li><span class="cl">子の行も、</span><span class="cl">分けます。</span></li><li>句読点なし</li></ul></li>', "中に段落やリストがある行は、内側の段落・行を分ける", clausesHtml(nested));
+    ok([a, b, c, d, nested, ...keep].every((x) => unclause(clausesHtml(x)) === x) && clausesHtml('<p title="a > b、c。">属性の中の「>」も、見まちがえません。次の文。</p>').startsWith('<p title="a > b、c。"><span class="cl">属性の中の「>」も、</span>'), "足すのは <span class=\"cl\"> だけ(取り除くと、元の HTML に戻る)");
+    if (r.status === 0) {
+      const files = ["guide.html", "history/index.html", "history/kodai.html", "history/chusei.html", "history/kinsei.html", "history/kindai.html"];
+      const pages = files.map((f) => [f, cheerio.load(read(join(D, f)))]);
+      ok(pages.every(([, p]) => p(".prose .cl").length >= 20), "ガイド・歴史のページの本文は、句読点までのまとまり(.cl)に分かれている", pages.map(([f, p]) => `${f}:${p(".prose .cl").length}`).join(" "));
+      ok(pages.every(([, p]) => p(".page-notes .cl, template .cl, nav .cl, .meta .cl, button .cl, label .cl, h1 .cl, h2 .cl, h3 .cl").length === 0 && p(".prose .cl + sup.cite").length === 0 && p(".prose sup.cite").toArray().every((s) => !p(s).parent().children(".cl").length || p(s).parent().is(".cl"))), "注記・目次・見出し・ボタンは分けず、出典の印は文のまとまりの中に入る(まとまりの外に取り残さない)");
+      const main = (h) => h.match(/<main id="main">([\s\S]*?)<\/main>/)[1];
+      ok(pages.every(([f]) => { const m = main(read(join(D, f))); const back = unclause(m); return !back.includes('class="cl"') && cheerio.load(m)("main, body").text() === cheerio.load(back)("main, body").text(); }), "ガイド・歴史のページ: まとまりを取り除いても、文は1字も変わらない");
+    }
+    ok(/^\.cl\{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance\}/m.test(read("scripts/style.css")) && read("scripts/build.mjs").includes('<div class="prose guide">${clausesHtml(guideHtml({') && read("scripts/build.mjs").includes('<div class="prose history">${clausesHtml(historyReader(key, pg.body()))}</div>'), "ガイド・歴史の本文を、まとまりに分ける仕組み(clausesHtml)に通している");
   }
   rmSync(D, { recursive: true, force: true });
 }

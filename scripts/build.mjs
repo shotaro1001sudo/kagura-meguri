@@ -29,6 +29,7 @@ import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holiday
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
 import { sideRailHtml, railPage } from "./lib/side-rail.mjs";
+import { clauseParts, clausesHtml } from "./lib/clauses.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
@@ -156,24 +157,12 @@ const sentencesOf = (s) => {
 };
 // 句読点(、。)のあとで改行されやすくする(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
 // 句読点までのまとまりを、行の途中で割れにくい組(.cl = inline-block)にする。次のまとまりが行の残りに入らなければ、句読点のあとで改行される。
-// まとまりが1行より長いときは、その中で今までどおり折り返す。文字は1字も変えない(まとまりをつなぐと、元の文になる)
-const CLAUSE_END = "、。！？", CLAUSE_CLOSE = ")）」』";
-const clauseParts = (s) => {
-  const t = String(s ?? ""), out = []; let cur = "";
-  for (let i = 0; i < t.length; i++) {
-    cur += t[i];
-    if (CLAUSE_END.includes(t[i])) {
-      while (i + 1 < t.length && (CLAUSE_END + CLAUSE_CLOSE).includes(t[i + 1])) cur += t[++i]; // 「。)」「、」」のような続きは、前のまとまりに付ける
-      out.push(cur); cur = "";
-    }
-  }
-  if (cur) out.push(cur);
-  return out;
-};
-/** 文を、句読点までのまとまりごとの組にして返す(エスケープ込み)。句読点が途中にない文は、そのまま */
+// まとまりが1行より長いときは、その中で折り返す。文字は1字も変えない(まとまりをつなぐと、元の文になる)。
+// 分け方は scripts/lib/clauses.mjs。データの文(公演の説明など)は下の cl()、タグの入った文(ガイド・歴史のページ)は clausesHtml() を通す
 // 電話番号は、番号の途中で改行しない(「0536-76-」「0509」のように割れると読みにくい)
 const PHONE_RE = /0\d{1,4}-\d{1,4}-\d{3,4}/g;
 const clText = (x) => esc(x).replace(PHONE_RE, (m) => `<span class="nw">${m}</span>`);
+/** 文を、句読点までのまとまりごとの組にして返す(エスケープ込み)。句読点が途中にない文は、そのまま */
 const cl = (s) => { const parts = clauseParts(s); return parts.length < 2 ? clText(s) : parts.map((x) => `<span class="cl">${clText(x)}</span>`).join(""); };
 // 要点の表の値: 2文以上あるときは、文ごとに行を分けて出す(料金の区分や受付の方法が、ひとかたまりの長文にならないように)。文言は変えない
 const cellLines = (v) => { const xs = sentencesOf(v); return xs.length > 1 ? xs.map((t) => `<span class="line">${cl(t)}</span>`).join("") : cl(v); };
@@ -1150,12 +1139,12 @@ ${otherWays("/this-month.html")}</div></div>`,
       author: ORG_LD, publisher: ORG_LD,
       mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: ogUrl(false),
     }],
-    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${guideHtml({
+    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${clausesHtml(guideHtml({
       esc,
       supplies: offersFor(visitorPlanning, 'supplies', { guide: true }, today),
       rentalHtml:rentalSearch(visitorPlanning,{guide:true},today,'guide_rental'),
       kaguraLink: (k) => (kaguras.includes(k) ? `<a href="${kaguraHref(k)}">${esc(k)}</a>` : esc(k)),
-    })}</div>`,
+    }))}</div>`,
   }));
 }
 
@@ -1180,7 +1169,7 @@ write('dist/experiences.html',layout({
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
-      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${historyReader(key, pg.body())}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
+      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${clausesHtml(historyReader(key, pg.body()))}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
     }));
   }
 }
