@@ -387,11 +387,11 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .side-rail{display:none}
 /* --half: 本文(.wrap の内側)の幅の半分。本文から --rail-gap だけ離して置く */
 @media(min-width:1280px) and (min-height:520px){
-  .side-rail:not(.w){--rail-w:180px;--rail-gap:32px;--half:406px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:96px;width:var(--rail-w)}
+  .side-rail:not(.w){--rail-w:180px;--rail-gap:32px;--half:406px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:var(--rail-top,96px);width:var(--rail-w)}
   .side-rail-l:not(.w){left:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}.side-rail-r:not(.w){right:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}
 }
 @media(min-width:1400px) and (min-height:520px){
-  .side-rail.w{--rail-w:160px;--rail-gap:24px;--half:496px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:96px;width:var(--rail-w)}
+  .side-rail.w{--rail-w:160px;--rail-gap:24px;--half:496px;display:flex;flex-direction:column;gap:12px;position:fixed;z-index:20;top:var(--rail-top,96px);width:var(--rail-w)}
   .side-rail-l.w{left:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}.side-rail-r.w{right:calc(50% - var(--half) - var(--rail-gap) - var(--rail-w))}
 }
 .rail-banner{display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
