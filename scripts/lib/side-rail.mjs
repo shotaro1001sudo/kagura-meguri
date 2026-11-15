@@ -1,6 +1,6 @@
 import { vcTag } from "./valuecommerce.mjs";
 // PC の画面の両サイドの PR 枠(2026-11-15 運営者の依頼)。
-// 出すのは、開催・定期公演・都道府県・神楽の種類のページだけ。幅の広い画面だけに出し、スマホや幅のせまい画面では出さない。
+// 出すのは、開催・定期公演・都道府県・神楽の種類のページと、今週末・今月・日付と場所で探すページ(同日に追加)だけ。幅の広い画面だけに出し、スマホや幅のせまい画面では出さない。
 // 画面を下へ動かしても、横に付いてくる。バナーは、1画面に収まる数だけ(高さの足りない画面では、下のものから隠す)。
 //
 // バナーは、楽天アフィリエイトの管理画面で本人のアカウントから発行したものだけ(2026-11-15、Chrome で発行)。
@@ -29,17 +29,36 @@ export const RAIL_BANNERS = [
     ...rk({ hs: "59865479.483ffafe.585fa57b.dad29d3a", me: "2100034", raw: '{"page":"shop","type":"pict","col":1,"cat":1,"ban":2185638,"amp":false}' }) },
 ];
 
-/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類) */
-export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path);
+/**
+ * ページごとの並び(上から。2026-11-15 運営者の依頼で、今週末・今月・日付と場所で探すページにも出す)。書いていないページは、RAIL_BANNERS の side と順のまま。
+ * 画面の高さで下から隠れ、バリューコマースの広告(じゃらん・JTB・日本旅行)は広告の同意がないと出ないので、
+ * どの並びも、上のほうに「そのページの人に合うもの」を置き、同意がなくても楽天のバナーが左右に2つずつ残るようにする。
+ * - 今週末: もうすぐ出かける人。右は 車(レンタカー)→ 現地の体験 → JR+ホテル。左は 直前の予約に強いじゃらんを先に。右の列の「週末の宿を探す」の横に、宿ではないものを並べる
+ * - 今月: 数週間先の予定を立てる人。開催ページと同じ並び(右は JR+ホテル → レンタカー → 体験)
+ * - 日付・場所で探す: 先の日付・遠くの地域まで調べる人。右は JR+ホテル → 体験 → レンタカー。左は 旅行会社のJTBを先に
+ */
+export const RAIL_ORDER = {
+  "/weekend.html": { left: ["ryokan", "onsen-rotenburo", "onsen", "onsen-gensen"], right: ["rentacar", "experiences", "jr-hotel"] },
+  "/calendar.html": { left: ["onsen", "onsen-rotenburo", "ryokan", "onsen-gensen"], right: ["jr-hotel", "experiences", "rentacar"] },
+};
+const RAIL_EXTRA_PAGES = ["/weekend.html", "/this-month.html", "/calendar.html"];
+
+/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類と、今週末・今月・日付と場所で探す) */
+export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path) || RAIL_EXTRA_PAGES.includes(path);
+
+/** そのページの、左右それぞれのバナー(上から) */
+export const railBannersFor = (path, s) => RAIL_ORDER[path]
+  ? RAIL_ORDER[path][s].map((id) => RAIL_BANNERS.find((b) => b.id === id))
+  : RAIL_BANNERS.filter((b) => b.side === s);
 
 /**
  * 両サイドの PR 枠。on: { rakuten, jalan, jtb, nta }(提携IDが設定されているか。jtb・nta はバリューコマースのサイトIDと同意の仕組みがそろっているか)。attrs(on, name): 外部リンクの属性。wide: 本文が広いページか
  * 枠ごとに、下の右端に「PR」を1つ(ほかの広告の枠と同じ決まり)。
- * car: 開催・定期公演のページの「車で行くなら」の枠(2026-11-15 運営者の依頼)。右の枠のいちばん上に置き、中身の重なる楽天のレンタカーのバナーは出さない
+ * path: ページのパス(並びを決める。RAIL_ORDER)。car: 開催・定期公演のページの「車で行くなら」の枠(2026-11-15 運営者の依頼)。右の枠のいちばん上に置き、中身の重なる楽天のレンタカーのバナーは出さない
  */
-export function sideRailHtml({ on, attrs, esc, wide = false, car = "" }) {
+export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = "" }) {
   const side = (s) => {
-    const banners = RAIL_BANNERS.filter((b) => b.side === s && on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
+    const banners = railBannersFor(path, s).filter((b) => on[b.partner] && !(car && b.id === "rentacar")).map((b) => b.vc
       ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
     const items = s === "right" && car ? [car, ...banners] : banners;

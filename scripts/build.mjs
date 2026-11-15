@@ -393,7 +393,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
   const consentBootstrap = `<link rel="stylesheet" href="/vendor/cookieconsent-3.2.1/cookieconsent.css"><script defer src="/vendor/cookieconsent-3.2.1/cookieconsent.umd.js"></script><script defer src="/consent-manager.js"></script>`;
   const ga4Bootstrap = cfg.analyticsId ? `<script data-ga4-id="${esc(cfg.analyticsId)}" data-ga4-host="${esc(new URL(cfg.baseUrl).hostname)}" data-require-statistics-consent="">${GA4_CONSENT_JS}</script>` : "";
   const alternates = alts.length ? [[lang, path], ...alts].map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${cfg.baseUrl}${h}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${cfg.baseUrl}${[[lang, path], ...alts].find(([l]) => l === "en")[1]}">` : "";
-  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, car: railCar }) : "";
+  const rail = !en && railPage(path) ? sideRailHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, car: railCar, path }) : "";
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${(body + rail).includes('data-vc-ad=') ? clientJs("valuecommerce-consent") : ""}<meta name="viewport" content="width=device-width,initial-scale=1">
 <script>${FRAME_BUSTER}</script>${consentBootstrap}
 <script>${HEAD_MOTION}</script>

@@ -29,7 +29,8 @@ export function affiliateTests({ ok, section, OUT, build }) {
     // PCの両サイドのPR枠(2026-11-15): 開催・定期公演・県・種類のページだけ。左右の枠ごとに「PR」を1つ
     const rails = ($$) => $$(".side-rail");
     const dir = "dist-test-ga4-affiliate";
-    const railPages = ["events/t-full.html", "regular/r-nightly.html", ...readdirSync(join(dir, "pref")).slice(0, 1).map((f) => `pref/${f}`), ...readdirSync(join(dir, "kagura")).slice(0, 1).map((f) => `kagura/${f}`)];
+    // 2026-11-15 運営者の依頼: 今週末・今月・日付と場所で探すページにも出す
+    const railPages = ["events/t-full.html", "regular/r-nightly.html", ...readdirSync(join(dir, "pref")).slice(0, 1).map((f) => `pref/${f}`), ...readdirSync(join(dir, "kagura")).slice(0, 1).map((f) => `kagura/${f}`), "weekend.html", "this-month.html", "calendar.html"];
     const loaded = railPages.map((p) => [p, cheerio.load(readFileSync(join(dir, p), "utf8"))]);
     ok(loaded.every(([, $$]) => rails($$).length === 2 && rails($$).toArray().every((r) => $$(r).find(".pr-foot").length === 1 && $$(r).find(".rail-banner").length >= 1)), "開催・定期公演・県・種類のページに、左右のPR枠(枠ごとに「PR」1つ)", railPages.join(" "));
     ok(loaded.every(([, $$]) => $$("a.rail-banner").toArray().every((a) => /^https:\/\/hb\.afl\.rakuten\.co\.jp\/hsc\//.test($$(a).attr("href")) && ($$(a).attr("rel") || "").includes("sponsored") && $$(a).attr("target") === "_blank" && /^rail-rakuten\//.test($$(a).attr("data-goatcounter-click")) && /^https:\/\/hbb\.afl\.rakuten\.co\.jp\/hsb\//.test($$(a).find("img").attr("src")) && $$(a).find("img").attr("alt") && $$(a).find("img").attr("loading") === "lazy")), "PR枠のバナーは、楽天の発行リンクと画像だけ(広告の印 sponsored・別タブ・代替テキスト・遅延読み込み)");
@@ -38,9 +39,18 @@ export function affiliateTests({ ok, section, OUT, build }) {
     ok(loaded.every(([, $$]) => vcRail.every(([kind, partner]) => { const vc = $$(`.side-rail [data-vc-ad="${kind}"]`); const a = vc.find("a"); return vc.length === 1 && vc.is(".vc-ad.rail-banner") && vc.attr("data-banner-partner") === partner && new RegExp(`^rail-${partner}/`).test(vc.attr("data-goatcounter-click")) && a.attr("href") === `//ck.jp.ap.valuecommerce.com/servlet/referral?sid=${VC.sid}&pid=${VC[kind]}` && a.find("img").attr("src") === `//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=${VC.sid}&pid=${VC[kind]}` && (a.attr("rel") || "").includes("sponsored") && a.find("img").attr("alt"); })), "PR枠のじゃらん・JTB・日本旅行は、発行コードのリンクと画像のまま、同意の仕組みの中に出す");
     ok(vcRail.every(([kind, partner]) => fire({ label: `rail-${partner}/x` })[0]?.[2]?.affiliate_partner === partner) && new Set(Object.values(VC)).size === Object.values(VC).length, "PR枠のバリューコマースの広告のクリックも GA4 で数え、発行コードの番号は重ならない");
     // 2026-11-15 運営者の依頼: PR枠の上端は、本文の宿の枠(会場周辺の宿・◯◯県の宿など)の上端にそろえる
-    ok(loaded.every(([p, $$]) => (p.startsWith("kagura/") || $$("main .stay, main aside.aff").length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")), "PR枠の上端を宿の枠にそろえるスクリプトを読み込み、宿の枠がページにある(動かないときは上から96px)", railPages.join(" "));
+    // 今週末・今月は、開催がないと宿の枠が出ない(そのときは上から96px)。日付・場所で探すページは、探す条件の枠(.finder)にそろえる
+    ok(loaded.every(([p, $$]) => (/^(kagura\/|weekend\.html|this-month\.html)/.test(p) || $$("main .stay, main aside.aff, main .finder").length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")) && readFileSync("scripts/client/side-rail.js", "utf8").includes('"main .stay, main aside.aff, main .finder"'), "PR枠の上端を宿の枠(日付・場所で探すページは、探す条件の枠)にそろえるスクリプトを読み込み、その枠がページにある(動かないときは上から96px)", railPages.join(" "));
+    { // ページごとの並び: どのページも7つのバナーを1つずつ。今週末は右の上がレンタカー、日付・場所は右の上が JR+ホテル・左の上が JTB。同意がなくても、左右に楽天のバナーが2つずつ残る
+      const ids = ($$, s) => $$(`.side-rail-${s} .rail-banner`).toArray().map((x) => $$(x).attr("data-goatcounter-click").replace(/^rail-[a-z]+\//, ""));
+      const page = (p) => loaded.find(([q]) => q === p)[1], all = (p) => [...ids(page(p), "l"), ...ids(page(p), "r")];
+      const base = all("this-month.html");
+      ok(["weekend.html", "calendar.html"].every((p) => all(p).length === 7 && [...all(p)].sort().join() === [...base].sort().join()) && base.length === 7 && new Set(base).size === 7, "今週末・今月・日付と場所で探すページのPR枠は、同じ7つのバナーを1つずつ(並びだけがちがう)", ["weekend.html", "this-month.html", "calendar.html"].map((p) => `${p}: ${all(p).join(",")}`).join(" / "));
+      ok(ids(page("weekend.html"), "r")[0] === "rentacar" && ids(page("weekend.html"), "l")[0] === "ryokan" && ids(page("calendar.html"), "r")[0] === "jr-hotel" && ids(page("calendar.html"), "l")[0] === "onsen" && base.join() === all("events/t-full.html").filter((id) => base.includes(id)).join() , "並び: 今週末は右の上がレンタカー・左の上がじゃらん、日付と場所は右の上が JR+ホテル・左の上が JTB、今月は開催ページと同じ");
+      ok(["weekend.html", "this-month.html", "calendar.html"].every((p) => ["l", "r"].every((s) => page(p)(`.side-rail-${s} a.rail-banner[data-banner-partner="rakuten"]`).length === 2)), "どの並びも、広告の同意がなくても出る楽天のバナーが、左右に2つずつある");
+    }
     ok(loaded.every(([p, $$]) => !/data-vc-ad=/.test($$.html()) || $$.html().includes("kaguraVcConsent")), "PR枠にじゃらんがあるページは、広告の同意を確かめるスクリプトを読み込む");
-    ok(["index.html", "calendar.html", "map.html", "guide.html", "sponsor.html", "privacy.html", "quiz.html", "en/index.html"].every((p) => !existsSync(join(dir, p)) || rails(cheerio.load(readFileSync(join(dir, p), "utf8"))).length === 0), "ほかのページ(トップ・カレンダー・地図・ガイド・協賛・規約・診断・英語)には出さない");
+    ok(["index.html", "map.html", "guide.html", "sponsor.html", "privacy.html", "quiz.html", "en/index.html"].every((p) => !existsSync(join(dir, p)) || rails(cheerio.load(readFileSync(join(dir, p), "utf8"))).length === 0), "ほかのページ(トップ・地図・ガイド・協賛・規約・診断・英語)には出さない");
   }
   const railCss = readFileSync("scripts/style.css", "utf8");
   ok(/^\.side-rail\{display:none\}/m.test(railCss) && /@media\(min-width:1280px\)[^{]*\{\s*\.side-rail:not\(\.w\)\{[^}]*display:flex[^}]*position:fixed/.test(railCss), "PR枠は、ふだんは出さず、幅の広い画面だけで、画面に固定して出す(スマホ・せまい画面では出ない)");
