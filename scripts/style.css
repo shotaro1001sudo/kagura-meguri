@@ -402,20 +402,17 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 @media(max-height:519px){.side-rail .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
 /* 「車で行くなら」の枠(開催・定期公演のページの右のPR枠のいちばん上。2026-11-15 運営者の依頼)。枠の幅がせまいので、文字とカードを詰めて縦に並べる */
 .rail-car{padding:12px}
-.rail-car h2{margin:0 0 4px;font-family:var(--serif);font-weight:500;font-size:var(--fs-s);line-height:1.5}.rail-car h2:after{display:none}
-.rail-car .planning-lead{margin:0 0 6px;font-size:var(--fs-2xs);line-height:1.6;color:var(--mut)}
-.rail-car .pc-more{font-size:var(--fs-2xs)}.rail-car .pc-more summary{padding:2px 0}.rail-car .planning-ads{margin:8px 0 0}
+.rail-car .planning-ads{margin:0}
 /* PR枠の下の「PR」1つで広告と示すので、枠の中の「広告」の1行と、画像の下の文字(読み上げは aria-label)は出さない */
 .rail-car .planning-ads>.annotation,.rail-car .planning-banner>span{display:none}
 .rail-car .planning-grid{display:flex;flex-direction:column;gap:8px;margin:0}
 .rail-car .planning-card{padding:0;border:0;box-shadow:none;background:none}.rail-car .planning-card h3{margin:0 0 4px;font-size:var(--fs-2xs);font-family:inherit;font-weight:500}
-.rail-car .planning-banner{display:flex;flex-direction:column;gap:2px;color:var(--fg);text-decoration:none}.rail-car .planning-banner img{width:100%;height:auto;border-radius:8px}.rail-car .planning-card .annotation{margin:2px 0 0;font-size:var(--fs-2xs);line-height:1.5}
-/* 「車で行くなら」の枠があるPR枠は、ふだんはバナー2つまで。、その下のバナーを少なくする(1画面に収まる数だけ)。高さが700pxに満たない画面では、PR枠には置かず、右の列に置く(rail-alt) */
-@media(min-height:860px) and (max-height:1079px){.side-rail:has(>.rail-car) .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
-@media(min-height:700px) and (max-height:859px){.side-rail:has(>.rail-car) .rail-banner{display:none}}
-@media(max-height:699px){.side-rail>.rail-car{display:none}}
+.rail-car .planning-banner{display:flex;flex-direction:column;gap:2px;color:var(--fg);text-decoration:none}.rail-car .planning-banner img{width:100%;height:auto;border-radius:8px}
+/* 「車で行くなら」の枠があるPR枠は、その下のバナーを1画面に収まる数だけにする(高さ 800px 以上は2つ、640〜799px は1つ、それより低いと0) */
+@media(max-height:799px){.side-rail:has(>.rail-car) .rail-banner:nth-child(n+2 of .rail-banner:not([hidden])){display:none}}
+@media(max-height:639px){.side-rail:has(>.rail-car) .rail-banner{display:none}}
 /* 右のPR枠に「車で行くなら」が出る画面では、右の列の同じ枠(rail-alt)は出さない */
-@media(min-width:1400px) and (min-height:700px){body:has(.side-rail.w>.rail-car) .d-side .rail-alt{display:none}}
+@media(min-width:1400px) and (min-height:520px){body:has(.side-rail.w>.rail-car) .d-side .rail-alt{display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}

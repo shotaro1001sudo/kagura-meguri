@@ -95,12 +95,13 @@ export function offersFor(settings,category,context={},today) {
     seen.add(o.id);seen.add(o.url);return true;
   }).slice(0,category==='supplies'?5:3);
 }
-export function offerCards(settings,category,context,today,placement) {
+// verified:false のときは、カードの「掲載情報確認」の日付を出さない(開催・定期公演の「車で行くなら」)
+export function offerCards(settings,category,context,today,placement,{verified=true}={}) {
   const offers=offersFor(settings,category,context,today);
   if(!offers.length)return '';
   const labels={supplies:'観覧用品を探す',experiences:'体験プランを探す',rental:'レンタカー・カーシェアを探す'};
   const action=o=>o.provider==='rakuten-carshare'?'カーシェアを探す':category==='rental'?'レンタカーを探す':labels[category];
-  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 外部サービスの広告です。購入・予約で当サイトに報酬が入ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card${category==='rental'?' compact':''}">${category!=='supplies'&&category!=='rental'?`<p class="meta">${`${esc(o.prefecture)} ${esc(o.city)}`}</p>`:''}<h3>${esc(o.title)}</h3>${category==='rental'?'':`<p>${esc(o.reason)}</p>`}${category==='rental'?'':`<details class="pc-more"><summary>選び方・注意</summary><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl></details>`}<a class="${o.imageUrl?'planning-banner':'btn ghost sm'}" href="${esc(o.url)}" aria-label="${esc(providers[o.provider].name)}で${action(o)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="" loading="lazy"><span>${esc(providers[o.provider].name)}で${action(o)}</span>`:`${esc(providers[o.provider].name)}で${action(o)}`}</a><p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p></article>`).join('')}</div>${PR_FOOT}</section>`;
+  return `<section class="planning-ads" aria-label="${labels[category]}・広告"><p class="meta annotation"><span class="pr">広告</span> 外部サービスの広告です。購入・予約で当サイトに報酬が入ることがあります。</p><div class="planning-grid">${offers.map(o=>`<article class="planning-card${category==='rental'?' compact':''}">${category!=='supplies'&&category!=='rental'?`<p class="meta">${`${esc(o.prefecture)} ${esc(o.city)}`}</p>`:''}<h3>${esc(o.title)}</h3>${category==='rental'?'':`<p>${esc(o.reason)}</p>`}${category==='rental'?'':`<details class="pc-more"><summary>選び方・注意</summary><dl><dt>選ぶときに</dt><dd>${esc(o.criteria)}</dd><dt>不要な場面・注意</dt><dd>${esc(o.unnecessary)}</dd></dl></details>`}<a class="${o.imageUrl?'planning-banner':'btn ghost sm'}" href="${esc(o.url)}" aria-label="${esc(providers[o.provider].name)}で${action(o)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-${category}/${o.id}" data-affiliate-category="${category}" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="" loading="lazy"><span>${esc(providers[o.provider].name)}で${action(o)}</span>`:`${esc(providers[o.provider].name)}で${action(o)}`}</a>${verified?`<p class="meta annotation">掲載情報確認: ${o.verifiedAt}</p>`:''}</article>`).join('')}</div>${PR_FOOT}</section>`;
 }
 export const experiences = [
   {id:'takachiho-boat',prefecture:'宮崎県',city:'高千穂町',name:'高千穂峡の貸しボート',place:'高千穂峡',reason:'峡谷の景色を水上から眺めたい方へ。神楽とは違う角度から土地の自然に触れる候補です。',detail:'予約方法・営業カレンダー・天候による休止を公式案内で確認してください。',source:'https://takachiho-kanko.info/boat/d/',by:'高千穂町観光協会',notice:''},
@@ -131,15 +132,15 @@ export function planningLinks(context={},today=CHECKED,aff,{prep=true}={}) {
   const nearby=experienceCard(context,today,aff);
   return `<nav class="planning-links${prep?'':' solo'}" aria-label="神楽旅の準備">${prep?'<a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a>':''}${nearby||'<a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a>'}</nav>`;
 }
-export function rentalSearch(settings,context,today,placement) {
-  const ads=offerCards(settings,'rental',context,today,placement);
+export function rentalSearch(settings,context,today,placement,opts) {
+  const ads=offerCards(settings,'rental',context,today,placement,opts);
   return ads;
 }
 // 「車で行くなら」の枠。開催・定期公演のページでは、PCの右のPR枠(rail)に置く(2026-11-15 運営者の依頼)。
 // PR枠の中では、枠ごとの「PR」はPR枠の下の1つにまとめる。PR枠が出ない幅の画面向けに、右の列にも同じ枠を置く(class: rail-alt。PR枠が出る画面では隠す)
+// 見出し「車で行くなら」・説明の1行・「移動の注意」・「掲載情報確認」は出さない(2026-11-15 運営者の依頼)。カードの「レンタカーを探す」「カーシェアを探す」とバナーだけにする
 export function transportSection(settings,context,today,placement,{rail=false,alt=false}={}) {
-  const ads=rentalSearch(settings,context,today,placement);
+  const ads=rentalSearch(settings,context,today,placement,{verified:false});
   if (!ads) return "";
-  const h=rail?'rental-rail-h':'rental-h';
-  return `<section class="${rail?'rail-car':`planning-section${alt?' rail-alt':''}`}" aria-labelledby="${h}"><h2 id="${h}">車で行くなら</h2><p class="planning-lead">レンタカーやカーシェアは、ここから探せます。</p><details class="pc-more"><summary>移動の注意</summary><p class="meta annotation">会場の公式アクセスと公共交通を先に確認し、貸出・返却店舗の営業時間、終演後の移動、駐車場の有無も確かめましょう。</p></details>${rail?ads.replace(PR_FOOT,''):ads}</section>`;
+  return `<section class="${rail?'rail-car':`planning-section${alt?' rail-alt':''}`}" aria-label="車で行くなら">${rail?ads.replace(PR_FOOT,''):ads}</section>`;
 }
