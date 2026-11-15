@@ -745,7 +745,7 @@ const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some(
 const jsVal = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 const finderBannerN = rakutenOn ? stripIdsFor("/calendar.html").filter((id) => !RAIL_BANNERS.find((b) => b.id === id)?.vc).length : 0;
 // 帯には1個だけ出すので、形ごとに「先頭のマスを入れる形(l)」と「バナーだけの形(b。先頭のマスがないとき)」を持つ
-const finderStrips = jsVal(Array.from({ length: INLIST_THEMES.length + finderBannerN }, (_, k) => ({ l: inlistStrip("/calendar.html", k, { lead: ["@LEAD@"], tag: "list@N@" }), b: inlistStrip("/calendar.html", k, { tag: "list@N@" }) })));
+const finderStrips = jsVal(Array.from({ length: INLIST_THEMES.length + finderBannerN }, (_, k) => ({ l: inlistStrip("/calendar.html", k, { lead: ["@LEAD@"], tag: "list@N@", land: true }), b: inlistStrip("/calendar.html", k, { tag: "list@N@", land: true }) })));
 // 契約中の協賛が当てはまる開催だけ(開催のID → 協賛のマス)。協賛がなければ空
 const finderSponsors = jsVal(Object.fromEntries(upcoming.map((e) => [e.id, listSponsorTile(sponsorsNow, "event", e, { esc })]).filter(([, h]) => h)));
 const finderLead = `var LO={sponsorTile:function(x){return SP[x.id]||''}},SP=${finderSponsors};
