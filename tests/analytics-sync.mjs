@@ -336,6 +336,11 @@ export function analyticsSyncTests({ok,section}) {
   ok(h.log("2026-10-24-GA4")[3].includes("aff_page:")&&h.log("2026-10-24-GA4")[3].includes("aff_detail:"),"2つの内訳の取得を、実行記録に残す");
   const client=readFileSync('scripts/client/affiliate.js','utf8');
   const lists=[...client.matchAll(/!\[([^\]]+)\]\.includes\((partner|placement)\)/g)].map(m=>[m[2],m[1].replace(/'/g,"").split(",")]);
+  // 一覧(includes)で調べる値に加えて、affiliate_placement に直接書いた値(宿のバナー・PR枠など)も、送る値に数える
+  // (2026-11-15 の監査: PR枠の side_rail が Apps Script の一覧に無く、広告・置き場所別の内訳が取れなくなるところだった)
+  const direct=[...client.matchAll(/affiliate_placement:([^,}]+)/g)].flatMap(m=>[...m[1].matchAll(/["']([a-z_]+)["']/g)].map(x=>x[1])).filter(v=>v!=="rail"&&v!=="stay"&&v!=="banner");
+  lists.push(["placement",direct]);
+  ok(direct.includes("side_rail")&&direct.includes("stay_banner"),"PR枠・宿のバナーの配置の値を、送る値として拾えている");
   const sent=(k)=>new Set(lists.filter(([n])=>n===k).flatMap(([,v])=>v));
   ok(sent("partner").size>0&&[...sent("partner")].every(v=>S.AFF_PARTNERS.includes(v))&&["jalan","rakuten","amazon"].every(v=>S.AFF_PARTNERS.includes(v)&&client.includes(v)),"サイトが送る広告主の値を、すべて受け入れる(一覧のずれを防ぐ)");
   ok(sent("placement").size>0&&[...sent("placement")].every(v=>S.AFF_PLACEMENTS.includes(v))&&["event_stay","stay_banner","travel_block"].every(v=>S.AFF_PLACEMENTS.includes(v)&&client.includes(v))&&S.AFF_PLACEMENTS.every(v=>client.includes(v))&&S.AFF_PARTNERS.every(v=>client.includes(v)),"サイトが送る置き場所の値を、すべて受け入れ、サイトにない値は受け入れない");

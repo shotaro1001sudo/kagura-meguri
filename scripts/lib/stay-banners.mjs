@@ -14,7 +14,7 @@ export const BANNER_IMG_HOSTS = ["https://hbb.afl.rakuten.co.jp", "https://ba.af
 /** 宿のバナー。on: { rakuten, jalan }(各サービスの提携IDが設定されているか)。attrs(on, label): 外部リンクの属性 */
 export function stayBannersHtml({ on, id, attrs, esc }) {
   const items = Object.entries(STAY_BANNERS).filter(([k]) => on[k]).map(([k, b]) =>
-    `<a class="stay-banner" href="${esc(b.url)}" ${attrs(true, `banner-${k}/${id}`)} data-banner-partner="${k}"><img src="${esc(b.imageUrl)}" alt="${esc(b.name)}の宿泊予約" loading="lazy" decoding="async"></a>`);
+    `<a class="stay-banner" href="${esc(b.url)}" ${attrs(true, `banner-${k}/${id}`)} data-banner-partner="${k}"><img src="${esc(b.imageUrl)}" alt="${esc(b.name)}の宿泊予約" width="468" height="60" loading="lazy" decoding="async"></a>`);
   if(on.jalan)items.push(vcTag({kind:"banner",className:"stay-banner",meta:{"data-goatcounter-click":`banner-jalan/${id}`,"data-banner-partner":"jalan"}}));
   return items.length ? `<div class="stay-banners">${items.join("")}</div>` : "";
 }
@@ -32,7 +32,8 @@ export function expBannersHtml({ on, id, attrs, esc }) {
   const ga = (partner, cid) => ({ "data-affiliate-category": "experiences", "data-affiliate-partner": partner, "data-affiliate-placement": "nearby_experiences", "data-affiliate-id": cid });
   const data = (o) => Object.entries(o).map(([k, v]) => `${k}="${esc(v)}"`).join(" ");
   const items = [];
-  if (on.rakuten) items.push(`<a class="stay-banner" href="${esc(EXP_BANNER.url)}" ${attrs(true, `experience-rakuten/pref-${id}`)} ${data(ga("rakuten", "pref-rakuten-experiences"))}><img src="${esc(EXP_BANNER.imageUrl)}" alt="現地の観光体験を楽天トラベルで探す" width="486" height="60" loading="lazy" decoding="async"></a>`);
+  // 486×60 は、横に並べたときに 468×60 と同じ高さになるよう、幅の割合を 486 にする(style.css の .stay-banner.w486)
+  if (on.rakuten) items.push(`<a class="stay-banner w486" href="${esc(EXP_BANNER.url)}" ${attrs(true, `experience-rakuten/pref-${id}`)} ${data(ga("rakuten", "pref-rakuten-experiences"))}><img src="${esc(EXP_BANNER.imageUrl)}" alt="現地の観光体験を楽天トラベルで探す" width="486" height="60" loading="lazy" decoding="async"></a>`);
   if (on.vc) {
     // 同日「体験のバナーが3つになって見づらい、2つにして」: 宿の枠と同じ 楽天+じゃらん の2つにした(アソビューの 468×60 は発行済みだが、ここには出さない)
     items.push(vcTag({ kind: "activityWide", className: "stay-banner", meta: { "data-goatcounter-click": `experience-jalan/pref-${id}`, ...ga("vc-jalan-activity", "pref-jalan-activity") } }));

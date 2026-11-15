@@ -9,8 +9,9 @@
   // - 都道府県: 宿の枠。日付・場所で探す: 探す条件の枠。地図で探す: 地図。種類で探す: 最初のカードの並び
   // - 神楽の種類(各神楽のページ): 「歴史」の枠(くわしい情報の最初の枠 .kagura-folds。2026-11-15 運営者の依頼。はじめは「◯◯とは」の枠、その前はページの下のほうの宿の枠にそろえていた)
   // - トップ: 開催予定の、月の最初の公演のカード(同日の依頼)
+  // - 月別のページ: 最初の公演のカード(トップと同じ。同日の監査で、月別のページにも PR 枠を出した)
   const anchor = document.querySelector("main .d-side") ||
-    document.querySelector("main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card");
+    document.querySelector("main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card, main h2.sr + .card");
   if (!rails.length || !anchor) return;
   const place = () => {
     // 公演ページの右の列は画面に付いてくる(上から約97px で止まる)ので、そのあいだも右の列と同じ高さになる

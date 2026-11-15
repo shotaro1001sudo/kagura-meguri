@@ -47,9 +47,10 @@ document.addEventListener("click", (event) => {
       const link=entry.target;
       const source=link.matches?.('[data-vc-ad]')?link.querySelector(':scope > a'):link;
       if(!source||!entry.isIntersecting||entry.intersectionRatio<0.5||sent.has(link)||!source.relList.contains('sponsored'))continue;
-      const bm=/^banner-(jalan|rakuten)\/(.+)$/.exec(link.getAttribute('data-goatcounter-click')||'');
+      // 宿のバナー(banner-)と、PCの両サイドのPR枠・一覧の途中の帯(rail-)。クリックと同じ配置の名前で、表示も数える(2026-11-15 の監査で rail- を足した)
+      const bm=/^(banner|rail)-(jalan|rakuten|jtb|nta)\/(.+)$/.exec(link.getAttribute('data-goatcounter-click')||'');
       if(bm&&link.hasAttribute('data-banner-partner')) {
-        window.gtag('event','affiliate_view',{affiliate_partner:bm[1],affiliate_placement:'stay_banner',affiliate_content_id:bm[2],affiliate_page_path:window.location.pathname});
+        window.gtag('event','affiliate_view',{affiliate_partner:bm[2],affiliate_placement:bm[1]==='rail'?'side_rail':'stay_banner',affiliate_content_id:bm[3],affiliate_page_path:window.location.pathname});
         sent.add(link);observer.unobserve(link);continue;
       }
       const category=link.getAttribute('data-affiliate-category'),partner=link.getAttribute('data-affiliate-partner'),placement=link.getAttribute('data-affiliate-placement'),id=link.getAttribute('data-affiliate-id');

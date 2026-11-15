@@ -55,13 +55,17 @@ export const RAIL_ORDER = {
   "/map.html": { left: ["station", "ryokan", "onsen-rotenburo", "onsen"], right: ["rentacar", "bus", "jr-hotel", "experiences"] },
 };
 
-/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類と、今週末・今月・日付と場所で探す・地図で探す) */
-export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path) || Object.hasOwn(RAIL_ORDER, path);
+/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類・月別と、今週末・今月・日付と場所で探す・地図で探す)。
+ *  月別ページ(/month/)は 2026-11-15 の監査で足した(中身が今月のページと同じ一覧なのに、PR が1つもなかった) */
+export const railPage = (path) => /^\/(events|regular|pref|kagura|month)\//.test(path) || Object.hasOwn(RAIL_ORDER, path);
 
+// 本文に体験の枠・カードがあるページ(都道府県の「◯◯県の体験」、開催・定期公演の周辺体験のカード)では、
+// PR 枠の「楽天トラベル 観光体験」を出さない(同じ広告が同じ画面に2つ並ばないように。2026-11-15 の監査。帯の skip:["experiences"] と同じ考え)
+const RAIL_SKIP_EXPERIENCES = /^\/(pref|events|regular)\//;
 /** そのページの、左右それぞれのバナー(上から) */
-export const railBannersFor = (path, s) => RAIL_ORDER[path]
+export const railBannersFor = (path, s) => (RAIL_ORDER[path]
   ? RAIL_ORDER[path][s].map((id) => RAIL_BANNERS.find((b) => b.id === id))
-  : RAIL_BANNERS.filter((b) => b.side === s);
+  : RAIL_BANNERS.filter((b) => b.side === s)).filter((b) => !(b.id === "experiences" && RAIL_SKIP_EXPERIENCES.test(path)));
 
 /**
  * 両サイドの PR 枠。on: { rakuten, jalan, jtb, nta }(提携IDが設定されているか。jtb・nta はバリューコマースのサイトIDと同意の仕組みがそろっているか)。attrs(on, name): 外部リンクの属性。wide: 本文が広いページか

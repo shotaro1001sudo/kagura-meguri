@@ -57,8 +57,11 @@ export function consistencyTests({ ok, section, OUT, build }) {
   const panel = (src.match(/:where\(([^{]*)\)\{border:1px solid var\(--edge\);border-radius:var\(--radius\);background:var\(--card\);box-shadow:var\(--shadow\)\}/) ?? [])[1] ?? "";
   ok([".card", ".keyinfo", ".stay", ".aff", ".quick a", ".finder", ".form fieldset", ".gcard", ".fig", ".era", ".faq details"].every((s) => list(panel).includes(s)), "面(カード・要点の枠・宿の案内・検索の枠・フォーム・ガイドのカードなど)の枠・角・影・地色は、1つの決まりにまとめる", panel);
   const radii = [...src.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/(?<![-\w])border-radius:([^;}]+)/g)].map((m) => m[1].trim());
-  const odd = [...new Set(radii.filter((v) => !/^(var\(--(radius|radius-s|pill)\)|50%|0|2px|4px|8px)$/.test(v)))];
-  ok(odd.length === 0, "角の丸みは基準の値(面・小さな角・丸)を使う(小さな印の 2px・4px、広告や商品の画像の 8px だけ別)", odd.join(" / "));
+  const odd = [...new Set(radii.filter((v) => !/^(var\(--(radius|radius-s|radius-img|pill)\)|50%|0|2px|4px)$/.test(v)))];
+  ok(odd.length === 0, "角の丸みは基準の値(面・小さな角・丸・広告や商品の画像)を使う(小さな印の 2px・4px だけ別)", odd.join(" / "));
+  // 2026-11-15 の監査: 広告・商品の画像の角と影は、--radius-img・--shadow-img の1か所で決める(バナーごとに 8px や影を書かない)
+  ok(/--radius-img:8px/.test(tokens) && /--shadow-img:/.test(tokens) && !radii.includes("8px") && !/box-shadow:0 1px 3px rgb\(0 0 0\/\.12\)/.test(src.replace(/:root\{[^}]*\}/, "")), "広告・商品の画像の角と影は、--radius-img・--shadow-img を使う");
+  ok(!/font-weight:(600|700|bold)/.test(src.replace(/\/\*[\s\S]*?\*\//g, "")), "太字は 500 まで(600・700 は使わない)");
   const chip = (src.match(/:is\(([^{]*)\)\{display:inline-flex;align-items:center;min-height:var\(--tap\)/) ?? [])[1] ?? "";
   ok([".chip", ".taglist .tag", ".regions button"].every((s) => list(chip).includes(s)) && !/pref-month-nav|viewing-preparation/.test(src), "チップ(月・種類・県・絞り込み)は、どのページでも同じ形・高さ 44px(広島県の「開催月から探す」「観覧前に確認」は 2026-11-15 に削除したので、その CSS も残さない)", chip);
   ok(/a\.tag,[^{]*\.info \.tomap,\.info \.tocal[^{]*\)::after\{content:"";position:absolute;[^}]*height:var\(--tap\)/.test(src), "小さな札・地図やカレンダーへのリンクは、見た目は小さいまま、押せる範囲を 44px に広げる");

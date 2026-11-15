@@ -131,7 +131,7 @@ export function guideTests({ ok, section, OUT, build }) {
       ok(pages.every(([f]) => { const m = main(read(join(D, f))); const back = unphrase(m); return !back.includes('class="bw"') && !back.includes("<wbr>") && cheerio.load(m)("body").text() === cheerio.load(back)("body").text(); }), "ガイド・歴史のページ: 印を取り除いても、文は1字も変わらない");
     }
     const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
-    ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.nb\{white-space:nowrap\}/m.test(sheet) && /^\.tl\{display:block\}/m.test(sheet) && !/^\.cl\{/m.test(sheet) && built.includes('<div class="prose guide">${phrasesHtml(guideHtml({') && built.includes('<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>'), ".bw の中は、字と字のあいだでは折り返さず、印と句読点のあとでだけ折り返す(どのブラウザでも)。ガイド・歴史の本文を、その仕組みに通している");
+    ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.nb\{white-space:nowrap\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && !/^\.cl\{/m.test(sheet) && built.includes('<div class="prose guide">${phrasesHtml(guideHtml({') && built.includes('<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>'), ".bw の中は、字と字のあいだでは折り返さず、印と句読点のあとでだけ折り返す(どのブラウザでも)。ガイド・歴史の本文を、その仕組みに通している");
   }
   rmSync(D, { recursive: true, force: true });
 }

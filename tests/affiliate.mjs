@@ -53,7 +53,7 @@ export function affiliateTests({ ok, section, OUT, build }) {
     // 2026-11-15 運営者の依頼「全公演ページで統一」: 公演ページ(開催・定期公演)は、どれも 右の列(.d-side)の上端 = 要点の枠(.keyinfo)の上端 にそろえる。
     // 宿の枠がない公演も、右の列がない終了した開催(要点の枠にそろえる)も、同じ決まりで、上から96px のままにしない
     // 2026-11-15 運営者の依頼: 各神楽のページは「歴史」の枠(くわしい情報の最初の枠 .kagura-folds)、トップは月の最初の公演のカード(#list .card)にそろえる
-    const RAIL_ANCHOR = "main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card";
+    const RAIL_ANCHOR = "main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card, main h2.sr + .card";
     const kindIndex = cheerio.load(readFileSync(join(dir, "kagura/index.html"), "utf8"));
     const railJs = readFileSync("scripts/client/side-rail.js", "utf8");
     ok(loaded.every(([p, $$]) => (/^(weekend\.html|this-month\.html)/.test(p) || $$("main .d-side").length >= 1 || $$(RAIL_ANCHOR).length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")) && railJs.includes(`document.querySelector("main .d-side") ||`) && railJs.includes(`"${RAIL_ANCHOR}"`), "PR枠の上端を本文の枠(公演ページは右の列と要点の枠、日付・場所で探すページは探す条件の枠、地図で探すページは地図)にそろえるスクリプトを読み込み、その枠がページにある(動かないときは上から96px)", railPages.join(" "));
@@ -186,6 +186,14 @@ export function affiliateTests({ ok, section, OUT, build }) {
           ok(one(3).is("a.strip-sp[data-sponsor=t-gotsu]") && one(3).attr("data-goatcounter-click") === "sponsor/t-gotsu/inlist" && st.find(".strip-sp").length === 1, "今月: 5件に当てはまる契約中の協賛は、その帯に出る(登録だけで出る。4本目の体験の代わりに)");
           const cal = readFileSync("dist-test-inlist/calendar.html", "utf8"), sp = cal.match(/SP=(\{.*?\});/);
           ok(!!sp && Object.keys(JSON.parse(sp[1])).sort().join() === ["t-inl-15", "t-inl-16", "t-inl-17", "t-inl-18", "t-inl-19"].sort().join() && !JSON.stringify(JSON.parse(sp[1])).includes("contractRef"), "日付と場所で探す: 協賛が当てはまる開催だけ、スクリプトに協賛のマスを持つ(契約の控えは載せない)", sp?.[1].slice(0, 200));
+          // 2026-11-15 の監査「ほかのページも同じように。今後の新規登録でも同じに」: 一覧のあるページは、どれも同じ決まり(5件ごとの帯・両サイドのPR枠・最後の「旅の手配」)
+          // 月別のページ・各神楽のページにも、開催を登録するだけで同じ帯が出る
+          const inlistOk = ($$, n) => { const s = $$("main aside.pr-strip.inlist"); return s.length === inlistCount(n, STRIP_EVERY) && s.toArray().every((x, k) => $$(x).find(".pr-strip-one > *").length === 1 && $$(x).find("p.pr-strip-h").text() === inlistTheme("/", k).h && $$(x).find("[data-vc-ad]").length === 0 && !$$(x).find(".pr-strip-one > *").is(".sq")); };
+          const monthFile = readdirSync("dist-test-inlist/month").find((f) => f.startsWith("2026-10")), mp = cheerio.load(readFileSync("dist-test-inlist/month/" + monthFile, "utf8")), mCards = mp("main .card").length;
+          ok(mCards >= 20 && inlistOk(mp, mCards) && rails(mp).length === 2 && mp("main aside.pr-strip:not(.inlist)").length === 1 && mp("main aside.pr-strip:not(.inlist)").nextAll(".card").length === 0, "月別のページ: 5件ごとの帯・両サイドのPR枠・一覧の下の「旅の手配」(ほかの一覧のページと同じ)", `${mCards}件 → ${mp("main aside.pr-strip.inlist").length}本`);
+          const kp2 = cheerio.load(readFileSync("dist-test-inlist/kagura/石見神楽.html", "utf8")), kCards = kp2("main .card").length;
+          ok(kCards >= 20 && inlistOk(kp2, kCards) && kp2("main aside.aff h2").first().text() === "島根県の宿", "各神楽のページ: 開催予定と定期公演を通して5件ごとに帯。宿は、これからの開催の県(終了した開催の県にしない)", `${kCards}件 → ${kp2("main aside.pr-strip.inlist").length}本 / ${kp2("main aside.aff h2").first().text()}`);
+          ok(cal.includes("var K=0,TOT=") && cal.includes("var k=K++"), "日付と場所で探す: 帯の番号は、月をまたいで通して数える(月ごとに1本目に戻らない)");
         } }
       // 置き場所: 主な内容(検索の結果・会場の一覧・種類の一覧)と、宿・体験の枠のあと。それより上には置かない
       const after = ($$, sel) => $$(sel).length >= 1 && stripOf($$).prevAll(sel).length >= 1 && stripOf($$).nextAll(sel).length === 0;
@@ -194,6 +202,13 @@ export function affiliateTests({ ok, section, OUT, build }) {
     }
     ok(loaded.every(([p, $$]) => !/data-vc-ad=/.test($$.html()) || $$.html().includes("kaguraVcConsent")), "PR枠にじゃらんがあるページは、広告の同意を確かめるスクリプトを読み込む");
     ok(["guide.html", "sponsor.html", "privacy.html", "quiz.html", "en/index.html"].every((p) => !existsSync(join(dir, p)) || rails(cheerio.load(readFileSync(join(dir, p), "utf8"))).length === 0), "ほかのページ(ガイド・協賛・規約・診断・英語)には出さない");
+    // 2026-11-15 の監査: 本文に「◯◯県の体験」や周辺体験の欄があるページ(県・開催・定期公演)では、PR枠に同じ体験のバナーを重ねない
+    ok(loaded.filter(([p]) => /^(pref|events|regular)\//.test(p)).every(([, $$]) => $$('.side-rail [data-goatcounter-click$="/experiences"]').length === 0) && loaded.filter(([p]) => /^(calendar|map)\.html$/.test(p)).some(([, $$]) => $$('.side-rail [data-goatcounter-click$="/experiences"]').length === 1), "PR枠の体験のバナーは、本文に体験の枠がある県・開催・定期公演のページには出さない(探すページには出す)");
+    { const home = cheerio.load(readFileSync(join(dir, "index.html"), "utf8")), s = home("main aside.pr-strip:not(.inlist)");
+      ok(s.length === 1 && s.find(".pr-strip-one > *").length === 1 && s.nextAll("h2").first().text().includes("都道府県"), "トップ: 一覧の下(都道府県で探すの前)に「旅の手配」を1つ(ほかの一覧のページと同じ)"); }
+    // 冒頭の説明(県・種類)は、ことばの切れ目で改行する(.bw)。ほかの本文と同じ
+    { const pf = cheerio.load(readFileSync(join(dir, "pref", readdirSync(join(dir, "pref"))[0]), "utf8")), kf = cheerio.load(readFileSync(join(dir, "kagura", readdirSync(join(dir, "kagura")).find((f) => f !== "index.html")), "utf8"));
+      ok(pf("main p.lead").first().find(".bw").length >= 1 && (kf("main p.kagura-lead").length === 0 || kf("main p.kagura-lead .bw").length >= 1), "県・種類のページの冒頭の説明は、ことばの切れ目で改行する(.bw)"); }
   }
   const railCss = readFileSync("scripts/style.css", "utf8");
   ok(/^\.side-rail\{display:none\}/m.test(railCss) && /@media\(min-width:1280px\)[^{]*\{\s*\.side-rail:not\(\.w\)\{[^}]*display:flex[^}]*position:fixed/.test(railCss), "PR枠は、ふだんは出さず、幅の広い画面だけで、画面に固定して出す(スマホ・せまい画面では出ない)");

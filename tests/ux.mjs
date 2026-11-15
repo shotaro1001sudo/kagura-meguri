@@ -135,7 +135,9 @@ export async function uxTests({ ok, section, OUT }) {
     ok(css.includes('grid-template-areas:"lead lead" "top side" "rest side"') && css.includes(".d-side .stay,.d-side .aff{margin:0 0 16px}"), "PC: 説明は右端まで使い、要点の枠と右の列の最初の枠(宿)の上端がそろう");
     const wk = page("weekend.html"), tm = page("this-month.html");
     ok([wk, tm].every((p) => p(".d-lead.narrow > h2").length === 1 && p(".d-top").children().first().is(".card")) && css.includes(".d-lead.narrow{grid-column:1}.d-lead.narrow~.d-side{margin-top:0}"), "今週末・今月: 見出しは上の段(左の列)に置き、最初の開催のカードと右の宿の枠の上端をそろえる");
-    ok(/:where\([^)]*\.more-picks,/.test(css) && /\.more-picks\{margin:40px 0;padding:18px 22px\}/.test(css), "本・ふるさと納税の紹介も、ほかの広告と同じ枠にする");
+    ok(/:where\([^)]*\.more-picks,/.test(css) && /\.more-picks\{margin:40px 0;padding:20px 20px 14px\}/.test(css), "本・ふるさと納税の紹介も、ほかの広告と同じ枠にする");
+    // 2026-11-15 の監査: 本文の列の枠(宿・体験・ふるさと納税/本)は、内側の余白と見出しの間隔を同じにする(新しい枠も同じ値に)
+    ok(/\.aff\{margin:64px 0 8px;padding:20px 20px 14px\}/.test(css) && /\.stay\{margin:40px 0;padding:20px 20px 14px\}/.test(css) && /:is\(\.aff,\.stay,\.more-picks\)\{padding:16px 16px 12px\}/.test(css) && /\.more-picks h2\{margin:0 0 10px/.test(css) && /\.aff h2\{margin:0 0 10px/.test(css), "宿・体験・ふるさと納税の枠は、内側の余白(PC 20px・スマホ 16px)と見出しの下の間隔(10px)が同じ");
     ok(/@media\(min-width:641px\)\{html:not\(\[lang=en\]\) \.home-hero \.copy\{margin-left:/.test(css), "トップの縦書きの見出しは、PC・タブレットで少し右に寄せる");
   }
   { // 本・ふるさと納税の紹介は、右の列ではなく、本文の下のほう(周辺体験のあと)に出す(2026-11-14 運営者の依頼。右の列を宿・レンタカーだけにして、画面に収める)
@@ -176,10 +178,12 @@ export async function uxTests({ ok, section, OUT }) {
     { const paras = pages.slice(0, 3).flatMap((p) => p(".desc-lead > p, .detail.note p, .detail.note li, .keyinfo td .line").toArray().map((x) => p(x)));
       const long = paras.filter((x) => x.text().length >= 10);
       ok(long.length >= 1 && long.every((x) => x.find(".bw").length >= 1 && x.find(".bw wbr").length >= 1 && x.find(".cl").length === 0 && x.find(".bw").toArray().map((b) => x.find(b).text()).join("") === x.text()), "公演ページの本文(説明・この開催のポイント・要点の表)に、折り返してよい印(文節の切れ目)を入れる。文字は変えない", long.length + " 段落");
-      const lined = paras.filter((x) => x.children(".tl").length);
-      ok(lined.every((x) => x.children(".tl").length >= 2 && x.children().not(".tl").length === 0 && x.children(".tl").toArray().map((t) => x.find(t).text()).join("") === x.text()), "話題が変わるところで分けた行(.tl)は、つなぐと元の文になる", lined.length + " 段落");
+      const lined = paras.filter((x) => x.children(".tline").length);
+      ok(lined.every((x) => x.children(".tline").length >= 2 && x.children().not(".tline").length === 0 && x.children(".tline").toArray().map((t) => x.find(t).text()).join("") === x.text()), "話題が変わるところで分けた行(.tline)は、つなぐと元の文になる", lined.length + " 段落");
+      // 2026-11-15 監査: 話題の行を歴史の年表と同じ .tl にしていたため、年表の横スクロール・余白が公演の本文にかかっていた
+      ok(paras.every((x) => x.find(".tl").length === 0), "公演の本文の話題の行は、歴史の年表(.tl)と別の名前(.tline)。年表の横スクロールや余白が本文にかからない");
       const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
-      ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.tl\{display:block\}/m.test(sheet) && ["<p>${topicLines(String(s).trim())}</p>", "<li>${topicLines(t)}</li>", '<span class="line">${cl(t)}</span>'].every((x) => built.includes(x)), "公演の説明・この開催のポイントは話題ごとの行に、要点の表は文ごとの行に分け、どれも言葉の途中では折り返さない"); }
+      ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && ["<p>${topicLines(String(s).trim())}</p>", "<li>${topicLines(t)}</li>", '<span class="line">${cl(t)}</span>'].every((x) => built.includes(x)), "公演の説明・この開催のポイントは話題ごとの行に、要点の表は文ごとの行に分け、どれも言葉の途中では折り返さない"); }
     ok(pages.every((p) => { const t = p(".page-notes").text(); return !/リアルタイム表示ではありません|会場の公式アクセスと公共交通を先に|泊・大人2名で検索します|掲載情報確認:/.test(t) && (t.match(/アフィリエイトリンク/g) || []).length <= 1; }), "ページ下の注記は、ほかで伝わる注意をくり返さず、広告の注記は1行にまとめる"); }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-lead .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");
