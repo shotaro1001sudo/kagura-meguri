@@ -969,6 +969,11 @@ main>p:not([class]){margin:20px 0;max-width:42em}
   .chiprow::-webkit-scrollbar{display:none}
   .chiprow>*{flex:none}
   .pref-month-nav{padding-top:10px;padding-bottom:10px}
+  /* 種類で探すの「地方から探す」は、横に送らず、同じ大きさのボタンを2列の格子に並べて、全部の地方を一目で見せる
+     (2026-11-15 運営者の依頼「横に隠れていて、スライドすればいいのか分からない」。運営者が格子のボタンを選んだ) */
+  .chiprow.kagura-regions{display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:visible;margin:0 0 4px;padding:0;-webkit-mask-image:none;mask-image:none}
+  .chiprow.kagura-regions .meta{grid-column:1/-1;margin:0}
+  .chiprow.kagura-regions .chip{justify-content:center;padding:6px 10px;text-align:center}
 }
 
 /* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */

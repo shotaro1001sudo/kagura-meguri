@@ -51,8 +51,8 @@ export function affiliateTests({ ok, section, OUT, build }) {
     // 種類で探すページ(kagura/index.html)は最初のカードの並び(.kagura-region .cardgrid)にそろえる
     // 2026-11-15 運営者の依頼「全公演ページで統一」: 公演ページ(開催・定期公演)は、どれも 右の列(.d-side)の上端 = 要点の枠(.keyinfo)の上端 にそろえる。
     // 宿の枠がない公演も、右の列がない終了した開催(要点の枠にそろえる)も、同じ決まりで、上から96px のままにしない
-    // 2026-11-15 運営者の依頼: 各神楽のページは「◯◯とは」の枠(.kagura-summary)、トップは月の最初の公演のカード(#list .card)にそろえる
-    const RAIL_ANCHOR = "main .keyinfo, main .stay, main .kagura-summary, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card";
+    // 2026-11-15 運営者の依頼: 各神楽のページは「歴史」の枠(くわしい情報の最初の枠 .kagura-folds)、トップは月の最初の公演のカード(#list .card)にそろえる
+    const RAIL_ANCHOR = "main .keyinfo, main .stay, main .kagura-folds, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card";
     const kindIndex = cheerio.load(readFileSync(join(dir, "kagura/index.html"), "utf8"));
     const railJs = readFileSync("scripts/client/side-rail.js", "utf8");
     ok(loaded.every(([p, $$]) => (/^(weekend\.html|this-month\.html)/.test(p) || $$("main .d-side").length >= 1 || $$(RAIL_ANCHOR).length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")) && railJs.includes(`document.querySelector("main .d-side") ||`) && railJs.includes(`"${RAIL_ANCHOR}"`), "PR枠の上端を本文の枠(公演ページは右の列と要点の枠、日付・場所で探すページは探す条件の枠、地図で探すページは地図)にそろえるスクリプトを読み込み、その枠がページにある(動かないときは上から96px)", railPages.join(" "));
@@ -92,9 +92,9 @@ export function affiliateTests({ ok, section, OUT, build }) {
       ok([wkP, tmP].every(($$) => stripOf($$).length === $$(".d-side").length && (!stripOf($$).length || (stripOf($$).is(".w") && stripOf($$).is(".d-side > :last-child") && stripOf($$).prev().is(".self-pair") && stripOf($$).prev().prev().is(".trip-band") && oneOf(stripOf($$)).length === 1))) && (!stripOf(wkP).length || idOf(wkP) === firstRk(stripIdsFor("/weekend.html"))), "今週末・今月のページは、右の列の宿の枠の下にPRを1個(開催がなく宿の枠が出ないときは、出さない)");
       // 2026-11-15 運営者の依頼「PC版の今週末・今月の協賛・主催者向けのPRは、週末の宿を探すの下に2つ横並び」
       ok([[wkP, "weekend"], [tmP, "this-month"]].every(([$$, page]) => { const sp = $$(".d-side > .self-pair"), a = sp.children("a"); return $$(".d-side").length === 0 || (sp.length === 1 && sp.prev().is(".trip-band") && a.length === 2 && a.eq(0).attr("href") === "/sponsor.html" && a.eq(1).attr("href") === "/organizers.html" && a.toArray().every((x) => !$$(x).attr("rel") && !$$(x).attr("target") && /^pr-self\/(weekend|this-month)-(sponsor|organizers)$/.test($$(x).attr("data-goatcounter-click")) && $$(x).find("img").attr("width") === "600") && a.eq(0).attr("data-goatcounter-click") === `pr-self/${page}-sponsor`); }) && wkP(".d-side").length + tmP(".d-side").length >= 1 &&css.includes(".self-pair{display:none}") && css.includes("@media(min-width:960px){.d-side .self-pair{display:grid;grid-template-columns:1fr 1fr;"), "今週末・今月: 協賛のご案内と公演の掲載のご案内を、右の列の宿の枠の下に2つ横並び(右の列がある画面だけ。PR枠には出さない)");
-      // 同日の依頼「各神楽のページの両サイドのPRは『◯◯とは』の高さに」: 「◯◯とは」の枠が、そろえる相手の中でいちばん先に出てくる
+      // 同日の依頼「各神楽のページの両サイドのPRは『◯◯とは』の高さに」→ さらに「『歴史』タブの高さに」: くわしい情報の枠(最初が「歴史」)が、そろえる相手の中でいちばん先に出てくる
       { const kp = readdirSync(join(dir, "kagura")).filter((f) => f !== "index.html").map((f) => cheerio.load(readFileSync(join(dir, "kagura", f), "utf8")));
-        ok(kp.length > 0 && kp.every(($$) => rails($$).length === 2 && $$(RAIL_ANCHOR).first().is(".kagura-summary") && $$(".kagura-summary h2").text().endsWith("とは")), "各神楽のページのPR枠は、「◯◯とは」の枠の上端にそろえる", kp.map(($$) => $$(RAIL_ANCHOR).first().attr("class")).join(" / ")); }
+        ok(kp.length > 0 && kp.every(($$) => rails($$).length === 2 && $$(RAIL_ANCHOR).first().is(".kagura-folds") && $$(".kagura-folds > .kfold").first().is("#k-history")), "各神楽のページのPR枠は、「歴史」の枠の上端にそろえる", kp.map(($$) => $$(RAIL_ANCHOR).first().attr("class")).join(" / ")); }
       // 同日の依頼「トップの両サイドにもPR。月の公演カードの最初の枠に合わせる。スマホは今週末・今月の一覧と同じ」
       { const ids = ($$, s) => $$(`.side-rail-${s} .rail-banner:not(.rail-self)`).toArray().map((x) => $$(x).attr("data-goatcounter-click").replace(/^rail-[a-z]+\//, ""));
         const home = page("index.html"), rows = home("#list [data-r]"), shown = rows.filter(":not(.ov)").length, placed = home("#list .home-pr"), pool = home("#home-pr-pool"), all = home(".home-pr");
