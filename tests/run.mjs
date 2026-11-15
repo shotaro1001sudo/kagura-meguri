@@ -1,22 +1,19 @@
-import './analytics-session-sync.mjs';
-import './analytics-session-report.mjs';
-import './consent-manager-test.mjs';
-import './nearby-hotels.mjs';
+// 自動テスト(サイト本体): npm test から、いくつかのグループに分けて同時に動かす(tests/all.mjs)
+//   node tests/run.mjs            … 全部を1つのプロセスで順に動かす(今までどおり)
+//   TEST_GROUP=2 TEST_GROUPS=4    … 4つに分けたうちの2番目だけを動かす(all.mjs が使う)
+//   TEST_OUT_READY=1              … テスト用のサイト(dist-test)は、もう組み立て済み(all.mjs が先に1回だけ組み立てる)
+//   TEST_PREPARE=1                … テスト用のサイトを組み立てるだけ
+// 1) テスト用データと固定の日時でビルド → 2) 出力を機械的に検査 → 3) 0件・不正データの挙動も検査
+// 同時に動くので、テストごとの出力フォルダ(dist-test-…)や一時ファイルは、ほかのテストと名前を重ねないこと。
+// 読むだけの dist-test(OUT)には書き込まないこと。
 import { goatcounterPauseTests } from "./goatcounter-pause.mjs";
 import { adsensePauseTests } from "./adsense-pause.mjs";
 import { rakutenStayIssuedTests } from "./rakuten-stay-issued.mjs";
 import { stayPlanningTests } from './stay-planning.mjs';
 import { adFallbackTests } from './ad-fallback.mjs';
-import './cookie-controls-test.mjs';
-import './cmp-request-policy-test.mjs';
-import './cookie-metadata-test.mjs';
-import './vc-sdk-harness-test.mjs';
-import './bounded-cdp-test.mjs';
 import { upcomingSummaryTests } from './upcoming-summary.mjs';
 import { pastEventsTests } from './past-events.mjs';
 import { reservationTests } from './reservation.mjs';
-// 自動テスト: node tests/run.mjs   (npm test)
-// 1) テスト用データと固定の日時でビルド → 2) 出力を機械的に検査 → 3) 0件・不正データの挙動も検査
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -74,17 +71,22 @@ const ok = (cond, name, detail = "") => {
   if (cond) pass++; else { fail++; failures.push(`${name}${detail ? " — " + detail : ""}`); }
 };
 const section = (s) => console.log(`\n■ ${s}`);
-valuecommerceIssuedTests({ok,section});
-adFallbackTests({ok,section});
-
 const walk = (dir) => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const read = (p) => readFileSync(p, "utf8");
 
-// ---------- 1. ビルド ----------
-section("ビルド");
+// ---------- 1. ビルド(テスト用のサイト。どのグループも読むだけ) ----------
 const OUT = "dist-test";
-let r = build("tests/fixtures/events.test.json", OUT);
-ok(r.status === 0, "テスト用データでビルドできる", r.stderr);
+let r;
+if (process.env.TEST_OUT_READY !== "1") {
+  section("ビルド");
+  r = build("tests/fixtures/events.test.json", OUT);
+  ok(r.status === 0, "テスト用データでビルドできる", r.stderr);
+  if (process.env.TEST_PREPARE === "1") {
+    console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
+    if (r.status !== 0) { console.log(r.stderr); process.exit(1); }
+    process.exit(0);
+  }
+}
 const files = walk(OUT);
 const htmls = files.filter((f) => f.endsWith(".html"));
 const rel = (f) => "/" + relative(OUT, f).replace(/\\/g, "/");
@@ -93,9 +95,24 @@ const hasFile = (urlPath) => {
   if (p.endsWith("/")) p += "index.html";
   return existsSync(join(OUT, p));
 };
+
+// 読み込むだけで動くテスト(node:assert で確かめ、失敗すれば例外で止まる)
+const sideEffectTests = async () => {
+  await import("./analytics-session-sync.mjs");
+  await import("./analytics-session-report.mjs");
+  await import("./consent-manager-test.mjs");
+  await import("./nearby-hotels.mjs");
+  await import("./cookie-controls-test.mjs");
+  await import("./cmp-request-policy-test.mjs");
+  await import("./cookie-metadata-test.mjs");
+  await import("./vc-sdk-harness-test.mjs");
+  await import("./bounded-cdp-test.mjs");
+};
+
+// テスト用サイトの基本の検査(ページの基本・リンク・表示・安全性・ICS・サイトマップ・アクセシビリティ・収集処理・0件)
+const coreTests = async () => {
 for (const f of ["index.html", "map.html", "calendar.html", "kagura/index.html", "404.html", "about.html", "contact.html", "privacy.html", "sitemap.xml", "robots.txt", "events.json", "CNAME"])
   ok(existsSync(join(OUT, f)), `出力に ${f} がある`);
-
 // ---------- プライバシーポリシー: 外部サービスの最新公表事項と一致 ----------
 section("プライバシーポリシー: Web3Formsの保存期間・国外処理");
 const privacyPage = read(join(OUT, "privacy.html"));
@@ -323,58 +340,94 @@ ok(e0(".regions").length === 0 && e0(".later").length === 0, "0件では、地�
 ok(read("dist-test-empty/kagura/index.html").includes("まだありません"), "0件の神楽の種類ページに案内が出る");
 r = build("tests/fixtures/events.invalid.json", "dist-test-invalid");
 ok(r.status !== 0 && /データエラー/.test(r.stderr), "不正データではビルドを止める(公開されない)");
-r = build("tests/fixtures/events.test.json", "dist-test-ads", { ADS_PLACEHOLDER: "1" });
-ok(r.status === 0 && read("dist-test-ads/index.html").includes("広告枠"), "確認用に広告枠を出す切り替えができる");
+r = build("tests/fixtures/events.test.json", "dist-test-ads-placeholder", { ADS_PLACEHOLDER: "1" });
+ok(r.status === 0 && read("dist-test-ads-placeholder/index.html").includes("広告枠"), "確認用に広告枠を出す切り替えができる");
 
-for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads"]) rmSync(d, { recursive: true, force: true });
+for (const d of ["dist-test-empty", "dist-test-invalid", "dist-test-ads-placeholder"]) rmSync(d, { recursive: true, force: true });
+};
 
-await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW });
-seoTests({ ok, section, OUT, build });
-await motionTests({ ok, section, OUT });
-await policyTests({ ok, section, OUT, build });
-await collectTests({ ok, section });
-affiliateCoverageTests({ ok, section });
-await notifyTests({ ok, section });
-weekendTests({ ok, section, build });
-xpostTests({ ok, section });
-weeklyReviewTests({ ok, section });
-analyticsHistoryTests({ ok, section });
-socialPerformanceTests({ ok, section });
-billingTests({ ok, section });
-await earningsTests({ ok, section });
-moreOffersTests({ ok, section });
-guideTests({ ok, section, OUT, build });
-historyTests({ ok, section, OUT });
-englishTests({ ok, section, OUT });
-await organizersTests({ ok, section, OUT, build });
-sponsorTests({ ok, section, OUT });
-eventSeoTests({ ok, section, build });
-pastEventsTests({ ok, section, build });
-identityTests({ ok, section, OUT, build });
-await homeTests({ ok, section, OUT, build });
-sourcesTests({ ok, section });
-consistencyTests({ ok, section, OUT, build });
-editorialTests({ ok, section, OUT, build });
-await uxTests({ ok, section, OUT });
-affiliateTests({ ok, section, OUT, build });
-stayPlanningTests({ ok, section });
-rakutenStayIssuedTests({ok,section});
-monetizationUxTests({ ok, section, OUT, build });
-reservationTests({ ok, section });
-upcomingSummaryTests({ ok, section });
-ga4ConsentTests({ ok, section, build });
-adsensePauseTests({ ok, section, build });
-goatcounterPauseTests({ ok, section, build });
-analyticsEventTests({ ok, section });
-analyticsSyncTests({ ok, section });
-await adminTests({ ok, section });
-await valuecommerceTests({ ok, section });
-await valuecommerceSummaryTests({ ok, section });
-valuecommerceGASTests({ ok, section });
-eventHandoffTests({ ok, section });
-indexNowTests({ ok, section, OUT });
-quizTests({ok,section,OUT});
-visitorPlanningTests({ok,section,OUT,build});
+// テストの一覧。グループ分けは、かかる時間がだいたい揃うように、時間のかかる順に並べて順番に配る(all.mjs が同時に動かす)。
+// 同じ出力フォルダを使うもの(affiliate が組み立て、stayPlanning が読む)は、1つにまとめる。
+const TESTS = [
+  ["sideEffect", sideEffectTests],
+  ["core", coreTests],
+  ["valuecommerceIssued", async () => { valuecommerceIssuedTests({ok,section}); }],
+  ["adFallback", async () => { adFallbackTests({ok,section}); }],
+  ["extra", async () => { await extraTests({ ok, section, read, htmls, rel, OUT, build, hasFile, files, NOW }); }],
+  ["seo", async () => { seoTests({ ok, section, OUT, build }); }],
+  ["motion", async () => { await motionTests({ ok, section, OUT }); }],
+  ["policy", async () => { await policyTests({ ok, section, OUT, build }); }],
+  ["collect", async () => { await collectTests({ ok, section }); }],
+  ["affiliateCoverage", async () => { affiliateCoverageTests({ ok, section }); }],
+  ["notify", async () => { await notifyTests({ ok, section }); }],
+  ["weekend", async () => { weekendTests({ ok, section, build }); }],
+  ["xpost", async () => { xpostTests({ ok, section }); }],
+  ["weeklyReview", async () => { weeklyReviewTests({ ok, section }); }],
+  ["analyticsHistory", async () => { analyticsHistoryTests({ ok, section }); }],
+  ["socialPerformance", async () => { socialPerformanceTests({ ok, section }); }],
+  ["billing", async () => { billingTests({ ok, section }); }],
+  ["earnings", async () => { await earningsTests({ ok, section }); }],
+  ["moreOffers", async () => { moreOffersTests({ ok, section }); }],
+  ["guide", async () => { guideTests({ ok, section, OUT, build }); }],
+  ["history", async () => { historyTests({ ok, section, OUT }); }],
+  ["english", async () => { englishTests({ ok, section, OUT }); }],
+  ["organizers", async () => { await organizersTests({ ok, section, OUT, build }); }],
+  ["sponsor", async () => { sponsorTests({ ok, section, OUT }); }],
+  ["eventSeo", async () => { eventSeoTests({ ok, section, build }); }],
+  ["pastEvents", async () => { pastEventsTests({ ok, section, build }); }],
+  ["identity", async () => { identityTests({ ok, section, OUT, build }); }],
+  ["home", async () => { await homeTests({ ok, section, OUT, build }); }],
+  ["sources", async () => { sourcesTests({ ok, section }); }],
+  ["consistency", async () => { consistencyTests({ ok, section, OUT, build }); }],
+  ["editorial", async () => { editorialTests({ ok, section, OUT, build }); }],
+  ["ux", async () => { await uxTests({ ok, section, OUT }); }],
+  ["affiliate+stayPlanning", async () => { affiliateTests({ ok, section, OUT, build }); stayPlanningTests({ ok, section }); }],
+  ["rakutenStayIssued", async () => { rakutenStayIssuedTests({ok,section}); }],
+  ["monetizationUx", async () => { monetizationUxTests({ ok, section, OUT, build }); }],
+  ["reservation", async () => { reservationTests({ ok, section }); }],
+  ["upcomingSummary", async () => { upcomingSummaryTests({ ok, section }); }],
+  ["ga4Consent", async () => { ga4ConsentTests({ ok, section, build }); }],
+  ["adsensePause", async () => { adsensePauseTests({ ok, section, build }); }],
+  ["goatcounterPause", async () => { goatcounterPauseTests({ ok, section, build }); }],
+  ["analyticsEvent", async () => { analyticsEventTests({ ok, section }); }],
+  ["analyticsSync", async () => { analyticsSyncTests({ ok, section }); }],
+  ["admin", async () => { await adminTests({ ok, section }); }],
+  ["valuecommerce", async () => { await valuecommerceTests({ ok, section }); }],
+  ["valuecommerceSummary", async () => { await valuecommerceSummaryTests({ ok, section }); }],
+  ["valuecommerceGAS", async () => { valuecommerceGASTests({ ok, section }); }],
+  ["eventHandoff", async () => { eventHandoffTests({ ok, section }); }],
+  ["indexNow", async () => { indexNowTests({ ok, section, OUT }); }],
+  ["quiz", async () => { quizTests({ok,section,OUT}); }],
+  ["visitorPlanning", async () => { visitorPlanningTests({ok,section,OUT,build}); }],
+];
+
+// おおよその時間(秒)。TEST_TIMING=1 node tests/run.mjs で測れる。ここにないテストは1秒とみなす。
+// 測り直さなくても結果は正しい(配り方が少し偏るだけ)。
+const SECONDS = { admin: 15, policy: 11, collect: 10, seo: 10, extra: 9, core: 5, sideEffect: 4, editorial: 3, quiz: 3, visitorPlanning: 3, home: 3, valuecommerceIssued: 3, goatcounterPause: 3, notify: 2, motion: 2, analyticsSync: 2, weekend: 2, guide: 2, sponsor: 2, ux: 2, affiliateCoverage: 2 };
+// 時間のかかる順に、いちばん空いているグループへ配る(どのプロセスでも同じ結果になる)
+const groupOf = (() => {
+  const memo = new Map();
+  return (name, n) => {
+    if (!memo.has(n)) {
+      const load = Array(n).fill(0), at = new Map();
+      for (const [t] of [...TESTS].sort((a, b) => (SECONDS[b[0]] ?? 1) - (SECONDS[a[0]] ?? 1) || TESTS.indexOf(a) - TESTS.indexOf(b))) {
+        const g = load.indexOf(Math.min(...load));
+        load[g] += SECONDS[t] ?? 1; at.set(t, g + 1);
+      }
+      memo.set(n, at);
+    }
+    return memo.get(n).get(name);
+  };
+})();
+const G = Number(process.env.TEST_GROUP || 0), N = Number(process.env.TEST_GROUPS || 1);
+const mine = TESTS.filter(([name]) => !G || groupOf(name, N) === G);
+const times = [];
+for (const [name, fn] of mine) {
+  const t = Date.now();
+  await fn();
+  times.push([name, Date.now() - t]);
+}
+if (process.env.TEST_TIMING === "1") console.log("\n時間(ミリ秒): " + JSON.stringify(Object.fromEntries(times.sort((a, b) => b[1] - a[1]))));
 
 console.log(`\n結果: ${pass} 件成功 / ${fail} 件失敗`);
 if (fail) { console.log("\n失敗した項目:\n" + failures.map((x) => "  ✗ " + x).join("\n")); process.exit(1); }
