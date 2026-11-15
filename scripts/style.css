@@ -193,16 +193,13 @@ a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .planning-nearby .nearby-main{margin:10px 0 0}
 .planning-nearby .nearby-main>.vc-ad:not([hidden]){display:block}
 .planning-nearby .nearby-main:not(:has(>.vc-ad:not([hidden]))){display:none}
-.planning-nearby .nearby-main .vc-ad.vc-experience>a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 16px;border:1px solid var(--ac);border-radius:var(--radius-s);background:var(--ac);color:var(--onac);font-size:var(--fs-s);letter-spacing:.04em;line-height:1.6;text-align:center}
-.planning-nearby .nearby-main .vc-ad.vc-experience>a:hover{opacity:.85}
 /* 体験の予約サービスの画像バナー(2026-11-15 運営者の依頼): 枠の幅いっぱいに、縦に並べる */
 .planning-nearby .nearby-others{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
 .planning-nearby .nearby-banner:not([hidden]){display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
 .planning-nearby .nearby-banner img{display:block;width:100%;height:auto}
-/* じゃらん・アソビュー(バリューコマースの発行コード。画像に大きさの指定がない)は、読み込みの前から場所を取っておく。じゃらんのバナーの下には、開催県で探すボタンが続く */
+/* じゃらん・アソビュー(バリューコマースの発行コード。画像に大きさの指定がない)は、読み込みの前から場所を取っておく */
 .planning-nearby .vc-ad.nearby-banner>a{display:block}
 .planning-nearby .vc-ad.nearby-banner[data-vc-ad="activityBanner"] img{aspect-ratio:3/1}.planning-nearby .vc-ad.nearby-banner[data-vc-ad="asoview"] img{aspect-ratio:6/1}
-.planning-nearby .nearby-main>.vc-ad.nearby-banner{margin:0 0 8px}
 @media(hover:hover){.planning-nearby .nearby-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .planning-nearby :is(.nearby-banner,.nearby-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 .planning-nearby .nearby-sub{display:flex;flex-direction:column;align-items:flex-start;margin:12px 0 0;padding:6px 0 0;border-top:1px solid var(--line)}
