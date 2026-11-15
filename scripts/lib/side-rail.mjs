@@ -103,10 +103,25 @@ export const stripIdsFor = (path, { skip = [] } = {}) => (RAIL_ORDER[path] ? [..
 // 並びを決めていないページ(都道府県・神楽の種類)の帯。両サイドの PR 枠の中身に、高速バスを足す
 // (同意がないと日本旅行・JTBが出ないので、楽天のバナーが3つ以上残るようにする)
 const STRIP_DEFAULT = ["jr-hotel", "rentacar", "bus", "experiences", "onsen-rotenburo", "onsen"];
-export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER }) {
-  const banners = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]).map((b) => b.vc
+/**
+ * 一覧の途中にはさむ帯(2026-11-15 運営者の依頼「一覧の途中(5件ごと)に帯をはさむ」。今月・今週末・日付と場所で探すページ)。inlist: true で作る。
+ * - 中身は楽天のバナーだけ(同意の要るバリューコマースの広告は入れない。何本もはさむと、同じ広告を1ページで何度も読み込むことになるため。
+ *   バリューコマースの広告は、ページの終わりの帯に1回だけ出る)。
+ * - はさむたびに、先頭のバナーを1つずつずらす(rotate。毎回同じ絵が先頭に来ないように)。
+ * - 見出しは h2 にしない(一覧の途中に、同じ見出しが何度も入らないように)。
+ */
+export const STRIP_EVERY = 5;
+export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0 }) {
+  let list = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]);
+  if (inlist) {
+    list = list.filter((b) => !b.vc);
+    if (list.length < 2) return "";
+    const k = rotate % list.length;
+    list = [...list.slice(k), ...list.slice(0, k)];
+  }
+  const banners = list.map((b) => b.vc
     ? vcTag({ kind: b.vc, className: "strip-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/strip-${b.id}`, "data-banner-partner": b.partner, "data-vc-media": stripMedia(wide) } })
     : `<a class="strip-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/strip-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
   const items = [...lead, ...banners];
-  return items.length ? `<aside class="pr-strip${wide ? " w" : ""}" aria-labelledby="pr-strip-h"><h2 id="pr-strip-h">旅の手配</h2><div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
+  return items.length ? `<aside class="pr-strip${wide ? " w" : ""}${inlist ? " inlist" : ""}" aria-label="旅の手配(広告)">${inlist ? '<p class="pr-strip-h">旅の手配</p>' : "<h2>旅の手配</h2>"}<div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
 }

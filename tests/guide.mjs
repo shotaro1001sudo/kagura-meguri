@@ -4,7 +4,7 @@ import { join } from "node:path";
 import * as cheerio from "cheerio";
 import { JSDOM } from "jsdom";
 import { SOURCES, CHECKED } from "../scripts/lib/guide.mjs";
-import { clausesHtml, unclause, clauseParts } from "../scripts/lib/clauses.mjs";
+import { phrasesHtml, unphrase, phraseParts, sentenceParts, topicGroups } from "../scripts/lib/phrases.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
@@ -93,32 +93,45 @@ export function guideTests({ ok, section, OUT, build }) {
     }
   }
 
-  // 2026-11-15 運営者の依頼: ガイド・歴史のページも、句読点で改行する。タグの入った文を、文字もタグも変えずに、句読点までのまとまり(.cl)に分ける
-  section("句読点での改行(ガイド・歴史のページ)");
+  // 2026-11-15 運営者の依頼(同日に言い直し): 行の右端で折り返すとき、言葉の途中では切らず、その手前の句読点か「てにをは」の切れ目で折り返す。
+  // 句読点のたびに改行はしない。話題が変わるところでは改行する。文字もタグも変えずに、文節の切れ目に <wbr> を入れ、.bw で包む
+  section("改行の位置(言葉の途中で切らない・話題が変わるところで改行)");
   {
+    const samples = ["青森県教育委員会が主催する民俗芸能の公演(あおもり民俗芸能活性化大会)。", "神楽は泊神楽会・平沼神楽保存会(六ケ所村)と岡三沢神楽保存会(三沢市)が出演し、ササ踊りや獅子舞もあわせて上演されます。", "問い合わせ先は東栄町役場教育課(0536-76-0509)です。", "受け継がれてきた神事として、地域の人たちが守ってきた場にお邪魔する、という気持ちで観ましょう。", "Tom &amp; Jerry の公演は2026年11月22日です。"];
+    const parts = samples.map(phraseParts);
+    ok(parts.every((p, i) => p.join("") === samples[i]) && parts[0].length >= 3 && parts[1].length >= 5, "文を文節に分ける。つなぐと、元の文になる(1字も変えない)", parts.map((p) => p.join("|")).join(" / "));
+    ok(parts.flat().every((p) => [...p].length >= 2 && !/[(（「『][^)）」』]{0,2}$/.test(p) && !/^[)）」』、。！？・ー〜]/.test(p)) && !parts.flat().some((p, i, all) => i > 0 && ((/[A-Za-z0-9]$/.test(all[i - 1]) && /^[A-Za-z0-9]/.test(p)) || (/&[A-Za-z0-9#]*$/.test(all[i - 1]) && /^[A-Za-z0-9#]*;/.test(p)) || (/と$/.test(all[i - 1]) && /^(して|いう)/.test(p)))) && parts[2].some((p) => p.includes("0536-76-0509")), "読みにくい切れ目は作らない(1字だけ・開きかっこの直後・行頭に置けない字の前・英数字や電話番号の途中・「として」「という」の途中)", parts.map((p) => p.join("|")).join(" / "));
+    ok(sentenceParts("料金は無料(奉納金を持参すると、お返しがあります。目安です)。会場は会所です。").length === 2 && sentenceParts("一文だけ").join("") === "一文だけ", "文に分けるとき、かっこの中の「。」では分けない(補足を途中で切らない)");
+    // 話題が変わるところで行を分ける(日時・料金・行き方・予約と問い合わせ・気をつけること・公演の中身)
+    const g1 = topicGroups("飾りの多い花祭です。見どころは早朝です。13時開始。観覧は無料です。駐車場があります。車なら鳳来峡ICから約40分です。");
+    ok(g1.join("|") === "飾りの多い花祭です。見どころは早朝です。|13時開始。|観覧は無料です。|駐車場があります。車なら鳳来峡ICから約40分です。", "話題が変わるところで分ける(同じ話題の文は、続けて1つの行に)", g1.join("|"));
+    const g2 = topicGroups("神楽は七座です。また、獅子舞もあります。"), g3 = topicGroups("一つめの話です。二つめの話です。三つめの話です。四つめの話です。五つめの話です。");
+    ok(g2.length === 2 && g3.join("|") === "一つめの話です。二つめの話です。|三つめの話です。四つめの話です。|五つめの話です。" && [g1, g2, g3].every((g) => g.every((x) => x.length > 0)) && topicGroups("一文だけです。").length === 1 && topicGroups("").length === 0, "「また、」などで話が変わるときも分ける。同じ話題が4文以上続くときは、2文ずつに分ける", g2.join("|") + " / " + g3.join("|"));
+
     const cite = '<sup class="cite"><a href="#src-1" id="ref-1" aria-label="出典1">[1]</a></sup>';
-    const a = `<p>神楽は、歌と舞です。${cite}古くは「神遊び」とも呼ばれました。</p>`;
-    ok(clausesHtml(a) === `<p><span class="cl">神楽は、</span><span class="cl">歌と舞です。${cite}</span><span class="cl">古くは「神遊び」とも呼ばれました。</span></p>`, "句読点までのまとまりに分け、出典の印([1])は前の文に付ける", clausesHtml(a));
-    const b = '<p>詳しくは<a href="/x">日程、会場の案内</a>を見ます。次の文です。</p>';
-    ok(clausesHtml(b) === '<p><span class="cl">詳しくは<a href="/x">日程、会場の案内</a>を見ます。</span><span class="cl">次の文です。</span></p>', "リンクの中の句読点では分けない(リンクを途中で切らない)", clausesHtml(b));
-    const c = "<p>天鈿女命(『日本書紀』の表記。『古事記』では天宇受売命)が踊り、神々が笑いました。</p>";
-    ok(clausesHtml(c) === '<p><span class="cl">天鈿女命(『日本書紀』の表記。『古事記』では天宇受売命)が踊り、</span><span class="cl">神々が笑いました。</span></p>' && clauseParts("料金は無料(奉納金を持参すると、お返しがあります)。会場は会所です。").length === 2, "かっこの中の句読点では分けない(補足を途中で切らない)", clausesHtml(c));
-    const d = "<li><b>撮影は許可を得てから。</b>フラッシュは避け、三脚は使いません。</li>";
-    ok(clausesHtml(d) === '<li><span class="cl"><b>撮影は許可を得てから。</b></span><span class="cl">フラッシュは避け、</span><span class="cl">三脚は使いません。</span></li>', "強調の中で文が終わったら、その閉じタグのあとで分ける", clausesHtml(d));
-    const keep = ['<p class="meta annotation">注記は、分けません。そのままです。</p>', "<template><p>広告の発行コードは、触りません。そのままです。</p></template>", '<script>var s="、。、。";</script>', '<nav><p>目次は、分けません。そのまま。</p></nav>', "<p>一文だけの段落です。</p>", '<li id="src-1"><a href="https://example.com/">出典、名前。</a>(発行元) <a class="back" href="#ref-1">↩</a></li>', '<li><label><input type="checkbox"> 毛布、カイロ。持ち物です。</label></li>'];
-    ok(keep.every((x) => clausesHtml(x) === x), "注釈・広告の発行コード・スクリプト・目次・出典の一覧・入力欄と、一文だけの段落は、そのまま", keep.filter((x) => clausesHtml(x) !== x).join(" "));
-    const nested = "<li><p>中身は、段落です。分けます。</p><ul><li>子の行も、分けます。</li><li>句読点なし</li></ul></li>";
-    ok(clausesHtml(nested) === '<li><p><span class="cl">中身は、</span><span class="cl">段落です。</span><span class="cl">分けます。</span></p><ul><li><span class="cl">子の行も、</span><span class="cl">分けます。</span></li><li>句読点なし</li></ul></li>', "中に段落やリストがある行は、内側の段落・行を分ける", clausesHtml(nested));
-    ok([a, b, c, d, nested, ...keep].every((x) => unclause(clausesHtml(x)) === x) && clausesHtml('<p title="a > b、c。">属性の中の「>」も、見まちがえません。次の文。</p>').startsWith('<p title="a > b、c。"><span class="cl">属性の中の「>」も、</span>'), "足すのは <span class=\"cl\"> だけ(取り除くと、元の HTML に戻る)");
+    const a = "<p>神楽は、神様を迎えるために神前で奉納される歌と舞です。" + cite + "古くは「神遊び」とも呼ばれました。</p>";
+    const outA = phrasesHtml(a);
+    ok(outA.startsWith('<p><span class="bw">') && outA.endsWith("</span></p>") && outA.includes("<wbr>") && outA.includes('<span class="nb">') && outA.includes(cite + "</span>") && !outA.includes('class="cl"') && unphrase(outA) === a, "段落に、折り返してよい印(<wbr>)を入れて .bw で包む。出典の印([1])は、前の言葉と組にして離さない", outA);
+    const b = '<p>詳しくは<a href="/x">日程と会場の案内</a>を見てから、出かける前に公式情報を確かめます。</p>';
+    const outB = phrasesHtml(b);
+    ok(unphrase(outB) === b && outB.includes('<a href="/x">') && !/<\/a><wbr>/.test(outB) && !/<wbr><\/a>/.test(outB) && outB.includes("<wbr>"), "リンクのタグは変えない。リンクのすぐあとの「を」「の」は、リンクから離さない", outB);
+    const keep = ['<p class="meta annotation">注記は、ページの下へまとめ直す仕組みがあるので、触りません。</p>', "<template><p>広告の発行コードは、同意の前は動かさないので、触りません。</p></template>", '<script>var s="目次は、触りません。そのままです。";</script>', '<nav><p>目次は、触りません。そのままにしておきます。</p></nav>', "<p>神楽</p>", '<li id="src-1"><a href="https://example.com/">出典の名前と、発行元の名前</a>(発行元) <a class="back" href="#ref-1">↩</a></li>', '<li><label><input type="checkbox"> 毛布やカイロなどの、冬の夜の持ち物です。</label></li>'];
+    ok(keep.every((x) => phrasesHtml(x) === x), "注釈・広告の発行コード・スクリプト・目次・出典の一覧・入力欄と、切れ目のない短い文は、そのまま", keep.filter((x) => phrasesHtml(x) !== x).join(" "));
+    const nested = "<li><p>中身は、段落として書いた文です。</p><ul><li>子の行にも、折り返しの印を入れます。</li><li>句読点なし</li></ul></li>";
+    const outN = phrasesHtml(nested);
+    ok(unphrase(outN) === nested && (outN.match(/<span class="bw">/g) || []).length >= 2 && outN.startsWith("<li><p><span") && outN.includes("<ul><li><span"), "中に段落やリストがある行は、内側の段落・行に印を入れる", outN);
+    const attr = '<p title="a > b、c。">属性の中の「>」も、タグの終わりと見まちがえずに、そのまま残します。</p>';
+    ok([a, b, nested, attr, ...keep].every((x) => unphrase(phrasesHtml(x)) === x) && phrasesHtml(attr).startsWith('<p title="a > b、c。"><span class="bw">'), "足すのは <wbr> と <span class=\"bw\">・<span class=\"nb\"> だけ(取り除くと、元の HTML に戻る)");
     if (r.status === 0) {
       const files = ["guide.html", "history/index.html", "history/kodai.html", "history/chusei.html", "history/kinsei.html", "history/kindai.html"];
       const pages = files.map((f) => [f, cheerio.load(read(join(D, f)))]);
-      ok(pages.every(([, p]) => p(".prose .cl").length >= 20), "ガイド・歴史のページの本文は、句読点までのまとまり(.cl)に分かれている", pages.map(([f, p]) => `${f}:${p(".prose .cl").length}`).join(" "));
-      ok(pages.every(([, p]) => p(".page-notes .cl, template .cl, nav .cl, .meta .cl, button .cl, label .cl, h1 .cl, h2 .cl, h3 .cl").length === 0 && p(".prose .cl + sup.cite").length === 0 && p(".prose sup.cite").toArray().every((s) => !p(s).parent().children(".cl").length || p(s).parent().is(".cl"))), "注記・目次・見出し・ボタンは分けず、出典の印は文のまとまりの中に入る(まとまりの外に取り残さない)");
+      ok(pages.every(([, p]) => p(".prose .bw").length >= 5 && p(".prose .bw wbr").length >= 30 && p(".cl").length === 0), "ガイド・歴史のページの本文に、折り返してよい印が入っている", pages.map(([f, p]) => f + ":" + p(".prose .bw").length + "/" + p(".prose .bw wbr").length).join(" "));
+      ok(pages.every(([, p]) => p(".page-notes .bw, template .bw, nav .bw, .meta .bw, button .bw, label .bw, h1 .bw, h2 .bw, h3 .bw, sup wbr").length === 0 && p(".prose .nb > sup.cite").length >= 1), "注記・目次・見出し・ボタン・出典の印の中には入れない。出典の印は、前の言葉と組になっている");
       const main = (h) => h.match(/<main id="main">([\s\S]*?)<\/main>/)[1];
-      ok(pages.every(([f]) => { const m = main(read(join(D, f))); const back = unclause(m); return !back.includes('class="cl"') && cheerio.load(m)("main, body").text() === cheerio.load(back)("main, body").text(); }), "ガイド・歴史のページ: まとまりを取り除いても、文は1字も変わらない");
+      ok(pages.every(([f]) => { const m = main(read(join(D, f))); const back = unphrase(m); return !back.includes('class="bw"') && !back.includes("<wbr>") && cheerio.load(m)("body").text() === cheerio.load(back)("body").text(); }), "ガイド・歴史のページ: 印を取り除いても、文は1字も変わらない");
     }
-    ok(/^\.cl\{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance\}/m.test(read("scripts/style.css")) && read("scripts/build.mjs").includes('<div class="prose guide">${clausesHtml(guideHtml({') && read("scripts/build.mjs").includes('<div class="prose history">${clausesHtml(historyReader(key, pg.body()))}</div>'), "ガイド・歴史の本文を、まとまりに分ける仕組み(clausesHtml)に通している");
+    const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
+    ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.nb\{white-space:nowrap\}/m.test(sheet) && /^\.tl\{display:block\}/m.test(sheet) && !/^\.cl\{/m.test(sheet) && built.includes('<div class="prose guide">${phrasesHtml(guideHtml({') && built.includes('<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>'), ".bw の中は、字と字のあいだでは折り返さず、印と句読点のあとでだけ折り返す(どのブラウザでも)。ガイド・歴史の本文を、その仕組みに通している");
   }
   rmSync(D, { recursive: true, force: true });
 }

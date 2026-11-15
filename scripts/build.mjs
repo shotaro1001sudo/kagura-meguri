@@ -28,8 +28,8 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { sideRailHtml, railPage, prStripHtml, stripIdsFor } from "./lib/side-rail.mjs";
-import { clauseParts, clausesHtml } from "./lib/clauses.mjs";
+import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY } from "./lib/side-rail.mjs";
+import { phraseParts, topicGroups, phrasesHtml } from "./lib/phrases.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
 import { loadHotels, hotelCardsHtml } from "./lib/nearby-hotels.mjs";
 import { createMoreOfferIndex, learnBlock, furusatoBlock } from "./lib/more-offers.mjs";
@@ -155,15 +155,17 @@ const sentencesOf = (s) => {
   if (cur.trim()) out.push(cur);
   return out.map((x) => x.trim()).filter(Boolean);
 };
-// 句読点(、。)のあとで改行されやすくする(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
-// 句読点までのまとまりを、行の途中で割れにくい組(.cl = inline-block)にする。次のまとまりが行の残りに入らなければ、句読点のあとで改行される。
-// まとまりが1行より長いときは、その中で折り返す。文字は1字も変えない(まとまりをつなぐと、元の文になる)。
-// 分け方は scripts/lib/clauses.mjs。データの文(公演の説明など)は下の cl()、タグの入った文(ガイド・歴史のページ)は clausesHtml() を通す
+// 改行の位置(2026-11-15 運営者の依頼。同日に言い直しがあった): 行の右端で折り返すとき、言葉の途中では切らず、その手前の句読点か
+// 「てにをは」の切れ目(文節の切れ目)で折り返す。句読点のたびに、かならず改行するわけではない。話題が変わるところでは、改行する。
+// 文節の切れ目に <wbr>(折り返してよい印)を入れ、.bw(字と字のあいだでは折り返さない)で包む。文字は1字も変えない。
+// 分け方は scripts/lib/phrases.mjs。データの文(公演の説明など)は下の cl()・topicLines()、タグの入った文(ガイド・歴史のページ)は phrasesHtml() を通す
 // 電話番号は、番号の途中で改行しない(「0536-76-」「0509」のように割れると読みにくい)
 const PHONE_RE = /0\d{1,4}-\d{1,4}-\d{3,4}/g;
 const clText = (x) => esc(x).replace(PHONE_RE, (m) => `<span class="nw">${m}</span>`);
-/** 文を、句読点までのまとまりごとの組にして返す(エスケープ込み)。句読点が途中にない文は、そのまま */
-const cl = (s) => { const parts = clauseParts(s); return parts.length < 2 ? clText(s) : parts.map((x) => `<span class="cl">${clText(x)}</span>`).join(""); };
+/** 文に、折り返してよい印(文節の切れ目)を入れて返す(エスケープ込み)。切れ目のない短い文は、そのまま */
+const cl = (s) => { const parts = phraseParts(s); return parts.length < 2 ? clText(s) : `<span class="bw">${parts.map(clText).join("<wbr>")}</span>`; };
+/** 話題が変わるところで行を分けて返す(公演の説明・この開催のポイント)。話題が1つなら、cl() と同じ */
+const topicLines = (s) => { const groups = topicGroups(s); return groups.length < 2 ? cl(s) : groups.map((g) => `<span class="tl">${cl(g)}</span>`).join(""); };
 // 要点の表の値: 2文以上あるときは、文ごとに行を分けて出す(料金の区分や受付の方法が、ひとかたまりの長文にならないように)。文言は変えない
 const cellLines = (v) => { const xs = sentencesOf(v); return xs.length > 1 ? xs.map((t) => `<span class="line">${cl(t)}</span>`).join("") : cl(v); };
 // 定期公演の「公演日時」: 主な上演を1行目に、かっこ内(開場・受付など)と2文目(ほかの上演日)は小さく別の行に
@@ -199,7 +201,7 @@ const noteBlock = (e) => {
   const n = eventNotes.find((x) => x.ids.includes(e.id));
   if (!n) return "";
   const local = n.local?.[e.id];
-  return `<section class="detail note"><h2>この開催のポイント</h2>${[...(n.paras ?? []), ...(local ? [local] : [])].map((t) => `<p>${cl(t)}</p>`).join("")}<ul>${n.points.map((t) => `<li>${cl(t)}</li>`).join("")}</ul>${refList(n.refs)}</section>`;
+  return `<section class="detail note"><h2>この開催のポイント</h2>${[...(n.paras ?? []), ...(local ? [local] : [])].map((t) => `<p>${topicLines(t)}</p>`).join("")}<ul>${n.points.map((t) => `<li>${topicLines(t)}</li>`).join("")}</ul>${refList(n.refs)}</section>`;
 };
 // 都道府県ページの解説
 const prefDetail = (p) => { const i = prefInfo[p]; return i ? `<section class="detail"><h2>${esc(p)}の神楽について</h2>${i.paras.map((t) => `<p>${cl(t)}</p>`).join("")}${refList(i.refs)}</section>` : ""; };
@@ -244,6 +246,10 @@ const stayPlace = (x) => { const c = x.city ? x.city.replace(/^.*郡/, "") : x.p
 const prStrip = (x, placement) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, lead: rentalStripItems(visitorPlanning, x, today, placement) });
 // 探すページ(今週末・今月・日付と場所・地図・種類・都道府県)の帯。中身は、そのページの両サイドのPR枠と同じバナー。wide: 本文が広いページか。skip: すぐ上の枠と重なるバナー
 const prStripFor = (path, { wide = false, skip = [] } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path, { skip }) });
+// 一覧の途中にはさむ帯(2026-11-15 運営者の依頼)。k: 何本目か(先頭のバナーをずらす)。中身は楽天のバナーだけ
+const inlistStrip = (path, k, { wide = false } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path), inlist: true, rotate: k });
+// 開催のカードの並びに、5件ごとに帯をはさむ(あとに続くカードがあるときだけ。最後のカードのあとには入れない)
+const withStrips = (cards, path, opts) => cards.map((c, i) => c + ((i + 1) % STRIP_EVERY === 0 && i + 1 < cards.length ? inlistStrip(path, Math.floor(i / STRIP_EVERY), opts) : "")).join("");
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 // 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
@@ -365,15 +371,9 @@ const NOTE_RE = /<p class="meta annotation"(?![^>]*\bid=)[^>]*>([\s\S]*?)<\/p>/g
 // 2026-11-14 運営者の依頼: 広告の枠の上に置いていた「広告 このページにはアフィリエイト広告が…」の1行はやめた(各枠の下の「PR」と重なるため)。
 // じゃらんの広告(同意のあとに読み込む発行タグ)があるページでは、外部への通信のことを、ページ下の広告の注記に書き添える
 const VC_NOTE = "じゃらんの広告表示時には外部への通信が発生します。";
-// 公演の説明: 長い文は、スマホで1つの塊にならないよう、2文ずつの段落に分ける(文は変えない)
-const descParas = (s = "") => {
-  const sentences = String(s).match(/[^。]+。?/g)?.map((x) => x.trim()).filter(Boolean) ?? [];
-  if (!sentences.length) return "";
-  if (String(s).length <= 90 || sentences.length < 3) return `<p>${cl(s)}</p>`;
-  const out = [];
-  for (let i = 0; i < sentences.length; i += 2) out.push(sentences.slice(i, i + 2).join(""));
-  return out.map((t) => `<p>${cl(t)}</p>`).join("");
-};
+// 公演の説明: 話題が変わるところで行を分ける(日時・料金・行き方などの話と、公演の中身の話を、同じ行に続けない)。
+// 同じ話題が4文以上続くときは、スマホで1つの塊にならないよう、2文ずつの行に分ける。文は変えない(分け方は phrases.mjs の topicGroups)
+const descParas = (s = "") => (String(s).trim() ? `<p>${topicLines(String(s).trim())}</p>` : "");
 // ページ下の注記: ほかの場所(宿の枠の条件、各広告の枠の「PR」、免責事項のページ)で伝わっている注意はくり返さない。
 // 広告の注記は、ページごとに1行へまとめる(各広告の枠の「PR」はそのまま残る)
 const NOTE_DROP = [/^営業状況・空き・価格はリアルタイム表示ではありません/, /^会場の公式アクセスと公共交通を先に確認し/, /泊・大人2名で検索します。/, /^掲載情報確認: /, /^県内全域の一覧です。/];
@@ -726,6 +726,8 @@ ${clientJs("map")}`,
 // ---------- 日付・場所で探す(/calendar.html。URL は前のカレンダーのまま) ----------
 // 「いつ」(今週末・今月・来月・日付の範囲)と「どこ」(地方 → 都道府県)で、開催予定を絞り込む。条件は URL に残す(共有・戻るで同じ結果)
 const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some((e) => e.prefecture === p))]).filter(([, ps]) => ps.length);
+// 検索の結果の途中にはさむ帯(スクリプトの中に文字として持つ。「<」は、スクリプトの終わりと見まちがえられないように書き換える)
+const finderStrips = JSON.stringify([0, 1, 2, 3].map((k) => inlistStrip("/calendar.html", k)).filter(Boolean)).replace(/</g, "\\u003c");
 write("dist/calendar.html", layout({
   title: `日付・場所で神楽を探す | 開催日程の検索 | ${cfg.siteName}`,
   desc: clip(`全国の神楽の開催予定を、公演名・会場・市町村・出演団体のキーワードと、日付・地域で絞り込めます。今週末・今月の開催もすぐに探せます。公式情報をもとに日程を掲載しています。`),
@@ -757,6 +759,7 @@ var rg=document.getElementById('region'),pf=document.getElementById('pref'),fr=d
 var kw=document.getElementById('keyword');
 function normalize(v){return String(v||'').normalize('NFKC').toLowerCase().trim()}
 var list=[],loaded=false,failed=false,when='all',tab='dp',regionOf={};
+var strips=${finderStrips},EVERY=${STRIP_EVERY};
 var tabs=[].slice.call(f.querySelectorAll('[role=tab]'));
 function setTab(v,focus){tab=v;tabs.forEach(function(t){var on=t.id==='tab-'+v;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on;if(on&&focus)t.focus()})}
 [].forEach.call(pf.options,function(o){if(o.value)regionOf[o.value]=o.dataset.r});
@@ -792,7 +795,9 @@ function draw(){
   });
   // 月ごとに折りたたむ(最初の月だけ開く)
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
-  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+byM[m].map(row).join('')+'</ol></details>'}).join('');
+  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+rows(byM[m])+'</ol></details>'}).join('');
+  // 5件ごとに、帯をはさむ(その月に、まだ続きがあるときだけ)
+  function rows(xs){var o='';xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length)o+='<li class="pr-li">'+strips[Math.floor(i/EVERY)%strips.length]+'</li>'});return o}
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
     return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
@@ -1104,7 +1109,7 @@ const dailyBlock = (list) => (list.length ? `<h2>毎晩の定期公演</h2>${lis
 <p class="lead">この週末に観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
 ${weekendRegions.length ? `<nav class="weekend-regions chiprow" aria-label="この週末に開催のある県"><span class="meta">各県の全日程を見る</span>${weekendRegions.map(p=>`<a class="chip" href="${prefHref(p)}">${esc(p)}</a>`).join('')}</nav>` : ''}
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2></div><div class="d-top">
-${items.map((x) => x.html).join("") || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
+${withStrips(items.map((x) => x.html), "/weekend.html", { wide: true }) || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
 ${dailyBlock(wkDaily)}
 </div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}${prStripFor("/weekend.html", { wide: true })}</div>` : ""}<div class="d-rest">
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
@@ -1122,7 +1127,7 @@ ${otherWays("/weekend.html")}</div></div>`,
     body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `${tmLabel} ・ ${esc(mdLabel(today))}から月末まで`)}
 <p class="lead">今日から月末までに観られる神楽を、日付順に並べています。</p>
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2></div><div class="d-top">
-${tmEvents.map((e) => card(e)).join("") || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
+${withStrips(tmEvents.map((e) => card(e)), "/this-month.html", { wide: true }) || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
 ${months.includes(mk) ? `<p class="meta"><a class="textlink" href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
@@ -1144,7 +1149,7 @@ ${otherWays("/this-month.html")}</div></div>`,
       author: ORG_LD, publisher: ORG_LD,
       mainEntityOfPage: `${cfg.baseUrl}/guide.html`, image: ogUrl(false),
     }],
-    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${clausesHtml(guideHtml({
+    body: `${crumbNav([["ホーム", "/"], ["はじめての神楽ガイド"]])}${hero("はじめての神楽ガイド", "見どころ・マナー・服装と持ち物")}<div class="prose guide">${phrasesHtml(guideHtml({
       esc,
       supplies: offersFor(visitorPlanning, 'supplies', { guide: true }, today),
       rentalHtml:rentalSearch(visitorPlanning,{guide:true},today,'guide_rental'),
@@ -1174,7 +1179,7 @@ write('dist/experiences.html',layout({
         "@context": "https://schema.org", "@type": "Article", headline: pg.title, inLanguage: "ja", datePublished: HISTORY_CHECKED, dateModified: HISTORY_CHECKED,
         author: ORG_LD, publisher: ORG_LD, mainEntityOfPage: `${cfg.baseUrl}${path}`, image: ogUrl(false),
       }],
-      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${clausesHtml(historyReader(key, pg.body()))}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
+      body: `${crumbNav(crumbs)}${hero(esc(pg.h1), esc(pg.sub))}<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>${key === "index" ? learnBlock(moreOffers, { kagura: "*" }, today, "history_learn") : ""}`,
     }));
   }
 }

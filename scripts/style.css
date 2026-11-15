@@ -424,7 +424,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 帯「旅の手配」(2026-11-15 運営者の依頼): スマホなど、両サイドのPR枠が出ない画面で、公演ページの宿・体験の枠のすぐ下に1本だけ出す。
    横に送って見るバナーの列(高さ 150px)。右端は枠の外まで続けて、続きがあることを見せる。画面に固定しない(公演の内容にかぶせない) */
 .pr-strip{margin:28px 0;padding:14px 0 12px 16px;overflow:hidden}.d-side .pr-strip{margin:0 0 16px}
-.pr-strip h2{margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.pr-strip h2:after{display:none}
+.pr-strip :is(h2,.pr-strip-h){margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:var(--fs-m);line-height:1.7}.pr-strip h2:after{display:none}
 .pr-strip-row{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding-left:0;padding:2px 16px 8px 2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .pr-strip-row:focus-visible{outline:2px solid var(--ac2);outline-offset:-2px}
 .strip-banner:not([hidden]){display:block;flex:none;height:150px;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);scroll-snap-align:start}
@@ -438,6 +438,15 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 /* 両サイドのPR枠が出る画面では、帯は出さない(同じバナーがPR枠にある)。本文が広いページ(.w = 公演・今週末・今月)は幅 1400px 以上、ほかのページは 1280px 以上 */
 @media(min-width:1400px) and (min-height:520px){.pr-strip.w{display:none}}
 @media(min-width:1280px) and (min-height:520px){.pr-strip:not(.w){display:none}}
+/* 一覧の途中にはさむ帯(5件ごと。2026-11-15 運営者の依頼): カードのあいだに、カードと同じ間隔で置く。
+   今月・今週末のページは、本文が1列になる画面(幅 960px 未満)だけ(2列の画面では、右の列の帯が一覧の横に見えているため) */
+.pr-strip.inlist{margin:0 0 12px}
+@media(min-width:960px){.dpage .pr-strip.inlist{display:none}}
+/* 日付・場所で探す: 結果の行のあいだにはさむ(行の飾り・押せる範囲の広がりは付けない) */
+.monthlist>.pr-li{display:block;padding:14px 0}.monthlist>.pr-li .pr-strip{margin:0}
+@media(hover:hover){.monthlist>.pr-li:hover{background:none}}
+/* 両サイドのPR枠が出る画面では、はさんだ行ごと出さない(上の決まりより後ろに書く) */
+@media(min-width:1280px) and (min-height:520px){.monthlist>.pr-li{display:none}}
 .planning-section>.planning-ads:last-child{margin-bottom:0}
 /* 協賛枠(PR)。開催情報のカードと見分けがつくよう、点線の枠にする(MON-2) */
 .sponsor-slot{margin:28px 0;padding:14px 18px;border:1px dashed var(--line);border-radius:var(--radius-s);background:var(--card)}
@@ -780,13 +789,18 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 }
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
-/* 本文の、句読点(、。)までのまとまり(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
-   次のまとまりが行の残りに入らないときは、句読点のあとで改行する。まとまりが1行より長いときは、その中で、文節の境目(Chrome・Edge。auto-phrase)で、行の長さをそろえて折り返す(balance。最後の行に2〜3字だけ残さない) */
-.cl{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance}
+/* 本文の改行(2026-11-15 運営者の依頼。同日に言い直し): 行の右端で折り返すとき、言葉の途中では切らず、その手前の句読点か「てにをは」の切れ目で折り返す。
+   句読点のたびに改行はしない(行は、入るところまで詰める)。.bw の中は、字と字のあいだでは折り返さず(keep-all)、ビルドのときに入れた <wbr>(文節の切れ目)と句読点のあとでだけ折り返す。
+   1行に入らないほど長い言葉(URL など)だけは、途中で折り返す(anywhere)。iPhone の Safari でも同じ(auto-phrase とちがい、ブラウザの対応に頼らない) */
+.bw{word-break:keep-all;overflow-wrap:anywhere}
+/* 出典の印([1] など)は、前の言葉から離さない(印だけが次の行に落ちないように) */
+.nb{white-space:nowrap}
+/* 話題が変わるところで分けた行(公演の説明・この開催のポイント) */
+.tl{display:block}.tl+.tl{margin-top:.4em}
 /* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
    見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase)。
-   本文(公演の説明・この開催のポイント・要点の表の値・都道府県と種類の解説)は、句読点までのまとまりで折り返す(.cl)。
-   それ以外の文(注釈・ガイドなど)と、まとまりの中は、字単位で行を詰める */
+   本文(公演の説明・この開催のポイント・要点の表の値・都道府県と種類の解説・ガイド・歴史)は、文節の切れ目で折り返す(.bw。どのブラウザでも)。
+   それ以外の文(注釈・規約など)は、字単位で行を詰める */
 body{line-break:strict;text-wrap:pretty}
 :is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.event-facts,.info .vn,.info .when,.info .sched-main,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs){word-break:auto-phrase}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}

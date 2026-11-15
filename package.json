@@ -15,6 +15,7 @@
         "admin:shortcut": "node scripts/admin/shortcut.mjs"
     },
     "dependencies": {
+        "budoux": "0.10.3",
         "cheerio": "^1.2.0",
         "nodemailer": "10.1.0",
         "qrcode": "1.5.4"
