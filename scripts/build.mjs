@@ -28,7 +28,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS, INLIST_THEMES, inlistTheme } from "./lib/side-rail.mjs";
+import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS, INLIST_THEMES, inlistTheme, selfBannerHtml } from "./lib/side-rail.mjs";
 import { inlistLead, inlistCount } from "./lib/inlist-pr.mjs";
 import { phraseParts, topicGroups, phrasesHtml } from "./lib/phrases.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
@@ -264,6 +264,9 @@ const withStrips = (entries, path, opts) => {
     return html + inlistStrip(path, k, { ...opts, lead, land: true });
   }).join("");
 };
+// 今週末・今月の右の列(PCの画面)の、自分たちのバナー2つ(協賛のご案内・公演の掲載のご案内)。宿の枠の下に横並び(2026-11-15 運営者の依頼)。
+// スマホなど右の列がない画面では出さない(一覧の途中の帯に出る)
+const selfPair = (page) => `<aside class="self-pair" aria-label="神楽めぐりからのご案内">${["sponsor", "organizers"].map((k) => selfBannerHtml(k, "self-pair-b", `pr-self/${page}-${k}`, esc)).join("")}</aside>`;
 const affAttrs = (on, name) => `rel="${on ? "sponsored " : ""}noopener" target="_blank" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"`;
 const stayBanners = (id) => stayBannersHtml({ on: { rakuten: rakutenOn, jalan: jalanOn }, id, attrs: affAttrs, esc });
 // 今週末・今月のページの宿: 開催がいくつかの県にまたがるため、日付・地域を絞らない宿のバナーだけを出す(提携IDがあるときだけ)
@@ -614,10 +617,15 @@ const prefsUsed = [...new Set(upcoming.map((e) => e.prefecture))].sort(byPref);
 const regionCounts = (list) => JSON.stringify(Object.fromEntries([...regionsUsed, ...prefsUsed].map((k) => [k, list.filter((e) => regionOf(e.prefecture) === k || e.prefecture === k).length])));
 // 直近2か月の開催のうち、HOME_CAP 件を超える分は隠す(「すべて見る」か、地方・県で絞ったときに出す)
 const homeAll = homeMonths.flatMap((k) => monthMap.get(k));
+// 一覧の途中の帯(2026-11-15 運営者の依頼「スマホ版は今週末・今月の一覧と同じように」): 見えている開催の5件ごとに、何本目かで中身を分けた帯(横長)をはさむ。
+// 地方・県で絞ったり「すべて見る」を押したりすると見えている開催が変わるので、ブラウザ(home.js)が帯を置き直す。使わない帯は #home-pr-pool に隠しておく。
+// 両サイドのPR枠が出る画面(幅 1280px 以上)では出さない。協賛のマス(lead)は、絞り込みで前の5件が変わるので入れない
+const homeStrips = Array.from({ length: inlistCount(homeAll.length, STRIP_EVERY) }, (_, k) => inlistStrip("/", k, { land: true })).map((h, k) => (h ? `<div class="home-pr" data-k="${k}">${h}</div>` : ""));
+const homeShown = Math.min(HOME_CAP, homeAll.length);
 let homeIdx = 0;
 const homeList = homeMonths.map((k) => {
   const list = monthMap.get(k);
-  const rows = list.map((e) => { const ov = homeIdx++ >= HOME_CAP; return `<div data-r="${regionOf(e.prefecture)}" data-p="${esc(e.prefecture)}"${ov ? ' class="ov" hidden' : ""}>${card(e, "h4")}</div>`; });
+  const rows = list.map((e) => { const i = homeIdx++, ov = i >= HOME_CAP; const after = !ov && (i + 1) % STRIP_EVERY === 0 && i + 1 < homeShown ? homeStrips[(i + 1) / STRIP_EVERY - 1] ?? "" : ""; return `<div data-r="${regionOf(e.prefecture)}" data-p="${esc(e.prefecture)}"${ov ? ' class="ov" hidden' : ""}>${card(e, "h4")}</div>${after}`; });
   const allHidden = rows.every((r) => r.includes(' class="ov" hidden'));
   return `<div class="mgroup"${allHidden ? " hidden" : ""}><h3 class="mhead">${monthShort(k)}</h3>${rows.join("")}</div>`;
 }).join("");
@@ -650,7 +658,7 @@ write("dist/index.html", layout({
 <h2>開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
-<div id="list">${homeList || empty('いま掲載している開催情報はありません。掲載のご依頼は<a href="/organizers.html">主催者の方へ</a>から送れます。')}</div>
+<div id="list">${homeList || empty('いま掲載している開催情報はありません。掲載のご依頼は<a href="/organizers.html">主催者の方へ</a>から送れます。')}</div>${homeStrips.some(Boolean) ? `<div id="home-pr-pool" data-every="${STRIP_EVERY}" hidden>${homeStrips.filter((h, k) => h && (k + 1) * STRIP_EVERY >= homeShown).join("")}</div>` : ""}
 ${showAll}
 <p class="empty" id="none" hidden>この地域の${laterMonths.length ? "、近いうちの開催はありません。この先の開催は、下の月から探せます" : "開催予定は、いまのところありません"}。</p>
 ${laterLinks}
@@ -1136,7 +1144,7 @@ ${weekendRegions.length ? `<nav class="weekend-regions chiprow" aria-label="こ�
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${items.length ? `(${items.length}件)` : ""}</h2></div><div class="d-top">
 ${withStrips(items, "/weekend.html", { wide: true }) || empty(`${esc(wkLabel)}の開催情報は、いまのところ見つかっていません。${wkDaily.length ? "毎晩の定期公演なら、今週末も観られます。" : ""}`)}
 ${dailyBlock(wkDaily)}
-</div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}${prStripFor("/weekend.html", { wide: true })}</div>` : ""}<div class="d-rest">
+</div>${items.length && tripBand("weekend", "週末の宿を探す") ? `<div class="d-side">${tripBand("weekend", "週末の宿を探す")}${selfPair("weekend")}${prStripFor("/weekend.html", { wide: true })}</div>` : ""}<div class="d-rest">
 ${after.length ? `<h2>このあとの神楽</h2>${after.map((e) => card(e)).join("")}` : ""}
 ${otherWays("/weekend.html")}</div></div>`,
   }));
@@ -1156,7 +1164,7 @@ ${withStrips(tmEvents.map((e) => ({ html: card(e), item: listItem(e, e.start.sli
 ${months.includes(mk) ? `<p class="meta"><a class="textlink" href="/month/${mk}.html">${tmLabel}の開催一覧を見る ›</a></p>` : ""}
 ${tmRegs.length ? `<h2>毎週の定期公演</h2>${tmRegs.map(({ r, dates }) => `${regCard(r)}<p class="meta">今月の公演日: ${dates.map((d) => `${+d.slice(8, 10)}日`).join("・")}</p>`).join("")}` : ""}
 ${dailyBlock(tmDaily)}
-</div>${tmEvents.length && tripBand("this-month", "今月の旅の宿を探す") ? `<div class="d-side">${tripBand("this-month", "今月の旅の宿を探す")}${prStripFor("/this-month.html", { wide: true })}</div>` : ""}<div class="d-rest">
+</div>${tmEvents.length && tripBand("this-month", "今月の旅の宿を探す") ? `<div class="d-side">${tripBand("this-month", "今月の旅の宿を探す")}${selfPair("this-month")}${prStripFor("/this-month.html", { wide: true })}</div>` : ""}<div class="d-rest">
 ${late && nmEvents.length ? `<h2>来月(${monthLabel(nextMk)})の神楽</h2>${nmEvents.slice(0, 5).map((e) => card(e)).join("")}${nmEvents.length > 5 || months.includes(nextMk) ? `<p class="meta"><a class="textlink" href="/month/${nextMk}.html">${monthLabel(nextMk)}の開催一覧(${nmEvents.length}件)を見る ›</a></p>` : ""}` : ""}
 ${otherWays("/this-month.html")}</div></div>`,
   }));

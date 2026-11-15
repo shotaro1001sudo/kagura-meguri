@@ -47,6 +47,8 @@ export const RAIL_BANNERS = [
  * - 地図で探す: 場所から探す人。右は 行き方(レンタカー → 高速バス → JR+ホテル)→ 体験。左は 駅・空港から宿を検索 を先に
  */
 export const RAIL_ORDER = {
+  // トップ(2026-11-15 運営者の依頼で追加): いろいろな人が来るので、今月と同じ並び(右 JR+ホテル → 行き方 → 体験、左 宿)
+  "/": { left: ["onsen-rotenburo", "ryokan", "onsen", "onsen-gensen"], right: ["jr-hotel", "rentacar", "bus", "experiences"] },
   "/weekend.html": { left: ["ryokan", "onsen-rotenburo", "onsen", "onsen-gensen"], right: ["rentacar", "bus", "experiences", "jr-hotel"] },
   "/this-month.html": { left: ["onsen-rotenburo", "ryokan", "onsen", "onsen-gensen"], right: ["jr-hotel", "rentacar", "bus", "experiences"] },
   "/calendar.html": { left: ["onsen", "station", "ryokan", "onsen-rotenburo"], right: ["jr-hotel", "tour", "experiences", "rentacar"] },
@@ -72,9 +74,10 @@ export function sideRailHtml({ on, attrs, esc, wide = false, car = "", path = ""
       ? vcTag({ kind: b.vc, className: "rail-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${b.id}`, "data-banner-partner": b.partner, "data-vc-media": railMedia(wide) } })
       : `<a class="rail-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
     // 自分たちのバナー(左 = 協賛のご案内、右 = 公演の掲載のご案内)を、上から3つ目に(SELF_RAIL)。
-    // 公演ページ(開催・定期公演)には出さない(同日、運営者の依頼「協賛ページ・主催者ページへの案内は、各公演ページには不要」)
+    // 公演ページ(開催・定期公演)には出さない(同日、運営者の依頼「協賛ページ・主催者ページへの案内は、各公演ページには不要」)。
+    // 今週末・今月は、PR枠ではなく、右の列の宿の枠の下に2つ横並びで出す(同日の依頼。build.mjs の selfPair)
     const self = SELF_RAIL[s];
-    if (banners.length && !/^\/(events|regular)\//.test(path)) banners.splice(SELF_RAIL_AT, 0, selfBannerHtml(self, "rail-banner rail-self", `pr-self/rail-${self}`, esc));
+    if (banners.length && !SELF_RAIL_SKIP.test(path)) banners.splice(SELF_RAIL_AT, 0, selfBannerHtml(self, "rail-banner rail-self", `pr-self/rail-${self}`, esc));
     const items = s === "right" && car ? [car, ...banners] : banners;
     return items.length ? `<aside class="side-rail side-rail-${s === "left" ? "l" : "r"}${wide ? " w" : ""}" aria-label="広告">${items.join("")}<span class="pr pr-foot">PR</span></aside>` : "";
   };
@@ -93,6 +96,8 @@ export const SELF_BANNERS = {
 /** 両サイドの PR 枠の、自分たちのバナー: 左 = 協賛、右 = 公演の掲載。上から SELF_RAIL_AT 番目(0 から)に入れる */
 export const SELF_RAIL = { left: "sponsor", right: "organizers" };
 export const SELF_RAIL_AT = 2;
+/** PR 枠に自分たちのバナーを出さないページ(公演ページと、右の列に出す今週末・今月) */
+export const SELF_RAIL_SKIP = /^\/(events|regular)\/|^\/(weekend|this-month)\.html$/;
 // land: 横長(720×300。今週末・今月の一覧の途中で、公演のカードと同じ横幅に出す。画像は assets/pr-<種類>-wide.svg)
 export const selfBannerHtml = (key, cls, name, esc, land = false) => { const s = SELF_BANNERS[key]; return `<a class="${cls}" href="${s.href}" data-self-pr="${key}" data-goatcounter-click="${esc(name)}" data-goatcounter-title="${esc(name)}"><img src="${land ? s.img.replace(".svg", "-wide.svg") : s.img}" alt="${esc(s.alt)}" width="${land ? 720 : 600}" height="${land ? 300 : 600}" loading="lazy" decoding="async"></a>`; };
 

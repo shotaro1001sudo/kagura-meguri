@@ -6,9 +6,11 @@
   // そろえる相手は、ページの種類ごとに1つに決める(同じ種類のページは、どれも同じ決まり。2026-11-15 運営者の依頼「全公演ページで統一」)。
   // - 公演ページ(開催・定期公演)と今週末・今月: 右の列(.d-side)の上端 = 要点の枠(日時・会場)の上端。宿の枠がない公演でも同じ高さになる
   // - 終了した開催: 右の列がないので、要点の枠(.keyinfo)の上端
-  // - 都道府県・神楽の種類: 宿の枠。日付・場所で探す: 探す条件の枠。地図で探す: 地図。種類で探す: 最初のカードの並び
+  // - 都道府県: 宿の枠。日付・場所で探す: 探す条件の枠。地図で探す: 地図。種類で探す: 最初のカードの並び
+  // - 神楽の種類(各神楽のページ): 「◯◯とは」の枠(2026-11-15 運営者の依頼。以前は、ページの下のほうの宿の枠にそろえていた)
+  // - トップ: 開催予定の、月の最初の公演のカード(同日の依頼)
   const anchor = document.querySelector("main .d-side") ||
-    document.querySelector("main .keyinfo, main .stay, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid");
+    document.querySelector("main .keyinfo, main .stay, main .kagura-summary, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid, main #list .card");
   if (!rails.length || !anchor) return;
   const place = () => {
     // 公演ページの右の列は画面に付いてくる(上から約97px で止まる)ので、そのあいだも右の列と同じ高さになる

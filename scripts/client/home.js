@@ -5,6 +5,17 @@
   if (!list) return;
   var g = d.querySelector('.regions:not(.prefs)'), pf = d.querySelector('.regions.prefs'), more = d.getElementById('showall');
   var st = { r: '', p: '', all: false };
+  // 一覧の途中の帯(5件ごと)。見えている開催が変わるたびに、5件ごとの位置へ置き直す(使わない帯は、隠した置き場へ戻す)
+  var pool = d.getElementById('home-pr-pool');
+  var strips = [].slice.call(d.querySelectorAll('.home-pr')).sort(function (a, b) { return a.dataset.k - b.dataset.k; });
+  function placeStrips() {
+    if (!pool || !strips.length) return;
+    strips.forEach(function (s) { pool.appendChild(s); });
+    var rows = [].slice.call(list.querySelectorAll('[data-r]')).filter(function (el) { return !el.hidden; });
+    for (var i = 0, k = 0; i < rows.length - 1 && k < strips.length; i++) {
+      if ((i + 1) % (+pool.dataset.every || 5) === 0) rows[i].parentNode.insertBefore(strips[k++], rows[i].nextSibling);
+    }
+  }
   function press(box, key, v) { box.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset[key] === v)); }); }
   function apply() {
     var n = 0;
@@ -24,6 +35,7 @@
       a.querySelector('span').textContent = c + '件'; a.hidden = c === 0; if (c) any = true;
     });
     var lw = d.querySelector('.laterwrap'); if (lw) lw.hidden = !any;
+    placeStrips();
   }
   if (g) {
     g.hidden = false;

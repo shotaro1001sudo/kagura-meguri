@@ -453,6 +453,15 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
    今月・今週末のページは、本文が1列になる画面(幅 960px 未満)だけ(2列の画面では、右の列の帯が一覧の横に見えているため) */
 .pr-strip.inlist{margin:0 0 12px}
 @media(min-width:960px){.dpage .pr-strip.inlist{display:none}}
+/* 今週末・今月の右の列(2列の画面)の、自分たちのバナー2つ。宿の枠の下に横並び(2026-11-15 運営者の依頼)。1列の画面では一覧の途中の帯に出るので、出さない */
+.self-pair{display:none}
+@media(min-width:960px){.d-side .self-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}}
+.self-pair-b{display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+.self-pair-b img{display:block;width:100%;height:auto}
+@media(hover:hover){.self-pair-b:hover{box-shadow:0 0 0 2px var(--ac2)}}
+.self-pair-b:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+/* トップの一覧の途中の帯(同日の依頼。今週末・今月と同じ横長)。置き場所はブラウザが決める(home.js) */
+.home-pr .pr-strip.inlist{margin:0 0 12px}
 /* 日付・場所で探す: 結果の行のあいだにはさむ(行の飾り・押せる範囲の広がりは付けない) */
 .monthlist>.pr-li{display:block;padding:14px 0}.monthlist>.pr-li .pr-strip{margin:0}
 @media(hover:hover){.monthlist>.pr-li:hover{background:none}}
