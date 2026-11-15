@@ -2,6 +2,7 @@
 import { readFileSync, readdirSync, statSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { unphrase } from "../scripts/lib/phrases.mjs"; // 本文の折り返しの印(<wbr> など)を外して、文を比べる
 
 const read = (p) => readFileSync(p, "utf8");
 const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
@@ -32,7 +33,7 @@ export function identityTests({ ok, section, OUT, build }) {
   ok(/日程/.test(ht) && /今週末/.test(ht) && ht.endsWith(cfg.siteName) && hd.startsWith("今週末、どこで神楽が観られる？"), "トップの題と説明: 「神楽 日程」「神楽 今週末」で探す人に向けた言葉", `${ht} / ${hd}`);
   const about = cheerio.load(read(join(OUT, "about.html")));
   ok(about("main").text().includes("神楽めぐり編集部") && about('.symbol img[src="/symbol.png"]').attr("alt") === "神楽めぐり編集部のシンボル", "運営者情報に、名前とシンボル(代替テキストつき)");
-  const pv = read(join(OUT, "privacy.html"));
+  const pv = unphrase(read(join(OUT, "privacy.html")));
   ok(pv.includes("運営者: 神楽めぐり編集部") && pv.includes("保有する個人データのご本人から求めがあった場合は、個人情報保護法に基づき、運営者の氏名と住所を遅滞なくお知らせします") && !pv.includes("ご請求があれば"), "プライバシーポリシー: 運営者名と、氏名・住所は「保有個人データのご本人」から求めがあったときだけ知らせる旨(個人情報保護法32条)");
 
   section("背景の文様(青海波)");

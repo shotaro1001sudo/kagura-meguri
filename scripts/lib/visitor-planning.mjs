@@ -167,9 +167,10 @@ export function transportSection(settings,context,today,placement,{rail=false}={
 // スマホなどの帯「旅の手配」に入れる、レンタカー・カーシェアのバナー(2026-11-15 運営者の依頼。「車で行くなら」の枠を、帯にまとめる)。
 // 発行した href と img のまま。計測は今までどおり(レンタカーの配置 event_rental・regular_rental)。画像は、どちらも 300×250(同日に確かめた大きさ。帯の中で場所を先に取るために書く)
 // 画像のない広告(文字のリンクだけを発行したもの)は、同じ高さの文字のタイルにする
-export function rentalStripItems(settings,context,today,placement) {
+// card: 一覧の中のPRと同じ横長のカード(左に絵・右に文字)にする(2026-11-15 運営者の依頼「旅の手配も、一覧と同じ横長バナー画像に」)
+export function rentalStripItems(settings,context,today,placement,{card=false}={}) {
   return offersFor(settings,'rental',context,today).map(o=>{
     const label=`${providers[o.provider].name}で${o.provider==='rakuten-carshare'?'カーシェア':'レンタカー'}を探す`;
-    return `<a class="strip-banner${o.imageUrl?'':' strip-text'}" href="${esc(o.url)}" aria-label="${esc(label)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/${o.id}" data-affiliate-category="rental" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="${esc(label)}" width="300" height="250" loading="lazy" decoding="async">`:`<span>${esc(label)}</span>`}</a>`;
+    return `<a class="strip-banner${o.imageUrl?(card?' strip-card':''):' strip-text'}" href="${esc(o.url)}" aria-label="${esc(label)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/${o.id}" data-affiliate-category="rental" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl&&card?`<img src="${esc(o.imageUrl)}" alt="" width="300" height="250" loading="lazy" decoding="async"><span><b>${esc(label)}</b><small>${esc(providers[o.provider].name)}で見る ›</small></span>`:o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="${esc(label)}" width="300" height="250" loading="lazy" decoding="async">`:`<span>${esc(label)}</span>`}</a>`;
   });
 }

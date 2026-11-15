@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { unphrase } from "../scripts/lib/phrases.mjs"; // 本文の折り返しの印(<wbr> など)を外して、文を比べる
 import { JSDOM } from "jsdom";
 
 const read = (p) => readFileSync(p, "utf8");
@@ -85,7 +86,7 @@ export async function uxTests({ ok, section, OUT }) {
   ok(mp("#nearme[hidden]").length === 1 && mp("#nearmsg[aria-live=polite]").length === 1 && mp("#nearlist[hidden]").length === 1, "現在地のボタン・一覧は、最初は隠す(使えるときだけ出す)。知らせの欄は読み上げる");
   ok(mp("#nearnote").length === 0 && mp(".mapbox").index() < mp("#nearlist").index() && mp("#nearme").closest(".nearbar").index() < mp(".mapbox").index(), "並びは、ボタン→地図→近い開催の一覧(ボタンの横の説明の文は出さない)");
   ok(/geolocation=\(self\)/.test(read(join(OUT, "_headers"))), "Permissions-Policy で、位置情報はこのサイトの中だけ使える");
-  ok(/現在地から近くの開催を探す[^<]*ボタンを押したときだけ/.test(read(join(OUT, "privacy.html"))) && /当サイトにも外部のサービスにも送らず、保存もしません/.test(read(join(OUT, "privacy.html"))), "プライバシーポリシーに、現在地の使い方(送らない・保存しない)を書く");
+  ok(/現在地から近くの開催を探す[^<]*ボタンを押したときだけ/.test(unphrase(read(join(OUT, "privacy.html")))) && /当サイトにも外部のサービスにも送らず、保存もしません/.test(unphrase(read(join(OUT, "privacy.html")))), "プライバシーポリシーに、現在地の使い方(送らない・保存しない)を書く");
   const asked = [], fetched = [], circles = [], nearMarkers = [];
   let geoAnswer = null;
   const ndom = new JSDOM(read(join(OUT, "map.html")), {
@@ -132,12 +133,12 @@ export async function uxTests({ ok, section, OUT }) {
   // PC では、説明とボタン(d-lead)を右の列より上の段に置き、要点の枠と右の列の上端をそろえる
   { // PC の並び(2026-11-14 運営者の依頼)
     const css = read("scripts/style.css");
-    ok(css.includes('grid-template-areas:"lead lead" "top side" "rest side"') && css.includes(".d-side .stay,.d-side .aff{margin:0 0 16px}"), "PC: 説明は右端まで使い、要点の枠と右の列の最初の枠(宿)の上端がそろう");
+    ok(css.includes('grid-template-areas:"lead lead" "top side" "rest side"') && css.includes(".d-side .stay,.d-side .aff{margin:0 0 var(--sp-1)}"), "PC: 説明は右端まで使い、要点の枠と右の列の最初の枠(宿)の上端がそろう");
     const wk = page("weekend.html"), tm = page("this-month.html");
     ok([wk, tm].every((p) => p(".d-lead.narrow > h2").length === 1 && p(".d-top").children().first().is(".card")) && css.includes(".d-lead.narrow{grid-column:1}.d-lead.narrow~.d-side{margin-top:0}"), "今週末・今月: 見出しは上の段(左の列)に置き、最初の開催のカードと右の宿の枠の上端をそろえる");
-    ok(/:where\([^)]*\.more-picks,/.test(css) && /\.more-picks\{margin:40px 0;padding:20px 20px 14px\}/.test(css), "本・ふるさと納税の紹介も、ほかの広告と同じ枠にする");
+    ok(/:where\([^)]*\.more-picks,/.test(css) && /\.more-picks\{margin:var\(--sp-2\) 0;padding:20px 20px 14px\}/.test(css), "本・ふるさと納税の紹介も、ほかの広告と同じ枠にする");
     // 2026-11-15 の監査: 本文の列の枠(宿・体験・ふるさと納税/本)は、内側の余白と見出しの間隔を同じにする(新しい枠も同じ値に)
-    ok(/\.aff\{margin:64px 0 8px;padding:20px 20px 14px\}/.test(css) && /\.stay\{margin:40px 0;padding:20px 20px 14px\}/.test(css) && /:is\(\.aff,\.stay,\.more-picks\)\{padding:16px 16px 12px\}/.test(css) && /\.more-picks h2\{margin:0 0 10px/.test(css) && /\.aff h2\{margin:0 0 10px/.test(css), "宿・体験・ふるさと納税の枠は、内側の余白(PC 20px・スマホ 16px)と見出しの下の間隔(10px)が同じ");
+    ok(/\.aff\{margin:var\(--sp-2\) 0;padding:20px 20px 14px\}/.test(css) && /\.stay\{margin:var\(--sp-2\) 0;padding:20px 20px 14px\}/.test(css) && /:is\(\.aff,\.stay,\.more-picks\)\{padding:16px 16px 12px\}/.test(css) && /\.more-picks h2\{margin:0 0 10px/.test(css) && /\.aff h2\{margin:0 0 10px/.test(css), "宿・体験・ふるさと納税の枠は、内側の余白(PC 20px・スマホ 16px)と見出しの下の間隔(10px)が同じ");
     ok(/@media\(min-width:641px\)\{html:not\(\[lang=en\]\) \.home-hero \.copy\{margin-left:/.test(css), "トップの縦書きの見出しは、PC・タブレットで少し右に寄せる");
   }
   { // 本・ふるさと納税の紹介は、右の列ではなく、本文の下のほう(周辺体験のあと)に出す(2026-11-14 運営者の依頼。右の列を宿・レンタカーだけにして、画面に収める)

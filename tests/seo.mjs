@@ -195,8 +195,11 @@ export function seoTests({ ok, section, OUT, build }) {
   { const $ = kpage("広島神楽"), html = $("main").html();
     ok($("title").text().startsWith("広島神楽とは｜系統・見どころ") && !$("title").text().includes("スケジュール"), "広島神楽: 種類のページは「系統・見どころ」の役(県のページと同じ語で競らない)", $("title").text());
     ok($(`#k-schedule[open] > .kfold-body > .schedule-hub:first-child a.btn[href="/pref/${encodeURIComponent("広島県")}.html"]`).length === 1 && html.indexOf("広島神楽とは") < html.indexOf(">開催予定</h2>"), "広島神楽: 説明を開催一覧より前に、開いた「開催予定」の欄の先頭に県のスケジュールへの入口"); }
-  { const $i = kpage("石見神楽"), heads = $i("main h2").map((_, h) => $i(h).text()).get();
-    ok(!$i(".schedule-hub").length && heads.slice(0, 6).join() === "石見神楽とは,歴史,特徴,主な演目,観賞のコツ,開催予定", "スケジュールの入口のない神楽ページも、冒頭に要約(〇〇とは)、その下に歴史〜開催予定の折り畳み(2026-11-15 運営者の依頼で、開催予定は最後)"); }
+  { const $i = kpage("石見神楽"), heads = $i("main h2").filter((_, h) => !$i(h).closest("aside").length).map((_, h) => $i(h).text()).get();
+    ok(!$i(".schedule-hub").length && heads.slice(0, 6).join() === "石見神楽とは,歴史,特徴,主な演目,観賞のコツ,開催予定", "スケジュールの入口のない神楽ページも、冒頭に要約(〇〇とは)、その下に歴史〜開催予定の折り畳み(2026-11-15 運営者の依頼で、開催予定は最後)");
+    // 同日「各神楽のページも、県のページと同じ並びに」: 概要 → 宿 → 体験 → 一覧(くわしい情報の折り畳み)
+    const sum = $i("main .kagura-summary"), aff = $i("main aside.aff:not(.aff-exp)").first(), exp = $i("main aside.aff-exp"), folds = $i("main .kagura-folds"), all = $i("main *");
+    ok(sum.length === 1 && aff.length === 1 && folds.length === 1 && all.index(sum) < all.index(aff) && all.index(aff) < all.index(folds) && (!exp.length || (aff.next().is(".aff-exp") && all.index(exp) < all.index(folds))) && aff.children("h2").text() === "島根県の宿", "各神楽のページ: 県のページと同じ並び(概要 → ◯◯県の宿 → ◯◯県の体験 → 一覧)"); }
   section("SEO: 神楽門前湯治村の公演日程(SEO-20261107-5)");
   { const reg = JSON.parse(read("data/regular.json").replace(/^﻿/, "")).find((x) => x.id === "tojimura-kagura");
     const dates = reg?.program?.map((p) => p.date) ?? [];

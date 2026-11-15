@@ -2,6 +2,7 @@
 import { readFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
+import { unphrase } from "../scripts/lib/phrases.mjs"; // 本文の折り返しの印(<wbr> など)を外して、文を比べる
 import { JSDOM } from "jsdom";
 
 const read = (p) => readFileSync(p, "utf8");
@@ -41,7 +42,7 @@ export async function organizersTests({ ok, section, OUT, build }) {
   rmSync(D, { recursive: true, force: true });
 
   // 方針が、免責事項・プライバシーポリシーと食い違わない
-  ok(text.includes("無料") && text.includes("転載しません") && text.includes("サイトに表示しません") && read(join(OUT, "privacy.html")).includes("ご連絡先は、サイトには掲載しません") && read(join(OUT, "disclaimer.html")).includes("転載しません"), "方針(無料・転載しない・連絡先を表示しない)が、ポリシーの記載と一致している");
+  ok(text.includes("無料") && text.includes("転載しません") && text.includes("サイトに表示しません") && unphrase(read(join(OUT, "privacy.html"))).includes("ご連絡先は、サイトには掲載しません") && unphrase(read(join(OUT, "disclaimer.html"))).includes("転載しません"), "方針(無料・転載しない・連絡先を表示しない)が、ポリシーの記載と一致している");
   // 見せ方(2026-10-31 運営者の判断): 送り方ごとのボタン・アイコン・スマホの固定の申し込みボタン
   section("主催者の方へ: 送り方ごとのボタンと、スマホの固定の申し込みボタン");
   ok($(".oway").map((_, w) => $(w).find(".oway-go a.btn").attr("href")).get().join() === "/submit.html,/contact.html,/contact.html" && $(".ofix .oway-go a.btn[href='/contact.html']").length === 1, "送り方ごとに行き先のボタン(フォーム・お問い合わせ)を置き、訂正・削除にも依頼のボタンを置く");

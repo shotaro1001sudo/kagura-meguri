@@ -62,6 +62,15 @@ export function consistencyTests({ ok, section, OUT, build }) {
   // 2026-11-15 の監査: 広告・商品の画像の角と影は、--radius-img・--shadow-img の1か所で決める(バナーごとに 8px や影を書かない)
   ok(/--radius-img:8px/.test(tokens) && /--shadow-img:/.test(tokens) && !radii.includes("8px") && !/box-shadow:0 1px 3px rgb\(0 0 0\/\.12\)/.test(src.replace(/:root\{[^}]*\}/, "")), "広告・商品の画像の角と影は、--radius-img・--shadow-img を使う");
   ok(!/font-weight:(600|700|bold)/.test(src.replace(/\/\*[\s\S]*?\*\//g, "")), "太字は 500 まで(600・700 は使わない)");
+  // 2026-11-15 運営者の依頼「余白を見やすく整理」「行間・冒頭の説明の文字を統一」: 余白は3段階、行間は5つの基準だけ
+  const css0 = src.replace(/\/\*[\s\S]*?\*\//g, "");
+  ok(/:root\{--sp-1:16px;--sp-2:40px;--sp-3:64px;--lh-body:1\.95;--lh-lead:1\.9;--lh-sub:1\.8;--lh-ui:1\.6;--lh-head:1\.5\}/.test(css0) && /@media\(max-width:560px\)\{:root\{--sp-2:32px;--sp-3:52px\}\}/.test(css0), "余白(3段階)と行間(5つ)の基準は、style.css の1か所で決める(スマホは余白を少し詰める)");
+  ok(/(^|\})h2\{[^}]*margin:var\(--sp-3\) 0 20px/m.test(css0) && [".aff", ".stay", ".more-picks", ".planning-section", ".pr-strip"].every((c) => new RegExp(`(^|\\})\\${c}\\{margin:var\\(--sp-2\\) 0[;}]`, "m").test(css0)) && /\.kagura-folds\{margin:var\(--sp-2\)/.test(css0) && /\.mhead\{[^}]*margin:var\(--sp-2\)/.test(css0) && !/(^|\})(\.aff|\.stay|\.more-picks|\.pr-strip)\{margin:\d/m.test(css0), "見出し(h2)の上は --sp-3、宿・体験・本・旅の手配などの枠と枠のあいだは --sp-2(数字を直接書かない)");
+  const lhs = [...new Set([...css0.matchAll(/line-height:([^;}]+)/g)].map((m) => m[1].trim()))].filter((v) => !/^var\(--lh-(body|lead|sub|ui|head)\)$/.test(v) && !["0", "1", "1.2", "1.3", "1.35", "2", "2.4"].includes(v));
+  ok(lhs.length === 0, "行間は基準(--lh-*)を使う(画像の 0・記号の 1・大きな日付・縦書き・フッターのリンクの間隔・英語の大見出しだけ別)", lhs.join(" / "));
+  ok([".lead", ".desc-lead", ".olead"].every((c) => new RegExp(`(^|\\})\\${c}\\{[^}]*font-size:var\\(--fs-l\\);line-height:var\\(--lh-lead\\);margin:12px 0 24px`, "m").test(css0)), "冒頭の説明(県・各神楽・月の .lead、公演の .desc-lead、主催者・協賛の .olead)は、同じ大きさ・行間・間隔");
+  // 協賛・主催者・運営者情報・周辺体験の本文も、ことばの切れ目で折り返す(文字の途中で折り返さない)
+  ok(["sponsor.html", "organizers.html", "about.html", "experiences.html"].every((p) => page(p)("main .prose p .bw, main p .bw").length >= 1), "協賛・主催者・運営者情報・周辺体験の本文は、ことばの切れ目で折り返す(.bw)");
   const chip = (src.match(/:is\(([^{]*)\)\{display:inline-flex;align-items:center;min-height:var\(--tap\)/) ?? [])[1] ?? "";
   ok([".chip", ".taglist .tag", ".regions button"].every((s) => list(chip).includes(s)) && !/pref-month-nav|viewing-preparation/.test(src), "チップ(月・種類・県・絞り込み)は、どのページでも同じ形・高さ 44px(広島県の「開催月から探す」「観覧前に確認」は 2026-11-15 に削除したので、その CSS も残さない)", chip);
   ok(/a\.tag,[^{]*\.info \.tomap,\.info \.tocal[^{]*\)::after\{content:"";position:absolute;[^}]*height:var\(--tap\)/.test(src), "小さな札・地図やカレンダーへのリンクは、見た目は小さいまま、押せる範囲を 44px に広げる");
