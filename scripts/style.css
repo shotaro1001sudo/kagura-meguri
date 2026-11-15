@@ -195,6 +195,12 @@ a.tag:hover{color:var(--ac);border-color:var(--ac)}
 .planning-nearby .nearby-main:not(:has(>.vc-ad:not([hidden]))){display:none}
 .planning-nearby .nearby-main .vc-ad.vc-experience>a{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 16px;border:1px solid var(--ac);border-radius:var(--radius-s);background:var(--ac);color:var(--onac);font-size:var(--fs-s);letter-spacing:.04em;line-height:1.6;text-align:center}
 .planning-nearby .nearby-main .vc-ad.vc-experience>a:hover{opacity:.85}
+/* 体験の予約サービスの画像バナー(2026-11-15 運営者の依頼): 枠の幅いっぱいに、縦に並べる */
+.planning-nearby .nearby-others{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
+.planning-nearby .nearby-banner{display:block;line-height:0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgb(0 0 0/.12);transition:box-shadow var(--t-s) var(--ease)}
+.planning-nearby .nearby-banner img{display:block;width:100%;height:auto}
+@media(hover:hover){.planning-nearby .nearby-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
+.planning-nearby .nearby-banner:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 .planning-nearby .nearby-sub{display:flex;flex-direction:column;align-items:flex-start;margin:12px 0 0;padding:6px 0 0;border-top:1px solid var(--line)}
 .planning-nearby .nearby-sub:empty{display:none}
 .planning-nearby .nearby-sub>.nearby-more,.planning-nearby .nearby-sub>.pc-more>summary{display:flex;align-items:center;gap:8px;width:fit-content;min-height:var(--tap);padding:4px 0;color:var(--ac2);font-size:var(--fs-xs);letter-spacing:.04em;text-decoration:none;list-style:none;cursor:pointer}

@@ -1001,7 +1001,7 @@ ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.ur
 ${noteBlock(e)}
 ${others.length ? `<p class="dates"><span class="meta">ほかの日程:</span> ${others.map((x) => `<a class="chip" href="/events/${x.id}.html">${esc(mdw(x.start.slice(0, 10)))}</a>`).join("")}</p>` : ""}
 ${shareBlock(`/events/${e.id}.html`, e.name)}</div>
-${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${stayBlock(e)}${planningLinks(e,today,experienceAff,{prep:false})}${transportSection(visitorPlanning,e,today,'event_rental',{alt:true})}</div>` : ""}<div class="d-rest">
+${isUpcoming(e) ? `<div class="d-side">${sponsorFor("event", e, { side: true })}${stayBlock(e)}${planningLinks(e,today,experienceAff,{prep:false,rakuten:rakutenOn})}${transportSection(visitorPlanning,e,today,'event_rental',{alt:true})}</div>` : ""}<div class="d-rest">
 ${isUpcoming(e) ? "" : related(e)}
 ${sourceNote(e)}
 ${isUpcoming(e)?`${offerCards(visitorPlanning,'experiences',e,today,'event_experiences')}${learnBlock(moreOffers, { kagura: e.kagura, prefecture: e.prefecture }, today, "event_learn")}${furusatoBlock(moreOffers, { prefecture: e.prefecture, city: e.city ?? "", towns: [e.city] }, today, "event_furusato")}`:''}
@@ -1035,7 +1035,7 @@ for (const r of regular) {
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}</div>
-<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false})}${transportSection(visitorPlanning,r,today,'regular_rental',{alt:true})}</div><div class="d-rest">
+<div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false,rakuten:rakutenOn})}${transportSection(visitorPlanning,r,today,'regular_rental',{alt:true})}</div><div class="d-rest">
 ${sourceNote(r)}
 ${offerCards(visitorPlanning,'experiences',r,today,'regular_experiences')}${learnBlock(moreOffers, { kagura: r.kagura, prefecture: r.prefecture }, today, "regular_learn")}${furusatoBlock(moreOffers, { prefecture: r.prefecture, city: r.city ?? "", towns: [r.city] }, today, "regular_furusato")}
 ${related(r)}

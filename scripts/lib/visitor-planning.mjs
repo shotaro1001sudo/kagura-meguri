@@ -43,6 +43,12 @@ export const CARSHARE_BANNER = {
   "url": "https://hb.afl.rakuten.co.jp/hsc/58cd09f6.7960bea0.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6MjEzODQyNiwiYW1wIjpmYWxzZX0%3D",
   "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58cd09f6.7960bea0.585fa57b.dad29d3a/?me_id=2101064&me_adv_id=2138426&t=pict"
 };
+// 周辺体験のカードに出す、楽天トラベル 観光体験の横長バナー(600×200「旅行先で思い出に残る現地体験を予約しよう！」)。
+// 2026-11-15 に楽天アフィリエイトの管理画面(ショップリンクの作成、me_id=2100034)で発行した href と img のまま。同意の要らない広告なので、いつも出る
+export const EXPERIENCE_BANNER = {
+  url: `https://hb.afl.rakuten.co.jp/hsc/598af1ac.81f4e586.585fa57b.dad29d3a/?link_type=pict&ut=${encodeURIComponent(Buffer.from('{"page":"shop","type":"pict","col":1,"cat":"1","ban":2185647,"amp":false}').toString("base64"))}`,
+  imageUrl: "https://hbb.afl.rakuten.co.jp/hsb/598af1ac.81f4e586.585fa57b.dad29d3a/?me_id=2100034&me_adv_id=2185647&t=pict"
+};
 export function validOffer(o,today) {
   if(offerEligibility(o,today))return false;
   if(!o||o.enabled!==true||o.approved!==true||!date(today)||!date(o.verifiedAt)||!date(o.expiresAt)||o.verifiedAt>today||o.expiresAt<today||o.expiresAt<o.verifiedAt)return false;
@@ -122,14 +128,16 @@ export function experienceSection(context,today,aff) {
   return `<section id="nearby-experiences" class="planning-section" aria-labelledby="nearby-experiences-h"><p class="planning-eyebrow">周辺体験</p><h2 id="nearby-experiences-h">${esc(context.prefecture)}で立ち寄れる体験を探す</h2>${affOn(aff)?`<div class="nearby-actions">${areaTag(area,'nearby_experiences','vc-experience')}<a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a></div>`:""}${experienceNotes(experiencesFor(context,today),aff,false)}${prFoot(aff)}</section>`;
 }
 // 公演のページでは、周辺体験のカードの中に開催県の体験検索をまとめる。
-export function experienceCard(context,today,aff) {
+// rakuten: 楽天アフィリエイトのIDがあるか。あれば、ほかの体験の予約サービスとして、楽天トラベル 観光体験のバナーも出す(2026-11-15 運営者の依頼)
+export function experienceCard(context,today,aff,{rakuten=false}={}) {
   const area=experienceArea(context.prefecture);if(!area)return '';
-  return `<section id="nearby-experiences" class="planning-nearby" aria-labelledby="nearby-experiences-h"><span class="meta">周辺体験</span><b id="nearby-experiences-h">神楽までの半日、何する？</b>${affOn(aff)?`<div class="nearby-main">${areaTag(area,'nearby_experiences','vc-experience')}</div>`:""}<div class="nearby-sub">${affOn(aff)?`<a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a>`:""}${experienceNotes(experiencesFor(context,today),aff,true)}</div>${prFoot(aff)}</section>`;
+  const others=rakuten?`<div class="nearby-others"><a class="nearby-banner" href="${esc(EXPERIENCE_BANNER.url)}" aria-label="楽天トラベル 観光体験で体験を探す(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="experience-rakuten/banner" data-goatcounter-title="experience-rakuten/banner" data-affiliate-category="experiences" data-affiliate-partner="rakuten" data-affiliate-placement="nearby_experiences" data-affiliate-id="rakuten-experiences"><img src="${esc(EXPERIENCE_BANNER.imageUrl)}" alt="現地の観光体験を楽天トラベルで探す" width="600" height="200" loading="lazy" decoding="async"></a></div>`:'';
+  return `<section id="nearby-experiences" class="planning-nearby" aria-labelledby="nearby-experiences-h"><span class="meta">周辺体験</span><b id="nearby-experiences-h">神楽までの半日、何する？</b>${affOn(aff)?`<div class="nearby-main">${areaTag(area,'nearby_experiences','vc-experience')}</div>`:""}${others}<div class="nearby-sub">${affOn(aff)?`<a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a>`:""}${experienceNotes(experiencesFor(context,today),aff,true)}</div>${affOn(aff)||rakuten?PR_FOOT:''}</section>`;
 }
 // 開催県がわかる公演では周辺体験をカードにまとめ、わからなければ全国の入口へのリンクにする。
 // 開催・定期公演のページ(prep:false)は周辺体験だけにし、持ち物・行き帰りのカードは置かない(2026-10-30 運営者の判断)。
-export function planningLinks(context={},today=CHECKED,aff,{prep=true}={}) {
-  const nearby=experienceCard(context,today,aff);
+export function planningLinks(context={},today=CHECKED,aff,{prep=true,rakuten=false}={}) {
+  const nearby=experienceCard(context,today,aff,{rakuten});
   return `<nav class="planning-links${prep?'':' solo'}" aria-label="神楽旅の準備">${prep?'<a href="/guide.html#packing"><span class="meta">持ち物</span><b>夜神楽の持ち物を選ぶ</b></a><a href="/guide.html#transport"><span class="meta">行き帰り</span><b>車で行く神楽旅</b></a>':''}${nearby||'<a href="/experiences.html"><span class="meta">周辺体験</span><b>神楽までの半日、何する？</b></a>'}</nav>`;
 }
 export function rentalSearch(settings,context,today,placement,opts) {
