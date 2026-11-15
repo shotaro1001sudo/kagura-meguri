@@ -172,6 +172,13 @@ export async function uxTests({ ok, section, OUT }) {
   // 読みやすさ: 説明は段落(p)で組み、ページ下の注記は同じ注意をくり返さず、広告の注記は1行にまとめる
   { const pages = ["events/t-full.html", "events/t-long.html", "regular/r-weekly.html", "weekend.html"].map(page);
     ok(pages.slice(0, 3).every((p) => p(".desc-lead > p").length >= 1), "公演の説明は段落(p)で組む(長い説明は2文ずつに分ける)");
+    // 2026-11-15 運営者の依頼: 改行は、読みやすいように句読点で可能な限り改行する。本文は、句読点までのまとまり(.cl)に分ける(文字は変えない)
+    { const paras = pages.slice(0, 3).flatMap((p) => p(".desc-lead > p, .detail.note p, .detail.note li, .keyinfo td .line").toArray().map((x) => p(x)));
+      const multi = paras.filter((x) => /[、。！？][^、。！？)）」』]/.test(x.text()));
+      const endOk = (t, last) => last || /[、。！？][)）」』、。！？]*$/.test(t);
+      ok(multi.length >= 1 && multi.every((x) => { const cls = x.children(".cl").toArray().map((c) => x.find(c).text()); return cls.length >= 2 && cls.join("") === x.text() && cls.every((t, i) => endOk(t, i === cls.length - 1)); }), "公演ページの本文(説明・この開催のポイント・要点の表)は、句読点までのまとまり(.cl)に分け、つなぐと元の文になる", multi.length + " 段落");
+      const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
+      ok(/^\.cl\{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance\}/m.test(sheet) && ["<p>${cl(s)}</p>", "<li>${cl(t)}</li>", '<span class="line">${cl(t)}</span>'].every((s) => built.includes(s)), "句読点までのまとまりは、行の途中で割れにくい組にする(1行より長いときは、文節の境目で行の長さをそろえて折り返す)"); }
     ok(pages.every((p) => { const t = p(".page-notes").text(); return !/リアルタイム表示ではありません|会場の公式アクセスと公共交通を先に|泊・大人2名で検索します|掲載情報確認:/.test(t) && (t.match(/アフィリエイトリンク/g) || []).length <= 1; }), "ページ下の注記は、ほかで伝わる注意をくり返さず、広告の注記は1行にまとめる"); }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-lead .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");

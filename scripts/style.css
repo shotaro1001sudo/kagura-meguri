@@ -765,9 +765,13 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 }
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
+/* 本文の、句読点(、。)までのまとまり(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
+   次のまとまりが行の残りに入らないときは、句読点のあとで改行する。まとまりが1行より長いときは、その中で、文節の境目(Chrome・Edge。auto-phrase)で、行の長さをそろえて折り返す(balance。最後の行に2〜3字だけ残さない) */
+.cl{display:inline-block;max-width:100%;word-break:auto-phrase;text-wrap:balance}
 /* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
    見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase)。
-   本文・一覧の値(料金・予約方法など)・注釈・箇条書きは、字単位で行を詰める(文節で折ると、狭い画面で行の右が大きく空いて行数が増えるため) */
+   本文(公演の説明・この開催のポイント・要点の表の値・都道府県と種類の解説)は、句読点までのまとまりで折り返す(.cl)。
+   それ以外の文(注釈・ガイドなど)と、まとまりの中は、字単位で行を詰める */
 body{line-break:strict;text-wrap:pretty}
 :is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.event-facts,.info .vn,.info .when,.info .sched-main,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs){word-break:auto-phrase}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p){text-wrap:balance}

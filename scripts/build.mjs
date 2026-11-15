@@ -154,8 +154,29 @@ const sentencesOf = (s) => {
   if (cur.trim()) out.push(cur);
   return out.map((x) => x.trim()).filter(Boolean);
 };
+// 句読点(、。)のあとで改行されやすくする(2026-11-15 運営者の依頼「改行は、読みやすいように句読点で可能な限り改行する」)。
+// 句読点までのまとまりを、行の途中で割れにくい組(.cl = inline-block)にする。次のまとまりが行の残りに入らなければ、句読点のあとで改行される。
+// まとまりが1行より長いときは、その中で今までどおり折り返す。文字は1字も変えない(まとまりをつなぐと、元の文になる)
+const CLAUSE_END = "、。！？", CLAUSE_CLOSE = ")）」』";
+const clauseParts = (s) => {
+  const t = String(s ?? ""), out = []; let cur = "";
+  for (let i = 0; i < t.length; i++) {
+    cur += t[i];
+    if (CLAUSE_END.includes(t[i])) {
+      while (i + 1 < t.length && (CLAUSE_END + CLAUSE_CLOSE).includes(t[i + 1])) cur += t[++i]; // 「。)」「、」」のような続きは、前のまとまりに付ける
+      out.push(cur); cur = "";
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
+};
+/** 文を、句読点までのまとまりごとの組にして返す(エスケープ込み)。句読点が途中にない文は、そのまま */
+// 電話番号は、番号の途中で改行しない(「0536-76-」「0509」のように割れると読みにくい)
+const PHONE_RE = /0\d{1,4}-\d{1,4}-\d{3,4}/g;
+const clText = (x) => esc(x).replace(PHONE_RE, (m) => `<span class="nw">${m}</span>`);
+const cl = (s) => { const parts = clauseParts(s); return parts.length < 2 ? clText(s) : parts.map((x) => `<span class="cl">${clText(x)}</span>`).join(""); };
 // 要点の表の値: 2文以上あるときは、文ごとに行を分けて出す(料金の区分や受付の方法が、ひとかたまりの長文にならないように)。文言は変えない
-const cellLines = (v) => { const xs = sentencesOf(v); return xs.length > 1 ? xs.map((t) => `<span class="line">${esc(t)}</span>`).join("") : esc(v); };
+const cellLines = (v) => { const xs = sentencesOf(v); return xs.length > 1 ? xs.map((t) => `<span class="line">${cl(t)}</span>`).join("") : cl(v); };
 // 定期公演の「公演日時」: 主な上演を1行目に、かっこ内(開場・受付など)と2文目(ほかの上演日)は小さく別の行に
 const scheduleCell = (s) => sentencesOf(s).map((x) => x.replace(/。$/, "")).map((part, i) => {
   const m = i ? null : part.match(/^(.+?)[(（](.+)[)）]$/);
@@ -177,9 +198,9 @@ const NO_INFO = `<p class="meta no-info">情報がありません。</p>`;
 const kaguraBody = (f, info) => {
   const v = info?.[f];
   if (!v?.length) return NO_INFO;
-  if (f === "history") return v.map((t) => `<p>${esc(t)}</p>`).join("");
-  if (f === "programs") return `<dl>${v.map((x) => `<dt>${esc(x.name)}</dt><dd>${esc(x.text)}</dd>`).join("")}</dl>`;
-  return `<ul>${v.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`;
+  if (f === "history") return v.map((t) => `<p>${cl(t)}</p>`).join("");
+  if (f === "programs") return `<dl>${v.map((x) => `<dt>${esc(x.name)}</dt><dd>${cl(x.text)}</dd>`).join("")}</dl>`;
+  return `<ul>${v.map((t) => `<li>${cl(t)}</li>`).join("")}</ul>`;
 };
 const kfold = (f, label, body, open = false) => `<details class="kfold" id="k-${f}"${open ? " open" : ""}><summary><h2>${esc(label)}</h2></summary><div class="kfold-body${open ? "" : " detail"}">${body}</div></details>`;
 const kaguraFolds = (k, info, schedule) => `<section class="kagura-folds" aria-label="${esc(k)}のくわしい情報">${KAGURA_SECTIONS.map(([f, t]) => kfold(f, t, kaguraBody(f, info))).join("")}${kfold("schedule", "開催予定", schedule || NO_INFO, true)}</section>${refList(info?.refs)}`;
@@ -189,10 +210,10 @@ const noteBlock = (e) => {
   const n = eventNotes.find((x) => x.ids.includes(e.id));
   if (!n) return "";
   const local = n.local?.[e.id];
-  return `<section class="detail note"><h2>この開催のポイント</h2>${[...(n.paras ?? []), ...(local ? [local] : [])].map((t) => `<p>${esc(t)}</p>`).join("")}<ul>${n.points.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>${refList(n.refs)}</section>`;
+  return `<section class="detail note"><h2>この開催のポイント</h2>${[...(n.paras ?? []), ...(local ? [local] : [])].map((t) => `<p>${cl(t)}</p>`).join("")}<ul>${n.points.map((t) => `<li>${cl(t)}</li>`).join("")}</ul>${refList(n.refs)}</section>`;
 };
 // 都道府県ページの解説
-const prefDetail = (p) => { const i = prefInfo[p]; return i ? `<section class="detail"><h2>${esc(p)}の神楽について</h2>${i.paras.map((t) => `<p>${esc(t)}</p>`).join("")}${refList(i.refs)}</section>` : ""; };
+const prefDetail = (p) => { const i = prefInfo[p]; return i ? `<section class="detail"><h2>${esc(p)}の神楽について</h2>${i.paras.map((t) => `<p>${cl(t)}</p>`).join("")}${refList(i.refs)}</section>` : ""; };
 const SEO = cfg.seo ?? {};
 // 検索結果の説明文は、全角で80〜120字くらいが、読まれやすい長さ。長すぎるものは、文の切れ目で切る
 const clip = (s, n = 118) => { s = String(s).replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const i = cut.lastIndexOf("。"); return (i > n * 0.5 ? cut.slice(0, i + 1) : cut.slice(0, n - 1) + "…"); };
@@ -355,10 +376,10 @@ const VC_NOTE = "じゃらんの広告表示時には外部への通信が発生
 const descParas = (s = "") => {
   const sentences = String(s).match(/[^。]+。?/g)?.map((x) => x.trim()).filter(Boolean) ?? [];
   if (!sentences.length) return "";
-  if (String(s).length <= 90 || sentences.length < 3) return `<p>${esc(s)}</p>`;
+  if (String(s).length <= 90 || sentences.length < 3) return `<p>${cl(s)}</p>`;
   const out = [];
   for (let i = 0; i < sentences.length; i += 2) out.push(sentences.slice(i, i + 2).join(""));
-  return out.map((t) => `<p>${esc(t)}</p>`).join("");
+  return out.map((t) => `<p>${cl(t)}</p>`).join("");
 };
 // ページ下の注記: ほかの場所(宿の枠の条件、各広告の枠の「PR」、免責事項のページ)で伝わっている注意はくり返さない。
 // 広告の注記は、ページごとに1行へまとめる(各広告の枠の「PR」はそのまま残る)
@@ -854,7 +875,7 @@ for (const k of kaguras) {
   // 日程の一覧は県のページが受け持つ神楽(広島神楽): 開催予定の欄の先頭に、県のスケジュールへの入口
   const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub.replace(/県$/, ""))}神楽スケジュールを見る</a></section>` : "";
   // 冒頭の要約: 「〇〇とは」と概要(3行ほど)。その下に折り畳みの5つの欄(kaguraFolds)
-  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${esc(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}</section>`;
+  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}</section>`;
   const scheduleHtml = `${hubHtml}${k === "庄内神楽" && !none ? upcomingSummary(list, { formatWhen: whenOf, level: "h3" }) : ""}${listHtml}${reg.length ? `${list.length ? `<p class="mhead">毎週・毎晩の定期公演</p>` : ""}${reg.map((r) => regCard(r, { withTag: false })).join("")}` : ""}${none ? pendingBlock({ label: k, past, near: nearbyUpcoming([...new Set(past.map((e) => e.prefecture).concat(first.prefecture))]), pastId: "k-past", withKagura: false, h: "h3" }) : pastMore(past, { withKagura: false })}`;
   write(`dist/kagura/${k}.html`, layout({
     title: `${title} | ${cfg.siteName}`,

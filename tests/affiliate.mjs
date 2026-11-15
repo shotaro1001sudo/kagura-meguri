@@ -41,9 +41,15 @@ export function affiliateTests({ ok, section, OUT, build }) {
     // 2026-11-15 運営者の依頼: PR枠の上端は、本文の宿の枠(会場周辺の宿・◯◯県の宿など)の上端にそろえる
     // 今週末・今月は、開催がないと宿の枠が出ない(そのときは上から96px)。日付・場所で探すページは探す条件の枠(.finder)、地図で探すページは地図(.mapbox)、
     // 種類で探すページ(kagura/index.html)は最初のカードの並び(.kagura-region .cardgrid)にそろえる
-    const RAIL_ANCHOR = "main .stay, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid";
+    // 2026-11-15 運営者の依頼「全公演ページで統一」: 公演ページ(開催・定期公演)は、どれも 右の列(.d-side)の上端 = 要点の枠(.keyinfo)の上端 にそろえる。
+    // 宿の枠がない公演も、右の列がない終了した開催(要点の枠にそろえる)も、同じ決まりで、上から96px のままにしない
+    const RAIL_ANCHOR = "main .keyinfo, main .stay, main aside.aff, main .finder, main .mapbox, main .kagura-region .cardgrid";
     const kindIndex = cheerio.load(readFileSync(join(dir, "kagura/index.html"), "utf8"));
-    ok(loaded.every(([p, $$]) => (/^(weekend\.html|this-month\.html)/.test(p) || $$(RAIL_ANCHOR).length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")) && readFileSync("scripts/client/side-rail.js", "utf8").includes(`"${RAIL_ANCHOR}"`), "PR枠の上端を宿の枠(日付・場所で探すページは探す条件の枠、地図で探すページは地図)にそろえるスクリプトを読み込み、その枠がページにある(動かないときは上から96px)", railPages.join(" "));
+    const railJs = readFileSync("scripts/client/side-rail.js", "utf8");
+    ok(loaded.every(([p, $$]) => (/^(weekend\.html|this-month\.html)/.test(p) || $$("main .d-side").length >= 1 || $$(RAIL_ANCHOR).length >= 1) && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top"))) && /top:var\(--rail-top,96px\)/.test(readFileSync("scripts/style.css", "utf8")) && railJs.includes(`document.querySelector("main .d-side") ||`) && railJs.includes(`"${RAIL_ANCHOR}"`), "PR枠の上端を本文の枠(公演ページは右の列と要点の枠、日付・場所で探すページは探す条件の枠、地図で探すページは地図)にそろえるスクリプトを読み込み、その枠がページにある(動かないときは上から96px)", railPages.join(" "));
+    { const eventPages = [...readdirSync(join(dir, "events")).map((f) => `events/${f}`), ...readdirSync(join(dir, "regular")).map((f) => `regular/${f}`)].filter((p) => p.endsWith(".html")).map((p) => [p, cheerio.load(readFileSync(join(dir, p), "utf8"))]);
+      const bad = eventPages.filter(([, $$]) => !(rails($$).length === 2 && $$("main .keyinfo").length === 1 && $$("script").toArray().some((s) => $$(s).html().includes("--rail-top")))).map(([p]) => p);
+      ok(eventPages.length >= 3 && bad.length === 0 && eventPages.some(([, $$]) => $$("main .d-side").length === 0) && eventPages.some(([, $$]) => $$("main .d-side").length === 1), "公演ページは、開催中・終了・定期公演のどれも、PR枠を同じ決まり(要点の枠・右の列の上端)でそろえられる", bad.join(" ")); }
     ok(rails(kindIndex).length === 2 && kindIndex(RAIL_ANCHOR).first().is(".cardgrid") && kindIndex("main .kagura-region").first().find(".cardgrid .card").length >= 1 && kindIndex("script").toArray().some((s) => kindIndex(s).html().includes("--rail-top")), "種類で探すページのPR枠は、上端を最初のカードの並びにそろえる(2026-11-15 運営者の依頼)");
     { // ページごとの並び(RAIL_ORDER): 探すページ4つは、左右に4つずつ・同じバナーは1ページに1回。同意がなくても出る楽天のバナーが、左右に2つ以上残る
       const ids = ($$, s) => $$(`.side-rail-${s} .rail-banner`).toArray().map((x) => $$(x).attr("data-goatcounter-click").replace(/^rail-[a-z]+\//, ""));
