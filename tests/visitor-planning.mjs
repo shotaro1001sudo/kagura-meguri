@@ -6,6 +6,7 @@ import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import {JSDOM,VirtualConsole} from 'jsdom';
 import {CARSHARE_BANNER,RENTAL_BANNER,EXPERIENCE_BANNER,experienceCard,rentalSearch,validOffer,offersFor,offerCards,experiences,experiencesFor,experienceSection,experienceRegions,experienceDirectory,planningLinks} from '../scripts/lib/visitor-planning.mjs';
 import {PREFECTURES,REGIONS} from '../scripts/lib/util.mjs';
+import {VC} from '../scripts/lib/valuecommerce.mjs';
 
 export function visitorPlanningTests({ok,section,OUT,build}) {
   section('観覧準備3企画: 広告の個別承認・期限・対象地域・安全なURL');
@@ -50,7 +51,7 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
     const expected=experienceRegions.find(x=>x.prefecture===prefecture);
     ok(new URL(page('#nearby-experiences a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&page('h2').text().includes(prefecture),`${prefecture}: 開催県の体験検索を引き継ぐ`);
     const card=cheerio.load(planningLinks({prefecture},today,{sid:'3784232',pid:'892732911',allowed:true}));
-    ok(card('.planning-links>a').length===2&&card('.planning-links>#nearby-experiences').length===1&&new URL(card('#nearby-experiences a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&!card.html().includes('href="#nearby-experiences"'),`${prefecture}: 公演の「周辺体験」のカードの中で、当該県の体験を探せる`);
+    ok(card('.planning-links>a').length===2&&card('.planning-links>#nearby-experiences').length===1&&new URL(card('#nearby-experiences .vc-experience a').first().attr('href'),'https://kagurameguri.jp').searchParams.get('vc_url')===expected.url&&!card.html().includes('href="#nearby-experiences"'),`${prefecture}: 公演の「周辺体験」のカードの中で、当該県の体験を探せる`);
   }
   const aff={sid:'3784232',pid:'892732911',allowed:true},affPage=cheerio.load(experienceSection({prefecture:'高知県'},today,aff)),affLink=affPage('#nearby-experiences a').first(),kochi=experienceRegions.find(x=>x.prefecture==='高知県');
   ok(affLink.attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid=892732911&vc_url='+encodeURIComponent(kochi.url)&&affLink.attr('rel').includes('sponsored')&&affPage.text().includes('アフィリエイトリンク')&&!affPage.text().includes('広告リンクではありません'),'体験用pidがあれば、県の体験一覧をバリューコマース経由の広告リンクとして明示する');
@@ -86,7 +87,13 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(prefActions.children().length===2&&prefActions.children().first().is('[data-vc-ad]')&&prefActions.children().last().is('a.nearby-more[href="/experiences.html#experience-pref-340000"]'),'都道府県のページの周辺体験: 体験検索のボタンと、その下のほかの都道府県への入口');
   // 公演のページのカード: 主ボタン(体験検索)と、区切りの下の小さな入口(ほかの都道府県・施設紹介例)
   const nearbyCard=cheerio.load(planningLinks(context,today,aff))('#nearby-experiences'),nearbySub=nearbyCard.children('.nearby-sub');
-  ok(nearbyCard.children('.nearby-main').children('[data-vc-ad]').length===1&&nearbySub.children('a.nearby-more').length===1&&nearbySub.children('details.pc-more').children('summary').toArray().some(x=>x.children.map(c=>c.data).join('')==='開催地域での施設紹介例')&&nearbyCard.children('p').length===0,'公演のページの周辺体験: 体験検索を主ボタンにし、ほかの都道府県と施設紹介例を区切りの下にそろえる');
+  ok(nearbyCard.children('.nearby-main').children('[data-vc-ad].vc-experience').length===1&&nearbySub.children('a.nearby-more').length===1&&nearbySub.children('details.pc-more').children('summary').toArray().some(x=>x.children.map(c=>c.data).join('')==='開催地域での施設紹介例')&&nearbyCard.children('p').length===0,'公演のページの周辺体験: 体験検索を主ボタンにし、ほかの都道府県と施設紹介例を区切りの下にそろえる');
+  // 2026-11-15 運営者の依頼: 周辺体験のカードに、じゃらん遊び・体験の画像バナー(県で探すボタンの上)と、ほかの体験の予約サービス(アソビュー!)のバナーを出す。どちらもバリューコマースの発行コードのまま、同意の仕組み(vcTag)の中
+  { const main=nearbyCard.children('.nearby-main').children(),jb=main.first(),av=nearbyCard.children('.nearby-others').children('[data-vc-ad="asoview"]');
+    const issued=(el,kind)=>el.find('a').attr('href')==='//ck.jp.ap.valuecommerce.com/servlet/referral?sid=3784232&pid='+VC[kind]&&el.find('img').attr('src')==='//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=3784232&pid='+VC[kind]&&el.find('a').attr('rel').includes('sponsored')&&!!el.find('img').attr('alt')&&el.is('.vc-ad.nearby-banner')&&el.attr('data-affiliate-category')==='experiences'&&el.attr('data-affiliate-placement')==='nearby_experiences'&&/^[-a-z0-9]{1,48}$/.test(el.attr('data-affiliate-id'));
+    ok(main.length===2&&jb.is('[data-vc-ad="activityBanner"]')&&issued(jb,'activityBanner')&&jb.attr('data-affiliate-partner')==='vc-jalan-activity'&&main.last().is('.vc-experience'),'周辺体験のカード: じゃらん遊び・体験の画像バナーを、県で探すボタンの上に出す(発行コードのまま)');
+    ok(av.length===1&&issued(av,'asoview')&&av.attr('data-affiliate-partner')==='vc-asoview'&&nearbyCard.find('.pr-foot').length===1,'周辺体験のカード: ほかの体験の予約サービスとして、アソビュー!のバナーを出す(発行コードのまま。「PR」は枠に1つ)');
+    ok(!planningLinks(context,today,{sid:'3784232',pid:'892732911',allowed:false}).includes('data-vc-ad'),'周辺体験のカード: バリューコマースを出せない構成では、じゃらん・アソビューのバナーも出さない'); }
   const home=cheerio.load(readFileSync(join(OUT,'index.html'),'utf8')),guide=cheerio.load(readFileSync(join(OUT,'guide.html'),'utf8'));
   ok(home('.planning-links a').length===3&&home('.home-discovery').next().hasClass('home-hero'),'公演探しを保持し、3つの観覧準備入口を用意');
   const fullEvent=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),weekly=cheerio.load(readFileSync(join(OUT,'regular/r-weekly.html'),'utf8'));
