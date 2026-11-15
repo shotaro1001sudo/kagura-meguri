@@ -1,7 +1,7 @@
-// 一覧の途中にはさむ帯の、先頭の中身(2026-11-15 運営者の依頼。案1「直前の5件に合わせた宿」・案2「協賛の募集」・案4「何本目かで分けて数える」)。
+// 一覧の途中にはさむ帯の、先頭の中身(2026-11-15 運営者の依頼。同日に「案3だけ」= 何本目かで中身を分ける形にした。帯ごとの見出しとバナーは side-rail.mjs の INLIST_THEMES)。
 //
 // 毎日のビルドで、そのときの一覧から作り直す。運営者が手で直すところはない:
-// - 宿: 帯の直前の5件で、いちばん多い場所(同じ数なら先に出てくる場所)の、いちばん早い日の1泊・大人2名の検索を、楽天トラベルで開く。
+// - 宿(1本目の帯だけ): 帯の直前の5件で、いちばん多い場所(同じ数なら先に出てくる場所)の、いちばん早い日の1泊・大人2名の検索を、楽天トラベルで開く。
 //   場所は会場の市区町村(郡は外す。STAY_AREA の呼びかえも同じ)。日付が今日より前(続いている開催)なら、今日にする。
 // - 協賛: その5件のどれかが、契約中の協賛(data/sponsors.json の area など)の地域に当てはまれば、その協賛を出す。
 //   契約を登録すれば、次のビルドから自動で出る(期間が終われば自動で消える)。
@@ -29,7 +29,7 @@ export function inlistLead(items, k, total, o) {
     if (!first[p] || d < first[p]) first[p] = d;
     if (!best || n[p] > n[best]) best = p;
   }
-  if (best && o.affId) {
+  if (k === 0 && best && o.affId) {
     var day = first[best] < o.today ? o.today : first[best];
     var t = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10))), u = new Date(t.getTime() + 864e5);
     var dest = "https://kw.travel.rakuten.co.jp/keyword/Search.do?" + ["charset=utf-8", "f_query=" + encodeURIComponent(best),

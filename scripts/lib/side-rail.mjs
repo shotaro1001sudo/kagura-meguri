@@ -109,21 +109,35 @@ const STRIP_DEFAULT = ["jr-hotel", "rentacar", "bus", "experiences", "onsen-rote
  *   バリューコマースの広告は、ページの終わりの帯に1回だけ出る)。
  * - はさむたびに、先頭のバナーを1つずつずらす(rotate。毎回同じ絵が先頭に来ないように)。
  * - 見出しは h2 にしない(一覧の途中に、同じ見出しが何度も入らないように)。
- * - 先頭(lead)に、直前の5件に合わせた宿・協賛(または協賛の募集)を置く(同日の依頼。scripts/lib/inlist-pr.mjs)。
+ * - 何本目かで中身を分ける(INLIST_THEMES)。先頭(lead)のマスは scripts/lib/inlist-pr.mjs。
  */
 export const STRIP_EVERY = 5;
-// tag: クリックの名前の、バナーのIDの前につける印(ふだんは strip。一覧の途中の帯は list1・list2…で、何本目かを見分ける。inlist-pr.mjs)
-export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip" }) {
+/**
+ * 一覧の途中の帯は、何本目かで中身を分ける(2026-11-15 運営者の依頼「案3」)。
+ * 1本目: 宿(直前の5件に合わせた宿の検索 + 宿のバナー)、2本目: 地域の協賛(なければ協賛の募集。バナーは入れない)、
+ * 3本目: 体験・行き方、4本目から: そのページの帯と同じバナー(先頭を1つずつずらす)。
+ * 先頭のマス(宿・協賛・募集)は inlist-pr.mjs の inlistLead が決める。
+ */
+export const INLIST_THEMES = [
+  { h: "宿を探す", ids: ["onsen-rotenburo", "onsen-gensen", "station"] },
+  { h: "地域の協賛", ids: [] },
+  { h: "体験・行き方", ids: ["experiences", "rentacar", "bus"] },
+];
+/** k 本目(0 から)の帯の見出しとバナー。rotate: 先頭をずらす数 */
+export const inlistTheme = (path, k) => (k < INLIST_THEMES.length ? { ...INLIST_THEMES[k], rotate: 0 } : { h: "旅の手配", ids: stripIdsFor(path), rotate: k - INLIST_THEMES.length });
+// tag: クリックの名前の、バナーのIDの前につける印(ふだんは strip。一覧の途中の帯は list1・list2…で、何本目かを見分ける。inlist-pr.mjs)。heading: 一覧の途中の帯の見出し
+export function prStripHtml({ on, attrs, esc, lead = [], wide = true, ids = STRIP_ORDER, inlist = false, rotate = 0, tag = "strip", heading = "旅の手配" }) {
   let list = ids.map((id) => RAIL_BANNERS.find((b) => b.id === id)).filter((b) => on[b.partner]);
   if (inlist) {
     list = list.filter((b) => !b.vc);
-    if (list.length < 2) return "";
-    const k = rotate % list.length;
+    if (!lead.length && list.length < 2) return "";
+    const k = list.length ? rotate % list.length : 0;
     list = [...list.slice(k), ...list.slice(0, k)];
   }
   const banners = list.map((b) => b.vc
     ? vcTag({ kind: b.vc, className: "strip-banner", meta: { "data-goatcounter-click": `rail-${b.partner}/${tag}-${b.id}`, "data-banner-partner": b.partner, "data-vc-media": stripMedia(wide) } })
     : `<a class="strip-banner" href="${esc(b.url)}" ${attrs(true, `rail-${b.partner}/${tag}-${b.id}`)} data-banner-partner="${b.partner}"><img src="${esc(b.imageUrl)}" alt="${esc(b.alt)}" width="${b.size}" height="${b.size}" loading="lazy" decoding="async"></a>`);
   const items = [...lead, ...banners];
-  return items.length ? `<aside class="pr-strip${wide ? " w" : ""}${inlist ? " inlist" : ""}" aria-label="旅の手配(広告)">${inlist ? '<p class="pr-strip-h">旅の手配</p>' : "<h2>旅の手配</h2>"}<div class="pr-strip-row" role="group" aria-label="旅の手配の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
+  const h = inlist ? heading : "旅の手配";
+  return items.length ? `<aside class="pr-strip${wide ? " w" : ""}${inlist ? " inlist" : ""}" aria-label="${h}(広告)">${inlist ? `<p class="pr-strip-h">${h}</p>` : `<h2>${h}</h2>`}<div class="pr-strip-row" role="group" aria-label="${h}の広告(横に送って見られます)" tabindex="0">${items.join("")}</div><span class="pr pr-foot">PR</span></aside>` : "";
 }

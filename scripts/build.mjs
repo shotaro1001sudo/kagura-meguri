@@ -28,7 +28,7 @@ import { pngToIco } from "./lib/ico.mjs";
 import { weekendRange, rangeLabel, mdLabel, regularOn, isDaily, addDays, holidayName, regularStatus, regularNextDates, regularNominalDate, PAUSE_DAYS } from "./lib/dates.mjs";
 import { VC, vcEnabled } from "./lib/valuecommerce.mjs";
 import { stayBannersHtml } from "./lib/stay-banners.mjs";
-import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS } from "./lib/side-rail.mjs";
+import { sideRailHtml, railPage, prStripHtml, stripIdsFor, STRIP_EVERY, RAIL_BANNERS, INLIST_THEMES, inlistTheme } from "./lib/side-rail.mjs";
 import { inlistLead, inlistCount } from "./lib/inlist-pr.mjs";
 import { phraseParts, topicGroups, phrasesHtml } from "./lib/phrases.mjs";
 import { overnightKagura } from "./lib/overnight.mjs";
@@ -249,7 +249,8 @@ const prStrip = (x, placement) => prStripHtml({ on: { rakuten: rakutenOn, jalan:
 const prStripFor = (path, { wide = false, skip = [] } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path, { skip }) });
 // 一覧の途中にはさむ帯(2026-11-15 運営者の依頼)。k: 何本目か(先頭のバナーをずらす)。バナーは楽天のものだけ。
 // 先頭(lead)に、直前の5件に合わせた宿と、協賛(なければ協賛の募集)を置く(inlist-pr.mjs)。毎日のビルドで、その日の一覧から作り直す
-const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}` } = {}) => prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: stripIdsFor(path), inlist: true, rotate: k, lead, tag });
+// 何本目かで中身を分ける(同日「案3」。1本目 宿・2本目 協賛・3本目 体験と行き方・4本目から そのページの帯のバナー。INLIST_THEMES)
+const inlistStrip = (path, k, { wide = false, lead = [], tag = `list${k + 1}` } = {}) => { const t = inlistTheme(path, k); return prStripHtml({ on: { rakuten: rakutenOn, jalan: jalanOn, jtb: vcRailOn, nta: vcRailOn }, attrs: affAttrs, esc, wide, ids: t.ids, inlist: true, rotate: t.rotate, lead, tag, heading: t.h }); };
 // 協賛の募集のマス(料金は config.json の sponsorPrices。@N@ は帯の番号)
 const recruitTile = () => { const m = cfg.sponsorPrices?.monthly; const name = "sponsor-recruit/list@N@"; return `<a class="strip-banner strip-text strip-recruit" href="/sponsor.html" data-goatcounter-click="${name}" data-goatcounter-title="${name}"><b>ここに、地域の宿・お店の案内を載せませんか</b>${Number.isFinite(m) && m > 0 ? `<small>協賛枠 月額${m.toLocaleString("ja-JP")}円から</small>` : "<small>広告・協賛のご案内</small>"}</a>`; };
 // 一覧の1件の、帯の中身を決めるための値(場所・日付・協賛の当てはまり)。page: event か regular
@@ -741,10 +742,10 @@ ${clientJs("map")}`,
 // 「いつ」(今週末・今月・来月・日付の範囲)と「どこ」(地方 → 都道府県)で、開催予定を絞り込む。条件は URL に残す(共有・戻るで同じ結果)
 const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some((e) => e.prefecture === p))]).filter(([, ps]) => ps.length);
 // 検索の結果の途中にはさむ帯(スクリプトの中に文字として持つ。「<」は、スクリプトの終わりと見まちがえられないように書き換える)。
-// 帯の形は、先頭のバナーをずらした数だけ持つ。先頭のマス(@LEAD@: 直前の5件に合わせた宿・協賛)と帯の番号(@N@)は、ブラウザで検索の結果から入れる(inlist-pr.mjs の inlistLead を、そのままスクリプトに入れる)
+// 帯の形は、1〜3本目(宿・協賛・体験と行き方)と、4本目からの形(先頭のバナーをずらした数だけ)を持つ。先頭のマス(@LEAD@: 直前の5件に合わせた宿・協賛)と帯の番号(@N@)は、ブラウザで検索の結果から入れる(inlist-pr.mjs の inlistLead を、そのままスクリプトに入れる)
 const jsVal = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
 const finderBannerN = stripIdsFor("/calendar.html").filter((id) => !RAIL_BANNERS.find((b) => b.id === id)?.vc).length;
-const finderStrips = jsVal(Array.from({ length: finderBannerN }, (_, k) => inlistStrip("/calendar.html", k, { lead: ["@LEAD@"], tag: "list@N@" })).filter(Boolean));
+const finderStrips = jsVal(rakutenOn ? Array.from({ length: INLIST_THEMES.length + finderBannerN }, (_, k) => inlistStrip("/calendar.html", k, { lead: ["@LEAD@"], tag: "list@N@" })) : []);
 // 契約中の協賛が当てはまる開催だけ(開催のID → 協賛のマス)。協賛がなければ空
 const finderSponsors = jsVal(Object.fromEntries(upcoming.map((e) => [e.id, listSponsorTile(sponsorsNow, "event", e, { esc })]).filter(([, h]) => h)));
 const finderLead = `var LO={affId:${jsVal(rakutenOn ? a.rakutenAffiliateId : "")},today:'',stayArea:${jsVal(STAY_AREA)},recruit:${jsVal(recruitTile())},esc:esc,sponsorTile:function(x){return SP[x.id]||''}},SP=${finderSponsors};
@@ -781,6 +782,7 @@ var kw=document.getElementById('keyword');
 function normalize(v){return String(v||'').normalize('NFKC').toLowerCase().trim()}
 var list=[],loaded=false,failed=false,when='all',tab='dp',regionOf={};
 var strips=${finderStrips},EVERY=${STRIP_EVERY};
+var THEMES=${INLIST_THEMES.length};
 var tabs=[].slice.call(f.querySelectorAll('[role=tab]'));
 function setTab(v,focus){tab=v;tabs.forEach(function(t){var on=t.id==='tab-'+v;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on;if(on&&focus)t.focus()})}
 [].forEach.call(pf.options,function(o){if(o.value)regionOf[o.value]=o.dataset.r});
@@ -820,7 +822,7 @@ function draw(){
   out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="monthlist">'+rows(byM[m])+'</ol></details>'}).join('');
   // 5件ごとに、帯をはさむ(その月に、まだ続きがあるときだけ)
   // 帯の先頭には、その帯の直前の5件に合わせた宿・協賛を入れる。帯の番号(list1・list2…)は、クリックの名前に入る
-  function rows(xs){var o='',tot=Math.max(0,Math.floor((xs.length-1)/EVERY));LO.today=ymd(new Date());xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=Math.floor(i/EVERY),its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO).join('');o+='<li class="pr-li">'+strips[k%strips.length].replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
+  function rows(xs){var o='',tot=Math.max(0,Math.floor((xs.length-1)/EVERY));LO.today=ymd(new Date());xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=Math.floor(i/EVERY),its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO).join(''),v=strips[k<THEMES?k:THEMES+(k-THEMES)%Math.max(1,strips.length-THEMES)]||'';if(v&&(h||v.indexOf('class="strip-banner')>=0))o+='<li class="pr-li">'+v.replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
     return '<li><span class="md">'+(d.getMonth()+1)+'月'+d.getDate()+'日<small>('+WD[d.getDay()]+')</small></span><span><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a><span class="meta"><span class="sl"><span class="sl-in">'+(x.kagura?'<span>'+esc(x.kagura)+'</span>':'')+'<span>'+esc(x.prefecture)+esc(x.city||'')+'</span>'+(x.timeUnknown?'':'<span><span class="nw">'+esc(x.sessions&&x.sessions.length?x.sessions.join('・'):(x.start.slice(11,16).replace(/^0/,'')+'〜'+(x.end&&x.end.slice(0,10)===x.start.slice(0,10)?x.end.slice(11,16).replace(/^0/,''):'')))+'</span></span>')+'</span></span></span><span class="meta comparison-facts"><span><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></span>'+(x.fee?'<span><span class="k">料金:</span><span>'+esc(x.fee)+'</span></span>':'')+(x.reservation&&x.reservation!=='要確認'?'<span><span class="k">予約要否:</span><span>'+esc(x.reservation)+'</span></span>':'')+'</span></span></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
