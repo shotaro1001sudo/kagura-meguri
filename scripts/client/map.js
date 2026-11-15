@@ -70,14 +70,16 @@ document.addEventListener('DOMContentLoaded', function () {
         .sort(function (a, b) { return a.km - b.km || (a.it.ev === b.it.ev ? (a.it.x.start || '') < (b.it.x.start || '') ? -1 : 1 : a.it.ev ? -1 : 1); })
         .slice(0, SHOW);
       if (!list.length) { say.textContent = 'いま地図に出せる開催情報はありません。'; return; }
+      // 1件ずつカード(日付・公演名・会場。日付・場所で探すの結果と同じ形。2026-11-16 運営者の依頼)。近い順の一覧なので、距離と「地図で見る」はカードの下の段に残す
       var row = function (r) {
-        var x = r.it.x, when = r.it.ev ? md(x.start) : '定期公演', href = (r.it.ev ? '/events/' : '/regular/') + esc(x.id) + '.html';
-        return '<li><span class="km">' + kmText(r.km) + '</span><span class="pd">' + when + '</span><a href="' + href + '">' + esc(x.name) + '</a>'
-          + '<span class="meta">' + esc(x.prefecture + (x.city || '') + (x.venue ? '・' + x.venue : '')) + '</span>'
-          + (bySpot[r.k] ? '<button type="button" class="linkbtn nearjump" data-k="' + esc(r.k) + '">地図で見る</button>' : '') + '</li>';
+        var x = r.it.x, href = (r.it.ev ? '/events/' : '/regular/') + esc(x.id) + '.html', t;
+        var date = r.it.ev ? (t = new Date(+x.start.slice(0, 4), +x.start.slice(5, 7) - 1, +x.start.slice(8, 10)), '<small>' + (t.getMonth() + 1) + '月</small><b>' + t.getDate() + '</b><small>' + WD[t.getDay()] + '曜</small>') : '<small>定期</small><b>' + esc(x.badge || '毎') + '</b>';
+        return '<li class="card' + (r.it.ev ? '' : ' reg') + '"><div class="date">' + date + '</div><div><h3><a href="' + href + '">' + esc(x.name) + '</a></h3>'
+          + '<div class="meta event-facts"><div><span class="k">会場:</span><span>' + (x.venue ? esc(x.venue) : '<span class="tbd">未確認</span>') + '</span></div></div>'
+          + '<p class="meta nearmeta"><span class="km">' + kmText(r.km) + '</span>' + (bySpot[r.k] ? '<button type="button" class="linkbtn nearjump" data-k="' + esc(r.k) + '">地図で見る</button>' : '') + '</p></div></li>';
       };
       // 説明の文は出さない(2026-11-14 運営者の依頼)。読み上げには、一覧の見出しへ移って知らせる(画面は動かさない)
-      out.innerHTML = '<h2 id="near-h" tabindex="-1">現在地から近い開催</h2><ol class="nearlist">' + list.map(row).join('') + '</ol>';
+      out.innerHTML = '<h2 id="near-h" tabindex="-1">現在地から近い開催</h2><ol class="fcards nearlist">' + list.map(row).join('') + '</ol>';
       out.hidden = false;
       say.textContent = '';
       var h = d.getElementById('near-h'); if (h && h.focus) h.focus({ preventScroll: true });

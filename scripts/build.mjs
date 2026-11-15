@@ -610,7 +610,8 @@ rmSync(OUT, { recursive: true, force: true });
 // クライアント用の軽量データ (地図・日付と場所の検索)
 const lite = events.map((e) => { const { id, name, kagura, prefecture, city, venue, description, start, end, sessions, lat, lng, fee, timeUnknown } = e; return { id, name, kagura, prefecture, city, venue, description, reservation: reservationLabel(e), start, end, sessions, lat, lng, fee, timeUnknown, up: isUpcoming(e) }; });
 write("dist/events.json", JSON.stringify(lite));
-write("dist/regular.json", JSON.stringify(regular.map(({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }) => ({ id, name, kagura, prefecture, city, venue, schedule, lat, lng }))));
+// badge: カードの日付の段に出す一文字(毎・土など。休演中は「休演中」)。地図の「現在地から近い開催」のカードで使う
+write("dist/regular.json", JSON.stringify(regular.map((r) => { const { id, name, kagura, prefecture, city, venue, schedule, lat, lng } = r; return { id, name, kagura, prefecture, city, venue, schedule, lat, lng, badge: regPause(r) ? "休演中" : r.badge || "毎" }; })));
 
 const PREF_ORDER = REGIONS.flatMap(([, ps]) => ps);
 const byPref = (a, b) => PREF_ORDER.indexOf(a) - PREF_ORDER.indexOf(b);
@@ -736,12 +737,16 @@ const venueList = () => {
   }
   const list = [...groups.values()].sort((a, b) => byPref(a.pref, b.pref) || a.city.localeCompare(b.city, "ja"));
   if (!list.length) return "";
-  const item = (x) => (x.start
-    ? `<span class="md">${esc(mdw(x.start.slice(0, 10)))}</span><a href="/events/${x.id}.html">${esc(x.name)}</a>`
-    : `<span class="md">定期公演</span><a href="/regular/${x.id}.html">${esc(x.name)}</a> <span class="meta">${esc(x.schedule.replace(/[(。].*$/, "").trim())}</span>`);
-  // 県ごとに折りたたむ(長い一覧を、開いた県だけ見せる)
+  // 公演は1件ずつカード(日付・公演名・会場だけ。日付・場所で探すの結果と同じ形。2026-11-16 運営者の依頼)。定期公演の日付の段は、ほかの一覧の定期公演のカードと同じ
+  const item = (x) => {
+    const date = x.start
+      ? (() => { const p = parts(x.start); return `<small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small>`; })()
+      : `<small>定期</small><b>${regPause(x) ? "休演中" : esc(x.badge || "毎")}</b>`;
+    return `<li class="card${x.start ? "" : " reg"}"><div class="date">${date}</div><div><h3><a href="/${x.start ? "events" : "regular"}/${x.id}.html">${namePh(x.name)}</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>${x.venue ? esc(x.venue) : '<span class="tbd">未確認</span>'}</span></div></div></div></li>`;
+  };
+  // 県ごとに折りたたむ(長い一覧を、開いた県だけ見せる)。会場名のボタン(地図をその場所へ動かす)は、カードの上にそのまま置く
   const prefsIn = [...new Set(list.map((g) => g.pref))];
-  const venue = (g) => `<li><button type="button" class="vjump" data-k="${esc(`${g.pref}|${g.city}|${g.venue}`)}" disabled>${esc(g.venue || g.city)}</button><span class="meta"> ${esc(g.pref)}${esc(g.city)}</span><ul class="vitems">${g.items.map((x) => `<li>${item(x)}</li>`).join("")}</ul></li>`;
+  const venue = (g) => `<li><button type="button" class="vjump" data-k="${esc(`${g.pref}|${g.city}|${g.venue}`)}" disabled>${esc(g.venue || g.city)}</button><span class="meta"> ${esc(g.pref)}${esc(g.city)}</span><ol class="fcards vitems">${g.items.map(item).join("")}</ol></li>`;
   return `<h2>会場の一覧</h2><p class="meta">会場名を押すと、地図がその場所へ移動します。</p>${prefsIn.map((p) => { const gs = list.filter((g) => g.pref === p); return `<details class="rgroup"><summary>${esc(p)} <span class="meta">${gs.length}会場</span></summary><ul class="venuelist">${gs.map(venue).join("")}</ul></details>`; }).join("")}`;
 };
 write("dist/map.html", layout({

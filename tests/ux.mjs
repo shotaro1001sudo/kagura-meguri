@@ -52,6 +52,7 @@ export async function uxTests({ ok, section, OUT }) {
   ok(mp(".legend .pin.ev").length === 1 && mp(".legend .pin.reg").length === 1 && mp(".legend .pin.mix").length === 1, "凡例: 日付のある開催・定期公演・両方");
   ok(mp("#maplock").length === 1 && mp("#maplock").attr("hidden") !== undefined, "指で触る端末だけ「地図を動かす」を出す(最初は隠す)");
   ok(mp(".venuelist .vjump[data-k]").length > 0 && mp(".venuelist .vjump").first().attr("disabled") !== undefined, "会場名は、地図へ移るボタン(地図が読めたら押せる)");
+  ok(mp(".venuelist > li").toArray().every((v) => mp(v).children("ol.fcards.vitems").length === 1 && mp(v).find("ol.vitems > li").toArray().every((c) => mp(c).is(".card") && mp(c).find(".date b").length === 1 && mp(c).find("h3 a").length === 1 && mp(c).find(".event-facts > div").length === 1 && mp(c).find(".event-facts").text().startsWith("会場:") && !/料金|予約/.test(mp(c).text()))) && mp(".vitems .md").length === 0, "会場の一覧の公演は、日付・公演名・会場のカード(2026-11-16 運営者の依頼)");
   ok(/#map \.leaflet-tile-pane\{filter:/.test(css) && !/#map\{[^}]*filter:/.test(css), "色の加工は、地図の画像だけ(ピン・吹き出しには、かけない)");
   // ピンのまとめ方を、Leaflet の代わりの小さな部品で確かめる
   const markers = [];
@@ -116,6 +117,8 @@ export async function uxTests({ ok, section, OUT }) {
   ok(nd.getElementById("nearlist").hidden === false && rows.map((li) => li.querySelector("a").textContent).join(",") === "C,R,A,B", "近い順に並べる(同じ場所なら日付のある開催が先、その中は日付順)", rows.map((li) => li.querySelector("a")?.textContent).join(","));
   ok(rows.every((li) => /^(1km未満|約[\d.]+km)$/.test(li.querySelector(".km").textContent)) && /^約\d+km$/.test(rows[3].querySelector(".km").textContent), "距離は「約◯km」(10km 以上は整数、1km 未満は「1km未満」)");
   ok(rows[0].querySelector("a").getAttribute("href") === "/events/c.html" && rows[1].querySelector("a").getAttribute("href") === "/regular/r.html" && !nd.querySelector("#nearlist > .meta"), "各行から開催・定期公演のページへ(一覧の上の説明の文は出さない)");
+  // 2026-11-16 運営者の依頼: 日付・場所で探すと同じカード(日付・公演名・会場)。距離と「地図で見る」は下の段
+  ok(nd.querySelector("#nearlist ol.fcards.nearlist") && rows.every((li) => li.classList.contains("card") && li.querySelector(".date b") && li.querySelectorAll("h3 a").length === 1 && [...li.querySelectorAll(".event-facts>div")].map((x) => x.textContent.slice(0, 3)).join() === "会場:" && li.querySelector(".nearmeta .km") && !/料金|予約/.test(li.textContent)) && rows[1].querySelector(".date small").textContent === "定期", "現在地から近い開催は、日付・公演名・会場のカード(定期公演の日付の段は「定期」)");
   ok(nbtn.disabled === false && nd.getElementById("nearmsg").textContent === "" && nd.activeElement?.id === "near-h", "見つかったら知らせの文は消し、一覧の見出しへ移って読み上げる");
   ok(circles.length === 1 && circles[0].ll[0] === 34.78 && ndom.window.L.map().fit?.o?.maxZoom === 12, "地図に現在地の印をつけ、近い会場が入るように合わせる");
   rows[2].querySelector(".nearjump").click();
