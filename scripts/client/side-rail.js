@@ -3,8 +3,8 @@
 // スクリプトが動かないときは、ずっと 96px(CSS の既定)。
 (() => {
   const rails = document.querySelectorAll(".side-rail");
-  // 日付・場所で探すページは宿の枠がないので、探す条件の枠(.finder)の上端にそろえる
-  const anchor = document.querySelector("main .stay, main aside.aff, main .finder");
+  // 日付・場所で探すページは宿の枠がないので、探す条件の枠(.finder)の上端に、地図で探すページは地図(.mapbox)の上端にそろえる
+  const anchor = document.querySelector("main .stay, main aside.aff, main .finder, main .mapbox");
   if (!rails.length || !anchor) return;
   const place = () => {
     // 開催ページの右の列は画面に付いてくる(上から約97px で止まる)ので、そのあいだも宿の枠と同じ高さになる

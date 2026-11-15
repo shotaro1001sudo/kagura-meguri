@@ -1,6 +1,6 @@
 import { vcTag } from "./valuecommerce.mjs";
 // PC の画面の両サイドの PR 枠(2026-11-15 運営者の依頼)。
-// 出すのは、開催・定期公演・都道府県・神楽の種類のページと、今週末・今月・日付と場所で探すページ(同日に追加)だけ。幅の広い画面だけに出し、スマホや幅のせまい画面では出さない。
+// 出すのは、開催・定期公演・都道府県・神楽の種類のページと、今週末・今月・日付と場所で探す・地図で探すページ(同日に追加)だけ。幅の広い画面だけに出し、スマホや幅のせまい画面では出さない。
 // 画面を下へ動かしても、横に付いてくる。バナーは、1画面に収まる数だけ(高さの足りない画面では、下のものから隠す)。
 //
 // バナーは、楽天アフィリエイトの管理画面で本人のアカウントから発行したものだけ(2026-11-15、Chrome で発行)。
@@ -13,7 +13,7 @@ const rk = ({ hs, me, raw }) => ({
 
 export const RAIL_ISSUED = "2026-11-15";
 
-/** side: 左右のどちらの枠か。並びは、配列の順(上から)。rate は記録だけで、ページには出さない */
+/** side: 左右のどちらの枠か(開催・定期公演・都道府県・神楽の種類のページ)。並びは、配列の順(上から)。rate は記録だけで、ページには出さない */
 export const RAIL_BANNERS = [
   { id: "onsen-rotenburo", side: "left", partner: "rakuten", name: "楽天トラベル", alt: "露天風呂のある宿を楽天トラベルで探す", size: 240, rate: "宿泊 1%",
     ...rk({ hs: "59865281.e4d6d731.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"3","ban":2475223,"amp":false}' }) },
@@ -27,24 +27,34 @@ export const RAIL_BANNERS = [
     ...rk({ hs: "59865392.63f8ca10.585fa57b.dad29d3a", me: "2100017", raw: '{"page":"shop","type":"pict","col":1,"cat":"1","ban":2762506,"amp":false}' }) },
   { id: "experiences", side: "right", partner: "rakuten", name: "楽天トラベル 観光体験", alt: "現地の観光体験を楽天トラベルで予約する", size: 250, rate: "観光体験 2%(専用のバナー経由)",
     ...rk({ hs: "59865479.483ffafe.585fa57b.dad29d3a", me: "2100034", raw: '{"page":"shop","type":"pict","col":1,"cat":1,"ban":2185638,"amp":false}' }) },
+  // ここから下は、探すページ向けに足した楽天トラベルのバナー(2026-11-15 に同じ管理画面で発行。side なし = RAIL_ORDER に書いたページだけに出す)。料率は、管理画面のリンク作成の画面の表示(1.0%)
+  // 絵柄に、日付の決まった催し・割引率・人物の入ったもの(秋冬SALE、5と0のつく日、人気温泉地20%OFF など)は、内容が合わなくなるので選ばない
+  { id: "bus", partner: "rakuten", name: "楽天トラベル 高速バス", alt: "高速バス・観光バスを楽天トラベルで予約する", size: 300, rate: "1%",
+    ...rk({ hs: "598ad61b.b9aefa3b.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"118","ban":2189627,"amp":false}' }) },
+  { id: "tour", partner: "rakuten", name: "楽天トラベル 国内ツアー", alt: "航空券と宿の国内ツアーを楽天トラベルで探す", size: 300, rate: "1%",
+    ...rk({ hs: "598ad703.7cf5a466.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"27","ban":2188663,"amp":false}' }) },
+  { id: "station", partner: "rakuten", name: "楽天トラベル", alt: "駅・空港の名前から宿を楽天トラベルで探す", size: 240, rate: "宿泊 1%",
+    ...rk({ hs: "598ad749.f69e4450.585fa57b.dad29d3a", me: "2100001", raw: '{"page":"shop","type":"pict","col":1,"cat":"63","ban":615648,"amp":false}' }) },
 ];
 
 /**
- * ページごとの並び(上から。2026-11-15 運営者の依頼で、今週末・今月・日付と場所で探すページにも出す)。書いていないページは、RAIL_BANNERS の side と順のまま。
- * 画面の高さで下から隠れ、バリューコマースの広告(じゃらん・JTB・日本旅行)は広告の同意がないと出ないので、
- * どの並びも、上のほうに「そのページの人に合うもの」を置き、同意がなくても楽天のバナーが左右に2つずつ残るようにする。
- * - 今週末: もうすぐ出かける人。右は 車(レンタカー)→ 現地の体験 → JR+ホテル。左は 直前の予約に強いじゃらんを先に。右の列の「週末の宿を探す」の横に、宿ではないものを並べる
- * - 今月: 数週間先の予定を立てる人。開催ページと同じ並び(右は JR+ホテル → レンタカー → 体験)
- * - 日付・場所で探す: 先の日付・遠くの地域まで調べる人。右は JR+ホテル → 体験 → レンタカー。左は 旅行会社のJTBを先に
+ * ページごとの並び(上から。2026-11-15 運営者の依頼で、今週末・今月・日付と場所で探す・地図で探すページにも出す)。書いていないページは、RAIL_BANNERS の side と順のまま。
+ * 画面の高さで下から隠れ(高さ 900px 未満は上から3つ、720px 未満は2つ)、バリューコマースの広告(じゃらん・JTB・日本旅行)は広告の同意がないと出ないので、
+ * どの並びも、上のほうに「そのページの人に合うもの」を置き、同意がなくても楽天のバナーが左右に2つ以上残るようにする。
+ * - 今週末: もうすぐ出かける人。右は 行き方(レンタカー → 高速バス)→ 現地の体験 → JR+ホテル。左は 直前の予約に強いじゃらんを先に。右の列の「週末の宿を探す」の横に、宿ではないものを並べる
+ * - 今月: 数週間先の予定を立てる人。右は JR+ホテル → レンタカー → 高速バス → 体験。左は開催ページと同じ
+ * - 日付・場所で探す: 先の日付・遠くの地域まで調べる人。右は JR+ホテル → 国内ツアー(航空券+宿)→ 体験 → レンタカー。左は 旅行会社のJTB → 駅・空港から宿を検索
+ * - 地図で探す: 場所から探す人。右は 行き方(レンタカー → 高速バス → JR+ホテル)→ 体験。左は 駅・空港から宿を検索 を先に
  */
 export const RAIL_ORDER = {
-  "/weekend.html": { left: ["ryokan", "onsen-rotenburo", "onsen", "onsen-gensen"], right: ["rentacar", "experiences", "jr-hotel"] },
-  "/calendar.html": { left: ["onsen", "onsen-rotenburo", "ryokan", "onsen-gensen"], right: ["jr-hotel", "experiences", "rentacar"] },
+  "/weekend.html": { left: ["ryokan", "onsen-rotenburo", "onsen", "onsen-gensen"], right: ["rentacar", "bus", "experiences", "jr-hotel"] },
+  "/this-month.html": { left: ["onsen-rotenburo", "ryokan", "onsen", "onsen-gensen"], right: ["jr-hotel", "rentacar", "bus", "experiences"] },
+  "/calendar.html": { left: ["onsen", "station", "ryokan", "onsen-rotenburo"], right: ["jr-hotel", "tour", "experiences", "rentacar"] },
+  "/map.html": { left: ["station", "ryokan", "onsen-rotenburo", "onsen"], right: ["rentacar", "bus", "jr-hotel", "experiences"] },
 };
-const RAIL_EXTRA_PAGES = ["/weekend.html", "/this-month.html", "/calendar.html"];
 
-/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類と、今週末・今月・日付と場所で探す) */
-export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path) || RAIL_EXTRA_PAGES.includes(path);
+/** PR 枠を出すページか(開催・定期公演・都道府県・神楽の種類と、今週末・今月・日付と場所で探す・地図で探す) */
+export const railPage = (path) => /^\/(events|regular|pref|kagura)\//.test(path) || Object.hasOwn(RAIL_ORDER, path);
 
 /** そのページの、左右それぞれのバナー(上から) */
 export const railBannersFor = (path, s) => RAIL_ORDER[path]
