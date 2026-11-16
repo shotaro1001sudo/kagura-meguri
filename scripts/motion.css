@@ -89,6 +89,19 @@
   html{scroll-behavior:smooth}
 }
 
+/* ---------- 5b. トップの入口の札(2026-11-16 運営者の依頼「札っぽい動きに」) ----------
+   札は、上の縁の真ん中を支点に吊られている。ページが現れたあと1回だけ、風が通ったように左から順に小さく揺れて止まる(スマホでも見える)。
+   PCでは、指先が触れると、もう一度少し大きく揺れる。押すと、少し沈む。浮き上がり・拡大はしない。動きを減らす設定では揺れない(6.) */
+@keyframes fuda-breeze{0%,100%{rotate:0deg}20%{rotate:1.6deg}45%{rotate:-1.1deg}68%{rotate:.6deg}86%{rotate:-.2deg}}
+@keyframes fuda-swing{0%,100%{rotate:0deg}18%{rotate:2.6deg}40%{rotate:-1.8deg}62%{rotate:1deg}82%{rotate:-.4deg}}
+.home-discovery .quick a{transform-origin:50% 0}
+.home-discovery .quick a:nth-child(2){--fi:1}.home-discovery .quick a:nth-child(3){--fi:2}.home-discovery .quick a:nth-child(4){--fi:3}
+.js .home-discovery .quick a{animation:fuda-breeze 1.6s ease-in-out calc(var(--sd,0s) + .6s + var(--fi,0)*.12s)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .home-discovery .quick a:hover,.js .home-discovery .quick a:hover{animation:fuda-swing 1.3s ease-in-out}
+}
+.home-discovery .quick a:active{translate:0 2px}
+
 /* ---------- 6. 動きを減らす設定のとき: すべて止める(念のための二重の保険) ---------- */
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}

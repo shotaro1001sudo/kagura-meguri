@@ -636,11 +636,13 @@ const tmRegs = regularDates(monthDays), tmDaily = dailyIn(monthDays);
 const nextMk = addDays(monthEnd, 1).slice(0, 7);
 const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
 // トップの入口: 縦書きの札(2026-11-16 運営者が案Aを選び、地図の札も足した)。
-// 札の左の小さな添え書きは、今週末は日付、今月は残りの件数(毎日の更新で変わる)。縦書きの中の数字は、横に倒さず1文字分に収める(.tcy)
+// 札の左の小さな添え書きは、今週末・今月とも日付の期間(今月は今日から月末まで。2026-11-16 運営者の依頼)。毎日の更新で変わる。
+// 縦書きの中の数字は、横に倒さず1文字分に収める(.tcy)
 const tcy = (s) => String(s).replace(/\d+/g, (n) => `<span class="tcy">${n}</span>`);
+const dayRange = (a, b) => tcy(a === b ? `${+a.slice(8, 10)}日` : `${+a.slice(8, 10)}日〜${+b.slice(8, 10)}日`);
 const fudaLinks = [
-  ["/weekend.html", "今週末の神楽", tcy(`${+wk.start.slice(8, 10)}日〜${+wk.end.slice(8, 10)}日`)],
-  ["/this-month.html", "今月の神楽", tmEvents.length ? tcy(`あと${tmEvents.length}件`) : "来月の予定も"],
+  ["/weekend.html", "今週末の神楽", dayRange(wk.start, wk.end)],
+  ["/this-month.html", "今月の神楽", dayRange(today, monthEnd)],
   ["/calendar.html", "日付・場所で探す", "県と日付で"],
   ["/map.html", "地図で探す", "近くの会場"],
 ].map(([href, label, note]) => `<a href="${href}"><b>${label}</b><small>${note}</small></a>`).join("");
