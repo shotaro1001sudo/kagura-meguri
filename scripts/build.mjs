@@ -646,7 +646,9 @@ const fudaLinks = [
   // 名前が長い(2026-11-16 運営者の依頼で「日付・会場・キーワードから探す」に統一)ので、2行に分け、添え書きは付けない(名前で何ができるかが分かる)
   ["/calendar.html", "日付・会場・<br>キーワードから探す", ""],
   ["/map.html", "地図で探す", "近くの会場"],
-].map(([href, label, note]) => `<a href="${href}"><b>${label}</b>${note ? `<small>${note}</small>` : ""}</a>`).join("");
+  // 種類の札は PC だけ(2026-11-16 運営者の依頼)。スマホは4枚で幅がいっぱいなので出さない(.pc-only)
+  ["/kagura/", "種類で探す", "流派・系統", "pc-only"],
+].map(([href, label, note, cls]) => `<a href="${href}"${cls ? ` class="${cls}"` : ""}><b>${label}</b>${note ? `<small>${note}</small>` : ""}</a>`).join("");
 
 rmSync(OUT, { recursive: true, force: true });
 

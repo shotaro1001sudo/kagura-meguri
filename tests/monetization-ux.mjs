@@ -20,11 +20,12 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "初訪問で探し始められるよう、日付・地域の検索入口をヒーローより前に出す");
   ok(home(".quick a[href='/calendar.html']").length === 1 && home("main h2").filter((_, h) => home(h).text() === "都道府県で探す").length === 1,
     "日付・場所の検索は上部の入口に、都道府県は下部の一覧に、1か所ずつ置く");
-  ok(home(".quick a").length === 4 &&
+  ok(home(".quick a").length === 5 &&
     home(".quick a[href='/weekend.html']").length === 1 &&
     home(".quick a[href='/this-month.html']").length === 1 &&
-    home(".quick a[href='/map.html']").length === 1,
-    "今週末・今月・日付地域検索・地図の4つの入口(縦書きの札)を表示する");
+    home(".quick a[href='/map.html']").length === 1 &&
+    home(".quick a.pc-only[href='/kagura/']").length === 1,
+    "今週末・今月・日付地域検索・地図の4つの入口(縦書きの札)と、PCだけの種類の札を表示する");
   ok(home(".home-hero .copy h1").text().includes("神話を受け継ぐ") &&
     home(".hero-art img").attr("src") === "/hero-pc.webp" &&
     home(".hero-art source").attr("srcset") === "/hero-sp.webp",

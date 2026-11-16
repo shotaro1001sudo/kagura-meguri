@@ -221,6 +221,13 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .home-discovery .quick b::after{content:none}
 .home-discovery .quick small{display:block;writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-2xs);letter-spacing:.14em;white-space:nowrap;color:var(--ac)}
 .home-discovery .quick .tcy{text-combine-upright:all}
+/* PC・タブレットは「種類で探す」を足した5枚。題と札の列を、下の縦書きの見出しの左の端(.copy の margin-left と同じ)から絵の右の端までに広げる(2026-11-16 運営者の依頼)。
+   スマホは4枚のまま(種類の札は出さない) */
+@media(min-width:641px){
+  html:not([lang=en]) .home-discovery{padding-left:clamp(24px,6vw,88px)}
+  .home-discovery .quick{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;max-width:none}
+}
+@media(max-width:640px){.home-discovery .quick a.pc-only{display:none}}
 /* 札(.tag): 種類・県・「定期公演」などの小さな丸い印。カードの下と、見出しの下に置く(開催までの日数 .until と同じ大きさ) */
 .tag{display:inline-block;margin:6px 6px 0 0;padding:3px 12px;border:1px solid var(--line);border-radius:var(--pill);font-size:var(--fs-xs);color:var(--ac2);text-decoration:none;position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 a.tag:hover{color:var(--ac);border-color:var(--ac)}
