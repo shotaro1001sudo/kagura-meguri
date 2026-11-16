@@ -40,6 +40,8 @@ export async function uxTests({ ok, section, OUT }) {
     ok(/\.home-discovery \.quick :is\(b,small\)\{text-align:start\}/.test(css), "札の書き出しは、どの札も上の縁から同じ高さ(2行の札の短い行を、真ん中に下げない)");
     const sp = css.slice(css.search(/@media\(max-width:640px\)\{\s*main \.home-hero/));
     ok(/main \.home-discovery\{padding-bottom:0\}/.test(sp) && /main \.home-hero\{padding-top:6px\}/.test(sp), "スマホのトップ: 絵と見出しを、札のすぐ下に寄せる(2026-11-16 運営者の依頼)");
+    const spEnd = sp.slice(0, sp.indexOf("\n}") + 2);
+    ok(/html:not\(\[lang=en\]\) \.home-hero \.copy\{position:relative;z-index:0;text-shadow:/.test(spEnd) && /html:not\(\[lang=en\]\) \.home-hero \.copy::before\{content:"";position:absolute;[^}]*z-index:-1;[^}]*radial-gradient\([^}]*var\(--bg\)/.test(spEnd), "スマホのトップ: 見出しが絵に重なっても読めるよう、見出しの後ろに地色を丸くにじませる(絵は隠さない。2026-11-16 運営者が案Aを選んだ)");
     ok(/\.scroll-cue\{display:flex;position:absolute;right:6px;[^}]*color:var\(--ac\);[^}]*border:1px solid[^}]*border-radius:var\(--pill\)/.test(css), "スマホのトップの「開催予定へ」は、朱の文字の縦長の札にして目立たせ、左の縦書きの見出しと重ならないよう右下に置く"); }
   const regN = home(".reglist .card").length;
   ok(regN <= 3 ? home("#regmore").length === 0 : home("#regmore").length === 1 && home("#regmore").parent().attr("hidden") !== undefined, "定期公演が4件以上なら「すべて表示」のボタンを用意する(JS が動くときだけ出す)", String(regN));

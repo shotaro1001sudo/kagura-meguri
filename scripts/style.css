@@ -138,6 +138,11 @@ html{scroll-padding-top:84px}
   main .home-hero{padding-top:6px}
   /* 見出しを少し下げ、絵を少し左へ寄せる(2026-11-16 運営者の依頼)。絵は幅の8%ぶん左へ出し、左の溶かす位置も同じだけずらして、画面の端に絵の境目が出ないようにする */
   html:not([lang=en]) .home-hero .copy{margin-top:44px}
+  /* 小さいスマホで見出しが柱や袖に重なっても読めるよう、見出しの後ろに地色を丸くにじませ、文字のまわりのぼかしも濃くする(2026-11-16 運営者の依頼・案A)。
+     絵は隠さずに残す(右手も見えたまま)。にじみは見出しの枠の中に置き、絵(z-index:-1)より上、文字より下に来る */
+  html:not([lang=en]) .home-hero .copy{position:relative;z-index:0;text-shadow:0 0 4px var(--bg),0 0 10px var(--bg),0 0 18px var(--bg),0 0 26px var(--bg)}
+  html:not([lang=en]) .home-hero .copy::before{content:"";position:absolute;inset:-30px -40px -30px -30px;z-index:-1;pointer-events:none;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--bg) 82%,transparent),transparent)}
 }
 /* スマホのトップ: 絵が画面を占めるので、下に続きがあることを、左下の縦書きの小さな案内で知らせる(押すと開催予定へ)。
    細い線の上を朱の点がゆっくり下りる(動きを減らす設定では、線と文字だけ)。PCは絵が低く、続きが見えるので出さない */
