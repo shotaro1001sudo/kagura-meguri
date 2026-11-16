@@ -68,7 +68,7 @@ html{scroll-padding-top:84px}
   .navjs .top nav .ni{display:block}
   .navjs .top nav a span{word-break:auto-phrase;text-wrap:balance}
 }
-@media(min-width:1024px){.top nav .nav-more{display:none}}
+.subnav{display:none}
 .top nav .ni{display:none;flex:none;width:28px;height:28px;fill:none;stroke:var(--ac);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 /* タブレット: 開いたメニューは、ボタンの下に右寄せの箱で出す(画面いっぱいの帯にしない) */
 @media(min-width:641px) and (max-width:1023px){.navjs .top nav{left:auto;right:24px;width:340px;margin-top:4px;border-top:1px solid var(--line);border-radius:var(--radius-s)}}
@@ -80,6 +80,21 @@ html{scroll-padding-top:84px}
   .top nav a{padding:0 12px;min-height:38px;border:0;border-radius:var(--pill);color:var(--fg);letter-spacing:.02em;transition:background var(--t-s) var(--ease),color var(--t-s) var(--ease)}
   .top nav a:hover{background:color-mix(in srgb,var(--ac) 10%,transparent);color:var(--fg)}
   .top nav a.on{background:var(--ac);color:var(--onac);font-weight:500}
+  /* 2段のヘッダー: 下の段の左にロゴ、右の上の細い段に主催者・広告主向け、右の下の段に読者向けの帯(絵と短い名前) */
+  .top .wrap{display:grid;grid-template-columns:auto 1fr;grid-template-areas:". sub" "logo nav";align-items:center;row-gap:2px;padding-top:6px}
+  .top .logo{grid-area:logo}
+  html{scroll-padding-top:108px}
+  .top #gnav{grid-area:nav;justify-self:end}
+  .top nav .nav-sub{display:none}
+  .top nav a{gap:6px}
+  .top nav .ni{display:block;width:17px;height:17px;stroke-width:1.7}
+  .top nav a.on .ni{stroke:currentColor}
+  .top nav a[data-s] span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .top nav a[data-s]:after{content:attr(data-s);content:attr(data-s)/""}
+  .subnav{grid-area:sub;justify-self:end;display:flex;gap:18px;margin:0;padding:0 14px 0 0;font-size:var(--fs-2xs);letter-spacing:.08em}
+  .subnav a{display:inline-flex;align-items:center;min-height:26px;color:var(--mut);text-decoration:none;border-bottom:1px solid transparent}
+  .subnav a:hover{color:var(--ac)}
+  .subnav a.on{color:var(--fg);border-color:var(--ac)}
   .top nav a.on:hover{background:var(--ac);color:var(--onac)}
   .top nav a:focus-visible{outline-offset:1px}
 }

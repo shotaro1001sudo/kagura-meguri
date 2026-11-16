@@ -364,21 +364,21 @@ const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.Int
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
-// メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値), 開くメニューだけか]
-// 開くメニューだけ(true)の項目は、スマホ・タブレットのカードにだけ出す。PC の帯は9つだと 1300px 近く要り、よくある幅で2段に折れるため
-// (PC では、好み診断・広告協賛へはフッターから入れる)
+// メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値), PC での置き場所, PC の帯での短い表示]
+// PC(1024px〜)は2段: 下の段の帯に読者向けの7つ(絵と短い名前)、上の細い段に主催者・広告主向けの2つ("sub")。
+// スマホ・タブレットの開くメニューは、9つ全部を絵と文字のカードで並べる
 const NAV = [
   ["/", "開催予定", ["/"]],
-  ["/calendar.html", "日付・場所で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"]],
-  ["/map.html", "地図で探す", ["/map.html"]],
-  ["/kagura/", "種類で探す", ["/kagura/"]],
-  ["/quiz.html", "神楽の好み診断", ["/quiz.html"], true],
-  ["/guide.html", "神楽を初めて観る方へ", ["/guide.html"]],
-  ["/history/", "神楽の歴史", ["/history/"]],
-  ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"]],
-  ["/sponsor.html", "広告・協賛", ["/sponsor.html", "/pr/sample.html"], true],
+  ["/calendar.html", "日付・場所で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"], "", "日付・場所"],
+  ["/map.html", "地図で探す", ["/map.html"], "", "地図"],
+  ["/kagura/", "種類で探す", ["/kagura/"], "", "種類"],
+  ["/quiz.html", "神楽の好み診断", ["/quiz.html"], "", "好み診断"],
+  ["/guide.html", "神楽を初めて観る方へ", ["/guide.html"], "", "初めての方へ"],
+  ["/history/", "神楽の歴史", ["/history/"], "", "歴史"],
+  ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"], "sub"],
+  ["/sponsor.html", "広告・協賛", ["/sponsor.html", "/pr/sample.html"], "sub"],
 ];
-// メニューの絵(ピクトグラム): スマホ・タブレットで開くメニューは、絵と文字のカードにする(PC の帯では絵を出さない)。
+// メニューの絵(ピクトグラム): スマホ・タブレットで開くメニューは、絵と文字のカード。PC の帯では、小さな絵を名前の前に添える。
 // 線だけの絵(24×24、色は文字と同じ currentColor を CSS で朱に)。行き先ごとに1つ。英語版も同じ絵を使う
 const NAV_ICON = {
   torii: '<path d="M2.5 4.5Q12 6.6 21.5 4.5"/><path d="M4.5 8.5h15M7 6v15M17 6v15M12 5.8v2.7"/>',
@@ -400,11 +400,15 @@ const navIcon = (h, en) => {
   const p = NAV_ICON[en && h === "/" ? "globe" : NAV_ICON_OF[h]];
   return p ? `<svg class="ni" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">${p}</svg>` : "";
 };
-const navLink = ([h, t, group, menuOnly], active, en = false) => {
-  const cur = active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
-  const cls = [cur && "on", menuOnly && "nav-more"].filter(Boolean).join(" ");
-  return `<a href="${h}"${cls ? ` class="${cls}"` : ""}${cur}>${navIcon(h, en)}<span>${t}</span></a>`;
+// 短い表示(short)は PC の帯でだけ、CSS で見せる(data-s)。読み上げは、いつも元の名前
+const navCur = (h, group, active) => active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
+const navLink = ([h, t, group, place, short], active, en = false) => {
+  const cur = navCur(h, group, active);
+  const cls = [cur && "on", place === "sub" && "nav-sub"].filter(Boolean).join(" ");
+  return `<a href="${h}"${cls ? ` class="${cls}"` : ""}${cur}${short ? ` data-s="${short}"` : ""}>${navIcon(h, en)}<span>${t}</span></a>`;
 };
+// PC の上の細い段(主催者・広告主の方へ)。スマホ・タブレットでは出さない(開くメニューのカードにある)
+const subNav = (active) => `<p class="subnav">${NAV.filter((x) => x[3] === "sub").map(([h, t, group]) => { const cur = navCur(h, group, active); return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}>${t}</a>`; }).join("")}</p>`;
 // スマホの三本線メニュー: JS が動くときだけ、ボタンを出して、メニューを畳む(JS がなければ、メニューは常に見える)
 const NAV_SCRIPT = `(function(){var h=document.documentElement,w=window,q=false;function sc(){q=false;h.classList.toggle('scrolled',(w.pageYOffset||0)>8)}w.addEventListener('scroll',function(){if(!q){q=true;w.requestAnimationFrame(sc)}},{passive:true});sc();var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap";
@@ -474,7 +478,7 @@ ${ga4Bootstrap}<style>${css}</style>${head}
 ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
-<header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active, en)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
+<header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active, en)).join("")}</nav>${en ? "" : subNav(active)}</div></header><script>${NAV_SCRIPT}</script>
 ${rail}<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
