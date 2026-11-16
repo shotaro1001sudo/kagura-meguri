@@ -448,6 +448,8 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .rail-banner{display:block;line-height:0;border-radius:var(--radius-img);overflow:hidden;box-shadow:var(--shadow-img);transition:box-shadow var(--t-s) var(--ease)}
 .rail-banner img{display:block;width:100%;height:auto}
 .side-rail .pr-foot{margin:0 0 0 auto}
+/* 1画面に収まらないバナーは、スクリプトが下から隠す(上端が本文の枠にそろって下がっているあいだ。2026-11-16) */
+.side-rail>.rail-out{display:none}.side-rail.rail-none{visibility:hidden}
 @media(hover:hover){.rail-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 :is(.rail-banner,.rail-banner>a):focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 /* 数えるのは、見えているバナーだけ(じゃらんは広告の同意がないと hidden のまま) */
