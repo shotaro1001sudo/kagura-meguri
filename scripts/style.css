@@ -122,11 +122,13 @@ html{scroll-padding-top:84px}
 @media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
 @media(max-width:640px){
   main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
-  .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
-    --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.3) 6%,rgb(0 0 0/.7) 13%,#000 20%,#000 80%,transparent)}
+  .hero-art{inset:auto auto 0 -8%;width:100%;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
+    --mx:linear-gradient(90deg,transparent 8%,#000 22%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.3) 6%,rgb(0 0 0/.7) 13%,#000 20%,#000 80%,transparent)}
   /* 絵と見出しを、札のすぐ下へ寄せる(2026-11-16 運営者の依頼「絵と見出しを上に」)。札の下の余白と見出しの上の余白を詰め、絵の上の溶かす幅を短くして、絵が高い位置から見えるようにする */
   main .home-discovery{padding-bottom:0}
   main .home-hero{padding-top:6px}
+  /* 見出しを少し下げ、絵を少し左へ寄せる(2026-11-16 運営者の依頼)。絵は幅の8%ぶん左へ出し、左の溶かす位置も同じだけずらして、画面の端に絵の境目が出ないようにする */
+  html:not([lang=en]) .home-hero .copy{margin-top:44px}
 }
 /* スマホのトップ: 絵が画面を占めるので、下に続きがあることを、左下の縦書きの小さな案内で知らせる(押すと開催予定へ)。
    細い線の上を朱の点がゆっくり下りる(動きを減らす設定では、線と文字だけ)。PCは絵が低く、続きが見えるので出さない */
@@ -145,7 +147,7 @@ html{scroll-padding-top:84px}
   .js:is(.cue-fixed.scrolled) .scroll-cue{opacity:0}
 }
 @keyframes cue{0%{translate:0 -6px;opacity:0}20%{opacity:1}80%{opacity:1}100%{translate:0 56px;opacity:0}}
-@media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 16%,#000 44%,#000 86%,transparent)}}
+@media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 24%,#000 52%,#000 86%,transparent)}}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
 .ms{position:absolute;right:64px;top:4px;width:340px;height:272px;opacity:.2;pointer-events:none;transition:opacity var(--t-m) var(--ease);--moon:#b39a5c}
