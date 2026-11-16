@@ -2,7 +2,7 @@
   "otaru-matsumae": {
     "sourceId": "otaru-matsumae",
     "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
-    "digest": "79fe4f60817ccac687dd3dc8f074cded9c51fd6eb8582de4cc0855c387b44d72",
+    "digest": "9b3bdaeb40954eff330939f9b677c82c66459a4652d07cdcefb2d4671eab2a96",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "41098ca7e76ac26c4ddf1751fb939001e3a3b07fe2be568f0ece35b67fa47fe9",
@@ -10,12 +10,12 @@
     "pages": [
       {
         "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
-        "digest": "4ab263529f0358a9752257f7b15fac0e1c572d7522b84fe40ae80e25cfa9df3a",
+        "digest": "224cdaf328b01f229d2d0318c14498eebbffefd1af554811ca1b0ca3d434f674",
         "linkCount": 161
       },
       {
         "url": "https://otaru.gr.jp/category/tourist/ibennto",
-        "digest": "ddab5dd0c3d61c9ad2ee05530b32c77e360d34fb20aa9af4b2cbd1d30f5fa5ec",
+        "digest": "bc43b70002d278167c531667eda3438729d5189eb8bec84df711f99aa4910ce2",
         "linkCount": 187
       }
     ],
@@ -58,7 +58,7 @@
   "toei-hanamatsuri": {
     "sourceId": "toei-hanamatsuri",
     "url": "https://www.toeinavi.jp/column/detail/72/",
-    "digest": "b918d57cb5dbfa6d6076e0d76446ddb05e0d24652bee3dc1eaf79f4a359e1c7e",
+    "digest": "fa8f8a34e5324d35e6a34e271c76282b7990f16b9a91c0800098275ae8bb0c83",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "cf4f8ef659b3644543a235cd52104549683320bb789462a3bac9436a8903e2ae",
@@ -66,7 +66,7 @@
     "pages": [
       {
         "url": "https://www.toeinavi.jp/column/detail/72/",
-        "digest": "9e910607bdc42a84aad1c1f830547e92c936808b8138a5ddf7cac7bb0ecc4421",
+        "digest": "834adccac2c64ecb98a04e8e2a9fa31eec3209211cf73354b6b3f5fae0c6415e",
         "linkCount": 141
       }
     ],
@@ -75,16 +75,16 @@
   "hamamatsu-kawai-hanamai": {
     "sourceId": "hamamatsu-kawai-hanamai",
     "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
-    "digest": "42d6218329b01733a7d99418ecdcd79ef60db561bb169886423f751e058f377f",
+    "digest": "7e9e6406b2f7b8e5d808a83a959b9a3c8e4a76dea3d0f5ea6ce23eeff38e4050",
     "checked": "2026-11-16",
-    "changed": "2026-11-04",
+    "changed": "2026-11-16",
     "reviewedDigest": "42d6218329b01733a7d99418ecdcd79ef60db561bb169886423f751e058f377f",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
-        "digest": "447482d013278b1b72fd7083c82054b7d3fd79996626ef6c8839d4d0861e8fba",
-        "linkCount": 36
+        "digest": "507d63b02156e4775c46b26673ed94ec9f29e27102cd3a953650e38711022c8a",
+        "linkCount": 39
       }
     ],
     "reason": "B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。"
@@ -109,7 +109,7 @@
   "kitahiroshima-kagura": {
     "sourceId": "kitahiroshima-kagura",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
-    "digest": "0c150cf00f4e903b6fe9aed6ce1e74fc17ae6eb67b8d46bbd06a3b889b08c357",
+    "digest": "e536d1be418efdc4bbdbaa369af7abdd17befd599d81344da868dd72ae07e228",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "f579f4210d08501d46931fa2520f10036ead0a2d9cf60b9d1d2c4c9b2eb9a1e0",
@@ -117,7 +117,7 @@
     "pages": [
       {
         "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
-        "digest": "3fb1e6d369e653dd7b4c2c020e3a65b5997707e427c9e8e72e605a14601d8780",
+        "digest": "02b288f0af743eca06decabe25e08bc4cd7caf0223ba3c277eb309890da4ddba",
         "linkCount": 107
       }
     ],
@@ -143,7 +143,7 @@
   "niyodogawa-tosa-kagura": {
     "sourceId": "niyodogawa-tosa-kagura",
     "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
-    "digest": "f9770f9ea52e118597a48adb96a30be6cb81662cae7c9909b99854f7a128b3d7",
+    "digest": "c3a39a886cb4a1f009ed4d21009d03e2d3aebb971c781ad1536f3c5a0e780736",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "cbf0b2753f635b9582a97e7a976769a5085a2950515e84142b3dc8a57862e748",
@@ -151,7 +151,7 @@
     "pages": [
       {
         "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
-        "digest": "97d60c0093ce9b6113cb8cb8bf05dc9f4d0e429ed0a454144453e16e33894615",
+        "digest": "95f278b81ef1e97c56b21f63554febd597775845da7a14b22a35019225363419",
         "linkCount": 176
       }
     ],
@@ -160,7 +160,7 @@
   "yufu-shonai-kagura": {
     "sourceId": "yufu-shonai-kagura",
     "url": "https://yufuin.gr.jp/news/news-6903/",
-    "digest": "5bd9f6fe0cb7409edea9f94845c52d4c1557d2fff8121c1dcf373a0716b7afbf",
+    "digest": "1d59163584e6e4c3c9127dcaf65833f961899a5b4edacb80c866880d62724dac",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "b1efba1cf01b77e4c9d897d3aaa24bd05f6481e0aa6b13c4eea018b2dcd60f21",
@@ -173,7 +173,7 @@
       },
       {
         "url": "https://yufuin.gr.jp/news",
-        "digest": "82430c6831a7f39e0f89ff15f33d64712f97bb072ea35e627bee2a846a81746f",
+        "digest": "8436652b72317e9e18cf3de993e1dddc5d8853315f25ce49895465936e83b2d8",
         "linkCount": 93
       }
     ],
@@ -238,7 +238,7 @@
   "masuda-yokagura": {
     "sourceId": "masuda-yokagura",
     "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
-    "digest": "fc278cad1a7193b8b3f33beae0c0fec1ec8cc2c26353db0f2505ca81ce1dba16",
+    "digest": "bd12cd674953041dccebb3ec95377b54835bb40c7b822870916d7cbe14e45677",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "",
@@ -246,7 +246,7 @@
     "pages": [
       {
         "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
-        "digest": "dbefc9f98d97b2e83f1bc6bf88d70b7c4f6d3df6f369cd30a7edead5ccc5a435",
+        "digest": "1f4609e5a913064d78ed77f8cad75ea4d8e8ca2acf606f46d2fda0be56fd8e77",
         "linkCount": 78
       }
     ],
@@ -255,7 +255,7 @@
   "tsuwano-yokagura": {
     "sourceId": "tsuwano-yokagura",
     "url": "https://tsuwano-kanko.net/yokagura2026/",
-    "digest": "e3d583bf2eff4e8dc8a3da5e1bf5909b02a2d03d0c6a4756683b5afaf23a768a",
+    "digest": "dbbb98b301ea26955bb995c1c49fd883b68245c9db70bf1eaf91e0f1aed554bd",
     "checked": "2026-11-16",
     "changed": "2026-11-16",
     "reviewedDigest": "",
@@ -263,7 +263,7 @@
     "pages": [
       {
         "url": "https://tsuwano-kanko.net/yokagura2026/",
-        "digest": "11c0b80593300e48e63d0799215256d54d738bb69d24ca293acafa289a6d34f1",
+        "digest": "ec2af4bb6bd3db5a0a1884c072b034065581bce2c579a7261938af84146ef822",
         "linkCount": 179
       }
     ],

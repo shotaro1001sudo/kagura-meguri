@@ -1,7 +1,7 @@
 {
   "date": "2026-11-16",
   "autoPublish": true,
-  "published": 2,
+  "published": 0,
   "held": 0,
   "stillPending": 0,
   "withdrawn": 0,
@@ -13,13 +13,19 @@
       "id": "otaru-matsumae",
       "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
       "reason": "B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。",
-      "digest": "79fe4f60817ccac687dd3dc8f074cded9c51fd6eb8582de4cc0855c387b44d72"
+      "digest": "9b3bdaeb40954eff330939f9b677c82c66459a4652d07cdcefb2d4671eab2a96"
     },
     {
       "id": "toei-hanamatsuri",
       "url": "https://www.toeinavi.jp/column/detail/72/",
       "reason": "A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。",
-      "digest": "b918d57cb5dbfa6d6076e0d76446ddb05e0d24652bee3dc1eaf79f4a359e1c7e"
+      "digest": "fa8f8a34e5324d35e6a34e271c76282b7990f16b9a91c0800098275ae8bb0c83"
+    },
+    {
+      "id": "hamamatsu-kawai-hanamai",
+      "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
+      "reason": "B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。",
+      "digest": "7e9e6406b2f7b8e5d808a83a959b9a3c8e4a76dea3d0f5ea6ce23eeff38e4050"
     },
     {
       "id": "ise-daikagura-kandayu",
@@ -31,7 +37,7 @@
       "id": "kitahiroshima-kagura",
       "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
       "reason": "B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。",
-      "digest": "0c150cf00f4e903b6fe9aed6ce1e74fc17ae6eb67b8d46bbd06a3b889b08c357"
+      "digest": "e536d1be418efdc4bbdbaa369af7abdd17befd599d81344da868dd72ae07e228"
     },
     {
       "id": "iinan-kaguradan",
@@ -43,25 +49,25 @@
       "id": "niyodogawa-tosa-kagura",
       "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
       "reason": "B：池川神社秋季大祭。神楽時間未定と12〜16時が同ページ内で不一致のため要確認。稽古日を公演に混入しない。",
-      "digest": "f9770f9ea52e118597a48adb96a30be6cb81662cae7c9909b99854f7a128b3d7"
+      "digest": "c3a39a886cb4a1f009ed4d21009d03e2d3aebb971c781ad1536f3c5a0e780736"
     },
     {
       "id": "yufu-shonai-kagura",
       "url": "https://yufuin.gr.jp/news/news-6903/",
       "reason": "B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。",
-      "digest": "5bd9f6fe0cb7409edea9f94845c52d4c1557d2fff8121c1dcf373a0716b7afbf"
+      "digest": "1d59163584e6e4c3c9127dcaf65833f961899a5b4edacb80c866880d62724dac"
     },
     {
       "id": "masuda-yokagura",
       "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
       "reason": "B：令和8年度の年間スケジュールPDF(土曜19:30の定期公演と特別公演)。PDFの差し替え・年度更新を確認し、data/regular.json と特別公演の開催を手で直す。",
-      "digest": "fc278cad1a7193b8b3f33beae0c0fec1ec8cc2c26353db0f2505ca81ce1dba16"
+      "digest": "bd12cd674953041dccebb3ec95377b54835bb40c7b822870916d7cbe14e45677"
     },
     {
       "id": "tsuwano-yokagura",
       "url": "https://tsuwano-kanko.net/yokagura2026/",
       "reason": "B：月1回(土曜20:00)の通常公演と出演社中。社中の追記・変更と、2027年度のページ(URLの年)を確認する。",
-      "digest": "e3d583bf2eff4e8dc8a3da5e1bf5909b02a2d03d0c6a4756683b5afaf23a768a"
+      "digest": "dbbb98b301ea26955bb995c1c49fd883b68245c9db70bf1eaf91e0f1aed554bd"
     }
   ],
   "affiliate": {
@@ -126,42 +132,13 @@
     ],
     "counts": {
       "learn_unconfigured": 1,
-      "category_disabled": 3,
-      "learn_unmatched": 2
+      "category_disabled": 3
     },
-    "unlinkedTotal": 2,
-    "unlinked": [
-      {
-        "id": "akitakata-f870bfc54f",
-        "missing": [
-          "本・グッズ"
-        ]
-      },
-      {
-        "id": "takachiho-yokagura-ba91e106b2",
-        "missing": [
-          "本・グッズ"
-        ]
-      }
-    ]
+    "unlinkedTotal": 0,
+    "unlinked": []
   },
   "items": {
-    "published": [
-      {
-        "name": "2027元就の里神楽共演大会",
-        "start": "2027-02-21T00:00",
-        "prefecture": "広島県",
-        "city": "安芸高田市",
-        "url": "https://akitakata-kankou.jp/event/22609/"
-      },
-      {
-        "name": "高千穂の夜神楽 黒仁田公民館",
-        "start": "2027-01-30T00:00",
-        "prefecture": "宮崎県",
-        "city": "高千穂町",
-        "url": "https://takachiho-kanko.info/kagura/yokagura/schedule/"
-      }
-    ],
+    "published": [],
     "held": [],
     "stillPending": [],
     "withdrawn": []
