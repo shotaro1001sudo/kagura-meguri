@@ -1004,7 +1004,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
    ただし、種類で探すの「地方から探す」と、今週末・今月の「各県の全日程を見る」は、横に送らず格子に並べる(下の 560px 以下の指定) */
 .chiprow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .chiprow .meta{margin-right:4px;font-size:var(--fs-xs)}
-.weekend-regions,.kagura-regions{margin:0 0 4px}.month-regions{margin:0 0 20px}
+.weekend-regions,.tm-regions,.kagura-regions{margin:0 0 4px}.month-regions{margin:0 0 20px}
 /* カードの格子(種類の一覧): 広い画面では2列にして、長い一覧を短くする */
 .cardgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr))}.cardgrid>.card{margin:0}
 .kagura-region h2{scroll-margin-top:94px}.kagura-regions+.kagura-region h2{margin-top:36px}
@@ -1020,9 +1020,9 @@ main>p:not([class]){margin:20px 0;max-width:42em}
   .chiprow.kagura-regions .chip{justify-content:center;padding:6px 10px;text-align:center}
   /* 今週末・今月の「各県の全日程を見る」も、横に送らず格子に(2026-11-16 運営者の依頼「横スクロールしないと切れて見える」)。
      県名は短い(3〜4字)ので、320px でも収まる3列にして、行を少なくする */
-  .chiprow:is(.weekend-regions,.month-regions){display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow:visible;padding:0;margin-left:0;margin-right:0;-webkit-mask-image:none;mask-image:none}
-  .chiprow:is(.weekend-regions,.month-regions) .meta{grid-column:1/-1;margin:0}
-  .chiprow:is(.weekend-regions,.month-regions) .chip{justify-content:center;padding:6px 8px;text-align:center}
+  .chiprow:is(.weekend-regions,.tm-regions,.month-regions){display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow:visible;padding:0;margin-left:0;margin-right:0;-webkit-mask-image:none;mask-image:none}
+  .chiprow:is(.weekend-regions,.tm-regions,.month-regions) .meta{grid-column:1/-1;margin:0}
+  .chiprow:is(.weekend-regions,.tm-regions,.month-regions) .chip{justify-content:center;padding:6px 8px;text-align:center}
 }
 
 /* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */

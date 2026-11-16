@@ -81,7 +81,7 @@ export function consistencyTests({ ok, section, OUT, build }) {
   ok(/@media\(max-width:560px\)\{[^@]*\.chiprow\{flex-wrap:nowrap;overflow-x:auto/.test(src) && page("pref/広島県.html")(".chiprow").length === 0, "チップの行(.chiprow)は、スマホでは1行にして横に送る(県のページには置かない)");
   // 2026-11-15 運営者の依頼「種類で探すの『地方から探す』が横に隠れていて分からない」→ 運営者が選んだ「格子のボタン」: スマホでは横に送らず2列に並べる
   ok(/@media\(max-width:560px\)\{[^@]*\.chiprow\.kagura-regions\{display:grid;grid-template-columns:1fr 1fr;[^}]*overflow:visible;[^}]*mask-image:none\}/.test(src) && /\.chiprow\.kagura-regions \.meta\{grid-column:1\/-1/.test(src) && /\.chiprow\.kagura-regions \.chip\{justify-content:center/.test(src), "種類で探すの「地方から探す」は、スマホでは横に送らず、同じ大きさのボタンを2列に並べて全部見せる");
-  ok(/@media\(max-width:560px\)\{[^@]*\.chiprow:is\(\.weekend-regions,\.month-regions\)\{display:grid;grid-template-columns:repeat\(3,1fr\);[^}]*overflow:visible;[^}]*mask-image:none\}/.test(src) && /\.chiprow:is\(\.weekend-regions,\.month-regions\) \.meta\{grid-column:1\/-1/.test(src), "今週末・今月の「各県の全日程を見る」は、スマホでは横に送らず、県のボタンを3列に並べて全部見せる(2026-11-16 運営者の依頼)");
+  ok(/@media\(max-width:560px\)\{[^@]*\.chiprow:is\(\.weekend-regions,\.tm-regions,\.month-regions\)\{display:grid;grid-template-columns:repeat\(3,1fr\);[^}]*overflow:visible;[^}]*mask-image:none\}/.test(src) && /\.chiprow:is\(\.weekend-regions,\.tm-regions,\.month-regions\) \.meta\{grid-column:1\/-1/.test(src), "今週末・今月・月別の「各県の全日程を見る」は、スマホでは横に送らず、県のボタンを3列に並べて全部見せる(2026-11-16 運営者の依頼)");
   ok(page("kagura/石見神楽.html")(".card .tag").length === 0 && page("pref/島根県.html")(".card .tag").length > 0 && page("index.html")(".card .tag").length > 0, "種類のページのカードでは、そのページの種類の札をくり返さない(県・トップでは出す)");
   // ヘッダー: 7つの項目が1行に収まる幅(1024px〜)だけ帯にし、それより狭い画面は「メニュー」ボタンにする(タブレットで2段に折れて崩れていた)
   ok(/@media\(max-width:1023px\)\{\s*\.navjs \.top \.wrap\{/.test(src) && /@media\(min-width:1024px\)\{\s*\.top nav\{[^}]*border-radius:var\(--pill\)/.test(src) && !/@media\(min-width:641px\)\{\s*\.top/.test(src) && /\.logo\{[^}]*white-space:nowrap/.test(src) && /@media\(max-width:360px\)\{\.logo\{/.test(src), "ヘッダー: メニューを帯にするのは 1024px から。狭い画面はメニューのボタン。小さなスマホでもロゴとボタンが折れない");
@@ -120,6 +120,8 @@ export function consistencyTests({ ok, section, OUT, build }) {
     ok(rd("kagura/出雲神楽.html")("main .mhead").length === 0, "1か月だけの一覧には、月の区切りを入れない");
     const wk = rd("weekend.html");
     ok(wk(".weekend-regions.chiprow a.chip").length === wk(".weekend-regions a").length && wk(".weekend-regions a").length >= 1 && wk(".weekend-regions .meta").text() === "各県の全日程を見る", "今週末: 開催のある県は、チップの行で出す(行き先が各県の全日程であることを書く)");
+    { const tm = rd("this-month.html"), hrefs = tm(".tm-regions a").map((_, a) => tm(a).attr("href")).get();
+      ok(tm("main .d-top .card").length === 0 ? tm(".tm-regions").length === 0 : tm(".tm-regions.chiprow a.chip").length === hrefs.length && hrefs.length >= 1 && new Set(hrefs).size === hrefs.length && hrefs.every((h) => h.startsWith("/pref/")) && tm(".tm-regions .meta").text() === "各県の全日程を見る" && tm(".tm-regions").next().is(".dpage") && tm(".tm-regions").prev().is(".lead"), "今月: 今週末と同じく、説明の文のすぐ下に、開催のある県のチップの行(各県の全日程へ)を出す(2026-11-16 運営者の依頼)", hrefs.join(" ")); }
     // ---- 2026-11-12 の整理・その2: 用語の説明・長い値の行分け・ほかの探し方・月と種類の一覧 ----
     const terms = rd("events/rd-terms.html");
     const gloss = terms(".keyinfo .gloss dt").map((_, x) => terms(x).text()).get();
