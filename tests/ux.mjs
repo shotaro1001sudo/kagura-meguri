@@ -28,7 +28,8 @@ export async function uxTests({ ok, section, OUT }) {
   const sizes = [...new Set([...css.matchAll(/font-size:([^;}!]+)/g)].map((m) => m[1]))].filter((v) => !v.startsWith("var(--fs-") && v !== ".68em" && !/^\d+px$/.test(v));
   ok(sizes.length === 0, "文字の大きさは、すべて基準の変数(--fs-…)で指定する", sizes.join(" "));
   const fs = Object.fromEntries([...css.matchAll(/--fs-([a-z0-9]+):([^;}]+)/g)].map((m) => [m[1], m[2]]));
-  ok(Object.keys(fs).length === 8 && /\.meta\{color:var\(--mut\);font-size:var\(--fs-s\)\}/.test(css) && parseFloat(fs.s) >= 0.9, "補足の文字(一覧の時刻・場所など)は s(14.5px 以上)", JSON.stringify(fs));
+  // 基準は9つ(2026-11-16 に、PCのヘッダーのロゴ用の logo を足した)
+  ok(Object.keys(fs).length === 9 &&/\.meta\{color:var\(--mut\);font-size:var\(--fs-s\)\}/.test(css) && parseFloat(fs.s) >= 0.9, "補足の文字(一覧の時刻・場所など)は s(14.5px 以上)", JSON.stringify(fs));
   ok(/\.finder legend\{[^}]*letter-spacing:\.08em/.test(css) && /\.mhead\{[^}]*letter-spacing:\.1em/.test(css), "小さな見出しの文字の間隔を詰める");
   ok(/body:before,body:after\{[^}]*opacity:\.4\}/.test(css), "広い画面の左右の模様は薄く");
 

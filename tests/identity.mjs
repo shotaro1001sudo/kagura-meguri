@@ -20,6 +20,8 @@ export function identityTests({ ok, section, OUT, build }) {
   const home = cheerio.load(read(join(OUT, "index.html")));
   ok(home('link[rel="icon"]').attr("href") === "/favicon-48.png" && home('link[rel="apple-touch-icon"]').attr("href") === "/apple-touch-icon.png", "ファビコンと、ホーム画面のアイコンが、シンボル");
   ok(home(".top .logo img").attr("src") === "/symbol-96.png" && home(".top .logo img").attr("alt") === "" && home(".top .logo").text() === cfg.siteName, "ヘッダーに、シンボルとサイト名(画像は飾りなので、読み上げない)");
+  { const css = readFileSync("scripts/style.css", "utf8");
+    ok(css.includes('grid-template-areas:"logo sub" "logo nav"') && /\.top \.logo\{grid-area:logo;align-self:center;[^}]*font-size:var\(--fs-logo\)\}/.test(css) && /\.top \.logo img\{width:46px;height:46px\}/.test(css) && /@media\(min-width:1024px\) and \(max-width:1199px\)\{\.top \.logo\{font-size:var\(--fs-xl\)[;}]/.test(css), "PCのヘッダー: ロゴ(シンボルとサイト名)は大きくし、上の細い段と帯の2段の真ん中に置く(1024〜1199px は帯が折れないよう少し小さく。2026-11-16 運営者の依頼)"); }
   const ld = (q) => q('script[type="application/ld+json"]').map((_, s) => JSON.parse(q(s).text())).get().flat();
   const pub = ld(home).find((x) => x["@type"] === "WebSite")?.publisher;
   ok(pub?.name === "神楽めぐり編集部" && pub.logo?.url === `${cfg.baseUrl}/symbol.png` && pub.logo.width === 330, "構造化データ: 運営者として、名前とロゴ(シンボル)を示す");
