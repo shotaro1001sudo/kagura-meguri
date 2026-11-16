@@ -94,5 +94,5 @@ export async function organizersTests({ ok, section, OUT, build }) {
 
   // 入口
   const home = cheerio.load(read(join(OUT, "index.html")));
-  ok(home('footer a[href="/organizers.html"]').length === 1 && sf('main .prose a[href="/organizers.html"]').length === 1 && sf('main .crumbs a[href="/organizers.html"]').length === 1, "フッターと、投稿フォームのページから、リンクしている");
+  ok(home('.top nav a[href="/organizers.html"]').length === 1 && home('.top .subnav a[href="/organizers.html"]').length === 1 && sf('main .prose a[href="/organizers.html"]').length === 1 && sf('main .crumbs a[href="/organizers.html"]').length === 1, "メニュー(PCは上の細い段)と、投稿フォームのページから、リンクしている");
 }

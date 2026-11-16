@@ -19,9 +19,9 @@ export function editorialTests({ ok, section, OUT, build }) {
   ok(h2s(home).includes("毎週・毎晩の定期公演") && h2s(home).includes("都道府県で探す") && h2s(home).includes("種類で探す") && !home("main").text().includes("いつでも観られる"), "トップ: 「毎週・毎晩の定期公演」「都道府県で探す」「種類で探す」(「いつでも観られる」は言い過ぎなので使わない)", h2s(home).join(","));
   ok(!/カレンダーで探せます/.test(home('meta[name="description"]').attr("content")) && /日付・会場・キーワードや地図で探せます/.test(home('meta[name="description"]').attr("content")), "トップの説明文に、なくなった「カレンダー」を書かない");
   ok(home(".copy .sub").length === 0 && home(".copy p").length === 0 && home(".copy h1").length === 1, "トップの絵の上の文字は、縦書きの見出しだけ(副題・説明の1行は外した)");
-  ok(home("footer a").first().text() === "主催者の方へ(掲載は無料)", "フッターの主催者向けの入口は「主催者の方へ(掲載は無料)」");
-  const frows = home("footer .flinks").map((_, p) => [home(p).find("a").map((_, a) => home(a).attr("href")).get()]).get();
-  ok(frows.length === 3 && frows[0].join() === "/organizers.html,/sponsor.html" && frows[1].join() === "/guide.html,/history/,/quiz.html,/en/" && frows[2][0] === "/about.html" && frows[2].includes("/contact.html") && frows[2].includes("/privacy.html"), "フッターは目的ごとに3行: 掲載・協賛 / 読み物 / サイトについて", JSON.stringify(frows));
+  const flinks = home("footer a").map((_, a) => home(a).attr("href")).get();
+  ok(flinks.join() === "/about.html,/contact.html,/en/,/terms.html,/privacy.html,/disclaimer.html" && home("footer .fnav a").toArray().every((a) => home(a).children("svg.fi[aria-hidden=true]").length === 1 && home(a).children("span").text()) && home("footer .flinks").length === 0,
+    "フッターは、サイトについての6つだけ(運営者情報・お問い合わせ・English・利用規約・プライバシーポリシー・免責事項。アイコン付き。2026-11-16 運営者の依頼)", flinks.join());
   const org = page("organizers.html"), sub = page("submit.html");
   ok(org("h1").text() === "主催者の方へ" && org('main a[href="/submit.html"].btn').first().text() === "掲載を依頼する(無料)" && sub("h1").text() === "掲載の依頼" && sub("legend").last().text() === "2. ご依頼者について", "主催者向けの言葉: 「主催者の方へ」「掲載を依頼する」「掲載の依頼」にそろえる");
   const allText = ["index.html", "organizers.html", "submit.html", "contact.html", "guide.html"].map((p) => page(p)("main").text() + page(p)("footer").text()).join("");

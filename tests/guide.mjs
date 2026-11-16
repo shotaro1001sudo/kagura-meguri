@@ -48,9 +48,9 @@ export function guideTests({ ok, section, OUT, build }) {
   ok(/guide\.html<\/loc><lastmod>/.test(read(join(D, "sitemap.xml"))) && read(join(D, "sitemap.xml")).includes(`guide.html</loc><lastmod>${CHECKED}<`), "サイトマップに載り、lastmod は確認日");
   // 入口(トップ・フッター・各開催ページ)
   const home = cheerio.load(read(join(OUT, "index.html")));
-  ok(home('.quick a[href="/guide.html"]').length === 0 && home('.top nav a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 1, "ガイドへは、メニューとフッターから(トップの入口はメニューと重なるので置かない)");
+  ok(home('.quick a[href="/guide.html"]').length === 0 && home('.top nav a[href="/guide.html"]').length === 1 && home('footer a[href="/guide.html"]').length === 0, "ガイドへは、メニューから(トップの入口はメニューと重なるので置かない。フッターはサイトについての6つだけ)");
   const ev = cheerio.load(read(join(OUT, "events/t-full.html"))), rg = cheerio.load(read(join(OUT, "regular/r-nightly.html")));
-  ok([ev, rg].every((p) => p('main a[href^="/guide.html"]').length === 0 && p('footer a[href="/guide.html"]').length === 1), "開催・定期公演のページは、本文にガイドへの案内を置かず、フッターから入れる(2026-10-30 運営者の判断)");
+  ok([ev, rg].every((p) => p('main a[href^="/guide.html"]').length === 0 && p('.top nav a[href="/guide.html"]').length === 1), "開催・定期公演のページは、本文にガイドへの案内を置かず、メニューから入れる(2026-10-30 運営者の判断)");
   // ガイドは、特定の神楽・地域によらない、一般的な内容にする(出典の一覧は除く)
   const g = cheerio.load(read(join(D, "guide.html")));
   g("ol.sources").remove();

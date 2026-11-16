@@ -109,7 +109,7 @@ export function sponsorTests({ ok, section, OUT }) {
 
   // 入口
   const home = cheerio.load(read(join(OUT, "index.html")));
-  ok(home('footer a[href="/sponsor.html"]').length === 1 && home('footer a[href="/sponsor.html"]').text() === "広告・協賛のご案内" && about('main a[href="/sponsor.html"]').length === 1, "フッターと運営者情報から、「広告・協賛のご案内」の名前でリンクしている");
+  ok(home('.top nav a[href="/sponsor.html"]').length === 1 && home('.top .subnav a[href="/sponsor.html"]').length === 1 && home('footer a[href="/sponsor.html"]').length === 0 && about('main a[href="/sponsor.html"]').text() === "広告・協賛のご案内", "メニュー(PCは上の細い段)と運営者情報から、協賛の案内へリンクしている(フッターはサイトについての6つだけ)");
   ok(home('.top nav a[href="/sponsor.html"]').length === 1 && home('.top nav a:last-child').attr("href") === "/sponsor.html", "メインメニューの最後に「広告・協賛」(読者向けの探し方のあと)");
   { const css = read(join(OUT, "index.html")); const sub = home(".top .subnav a").map((_, a) => home(a).attr("href")).get().join(); ok(home(".top nav a.nav-sub").map((_, a) => home(a).attr("href")).get().join() === "/organizers.html,/sponsor.html" && sub === "/organizers.html,/sponsor.html" && /\.top nav \.nav-sub\{display:none\}/.test(css) && /\.subnav\{display:none\}/.test(css), "PC は2段: 主催者の方へ・広告・協賛は上の細い段(帯からは外す)。スマホ・タブレットは開くメニューのカードに9つ", sub); }
   { const css = read(join(OUT, "index.html")); ok(home(".top nav a[data-s]").length === 6 && /\.top nav a\[data-s\] span\{position:absolute;/.test(css) && /\.top nav a\[data-s\]:after\{content:attr\(data-s\);content:attr\(data-s\)\/""\}/.test(css), "PC の帯は短い名前を見せ、読み上げは元の名前のまま(短い名前は読み上げない)"); }

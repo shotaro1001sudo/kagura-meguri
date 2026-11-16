@@ -396,6 +396,18 @@ const NAV_ICON_OF = {
   "/": "torii", "/calendar.html": "calendar", "/map.html": "pin", "/kagura/": "fan", "/guide.html": "wakaba", "/history/": "scroll", "/organizers.html": "megaphone", "/quiz.html": "quiz", "/sponsor.html": "nobori",
   "/en/": "torii", "/en/guide.html": "wakaba", "/en/kagura.html": "fan", "/en/history.html": "scroll",
 };
+// フッター: サイトについての6つのリンクだけを、アイコン(上)と名前(下)で並べる(2026-11-16 運営者が見本Bを選んだ)。
+// 主催者・協賛・ガイド・歴史・診断は、上のメニューから入る。「プライバシーポリシー」は狭い幅で「プライバシー／ポリシー」の所でだけ折り返す
+const FOOT_ICON = {
+  person: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.8-4.2 3.8-6.5 7.5-6.5s6.7 2.3 7.5 6.5"/>',
+  mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.6 6.5 8.4 6.6 8.4-6.6"/>',
+  globe: NAV_ICON.globe,
+  doc: '<path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14.5 3v4.5H19M9 11.5h7M9 14.5h7M9 17.5h4.5"/>',
+  shield: '<path d="M12 3 19 6v5.5c0 4.6-3 8-7 9.5-4-1.5-7-4.9-7-9.5V6z"/><rect x="9.3" y="10.8" width="5.4" height="4.4" rx=".8"/><path d="M10.4 10.8V9.6a1.6 1.6 0 0 1 3.2 0v1.2"/>',
+  caution: '<path d="M12 3.5 21 19.5H3z"/><path d="M12 9.5v4.8M12 16.8v.1"/>',
+};
+const FOOT_LINKS = [["/about.html", "運営者情報", "person"], ["/contact.html", "お問い合わせ", "mail"], ["/en/", "English", "globe", ' hreflang="en" lang="en"'], ["/terms.html", "利用規約", "doc"], ["/privacy.html", "プライバシー<wbr>ポリシー", "shield"], ["/disclaimer.html", "免責事項", "caution"]]
+  .map(([h, t, k, a = ""]) => `<a href="${h}"${a}><svg class="fi" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${FOOT_ICON[k]}</svg><span>${t}</span></a>`).join("");
 const navIcon = (h, en) => {
   const p = NAV_ICON[en && h === "/" ? "globe" : NAV_ICON_OF[h]];
   return p ? `<svg class="ni" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">${p}</svg>` : "";
@@ -480,9 +492,7 @@ ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
 <header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active, en)).join("")}</nav>${en ? "" : subNav(active)}</div></header><script>${NAV_SCRIPT}</script>
 ${rail}<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
-${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
-<p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
-<p class="flinks"><a href="/about.html">運営者情報</a><a href="/contact.html">お問い合わせ</a><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="/disclaimer.html">免責事項</a></p><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}${rail ? clientJs("side-rail") : ""}</div>
+${en ? EN_FOOTER : `<footer><nav class="fnav" aria-label="サイトについて">${FOOT_LINKS}</nav><p class="copy">© ${esc(cfg.siteName)}</p></footer>`}${cookieControls(en)+clientJs("cookie-controls")}${rail ? clientJs("side-rail") : ""}</div>
 ${quizOffer ? `<aside id="quiz-offer" class="quiz-offer" role="region" aria-labelledby="quiz-offer-title" aria-describedby="quiz-offer-desc" hidden><button type="button" class="linkbtn quiz-close" aria-label="診断の案内を閉じる">閉じる</button><p id="quiz-offer-title">気になる神楽、まだ迷っていますか？</p><p id="quiz-offer-desc">${questions.length}問で、好きな舞の雰囲気を探せます。</p><a class="btn" href="/quiz.html">好みから探す</a></aside>${clientJs('quiz-offer')}` : ''}
 ${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.includes('class="d-side"') ? clientJs("side-follow") : ""}${body.includes('class="experience-region"') || body.includes('class="kfold"') ? clientJs("details-target") : ""}${body.includes('class="read-layout"') ? clientJs("reader") : ""}${body.includes('class="octa-bar"') ? clientJs("organizers") : ""}${withForm ? `<script>${formScript(cfg)}</script>` : ""}${cfg.analyticsId ? clientJs("affiliate") + clientJs("analytics-events") : ""}<script>${MOTION_JS}</script></body></html>`;
   // インラインのスクリプト/スタイルのハッシュを集めて、このページ専用の CSP(コンテンツの許可リスト)を <meta> に入れる

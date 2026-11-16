@@ -53,7 +53,7 @@ export function historyTests({ ok, section, OUT }) {
   // 前後のページへの案内が、順番どおり
   const order = ["kodai", "chusei", "kinsei", "kindai"];
   ok(order.every((s, i) => { const $ = pages[`history/${s}.html`]; return (i === 0 || $(".hnav .prev").attr("href") === `/history/${order[i - 1]}.html`) && (i === order.length - 1 ? $(".hnav .next").attr("href") === "/history/" : $(".hnav .next").attr("href") === `/history/${order[i + 1]}.html`); }), "時代のページに、前後(古代→中世→近世→近代)への案内がある");
-  ok(cheerio.load(read(join(OUT, "index.html")))('footer a[href="/history/"]').length === 1, "フッターから、神楽の歴史へ行ける");
+  ok(cheerio.load(read(join(OUT, "index.html")))('.top nav a[href="/history/"]').length === 1, "メニューから、神楽の歴史へ行ける");
 
   // 見せ方(2026-10-30 運営者の判断): 時代タブ(総論と4つの時代)と、今のページの見出しを固定する
   section("神楽の歴史: 時代タブと見出しのナビ・分け方の図・スマホの年表");
