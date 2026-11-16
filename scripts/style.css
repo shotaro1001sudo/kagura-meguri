@@ -138,6 +138,9 @@ html{scroll-padding-top:84px}
   main .home-hero{padding-top:6px}
   /* 見出しを少し下げ、絵を少し左へ寄せる(2026-11-16 運営者の依頼)。絵は幅の8%ぶん左へ出し、左の溶かす位置も同じだけずらして、画面の端に絵の境目が出ないようにする */
   html:not([lang=en]) .home-hero .copy{margin-top:44px}
+  /* 縦に長いスマホでも、最初の画面に次の「開催予定」の見出しを出さない(2026-11-16 運営者の依頼)。絵の枠を、画面の下の端まで伸ばす。
+     352px は、絵の枠より上(ヘッダーと札)の高さ(幅320〜600pxで359〜395px)より少し小さい値。続きは右下の「開催予定へ」で知らせる */
+  html:not([lang=en]) main .home-hero{min-height:max(calc(var(--hh) - var(--lift)),calc(100svh - 352px))}
   /* 小さいスマホで見出しが柱や袖に重なっても読めるよう、見出しの後ろに地色を丸くにじませ、文字のまわりのぼかしも濃くする(2026-11-16 運営者の依頼・案A)。
      絵は隠さずに残す(右手も見えたまま)。にじみは見出しの枠の中に置き、絵(z-index:-1)より上、文字より下に来る */
   html:not([lang=en]) .home-hero .copy{position:relative;z-index:0;text-shadow:0 0 4px var(--bg),0 0 10px var(--bg),0 0 18px var(--bg),0 0 26px var(--bg)}
