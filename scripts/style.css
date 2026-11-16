@@ -1000,7 +1000,8 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 @media(max-width:560px){.finder{padding:16px 14px 18px}.finder .where{grid-template-columns:1fr}}
 
 /* チップの行(.chiprow): 小さな言葉+チップの並び(今週末の「各県の全日程を見る」など)。
-   スマホでは1行にして横に送り、右端を薄くして続きがあることを示す(すぐ下の一覧を、最初の画面に近づけるため) */
+   スマホでは1行にして横に送り、右端を薄くして続きがあることを示す(すぐ下の一覧を、最初の画面に近づけるため)。
+   ただし、種類で探すの「地方から探す」と、今週末・今月の「各県の全日程を見る」は、横に送らず格子に並べる(下の 560px 以下の指定) */
 .chiprow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .chiprow .meta{margin-right:4px;font-size:var(--fs-xs)}
 .weekend-regions,.kagura-regions{margin:0 0 4px}.month-regions{margin:0 0 20px}
@@ -1017,6 +1018,11 @@ main>p:not([class]){margin:20px 0;max-width:42em}
   .chiprow.kagura-regions{display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:visible;margin:0 0 4px;padding:0;-webkit-mask-image:none;mask-image:none}
   .chiprow.kagura-regions .meta{grid-column:1/-1;margin:0}
   .chiprow.kagura-regions .chip{justify-content:center;padding:6px 10px;text-align:center}
+  /* 今週末・今月の「各県の全日程を見る」も、横に送らず格子に(2026-11-16 運営者の依頼「横スクロールしないと切れて見える」)。
+     県名は短い(3〜4字)ので、320px でも収まる3列にして、行を少なくする */
+  .chiprow:is(.weekend-regions,.month-regions){display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow:visible;padding:0;margin-left:0;margin-right:0;-webkit-mask-image:none;mask-image:none}
+  .chiprow:is(.weekend-regions,.month-regions) .meta{grid-column:1/-1;margin:0}
+  .chiprow:is(.weekend-regions,.month-regions) .chip{justify-content:center;padding:6px 8px;text-align:center}
 }
 
 /* 本人発行の楽天バナー: 画像の縦横比とリンクを保持 */
