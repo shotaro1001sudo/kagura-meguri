@@ -29,8 +29,9 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     home(".hero-art img").attr("src") === "/hero-pc.webp" &&
     home(".hero-art source").attr("srcset") === "/hero-sp.webp",
     "元の縦書き見出しとPC・スマホの絵をそのまま残す");
-  ok(css.includes("main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}"),
-    "スマホの元のヒーローサイズとレイアウトを保持する");
+  ok(css.includes("main .home-hero{--hh:calc((100vw - 32px)*1.25 + 76px);--lift:calc(var(--hh)*.14);min-height:calc(var(--hh) - var(--lift))}") &&
+    css.includes("html:not([lang=en]) .hero-art{top:calc(var(--lift)*-1);bottom:auto;height:var(--hh)}"),
+    "スマホの絵は元の大きさのまま、高さの14%ぶん上へずらし、枠を同じだけ低くする(2026-11-16 運営者の依頼「人が上に来るように」)");
   ok(!css.includes(".home-find{") &&
     !css.includes("main .home-hero{min-height:clamp(") &&
     !css.includes(".pref-month-nav") && !css.includes(".viewing-preparation") &&

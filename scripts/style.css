@@ -121,12 +121,12 @@ html{scroll-padding-top:84px}
 @media(min-width:641px){html:not([lang=en]) .home-hero .copy{margin-left:clamp(24px,6vw,88px)}}
 @media(prefers-color-scheme:dark){.hero-art img{filter:brightness(.74) saturate(.92);--mx:linear-gradient(90deg,transparent 0,transparent 36%,#000 60%,#000 84%,transparent)}}
 @media(max-width:640px){
+  main .home-hero{--hh:calc((100vw - 32px)*1.25 + 76px);--lift:calc(var(--hh)*.14);min-height:calc(var(--hh) - var(--lift))}
   .hero-art{inset:auto auto 0 -8%;width:100%;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
     --mx:linear-gradient(90deg,transparent 8%,#000 22%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.3) 6%,rgb(0 0 0/.7) 13%,#000 20%,#000 80%,transparent)}
   /* 舞い手を上へ(2026-11-16 運営者の依頼「人が上に来るように」)。絵の大きさは変えずに、絵を高さの14%ぶん上へずらし、上の空の部分を見出しの外へ出す。
      絵の枠は見出しの高さに合わせて同じだけ低くし、上の溶かす位置も14%ずらして、上端に境目が出ないようにする。
      左の溶かす幅を広げ、縦書きの見出しの下では絵を薄くして、柵や御幣に文字が埋もれないようにする */
-  main .home-hero{--hh:calc((100vw - 32px)*1.25 + 76px);--lift:calc(var(--hh)*.14);min-height:calc(var(--hh) - var(--lift))}
   html:not([lang=en]) .hero-art{top:calc(var(--lift)*-1);bottom:auto;height:var(--hh)}
   html:not([lang=en]) .hero-art img{--mx:linear-gradient(90deg,transparent 8%,rgb(0 0 0/.35) 24%,rgb(0 0 0/.75) 33%,#000 40%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 14%,rgb(0 0 0/.3) 20%,rgb(0 0 0/.7) 27%,#000 34%,#000 80%,transparent)}
   /* 絵と見出しを、札のすぐ下へ寄せる(2026-11-16 運営者の依頼「絵と見出しを上に」)。札の下の余白と見出しの上の余白を詰め、絵の上の溶かす幅を短くして、絵が高い位置から見えるようにする */
