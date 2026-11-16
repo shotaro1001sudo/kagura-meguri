@@ -1234,8 +1234,8 @@ ${otherWays("/weekend.html")}</div></div>`,
     desc: padDesc(clip(`${tmLabel}、今日から月末までに観られる神楽をまとめています。${[tmEvents.length ? `開催${tmEvents.length}件` : "", tmRegs.length + tmDaily.length ? `定期公演${tmRegs.length + tmDaily.length}件の公演日` : ""].filter(Boolean).join("と、").replace(/.+/, (t) => `${t}を載せています`) || "開催情報がないときは、来月の予定をご案内します"}。${names.length ? `${listNames(names)}など。` : ""}毎日自動で更新しています。`)),
     path: "/this-month.html", active: "/this-month.html", wide: true,
     ld: [crumbsLd([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]]), itemListLd(`今月の神楽(${tmLabel})`, [...tmEvents.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...[...tmRegs, ...tmDaily].map(({ r }) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
-    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽", `本日(${+today.slice(5, 7)}月${+today.slice(8, 10)}日)から月末まで`)}
-<p class="lead">今日から月末までに観られる神楽を、日付順に並べています。</p>
+    body: `${crumbNav([["ホーム", "/"], ["日付・場所で探す", "/calendar.html"], ["今月の神楽"]])}${hero("今月の神楽")}
+<p class="lead">今日から月末までに観られる神楽を、日付順に並べています(${jpDate(today)}時点)。</p>
 ${tmRegions.length ? `<nav class="tm-regions chiprow" aria-label="今月これから開催のある県"><span class="meta">各県の全日程を見る</span>${tmRegions.map((p) => `<a class="chip" href="${prefHref(p)}">${esc(p)}</a>`).join("")}</nav>` : ""}
 <div class="dpage"><div class="d-lead narrow">${adSlot(cfg.adsense.slotList)}<h2>開催予定${tmEvents.length ? `(${tmEvents.length}件)` : ""}</h2></div><div class="d-top">
 ${withStrips(tmEvents.map((e) => ({ html: card(e), item: listItem(e, e.start.slice(0, 10), "event") })), "/this-month.html", { wide: true }) || empty(`${tmLabel}の、これからの開催情報は、いまのところ見つかっていません。`)}
