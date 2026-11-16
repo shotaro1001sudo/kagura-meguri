@@ -34,7 +34,9 @@ export async function uxTests({ ok, section, OUT }) {
 
   section("UI: トップの最初の画面");
   ok(home(".home-hero .next").length === 0, "見出しの中に「次の開催」は出さない(運営者の判断で外した)");
-  ok(home(".home-discovery .quick a").length === 3 && home(".home-discovery a[href='/calendar.html']").length === 1, "トップ上部から今週末・今月・日付地域検索へ進める");
+  ok(home(".home-discovery .quick a").length === 4 && home(".home-discovery a[href='/calendar.html']").length === 1 && home(".home-discovery a[href='/map.html']").length === 1, "トップ上部から今週末・今月・日付地域検索・地図へ進める");
+  { const css = readFileSync("scripts/style.css", "utf8"), f = home(".home-discovery .quick.fuda a");
+    ok(f.length === 4 && f.toArray().every((a) => home(a).children("b").text() && home(a).children("small").text()) && /\.home-discovery \.quick b\{writing-mode:vertical-rl/.test(css) && /\.home-discovery \.quick \.tcy\{text-combine-upright:all\}/.test(css) && /\.home-discovery \.quick\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/.test(css) && !/\.home-discovery \.quick a:last-child\{grid-column/.test(css) && /^\d+日〜\d+日$/.test(f.eq(0).children("small").text()) && f.eq(0).find(".tcy").length === 2, "トップの入口は縦書きの札4枚(名前と小さな添え書き。今週末は日付、数字は縦中横。2026-11-16 運営者が案Aを選んだ)", f.map((_, a) => home(a).text()).get().join(" / ")); }
   const regN = home(".reglist .card").length;
   ok(regN <= 3 ? home("#regmore").length === 0 : home("#regmore").length === 1 && home("#regmore").parent().attr("hidden") !== undefined, "定期公演が4件以上なら「すべて表示」のボタンを用意する(JS が動くときだけ出す)", String(regN));
   const hd = new JSDOM(read(join(OUT, "index.html")), { runScripts: "dangerously" });

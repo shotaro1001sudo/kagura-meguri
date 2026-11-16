@@ -185,7 +185,14 @@ main p strong:not(:has(+br)){background:linear-gradient(transparent 60%,var(--ma
 main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
 .home-discovery{padding:28px 0 16px}
 .discovery-title{margin:0 0 14px;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg)}
-.home-discovery .quick{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* トップの入口は、縦書きの札(2026-11-16 運営者が案Aを選んだ。すぐ下の縦書きの見出しとつなげる)。
+   上の縁に朱の線、右に札の名前、左に小さな添え書き(朱)。4枚を横に並べる(320px でも4枚) */
+.home-discovery .quick{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:520px}
+.home-discovery .quick a{flex-direction:row-reverse;justify-content:center;align-items:flex-start;gap:8px;min-height:0;padding:18px 4px 16px;border-top:3px solid var(--ac);border-radius:4px}
+.home-discovery .quick b{writing-mode:vertical-rl;font-size:var(--fs-l);letter-spacing:.24em;white-space:nowrap}
+.home-discovery .quick b::after{content:none}
+.home-discovery .quick small{display:block;writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-2xs);letter-spacing:.14em;white-space:nowrap;color:var(--ac)}
+.home-discovery .quick .tcy{text-combine-upright:all}
 /* 札(.tag): 種類・県・「定期公演」などの小さな丸い印。カードの下と、見出しの下に置く(開催までの日数 .until と同じ大きさ) */
 .tag{display:inline-block;margin:6px 6px 0 0;padding:3px 12px;border:1px solid var(--line);border-radius:var(--pill);font-size:var(--fs-xs);color:var(--ac2);text-decoration:none;position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 a.tag:hover{color:var(--ac);border-color:var(--ac)}
@@ -378,7 +385,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .quick b{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.quick b::after{content:" ›";color:var(--ac)}
 .quick small{color:var(--mut);font-size:var(--fs-s)}
 @media(max-width:560px){.quick{grid-template-columns:repeat(2,1fr)}.quick a{padding:12px 4px;min-height:52px;justify-content:center;align-items:center;text-align:center}.quick b{font-size:var(--fs-xs);letter-spacing:0;white-space:nowrap}.quick small{display:none}}
-@media(max-width:560px){.home-discovery .quick{grid-template-columns:repeat(2,minmax(0,1fr))}.home-discovery .quick a:last-child{grid-column:1/-1}}
+@media(max-width:560px){.home-discovery .quick{gap:8px}.home-discovery .quick a{padding:16px 2px 14px;gap:6px}.home-discovery .quick b{font-size:var(--fs-m);letter-spacing:.2em}}
 .adph{min-height:80px;display:grid;place-items:center;margin:28px 0;font-size:var(--fs-2xs);color:var(--mut);letter-spacing:.15em;border-top:1px dotted var(--line);border-bottom:1px dotted var(--line)}
 .adwrap{margin:28px 0;min-height:0}
 /* 広告であることを明示する(ステルスマーケティング規制への対応)。広告の枠の上に「広告」と出す */

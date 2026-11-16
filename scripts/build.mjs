@@ -635,6 +635,15 @@ const tmEvents = upcoming.filter((e) => e.start.slice(0, 7) <= mk);
 const tmRegs = regularDates(monthDays), tmDaily = dailyIn(monthDays);
 const nextMk = addDays(monthEnd, 1).slice(0, 7);
 const nmEvents = upcoming.filter((e) => e.start.slice(0, 7) === nextMk);
+// トップの入口: 縦書きの札(2026-11-16 運営者が案Aを選び、地図の札も足した)。
+// 札の左の小さな添え書きは、今週末は日付、今月は残りの件数(毎日の更新で変わる)。縦書きの中の数字は、横に倒さず1文字分に収める(.tcy)
+const tcy = (s) => String(s).replace(/\d+/g, (n) => `<span class="tcy">${n}</span>`);
+const fudaLinks = [
+  ["/weekend.html", "今週末の神楽", tcy(`${+wk.start.slice(8, 10)}日〜${+wk.end.slice(8, 10)}日`)],
+  ["/this-month.html", "今月の神楽", tmEvents.length ? tcy(`あと${tmEvents.length}件`) : "来月の予定も"],
+  ["/calendar.html", "日付・場所で探す", "県と日付で"],
+  ["/map.html", "地図で探す", "近くの会場"],
+].map(([href, label, note]) => `<a href="${href}"><b>${label}</b><small>${note}</small></a>`).join("");
 
 rmSync(OUT, { recursive: true, force: true });
 
@@ -698,7 +707,7 @@ write("dist/index.html", layout({
   splash: `<div class="splash" aria-hidden="true"><img src="/symbol.png" width="96" height="96" alt=""><b>${esc(cfg.siteName)}</b></div>`,
   body: `<section class="home-discovery" aria-label="神楽の公演を探す">
 <p class="discovery-title">全国の神楽、公演日程を探す</p>
-<nav class="quick" aria-label="日付から探す"><a href="/weekend.html"><b>今週末の神楽</b></a><a href="/this-month.html"><b>今月の神楽</b></a><a href="/calendar.html"><b>日付・場所で探す</b></a></nav>
+<nav class="quick fuda" aria-label="公演を探す">${fudaLinks}</nav>
 </section>
 <section class="hero home-hero">
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
