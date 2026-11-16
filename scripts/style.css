@@ -236,8 +236,10 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
    札の間は、紙垂の幅に合わせて広げる。札の上の朱の線はやめ、縄と紙垂で札らしさを出す */
 .home-discovery .quick{--rope:8px;--shide:30px;position:relative;isolation:isolate;padding-top:calc(var(--rope)*1.5 + 2px)}
 main .home-discovery .quick{gap:calc(var(--shide) + 6px)}
-.home-discovery .quick::before{content:"";position:absolute;z-index:-1;top:calc(var(--rope) + 2px);left:calc(var(--rope)*-.4);right:calc(var(--rope)*-.4);height:var(--rope);pointer-events:none;
-  background:url(/shimenawa.svg) 0 0/auto 100% repeat-x;filter:drop-shadow(0 2px 2px rgb(50 32 8/.3))}
+/* 縄は、古びた藁(2026-11-16 運営者が見本Cを選んだ): 色あせた縄の目に、しみ(shimenawa-stain.svg)と、縁から飛び出す藁の毛(shimenawa-fuzz.svg)を重ねる。
+   毛が縄の外へ出るので、縄の枠は縄の太さの2倍にし、縄の目としみは真ん中の半分に描く */
+.home-discovery .quick::before{content:"";position:absolute;z-index:-1;top:calc(var(--rope)*.5 + 2px);left:calc(var(--rope)*-.4);right:calc(var(--rope)*-.4);height:calc(var(--rope)*2);pointer-events:none;
+  background:url(/shimenawa-fuzz.svg) 0 50%/auto 100% repeat-x,url(/shimenawa-stain.svg) 0 50%/auto 50% repeat-x,url(/shimenawa.svg) 0 50%/auto 50% repeat-x;filter:drop-shadow(0 2px 2px rgb(50 32 8/.3))}
 .home-discovery .quick::after{content:"";position:absolute;z-index:-1;top:2px;left:calc(var(--rope)*-2.6);right:calc(var(--rope)*-2.6);height:calc(var(--rope)*3);pointer-events:none;
   background:url(/shimenawa-end.svg) left center/auto 100% no-repeat,url(/shimenawa-end-r.svg) right center/auto 100% no-repeat;filter:drop-shadow(0 2px 2px rgb(50 32 8/.25))}
 .home-discovery .quick a{position:relative;border-top:1px solid var(--edge)}

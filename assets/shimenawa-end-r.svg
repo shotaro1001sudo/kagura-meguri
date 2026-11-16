@@ -2,24 +2,24 @@
 <!-- 注連縄の右の端(shimenawa-end.svg を左右反転したもの) -->
 <g transform="translate(48 0) scale(-1 1)">
 <g fill="none" stroke-linecap="round">
-<g stroke="#b99c5e" stroke-width=".7">
+<g stroke="#86735a" stroke-width=".7">
 <path d="M18 13C12 12 6 13 1 16"/><path d="M18 14C11 15 6 18 2 23"/><path d="M18 15C12 17 8 22 6 28"/><path d="M19 16C15 19 12 24 11 29"/>
 <path d="M18 12C13 9 8 8 3 9"/><path d="M19 13C14 13 9 15 4 20"/>
 </g>
-<g stroke="#d9c38c" stroke-width=".55">
+<g stroke="#ab9573" stroke-width=".55">
 <path d="M18 13.5C13 13 7 14.5 2 18.5"/><path d="M18 15C13 16.5 9 20 7 26"/><path d="M19 15.5C16 18 13.5 22 13 27"/><path d="M18 12.5C13 11 7 11 2 13"/><path d="M19 14C15 16 11 19 8 24"/>
 </g>
-<g stroke="#8c703a" stroke-width=".45" stroke-opacity=".8">
+<g stroke="#60513f" stroke-width=".45" stroke-opacity=".8">
 <path d="M18 14C12 14 7 16 3 21"/><path d="M19 15C15 17.5 11 22 9 27"/><path d="M18 12.8C13 11.5 8 12 4 14"/>
 </g>
 </g>
-<ellipse cx="22" cy="15" rx="7" ry="8.5" fill="#c6aa6c"/>
+<ellipse cx="22" cy="15" rx="7" ry="8.5" fill="#957f5f"/>
 <g fill="none" stroke-linecap="round">
-<path d="M17 9C21 12 24 16 25 22" stroke="#e6d4a0" stroke-width="1.6"/>
-<path d="M20 7.5C24 11 27 15 27.5 20" stroke="#8a6d36" stroke-width=".9" stroke-opacity=".7"/>
-<path d="M16 13C19 15 21 18 21 23" stroke="#8a6d36" stroke-width=".8" stroke-opacity=".6"/>
-<path d="M19 8C22 10 23.5 12 24.5 14" stroke="#f3e6bd" stroke-width=".8"/>
+<path d="M17 9C21 12 24 16 25 22" stroke="#b9a47f" stroke-width="1.6"/>
+<path d="M20 7.5C24 11 27 15 27.5 20" stroke="#5e4f3c" stroke-width=".9" stroke-opacity=".7"/>
+<path d="M16 13C19 15 21 18 21 23" stroke="#5e4f3c" stroke-width=".8" stroke-opacity=".6"/>
+<path d="M19 8C22 10 23.5 12 24.5 14" stroke="#c9b690" stroke-width=".8"/>
 </g>
-<ellipse cx="22" cy="15" rx="7" ry="8.5" fill="none" stroke="#7a5f2c" stroke-width=".6" stroke-opacity=".6"/>
+<ellipse cx="22" cy="15" rx="7" ry="8.5" fill="none" stroke="#524433" stroke-width=".6" stroke-opacity=".6"/>
 </g>
 </svg>

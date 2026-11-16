@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 24" width="20" height="24" preserveAspectRatio="none">
-<!-- トップの札の上に渡す注連縄の、ひと目ぶん(横に繰り返して使う)。太い藁の束を斜めにねじった形。
+<!-- トップの札の上に渡す注連縄の、ひと目ぶん(横に繰り返して使う)。藁の束を斜めにねじった形。色は、日に焼けて色あせた古い藁(2026-11-16 運営者の依頼「もう少し古びた感じに」)。
      束は skewX で斜めにし、束の中を横のグラデーションで丸く(合わせ目は少し暗く)見せ、細い線で藁の筋を入れる。
      最後に上下の明暗を重ねて、太い縄の丸み(上に光、下に影)を出す -->
 <defs>
 <linearGradient id="s" x1="0" x2="1">
-<stop offset="0" stop-color="#8f7543"/><stop offset=".1" stop-color="#b59a60"/><stop offset=".34" stop-color="#dcc795"/><stop offset=".5" stop-color="#ecdcb0"/><stop offset=".72" stop-color="#d3bb84"/><stop offset=".9" stop-color="#ad9156"/><stop offset="1" stop-color="#8a703f"/>
+<stop offset="0" stop-color="#635645"/><stop offset=".1" stop-color="#83725b"/><stop offset=".34" stop-color="#af9979"/><stop offset=".5" stop-color="#c0ac89"/><stop offset=".72" stop-color="#a58f6d"/><stop offset=".9" stop-color="#7a6a56"/><stop offset="1" stop-color="#5f5241"/>
 </linearGradient>
 <linearGradient id="v" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#3a2a0c" stop-opacity=".4"/><stop offset=".09" stop-color="#3a2a0c" stop-opacity="0"/><stop offset=".22" stop-color="#fff8e2" stop-opacity=".32"/><stop offset=".4" stop-color="#fff8e2" stop-opacity="0"/><stop offset=".62" stop-color="#3a2a0c" stop-opacity="0"/><stop offset="1" stop-color="#3a2a0c" stop-opacity=".55"/>
+<stop offset="0" stop-color="#251d13" stop-opacity=".4"/><stop offset=".09" stop-color="#251d13" stop-opacity="0"/><stop offset=".22" stop-color="#e0caa1" stop-opacity=".32"/><stop offset=".4" stop-color="#e0caa1" stop-opacity="0"/><stop offset=".62" stop-color="#251d13" stop-opacity="0"/><stop offset="1" stop-color="#251d13" stop-opacity=".55"/>
 </linearGradient>
 <g id="b">
 <rect x="0" y="-2" width="20" height="28" fill="url(#s)"/>
 <g fill="none" stroke-width=".28">
-<path d="M1.6 -2V26" stroke="#5a4316" stroke-opacity=".35"/><path d="M2.8 -2V26" stroke="#f6e6b8" stroke-opacity=".3"/><path d="M4.1 -2V26" stroke="#6e5420" stroke-opacity=".25"/>
-<path d="M5.3 -2V26" stroke="#fbeec8" stroke-opacity=".4"/><path d="M6.4 -2V26" stroke="#7a5f2a" stroke-opacity=".18"/><path d="M7.6 -2V26" stroke="#fff4d4" stroke-opacity=".5"/>
-<path d="M8.7 -2V26" stroke="#8a6c32" stroke-opacity=".2"/><path d="M9.9 -2V26" stroke="#fff6da" stroke-opacity=".55"/><path d="M11.1 -2V26" stroke="#7a5f2a" stroke-opacity=".22"/>
-<path d="M12.3 -2V26" stroke="#fbeec8" stroke-opacity=".38"/><path d="M13.6 -2V26" stroke="#6e5420" stroke-opacity=".26"/><path d="M14.8 -2V26" stroke="#f3e2b0" stroke-opacity=".3"/>
-<path d="M16.1 -2V26" stroke="#5a4316" stroke-opacity=".3"/><path d="M17.4 -2V26" stroke="#e9d39a" stroke-opacity=".25"/><path d="M18.6 -2V26" stroke="#4e3a12" stroke-opacity=".35"/>
+<path d="M1.6 -2V26" stroke="#3a2e1f" stroke-opacity=".35"/><path d="M2.8 -2V26" stroke="#ccb58c" stroke-opacity=".3"/><path d="M4.1 -2V26" stroke="#483b29" stroke-opacity=".25"/>
+<path d="M5.3 -2V26" stroke="#d5be94" stroke-opacity=".4"/><path d="M6.4 -2V26" stroke="#524432" stroke-opacity=".18"/><path d="M7.6 -2V26" stroke="#ddc599" stroke-opacity=".5"/>
+<path d="M8.7 -2V26" stroke="#5d4d3a" stroke-opacity=".2"/><path d="M9.9 -2V26" stroke="#dec89c" stroke-opacity=".55"/><path d="M11.1 -2V26" stroke="#524432" stroke-opacity=".22"/>
+<path d="M12.3 -2V26" stroke="#d5be94" stroke-opacity=".38"/><path d="M13.6 -2V26" stroke="#483b29" stroke-opacity=".26"/><path d="M14.8 -2V26" stroke="#c8b187" stroke-opacity=".3"/>
+<path d="M16.1 -2V26" stroke="#3a2e1f" stroke-opacity=".3"/><path d="M17.4 -2V26" stroke="#bba37b" stroke-opacity=".25"/><path d="M18.6 -2V26" stroke="#32281a" stroke-opacity=".35"/>
 </g>
-<path d="M0 -2V26" stroke="#4a3712" stroke-width=".6" stroke-opacity=".5"/>
+<path d="M0 -2V26" stroke="#30261a" stroke-width=".6" stroke-opacity=".5"/>
 </g>
 </defs>
 <g transform="skewX(-45)">
