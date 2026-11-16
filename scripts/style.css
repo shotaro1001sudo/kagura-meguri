@@ -228,6 +228,26 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
   .home-discovery .quick{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;max-width:none}
 }
 @media(max-width:640px){.home-discovery .quick a.pc-only{display:none}}
+/* 札を、注連縄に下げた形にする(2026-11-16 運営者が案Bを選び「よりリアルな絵に」)。
+   運営者が送った写真(社の前の、細い藁の縄に大きな紙垂を下げたもの)に寄せる。
+   札の列の上に、細い藁の縄(shimenawa.svg を横に繰り返す)を渡し、両端は結び目と、ほどけた藁の房(shimenawa-end(-r).svg)。
+   札は縄の手前に下げ、上の端を縄の中ほどに合わせる。札と札の間に大きな紙垂(shide.svg)を下げる。紙垂は縄に掛けた形で、
+   上の小さな耳と本体の間から縄が見える(絵の高さの約1割の所。縄の中心に合わせる)。紙垂は2枚目からの札の ::before なので、札と一緒に揺れる。
+   札の間は、紙垂の幅に合わせて広げる。札の上の朱の線はやめ、縄と紙垂で札らしさを出す */
+.home-discovery .quick{--rope:8px;--shide:30px;position:relative;isolation:isolate;padding-top:calc(var(--rope)*1.5 + 2px)}
+main .home-discovery .quick{gap:calc(var(--shide) + 6px)}
+.home-discovery .quick::before{content:"";position:absolute;z-index:-1;top:calc(var(--rope) + 2px);left:calc(var(--rope)*-.4);right:calc(var(--rope)*-.4);height:var(--rope);pointer-events:none;
+  background:url(/shimenawa.svg) 0 0/auto 100% repeat-x;filter:drop-shadow(0 2px 2px rgb(50 32 8/.3))}
+.home-discovery .quick::after{content:"";position:absolute;z-index:-1;top:2px;left:calc(var(--rope)*-2.6);right:calc(var(--rope)*-2.6);height:calc(var(--rope)*3);pointer-events:none;
+  background:url(/shimenawa-end.svg) left center/auto 100% no-repeat,url(/shimenawa-end-r.svg) right center/auto 100% no-repeat;filter:drop-shadow(0 2px 2px rgb(50 32 8/.25))}
+.home-discovery .quick a{position:relative;border-top:1px solid var(--edge)}
+main .home-discovery .quick a{padding-top:18px}
+.home-discovery .quick a+a::before{content:"";position:absolute;top:calc(var(--shide)*-.275 - 1px);left:calc((var(--shide) + 6px)/-2 - var(--shide)/2 - 1px);width:var(--shide);aspect-ratio:40/100;pointer-events:none;
+  background:url(/shide.svg) center/contain no-repeat;filter:drop-shadow(0 3px 2px rgb(40 30 10/.22))}
+@media(min-width:641px){.home-discovery .quick{--rope:10px;--shide:40px}}
+@media(max-width:560px){.home-discovery .quick{--rope:7px;--shide:22px}}
+@media(max-width:360px){.home-discovery .quick{--shide:18px}}
+@media(prefers-color-scheme:dark){.home-discovery .quick::before,.home-discovery .quick::after{filter:brightness(.8) saturate(.9)}.home-discovery .quick a+a::before{filter:brightness(.86) drop-shadow(0 3px 2px rgb(0 0 0/.5))}}
 /* 札(.tag): 種類・県・「定期公演」などの小さな丸い印。カードの下と、見出しの下に置く(開催までの日数 .until と同じ大きさ) */
 .tag{display:inline-block;margin:6px 6px 0 0;padding:3px 12px;border:1px solid var(--line);border-radius:var(--pill);font-size:var(--fs-xs);color:var(--ac2);text-decoration:none;position:relative;z-index:1;transition:color var(--t-s) var(--ease),border-color var(--t-s) var(--ease)}
 a.tag:hover{color:var(--ac);border-color:var(--ac)}
