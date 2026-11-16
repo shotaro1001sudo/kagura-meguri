@@ -123,16 +123,22 @@ html{scroll-padding-top:84px}
 @media(max-width:640px){
   main .home-hero{min-height:calc((100vw - 32px)*1.25 + 76px)}
   .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
-    --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.12) 10%,rgb(0 0 0/.45) 20%,rgb(0 0 0/.82) 30%,#000 38%,#000 80%,transparent)}
+    --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.3) 6%,rgb(0 0 0/.7) 13%,#000 20%,#000 80%,transparent)}
+  /* 絵と見出しを、札のすぐ下へ寄せる(2026-11-16 運営者の依頼「絵と見出しを上に」)。札の下の余白と見出しの上の余白を詰め、絵の上の溶かす幅を短くして、絵が高い位置から見えるようにする */
+  main .home-discovery{padding-bottom:0}
+  main .home-hero{padding-top:6px}
 }
 /* スマホのトップ: 絵が画面を占めるので、下に続きがあることを、左下の縦書きの小さな案内で知らせる(押すと開催予定へ)。
    細い線の上を朱の点がゆっくり下りる(動きを減らす設定では、線と文字だけ)。PCは絵が低く、続きが見えるので出さない */
 .scroll-cue{display:none}
 @media(max-width:640px){
-  .scroll-cue{display:flex;position:absolute;left:6px;bottom:20px;flex-direction:column;align-items:center;gap:10px;min-width:var(--tap);padding:6px 0;color:var(--mut);text-decoration:none;font-family:var(--serif);font-size:var(--fs-2xs);letter-spacing:.3em;text-shadow:0 0 8px var(--bg)}
+  /* 目立たせる(2026-11-16 運営者の依頼): 和紙色の縦長の札に、朱の文字と朱の線。絵の上でも読めるよう、地色を少し透かして敷く。
+     縦書きの見出しは左にあり、低い画面では画面の下まで続くので、重ならないよう右下に置く */
+  .scroll-cue{display:flex;position:absolute;right:6px;bottom:20px;flex-direction:column;align-items:center;gap:10px;min-width:var(--tap);padding:12px 0 10px;color:var(--ac);text-decoration:none;font-family:var(--serif);font-size:var(--fs-s);font-weight:500;letter-spacing:.3em;
+    background:color-mix(in srgb,var(--bg) 86%,transparent);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);border-radius:var(--pill);box-shadow:var(--shadow)}
   .scroll-cue span{writing-mode:vertical-rl}
-  .scroll-cue i{position:relative;width:1px;height:56px;background:color-mix(in srgb,var(--mut) 45%,transparent)}
-  .scroll-cue i:after{content:"";position:absolute;left:-2px;top:0;width:5px;height:5px;border-radius:50%;background:var(--ac)}
+  .scroll-cue i{position:relative;width:2px;height:56px;background:color-mix(in srgb,var(--ac) 30%,transparent)}
+  .scroll-cue i:after{content:"";position:absolute;left:-3px;top:0;width:8px;height:8px;border-radius:50%;background:var(--ac)}
   .js .scroll-cue i:after{animation:cue 2.4s var(--ease) infinite}
   .cue-fixed .scroll-cue{position:fixed;z-index:20;bottom:calc(16px + env(safe-area-inset-bottom,0px));transition:opacity var(--t-s) var(--ease),visibility var(--t-s)}
   .cue-fixed.scrolled .scroll-cue{visibility:hidden}
@@ -189,6 +195,8 @@ main p strong:has(+br){font-family:var(--serif);letter-spacing:.08em}
    上の縁に朱の線、右に札の名前、左に小さな添え書き(朱)。4枚を横に並べる(320px でも4枚) */
 .home-discovery .quick{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:520px}
 .home-discovery .quick a{flex-direction:row-reverse;justify-content:center;align-items:flex-start;gap:8px;min-height:0;padding:18px 4px 16px;border-top:3px solid var(--ac);border-radius:4px}
+/* 書き出しは、どの札も上の縁から同じ高さ(2行の札の短い行が、真ん中に下がらないように。2026-11-16 運営者の依頼) */
+.home-discovery .quick :is(b,small){text-align:start}
 .home-discovery .quick b{writing-mode:vertical-rl;font-size:var(--fs-l);letter-spacing:.24em;white-space:nowrap}
 .home-discovery .quick b::after{content:none}
 .home-discovery .quick small{display:block;writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-2xs);letter-spacing:.14em;white-space:nowrap;color:var(--ac)}
