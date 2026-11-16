@@ -129,6 +129,10 @@ html{scroll-padding-top:84px}
      左の溶かす幅を広げ、縦書きの見出しの下では絵を薄くして、柵や御幣に文字が埋もれないようにする */
   html:not([lang=en]) .hero-art{top:calc(var(--lift)*-1);bottom:auto;height:var(--hh)}
   html:not([lang=en]) .hero-art img{--mx:linear-gradient(90deg,transparent 8%,rgb(0 0 0/.35) 24%,rgb(0 0 0/.75) 33%,#000 40%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 14%,rgb(0 0 0/.3) 20%,rgb(0 0 0/.7) 27%,#000 34%,#000 80%,transparent)}
+  /* 舞い手の右手を全部見せる(2026-11-16 運営者の依頼)。右手は絵の右端の近く(幅の92〜98%)にあるので、
+     絵を右の端にそろえて置き(はみ出す分は、何も描いていない左の和紙の側で切る)、右手のまわりだけ楕円で溶かさずに残す(--mh を、左右・上下のぼかしに足す) */
+  html:not([lang=en]) .hero-art img{object-position:right bottom;--mh:radial-gradient(ellipse 13% 13% at 89% 64%,#000 55%,transparent 100%);
+    -webkit-mask-image:var(--mh),var(--mx),var(--my);mask-image:var(--mh),var(--mx),var(--my);-webkit-mask-composite:source-over,source-in;mask-composite:add,intersect}
   /* 絵と見出しを、札のすぐ下へ寄せる(2026-11-16 運営者の依頼「絵と見出しを上に」)。札の下の余白と見出しの上の余白を詰め、絵の上の溶かす幅を短くして、絵が高い位置から見えるようにする */
   main .home-discovery{padding-bottom:0}
   main .home-hero{padding-top:6px}
@@ -144,14 +148,15 @@ html{scroll-padding-top:84px}
   .scroll-cue{display:flex;position:absolute;right:6px;bottom:20px;flex-direction:column;align-items:center;gap:10px;min-width:var(--tap);padding:12px 0 10px;color:var(--ac);text-decoration:none;font-family:var(--serif);font-size:var(--fs-s);font-weight:500;letter-spacing:.3em;
     background:color-mix(in srgb,var(--bg) 86%,transparent);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent);border-radius:var(--pill);box-shadow:var(--shadow)}
   .scroll-cue span{writing-mode:vertical-rl}
-  .scroll-cue i{position:relative;width:2px;height:56px;background:color-mix(in srgb,var(--ac) 30%,transparent)}
+  .scroll-cue i{position:relative;width:2px;height:32px;background:color-mix(in srgb,var(--ac) 30%,transparent)}
   .scroll-cue i:after{content:"";position:absolute;left:-3px;top:0;width:8px;height:8px;border-radius:50%;background:var(--ac)}
+  /* 線は短めに(2026-11-16): 開いた直後は画面の下に留まるので、長いと舞い手の右手に重なる */
   .js .scroll-cue i:after{animation:cue 2.4s var(--ease) infinite}
   .cue-fixed .scroll-cue{position:fixed;z-index:20;bottom:calc(16px + env(safe-area-inset-bottom,0px));transition:opacity var(--t-s) var(--ease),visibility var(--t-s)}
   .cue-fixed.scrolled .scroll-cue{visibility:hidden}
   .js:is(.cue-fixed.scrolled) .scroll-cue{opacity:0}
 }
-@keyframes cue{0%{translate:0 -6px;opacity:0}20%{opacity:1}80%{opacity:1}100%{translate:0 56px;opacity:0}}
+@keyframes cue{0%{translate:0 -6px;opacity:0}20%{opacity:1}80%{opacity:1}100%{translate:0 32px;opacity:0}}
 @media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img,html:not([lang=en]) .hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 24%,#000 52%,#000 86%,transparent)}}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
