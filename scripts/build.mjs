@@ -364,19 +364,46 @@ const HEAD_MOTION = `(function(d){var h=d.documentElement,w=window;try{if(!w.Int
 
 // ---------- デザイン ----------
 const css = lf(readFileSync("scripts/style.css", "utf8")) + "\n" + motionCss;
-// メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値)]
+// メインメニュー: 「探し方」で並べる。[行き先, 表示, このメニューが「今いる場所」になるページ(active の値), 開くメニューだけか]
+// 開くメニューだけ(true)の項目は、スマホ・タブレットのカードにだけ出す。PC の帯は9つだと 1300px 近く要り、よくある幅で2段に折れるため
+// (PC では、好み診断・広告協賛へはフッターから入れる)
 const NAV = [
   ["/", "開催予定", ["/"]],
   ["/calendar.html", "日付・場所で探す", ["/calendar.html", "/weekend.html", "/this-month.html", "/month/"]],
   ["/map.html", "地図で探す", ["/map.html"]],
   ["/kagura/", "種類で探す", ["/kagura/"]],
+  ["/quiz.html", "神楽の好み診断", ["/quiz.html"], true],
   ["/guide.html", "神楽を初めて観る方へ", ["/guide.html"]],
   ["/history/", "神楽の歴史", ["/history/"]],
   ["/organizers.html", "主催者の方へ", ["/organizers.html", "/submit.html"]],
+  ["/sponsor.html", "広告・協賛", ["/sponsor.html", "/pr/sample.html"], true],
 ];
-const navLink = ([h, t, group], active) => {
+// メニューの絵(ピクトグラム): スマホ・タブレットで開くメニューは、絵と文字のカードにする(PC の帯では絵を出さない)。
+// 線だけの絵(24×24、色は文字と同じ currentColor を CSS で朱に)。行き先ごとに1つ。英語版も同じ絵を使う
+const NAV_ICON = {
+  torii: '<path d="M2.5 4.5Q12 6.6 21.5 4.5"/><path d="M4.5 8.5h15M7 6v15M17 6v15M12 5.8v2.7"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/>',
+  pin: '<path d="M12 21s-6.5-5.8-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
+  fan: '<path d="M12 20 3.5 10.5A12.75 12.75 0 0 1 20.5 10.5z"/><path d="M12 20V7.3M12 20 7.4 8.1M12 20l4.6-11.9"/><path d="M8.2 15.6a6 6 0 0 1 7.6 0"/>',
+  wakaba: '<path d="M12 21 6 15.5V4l6 5 6-5v11.5z"/><path d="M12 9v12"/>',
+  scroll: '<rect x="3" y="4" width="4" height="16" rx="2"/><rect x="17" y="4" width="4" height="16" rx="2"/><path d="M7 6h10M7 18h10M10.5 9v6M13.5 9v4"/>',
+  megaphone: '<path d="M4 9.5h3l9-4.5v14l-9-4.5H4z"/><path d="M7 14.5 8.6 20h2.6l-1.1-4.6M19.2 9.3a3.6 3.6 0 0 1 0 5.4"/>',
+  quiz: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M9.8 7.8a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.5M12 13.6v.1"/>',
+  nobori: '<path d="M5.5 2.5v19M5 4.5h13.5"/><path d="M9 4.5h8.5v14.5H9z"/><path d="M5.5 8.5H9M5.5 12.5H9M5.5 16.5H9M13.25 8v7"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/>',
+};
+const NAV_ICON_OF = {
+  "/": "torii", "/calendar.html": "calendar", "/map.html": "pin", "/kagura/": "fan", "/guide.html": "wakaba", "/history/": "scroll", "/organizers.html": "megaphone", "/quiz.html": "quiz", "/sponsor.html": "nobori",
+  "/en/": "torii", "/en/guide.html": "wakaba", "/en/kagura.html": "fan", "/en/history.html": "scroll",
+};
+const navIcon = (h, en) => {
+  const p = NAV_ICON[en && h === "/" ? "globe" : NAV_ICON_OF[h]];
+  return p ? `<svg class="ni" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">${p}</svg>` : "";
+};
+const navLink = ([h, t, group, menuOnly], active, en = false) => {
   const cur = active === h ? ' aria-current="page"' : group.includes(active) ? ' aria-current="true"' : "";
-  return `<a href="${h}"${cur ? ` class="on"${cur}` : ""}>${t}</a>`;
+  const cls = [cur && "on", menuOnly && "nav-more"].filter(Boolean).join(" ");
+  return `<a href="${h}"${cls ? ` class="${cls}"` : ""}${cur}>${navIcon(h, en)}<span>${t}</span></a>`;
 };
 // スマホの三本線メニュー: JS が動くときだけ、ボタンを出して、メニューを畳む(JS がなければ、メニューは常に見える)
 const NAV_SCRIPT = `(function(){var h=document.documentElement,w=window,q=false;function sc(){q=false;h.classList.toggle('scrolled',(w.pageYOffset||0)>8)}w.addEventListener('scroll',function(){if(!q){q=true;w.requestAnimationFrame(sc)}},{passive:true});sc();var b=document.getElementById('menubtn'),n=document.getElementById('gnav');if(!b||!n)return;document.documentElement.classList.add('navjs');b.hidden=false;function set(o){b.setAttribute('aria-expanded',String(o));n.classList.toggle('open',o)}b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true')});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&b.getAttribute('aria-expanded')==='true'){set(false);b.focus()}})})()`;
@@ -447,7 +474,7 @@ ${ga4Bootstrap}<style>${css}</style>${head}
 ${GOATCOUNTER}
 ${ld ? `<script type="application/ld+json">${ldJson(ld)}</script>` : ""}</head><body>
 ${splash}<a class="skip" href="#main">${en ? "Skip to content" : "本文へ移動"}</a>
-<header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
+<header class="top"><div class="wrap"><a class="logo" href="${en ? "/en/" : "/"}"><img src="/symbol-96.png" alt="" width="32" height="32">${en ? "Kagura Meguri" : esc(cfg.siteName)}</a><button class="menubtn" id="menubtn" type="button" aria-expanded="false" aria-controls="gnav" hidden><span class="bars" aria-hidden="true"></span>${en ? "Menu" : "メニュー"}</button><nav id="gnav" aria-label="${en ? "Main menu" : "メインメニュー"}">${(en ? EN_NAV : NAV).map((x) => navLink(x, active, en)).join("")}</nav></div></header><script>${NAV_SCRIPT}</script>
 ${rail}<div class="wrap${wide ? " wide" : ""}"><main id="main">${en ? body : collectNotes(body)}</main>
 ${en ? EN_FOOTER : `<footer><p class="flinks"><a href="/organizers.html">主催者の方へ(掲載は無料)</a><a href="/sponsor.html">広告・協賛のご案内</a></p>
 <p class="flinks"><a href="/guide.html">はじめての神楽ガイド</a><a href="/history/">神楽の歴史</a><a href="/quiz.html">神楽の好み診断</a><a href="/en/" hreflang="en" lang="en">English</a></p>
@@ -672,8 +699,8 @@ write("dist/index.html", layout({
 <section class="hero home-hero">
 <picture class="hero-art"><source media="(max-width: 640px)" srcset="/hero-sp.webp" width="1122" height="1402"><img src="/hero-pc.webp" width="1774" height="887" alt="夜の神楽殿で、鬼の面をつけた舞い手が御幣を掲げて舞う水彩画" fetchpriority="high" decoding="async"></picture>${sparksHtml}
 <div class="copy"><h1>${HERO_H1}</h1></div>
-<div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div></section>
-<h2>開催予定</h2>
+<div class="vert" aria-hidden="true">笛と太鼓、夜の社に舞う</div><a class="scroll-cue" href="#upcoming"><span>開催予定へ</span><i aria-hidden="true"></i></a></section>
+<h2 id="upcoming">開催予定</h2>
 ${regionButtons}${prefButtons}
 ${adSlot(cfg.adsense.slotList)}
 <div id="list">${homeList || empty('いま掲載している開催情報はありません。掲載のご依頼は<a href="/organizers.html">主催者の方へ</a>から送れます。')}</div>${homeStrips.some(Boolean) ? `<div id="home-pr-pool" data-every="${STRIP_EVERY}" hidden>${homeStrips.filter((h, k) => h && (k + 1) * STRIP_EVERY >= homeShown).join("")}</div>` : ""}
@@ -712,7 +739,7 @@ write('dist/quiz-app.js',quizJs);
 write('dist/quiz.html',layout({
   title:`あなたに近い神楽はどれ？${questions.length}問の好み診断 | ${cfg.siteName}`,
   desc:padDesc(`${questions.length}問に答えると、舞のテンポ・面や衣装・物語・祭りの空気などの好みから、${traditions.length}種類の神楽のうち好みに近いものを、出典つきの理由と一緒にご案内します。地域と日程を選べば、観に行ける公演も探せます。登録不要で、回答はブラウザ内だけで計算します。`),
-  path:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
+  path:'/quiz.html',active:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
   body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたに近い神楽はどれ？',`${questions.length}問・1分ほどで、${traditions.length}種類の神楽から好みに近いものを探します。`)}
 <p class="lead">好み${questions.filter(q=>q.type==='preference').length}問と、観に行く地域・日程${questions.filter(q=>q.type!=='preference').length}問です。分からない項目は「まだ分からない」で大丈夫です。登録は不要で、回答は保存も外部への送信もしません。</p>
 <section id="quiz" aria-label="${questions.length}問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>${questions.length}問の診断をはじめる</button>
@@ -1307,12 +1334,12 @@ doc("/sponsor.html", "広告・協賛のご案内", `観光協会・宿・道の
     reg: regular.length ? { name: regular[0].name, href: `/regular/${regular[0].id}.html` } : undefined, prices: cfg.sponsorPrices ?? {},
     facts: { events: upcoming.length, prefs: prefs.length, kaguras: kaguras.length, regular: regular.length },
     stats: statsFresh(mediaStats, today) ? mediaStats : null }),
-  { lead: "神楽を観に出かける方へ、地域の情報を届けます。", cls: "sp-page", layout: { head: SPONSOR_CSS } });
+  { lead: "神楽を観に出かける方へ、地域の情報を届けます。", cls: "sp-page", layout: { head: SPONSOR_CSS, active: "/sponsor.html" } });
 // 記事広告の見本(架空の宿。noindex で、サイトマップにも入れない)。見出しは記事の題、要点に「見本」と書く
 {
   const crumbs = [["ホーム", "/"], ["広告・協賛のご案内", "/sponsor.html"], ["記事広告の見本"]];
   write("dist/pr/sample.html", layout({
-    title: `記事広告の見本 | ${cfg.siteName}`, desc: "記事広告(編集部が取材して書く、PR記事)の見本です。架空の温泉宿を例に、神楽の日の過ごし方を紹介する記事の形をご覧いただけます。", path: "/pr/sample.html", noindex: true, ld: crumbsLd(crumbs), head: SPONSOR_CSS,
+    title: `記事広告の見本 | ${cfg.siteName}`, desc: "記事広告(編集部が取材して書く、PR記事)の見本です。架空の温泉宿を例に、神楽の日の過ごし方を紹介する記事の形をご覧いただけます。", path: "/pr/sample.html", active: "/pr/sample.html", noindex: true, ld: crumbsLd(crumbs), head: SPONSOR_CSS,
     body: `${crumbNav(crumbs)}${hero(esc(SAMPLE_SPONSOR.article.title), "記事広告の見本です。宿は架空のものです。")}<div class="prose">${sponsorArticleSampleHtml({ esc, siteName: cfg.siteName })}</div>`,
   }));
 }

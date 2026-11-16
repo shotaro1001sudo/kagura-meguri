@@ -110,7 +110,8 @@ export function sponsorTests({ ok, section, OUT }) {
   // 入口
   const home = cheerio.load(read(join(OUT, "index.html")));
   ok(home('footer a[href="/sponsor.html"]').length === 1 && home('footer a[href="/sponsor.html"]').text() === "広告・協賛のご案内" && about('main a[href="/sponsor.html"]').length === 1, "フッターと運営者情報から、「広告・協賛のご案内」の名前でリンクしている");
-  ok(home('.top nav a[href="/sponsor.html"]').length === 0, "メインメニューには入れない(読者向けの探し方と分ける)");
+  ok(home('.top nav a[href="/sponsor.html"]').length === 1 && home('.top nav a:last-child').attr("href") === "/sponsor.html", "メインメニューの最後に「広告・協賛」(読者向けの探し方のあと)");
+  ok(home('.top nav a.nav-more').map((_, a) => home(a).attr("href")).get().join() === "/quiz.html,/sponsor.html" && /@media\(min-width:1024px\)\{\.top nav \.nav-more\{display:none\}\}/.test(read(join(OUT, "index.html"))), "好み診断と広告・協賛は、スマホ・タブレットの開くメニューだけ(PC の帯は9つだと折れる)");
 
   sponsorSlotTests({ ok, section, OUT });
   mediaStatsTests({ ok, section });

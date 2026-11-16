@@ -15,6 +15,11 @@
     splash.addEventListener('animationend', function (e) { if (e.target === splash) splash.remove(); });
   }
 
+  /* スマホのトップの「開催予定へ」の案内: 画面の下に留め、少しでも下へ進んだら消す(先頭へ戻ると、また出る)。
+     下へ進んだかどうかは、ヘッダーの影と同じ .scrolled(build.mjs の NAV_SCRIPT が付け外しする)で見る。
+     JS がないときは、絵の左下に置いたまま(下へ進めば、絵と一緒に流れて見えなくなる) */
+  if (d.querySelector('.scroll-cue')) h.classList.add('cue-fixed');
+
   /* 視差(パララックス): スクロール量を、CSS変数 --py に渡すだけ。動かす計算は、CSSの translate が行う */
   var hero = d.querySelector('.home-hero');
   if (hero && 'IntersectionObserver' in w && w.matchMedia && w.matchMedia('(min-width:561px)').matches) {

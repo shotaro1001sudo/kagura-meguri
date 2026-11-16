@@ -58,12 +58,20 @@ html{scroll-padding-top:84px}
   .menubtn[aria-expanded=true] .bars{background:transparent}
   .menubtn[aria-expanded=true] .bars:before{transform:translateY(5px) rotate(45deg)}
   .menubtn[aria-expanded=true] .bars:after{transform:translateY(-5px) rotate(-45deg)}
-  .navjs .top nav{display:none;position:absolute;right:0;left:0;top:100%;z-index:20;flex-direction:column;gap:0;padding:6px 16px 12px;background:var(--bg);border:1px solid var(--line);border-top:0;box-shadow:0 12px 24px -16px rgb(0 0 0/.5)}
-  .navjs .top nav.open{display:flex}
-  .navjs .top nav a{border-bottom:1px solid var(--line);padding:12px 4px}
+  .navjs .top nav{display:none;position:absolute;right:0;left:0;top:100%;z-index:20;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 16px;background:var(--bg);border:1px solid var(--line);border-top:0;box-shadow:0 12px 24px -16px rgb(0 0 0/.5)}
+  .navjs .top nav.open{display:grid}
+  /* 開いたメニューは、絵(ピクトグラム)と文字のカードを2列に並べる。数が奇数なら、最後の1枚は横いっぱい */
+  .navjs .top nav a{flex-direction:column;justify-content:center;gap:6px;min-height:92px;padding:12px 8px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--card);color:var(--fg);text-align:center;line-height:var(--lh-ui)}
+  .navjs .top nav a:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;gap:10px;min-height:var(--tap)}
+  .navjs .top nav a:hover{border-color:var(--ac)}
+  .navjs .top nav a.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--card))}
+  .navjs .top nav .ni{display:block}
+  .navjs .top nav a span{word-break:auto-phrase;text-wrap:balance}
 }
+@media(min-width:1024px){.top nav .nav-more{display:none}}
+.top nav .ni{display:none;flex:none;width:28px;height:28px;fill:none;stroke:var(--ac);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 /* タブレット: 開いたメニューは、ボタンの下に右寄せの箱で出す(画面いっぱいの帯にしない) */
-@media(min-width:641px) and (max-width:1023px){.navjs .top nav{left:auto;right:24px;width:320px;margin-top:4px;border-top:1px solid var(--line);border-radius:var(--radius-s)}.navjs .top nav a:last-child{border-bottom:0}}
+@media(min-width:641px) and (max-width:1023px){.navjs .top nav{left:auto;right:24px;width:340px;margin-top:4px;border-top:1px solid var(--line);border-radius:var(--radius-s)}}
 /* 小さなスマホ(〜360px): ロゴとメニューのボタンが折れないよう、ロゴを少し詰める */
 @media(max-width:360px){.logo{font-size:var(--fs-l);letter-spacing:.15em}}
 /* PC(1024px〜): メニュー全体を1本の帯(枠つき)にし、各項目を丸いタブにする。ひと目で「押せるタブ」と分かる形。今いるページのタブは朱で塗る */
@@ -102,6 +110,20 @@ html{scroll-padding-top:84px}
   .hero-art{inset:auto 0 0 0;aspect-ratio:1122/1402}.hero-art img{object-position:center bottom;
     --mx:linear-gradient(90deg,transparent 0,#000 14%,#000 86%,transparent);--my:linear-gradient(180deg,transparent 0,rgb(0 0 0/.12) 10%,rgb(0 0 0/.45) 20%,rgb(0 0 0/.82) 30%,#000 38%,#000 80%,transparent)}
 }
+/* スマホのトップ: 絵が画面を占めるので、下に続きがあることを、左下の縦書きの小さな案内で知らせる(押すと開催予定へ)。
+   細い線の上を朱の点がゆっくり下りる(動きを減らす設定では、線と文字だけ)。PCは絵が低く、続きが見えるので出さない */
+.scroll-cue{display:none}
+@media(max-width:640px){
+  .scroll-cue{display:flex;position:absolute;left:6px;bottom:20px;flex-direction:column;align-items:center;gap:10px;min-width:var(--tap);padding:6px 0;color:var(--mut);text-decoration:none;font-family:var(--serif);font-size:var(--fs-2xs);letter-spacing:.3em;text-shadow:0 0 8px var(--bg)}
+  .scroll-cue span{writing-mode:vertical-rl}
+  .scroll-cue i{position:relative;width:1px;height:56px;background:color-mix(in srgb,var(--mut) 45%,transparent)}
+  .scroll-cue i:after{content:"";position:absolute;left:-2px;top:0;width:5px;height:5px;border-radius:50%;background:var(--ac)}
+  .js .scroll-cue i:after{animation:cue 2.4s var(--ease) infinite}
+  .cue-fixed .scroll-cue{position:fixed;z-index:20;bottom:calc(16px + env(safe-area-inset-bottom,0px));transition:opacity var(--t-s) var(--ease),visibility var(--t-s)}
+  .cue-fixed.scrolled .scroll-cue{visibility:hidden}
+  .js:is(.cue-fixed.scrolled) .scroll-cue{opacity:0}
+}
+@keyframes cue{0%{translate:0 -6px;opacity:0}20%{opacity:1}80%{opacity:1}100%{translate:0 56px;opacity:0}}
 @media(max-width:640px) and (prefers-color-scheme:dark){.hero-art img{--mx:linear-gradient(90deg,transparent 0,transparent 16%,#000 44%,#000 86%,transparent)}}
 .vert{writing-mode:vertical-rl;font-family:var(--serif);font-size:var(--fs-xl);letter-spacing:.4em;line-height:2;color:var(--fg);white-space:nowrap;border-right:1px solid var(--ac);padding-right:18px;margin-right:4px;flex:none}
 /* 見出しの背景の情景「月と社」(build.mjs の MOONSCAPE)。全体を薄くして、文字の邪魔をしない */
