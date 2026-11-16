@@ -516,7 +516,7 @@ body.quiz-offer-visible{padding-bottom:var(--quiz-offer-space,0px)}
 .self-pair-b:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
 /* トップの一覧の途中の帯(同日の依頼。今週末・今月と同じ横長)。置き場所はブラウザが決める(home.js) */
 .home-pr .pr-strip.inlist{margin:0 0 12px}
-/* 日付・場所で探す: 結果は1件ずつカード(日付・公演名・会場。2026-11-15 運営者の依頼)。帯はカードのあいだにはさむ */
+/* 日付・会場・キーワードから探す: 結果は1件ずつカード(日付・公演名・会場。2026-11-15 運営者の依頼)。帯はカードのあいだにはさむ */
 .fcards{list-style:none;margin:0;padding:4px 0 16px;display:grid;gap:12px}
 .fcards>.pr-li{display:block}.fcards>.pr-li .pr-strip{margin:0}
 /* 両サイドのPR枠が出る画面では、はさんだ帯ごと出さない(上の決まりより後ろに書く) */
@@ -574,7 +574,7 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .leaflet-container .leaflet-control-attribution a{text-decoration:underline}/* 地図の出典のリンクを、まわりの文と色だけでなく下線でも見分けられるように */
 .leaflet-popup-content-wrapper{border-radius:var(--radius-s);background:var(--card);color:var(--fg);font-family:var(--sans)}.leaflet-popup-tip{background:var(--card)}
 
-/* 日付・場所で探す */
+/* 日付・会場・キーワードから探す */
 .finder{display:grid;gap:22px;margin:8px 0 0;padding:20px 22px 22px;max-width:44em}
 .fpanel{display:grid;gap:18px}
 .finder fieldset{border:0;margin:0;padding:0;min-width:0}
@@ -1000,7 +1000,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
   .share{margin-bottom:24px}
 }
 
-/* 日付・場所で探す: 条件の入力を1つの面にまとめ、結果の件数を見出しのように扱う。
+/* 日付・会場・キーワードから探す: 条件の入力を1つの面にまとめ、結果の件数を見出しのように扱う。
    結果の会場・料金・予約要否は、公演カードと同じく詰めて並べる(料金と予約要否は同じ行。広い画面では会場も同じ行) */
 /* スマホ: 地方と都道府県の選択は縦に並べる(横に並べると「すべての都道府県」が切れる)。
    結果は日付を名前の上に置き、行の幅を広く使う(会場・料金などの折り返しを減らす) */
@@ -1074,7 +1074,7 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 .d-side .planning-grid:has(>.planning-card.compact+.planning-card.compact){grid-template-columns:repeat(2,minmax(0,1fr))}
 .d-side .planning-card.compact{padding:10px}.d-side .planning-card.compact .planning-banner img{width:100%;max-width:100%}
 .d-side .planning-card.compact .planning-banner{gap:6px}
-/* 日付・場所で探す: 探し方のタブ */
+/* 日付・会場・キーワードから探す: 探し方のタブ */
 .ftabs{display:flex;gap:0;margin:0 0 12px;border-bottom:1px solid var(--line)}
 .ftabs button{border-radius:0;font:inherit;font-size:var(--fs-s);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 14px;min-height:44px;color:var(--mut);cursor:pointer}
 .ftabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--ac);font-weight:500}

@@ -20,7 +20,7 @@ export function organizersHtml({ esc, siteName, formReady }) {
 <h2>掲載すると、ここに載ります</h2>
 <ul class="ocards">
 <li>${icon("page")}<b>開催ごとのページ</b>日時・会場・料金と、公式情報へのリンクを載せます。会場の場所(Googleマップでの地図と経路の検索)と、カレンダーへの登録のリンクも付きます。</li>
-<li>${icon("pin")}<b>一覧・地図・検索</b>トップの一覧、<a href="/map.html">地図で探す</a>、<a href="/calendar.html">日付・場所で探す</a>に出ます。</li>
+<li>${icon("pin")}<b>一覧・地図・検索</b>トップの一覧、<a href="/map.html">地図で探す</a>、<a href="/calendar.html">日付・会場・キーワードから探す</a>に出ます。</li>
 <li>${icon("calendar")}<b>日付・地域・種類のページ</b><a href="/weekend.html">今週末の神楽</a>・<a href="/this-month.html">今月の神楽</a>のほか、月別・都道府県別・<a href="/kagura/">種類別</a>のページに自動で載ります。</li>
 <li>${icon("globe")}<b>検索エンジン</b>Googleなどの検索エンジンが日時と会場を読み取りやすいように、ページを作っています。</li>
 <li>${icon("rss")}<b>新着の配信</b><a href="/calendar.html">Googleカレンダーで購読できる日程</a>と、新着情報のフィードにも載ります。</li>

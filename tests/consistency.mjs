@@ -48,7 +48,7 @@ export function consistencyTests({ ok, section, OUT, build }) {
   ok(/@media\(max-width:560px\)\{\.home-hero:before\{inset:-40px 0 auto\}/.test(css), "スマホでは、トップの背景の光を画面の幅に収める");
   ok(page("404.html")('main a[href="/"]').text() === "開催予定を見る", "404 のボタンは、メニューの名前(開催予定)にそろえる");
   const disc = page("disclaimer.html")("main").text();
-  ok(disc.includes("自動で作る一覧・検索・フィード") && disc.includes("日付・場所での検索") && !disc.includes("月別のページ、カレンダー、"), "免責事項: 自動で作るものの名前が、今の機能(日付・場所での検索)に合っている");
+  ok(disc.includes("自動で作る一覧・検索・フィード") && disc.includes("日付・会場・キーワードでの検索") && !disc.includes("月別のページ、カレンダー、"), "免責事項: 自動で作るものの名前が、今の機能(日付・場所での検索)に合っている");
   section("そろい方: 面・チップ・角の丸みの基準(全ページ共通)");
   const src = read("scripts/style.css").replace(/\r\n/g, "\n");
   const list = (s) => s.split(/,\s*/).map((x) => x.trim());

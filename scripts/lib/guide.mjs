@@ -144,7 +144,7 @@ ${cards(
   card("予約が必要な公演も", `<p>公演によっては事前予約が必要だったり、当日受付の人数が決まっていたりします。各公演のページで確かめてください。</p>`))}
 
 <h2>神楽を探す</h2>
-<p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・場所で探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a> <a class="btn ghost" href="/history/">神楽の歴史</a></p>`;
+<p><a class="btn" href="/weekend.html">今週末の神楽</a> <a class="btn ghost" href="/calendar.html">日付・会場・キーワードから探す</a> <a class="btn ghost" href="/map.html">地図で探す</a> <a class="btn ghost" href="/kagura/">種類で探す</a> <a class="btn ghost" href="/history/">神楽の歴史</a></p>`;
 
   // 出典の一覧(番号順)。本文で使っていない出典は、ここで気づけるようにする
   const unused = SOURCES.filter((s) => !order.includes(s.id));

@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .sort(function (a, b) { return a.km - b.km || (a.it.ev === b.it.ev ? (a.it.x.start || '') < (b.it.x.start || '') ? -1 : 1 : a.it.ev ? -1 : 1); })
         .slice(0, SHOW);
       if (!list.length) { say.textContent = 'いま地図に出せる開催情報はありません。'; return; }
-      // 1件ずつカード(日付・公演名・会場。日付・場所で探すの結果と同じ形。2026-11-16 運営者の依頼)。近い順の一覧なので、距離と「地図で見る」はカードの下の段に残す
+      // 1件ずつカード(日付・公演名・会場。日付・会場・キーワードから探すの結果と同じ形。2026-11-16 運営者の依頼)。近い順の一覧なので、距離と「地図で見る」はカードの下の段に残す
       var row = function (r) {
         var x = r.it.x, href = (r.it.ev ? '/events/' : '/regular/') + esc(x.id) + '.html', t;
         var date = r.it.ev ? (t = new Date(+x.start.slice(0, 4), +x.start.slice(5, 7) - 1, +x.start.slice(8, 10)), '<small>' + (t.getMonth() + 1) + '月</small><b>' + t.getDate() + '</b><small>' + WD[t.getDay()] + '曜</small>') : '<small>定期</small><b>' + esc(x.badge || '毎') + '</b>';

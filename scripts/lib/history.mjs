@@ -282,7 +282,7 @@ ${figure(flow([
 
 <h2 id="today">現代の神楽</h2>
 <p>全国に4,000を超えるといわれる神楽ですが、少子高齢化や過疎化によって、存続も継承も難しくなっています。${cite("kyogikai")}2022年10月11日には、神楽を守り盛り上げるために、全国神楽継承・振興協議会の設立総会が開かれました。${cite("wiki-kagura")}そして2025年11月28日、文化庁は神楽を、ユネスコ無形文化遺産への2028年の提案候補に選んでいます。${cite("wiki-kagura")}</p>
-<p>神楽は、いまも各地で舞い継がれています。<a href="/calendar.html">日付・場所で探す</a>や<a href="/kagura/">種類で探す</a>から、近くで観られる神楽を探してみてください。</p>
+<p>神楽は、いまも各地で舞い継がれています。<a href="/calendar.html">日付・会場・キーワードから探す</a>や<a href="/kagura/">種類で探す</a>から、近くで観られる神楽を探してみてください。</p>
 
 <div class="hnav"><a class="prev" href="/history/kinsei.html"><small>前へ</small>‹ 近世の神楽</a><a class="next" href="/history/"><small>最初へ</small>年表にもどる ›</a></div>
 ${sourcesHtml()}`,

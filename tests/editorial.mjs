@@ -17,7 +17,7 @@ export function editorialTests({ ok, section, OUT, build }) {
   section("編集: 言葉の統一");
   const home = page("index.html");
   ok(h2s(home).includes("毎週・毎晩の定期公演") && h2s(home).includes("都道府県で探す") && h2s(home).includes("種類で探す") && !home("main").text().includes("いつでも観られる"), "トップ: 「毎週・毎晩の定期公演」「都道府県で探す」「種類で探す」(「いつでも観られる」は言い過ぎなので使わない)", h2s(home).join(","));
-  ok(!/カレンダーで探せます/.test(home('meta[name="description"]').attr("content")) && /日付・場所・地図で探せます/.test(home('meta[name="description"]').attr("content")), "トップの説明文に、なくなった「カレンダー」を書かない");
+  ok(!/カレンダーで探せます/.test(home('meta[name="description"]').attr("content")) && /日付・会場・キーワードや地図で探せます/.test(home('meta[name="description"]').attr("content")), "トップの説明文に、なくなった「カレンダー」を書かない");
   ok(home(".copy .sub").length === 0 && home(".copy p").length === 0 && home(".copy h1").length === 1, "トップの絵の上の文字は、縦書きの見出しだけ(副題・説明の1行は外した)");
   ok(home("footer a").first().text() === "主催者の方へ(掲載は無料)", "フッターの主催者向けの入口は「主催者の方へ(掲載は無料)」");
   const frows = home("footer .flinks").map((_, p) => [home(p).find("a").map((_, a) => home(a).attr("href")).get()]).get();
