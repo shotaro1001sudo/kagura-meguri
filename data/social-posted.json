@@ -605,5 +605,17 @@
     "date": "2026-11-19",
     "hash": "dcd5436fbecfecdb",
     "format": "long"
+  },
+  {
+    "id": "yuki-lodge-kagura-2026-11-22",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-19T10:00:00.000Z",
+    "bufferId": "6afcc00dea84dfa925464577",
+    "date": "2026-11-19",
+    "hash": "52fff135e60e9ec4"
   }
 ]
