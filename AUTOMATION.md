@@ -13,7 +13,7 @@ Plan  計画     data/weekly-review.json の focus(掲載が少ない地方・�
   │              → note の題材選び・月次の調査の優先順位に使う
   │            data/social-performance.json(SNSのテーマ別の反応)→ SNSで出す順番に使う
   ▼
-Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 3:00)→ SNS予約(毎晩 21:15 に翌日分)→ note(2日に1回)
+Do    実行     週次の自動収集(月 4:00)→ 公開(毎日 2:00〜3:00)→ SNS予約(毎晩 21:15 に翌日分)→ note(2日に1回)
   │
   ▼
 Check 点検     週次の振り返り(月、収集の直後。GitHub)
@@ -58,11 +58,19 @@ Act   改善     振り返りの Issue に「今週やること」(担当: 人 /
 
 | 時刻 | 名前 | やること | 詳しく |
 |---|---|---|---|
-| 3:00(毎日) | build-and-deploy | サイトを組み立てて公開。終わった開催の整理、「今週末」「今月」ページの更新 | [deploy.yml](.github/workflows/deploy.yml) |
+| 2:00〜3:00(毎日) | build-and-deploy | サイトを組み立てて公開。終わった開催の整理、「今週末」「今月」ページの更新。起動は Google 側の Apps Script(下の「深夜の公開」)。GitHub の予定実行(3:00)は予備で、今日すでに公開済みなら何もしない | [deploy.yml](.github/workflows/deploy.yml) / [nightly-deploy-trigger.gs](scripts/apps-script/nightly-deploy-trigger.gs) |
 | 4:00(月曜) | weekly-collect | 開催情報を集め、検査に通ったものを掲載。怪しいものは保留にして Issue で確認依頼(先週の確認依頼は閉じる) | [COLLECT.md](COLLECT.md) |
 | 収集の直後(月曜) | weekly-review | SNSの反応を集め(data/social-performance.json)、note の最後の投稿日を公開の RSS で読み、週次の振り返り。数字の点検と「今週やること」の Issue。data/weekly-review.json を更新 | [weekly-review.yml](.github/workflows/weekly-review.yml) / [SOCIAL.md](SOCIAL.md) |
 | 7:31 ごろ(毎日) | Apps Script(Google 側) | GA4・Search Console の数字を、非公開スプレッドシート(統合管理台帳の 12〜14)に保存 | [docs/analytics-quality.md](docs/analytics-quality.md) |
 | 21:15(毎晩)・5:15(毎朝) | post-social | 晩に、翌日のX投稿6本(7時から4時間ごと)を Buffer に予約(GitHub の起動が遅れても朝の枠が飛ばない)。朝は空いた枠だけ埋める | [SOCIAL.md](SOCIAL.md) |
+
+### 深夜の公開(Apps Script から起動、2026-11-17 から)
+
+GitHub の予定実行は 2026-11-08 ごろから毎日3〜7時間遅れ、3:00 のはずの公開が朝〜昼になっていた。Apps Script の時刻の起動は決めた1時間の中で動くので、[nightly-deploy-trigger.gs](scripts/apps-script/nightly-deploy-trigger.gs) が毎日 2:00〜3:00 に公開のワークフローを起動する(`workflow_dispatch`)。
+
+- **予備:** deploy.yml の予定実行(3:00、実際は遅れて朝〜昼)は残してある。日本時間の今日すでに公開が成功していれば、組み立て・公開を飛ばす(`gate`)。Apps Script が動かなかった日も、遅れて公開はされる。
+- **鍵:** GitHub の fine-grained token(対象はこのリポジトリだけ、権限は Actions の Read and write だけ)を、Apps Script の Script properties の `KAGURA_GITHUB_DISPATCH_TOKEN` に本人が入れる。ソースや Git には書かない。期限が切れると 401 で止まり、Apps Script の失敗の通知メールが届く(公開は予備が続ける)。新しい token を同じ名前で入れ直せば戻る。
+- **有効にする手順(本人):** ① token を作る → ② 統合管理台帳の Apps Script にこのファイルを足し、Script properties に token を入れる → ③ `triggerKaguraNightlyDeploy` を手動で実行し、GitHub の Actions で build-and-deploy が動いたのを確かめる → ④ `installKaguraNightlyDeployTrigger` を手動で実行する。
 
 ## Claude の定期タスク(このPC)
 

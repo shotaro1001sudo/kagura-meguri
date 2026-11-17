@@ -231,7 +231,7 @@ export function opsSection({ runs, site, state, series, tasks, refresh, pending,
   const add = (id, label, schedule, sig, extra = {}) => S.push({ id, label, schedule, ...sig, ...extra });
   add("site", "サイトの表示", "開いた時と自動の更新で確認", site == null ? { state: "unknown", detail: "まだ確かめていません" }
     : site.ok ? { state: "ok", detail: `表示できます(${site.ms}ミリ秒)`, last: site.at } : { state: "stop", detail: `表示できません(${site.status || site.error})`, last: site.at });
-  add("deploy", "公開(サイトの作り直し)", "毎日 3:00 と、変更のたび", workflowSignal(runs, "build-and-deploy", 30, nowMs));
+  add("deploy", "公開(サイトの作り直し)", "毎日 2:00〜3:00 と、変更のたび", workflowSignal(runs, "build-and-deploy", 30, nowMs));
   const col = workflowSignal(runs, "weekly-collect", 8 * 24 + 6, nowMs);
   if (collect) { col.detail += ` ・ ${collect.date}: 新規の掲載 ${collect.published ?? "—"}・保留 ${collect.held ?? "—"}・エラー ${collect.errors ?? "—"}`; if (col.state === "ok" && collect.errors) col.state = "warn"; }
   add("collect", "週次の自動収集", "毎週月曜 4:00", col);

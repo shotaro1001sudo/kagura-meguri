@@ -54,6 +54,7 @@ import { monetizationUxTests } from "./monetization-ux.mjs";
 import { valuecommerceTests } from "./valuecommerce.mjs";
 import { valuecommerceSummaryTests } from "./valuecommerce-summary.mjs";
 import { valuecommerceGASTests } from "./valuecommerce-gas.mjs";
+import { nightlyDeployTests } from "./nightly-deploy.mjs";
 import { eventHandoffTests } from "./event-handoff.mjs";
 import { quizTests } from './quiz.mjs';
 import { visitorPlanningTests } from './visitor-planning.mjs';
@@ -395,6 +396,7 @@ const TESTS = [
   ["valuecommerce", async () => { await valuecommerceTests({ ok, section }); }],
   ["valuecommerceSummary", async () => { await valuecommerceSummaryTests({ ok, section }); }],
   ["valuecommerceGAS", async () => { valuecommerceGASTests({ ok, section }); }],
+  ["nightlyDeploy", async () => { nightlyDeployTests({ ok, section }); }],
   ["eventHandoff", async () => { eventHandoffTests({ ok, section }); }],
   ["indexNow", async () => { indexNowTests({ ok, section, OUT }); }],
   ["quiz", async () => { quizTests({ok,section,OUT}); }],

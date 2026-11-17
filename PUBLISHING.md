@@ -100,7 +100,7 @@
 
 1. **データ更新**: 新しい開催をフォーム回答や公式情報から追加する。
 2. **自動収集を使う場合**: `data/sources.json` に提供元を登録し、`node scripts/collect.mjs` を実行する。`pending` の項目を確認し、問題なければ `published` にする。
-3. **毎日の自動ビルド**: 終了した開催は、毎日3時(日本時間)の再ビルドで一覧から消える。
+3. **毎日の自動ビルド**: 終了した開催は、毎日2〜3時(日本時間)の再ビルドで一覧から消える。
 4. **見る数字**: Search Consoleの検索語、AdSenseの収益、アフィリエイトのクリック。
 5. **ローカル確認**: `node scripts/build.mjs; node scripts/serve.mjs` で http://localhost:4173 を開く。
 

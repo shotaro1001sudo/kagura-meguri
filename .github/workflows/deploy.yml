@@ -1,12 +1,37 @@
 name: build-and-deploy
 on:
   push: { branches: [main] }
-  schedule: [{ cron: "0 18 * * *" }] # 毎日3:00 JST: 終了イベントの整理・再生成
+  # 毎日の公開(終了イベントの整理・再生成)は、Apps Script(scripts/apps-script/nightly-deploy-trigger.gs)が
+  # 2:00〜3:00 JST に workflow_dispatch で起動する。GitHub の予定実行は 2026-11-08 ごろから毎日3〜7時間遅れるため。
+  # この予定実行(3:00 JST)は、その起動が無かった日の予備。日本時間の今日すでに公開が成功していれば、何もしない(gate)
+  schedule: [{ cron: "0 18 * * *" }]
   workflow_dispatch:
 permissions: { contents: read, pages: write, id-token: write }
 concurrency: { group: pages, cancel-in-progress: false }
 jobs:
+  # 予備の予定実行のときだけ動く。今日(日本時間0時から)の公開の成功を数え、あれば組み立て・公開を飛ばす。
+  # 数えられなかったとき(gh の失敗)は、公開する側に倒す
+  gate:
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: { actions: read }
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          since=$(date -u -d "$(TZ=Asia/Tokyo date +%F) 00:00 +0900" +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh run list -R "$REPO" --workflow deploy.yml --status success --created ">=$since" --json databaseId --jq length || echo 0)
+          echo "日本時間の今日(${since} から)の公開の成功: ${n:-0} 回"
+          if [ "${n:-0}" -gt 0 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
   build:
+    needs: gate
+    # gate が動かない(push・手動・Apps Script からの起動)・失敗したときは組み立てる。飛ばすのは、予備で今日公開済みのときだけ
+    if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15 # 止まったときに長時間動き続けて、実行時間を使い切らないための上限
     outputs:
@@ -39,6 +64,8 @@ jobs:
         with: { path: dist, include-hidden-files: true }
   deploy:
     needs: build
+    # gate が飛ばされた(push など)ときも動くよう、組み立ての成功だけを見る
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     # 公開1回の待ちは最長10分(deploy-pages の上限で、延ばせない)。時間切れなら1回だけやり直すので、2回分+余裕
     timeout-minutes: 25
@@ -57,7 +84,7 @@ jobs:
   # 知らせられなくても、公開の結果(このワークフローの成否)は変えない
   indexnow:
     needs: [build, deploy]
-    if: ${{ needs.build.outputs.indexnow_body != '' }}
+    if: ${{ !cancelled() && needs.deploy.result == 'success' && needs.build.outputs.indexnow_body != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
     continue-on-error: true
