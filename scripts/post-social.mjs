@@ -92,6 +92,13 @@ export const editPostQuery = ({ id, text }) => `mutation {
   }
 }`;
 
+// Buffer が認識している、X のサブスクの種類(Buffer はこれで、長い投稿を受け付けるかを決めているとみられる)
+export const channelSubscriptionQuery = (channelId) => `query {
+  channel(input: { id: ${gqlStr(channelId)} }) { metadata { ... on TwitterMetadata { subscriptionType } } }
+}`;
+/** Buffer が X の有料プランを認識していないと分かる値か(空・none・free)。分からない値なら、長い投稿を試す */
+export const notPremium = (type) => !type || /^(none|free)$/i.test(String(type).trim());
+
 export const REFRESH_MARGIN_MIN = 30; // これより先に出る予約だけを書き換える(送信の直前に変えない)
 
 /**
@@ -156,11 +163,22 @@ async function main() {
   const save = () => writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n");
   const label = (p) => `[${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.long ? "・長い投稿" : ""}${p.link === "tail" ? "・URLは最後" : p.link ? "" : "・URLなし"}]`;
 
-  // 予約済みの見直し(Buffer を読めるときだけ。試運転では、変える予定を表示するだけ)
-  let target = null;
-  if (key) {
+  // Buffer が X の Premium を認識していなければ、長い投稿は断られるので、最初から280字の文面にする
+  let target = null, shortOnly = false;
+  if (key && social.xPremiumUntil) {
     try {
       target = await findXChannel(key, social.bufferChannelId || "");
+      const type = (await gql(key, channelSubscriptionQuery(target.channelId))).channel?.metadata?.subscriptionType ?? "";
+      shortOnly = notPremium(type);
+      console.log(`Buffer が認識している X のサブスク: ${type || "(なし)"}${shortOnly ? " → 長い投稿は断られるため、280字で送ります。Buffer で X のチャンネルを接続し直すと、Premium が認識されます" : ""}`);
+    } catch (err) { console.error(`X のサブスクの種類を読めませんでした(長い投稿を試します): ${err.message}`); }
+  }
+  if (shortOnly) for (const p of plan) Object.assign(p, { text: p.shortText ?? p.text, long: false, link: p.link === "tail" ? false : p.link });
+
+  // 予約済みの見直し(Buffer を読めるときだけ。試運転では、変える予定を表示するだけ)
+  if (key) {
+    try {
+      target ??= await findXChannel(key, social.bufferChannelId || "");
       const queue = [];
       let after = "";
       for (let i = 0; i < 4; i++) {
@@ -170,7 +188,7 @@ async function main() {
         after = page.pageInfo.endCursor;
       }
       const ctx = { events, info, baseUrl: cfg.baseUrl };
-      const compose = (rec) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social, hooks });
+      const compose = (rec) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social: shortOnly ? { ...social, xPremiumUntil: "" } : social, hooks });
       // 指紋の記録がない以前の予約: 280字の作り方で、今の書き出しあり・なしのどちらかと同じなら、送ったときのまま
       const legacy = (rec) => [hooks, {}].map((h) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social: {}, hooks: h })?.text).filter(Boolean);
       const { edits, skipped, manual } = refreshPlan({ queue, posted, now: Date.now(), compose, legacy });

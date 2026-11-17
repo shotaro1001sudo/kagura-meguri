@@ -1,7 +1,7 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
 import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura, premiumOn, composeById, LONG_LIMIT } from "../scripts/lib/x-post.mjs";
 import { mergeHooks } from "../scripts/social-hooks.mjs";
-import { createPostQuery, keyExpiryNotice, isScheduleLimit, isLengthError, refreshPlan, textHash, editPostQuery, scheduledPostsQuery } from "../scripts/post-social.mjs";
+import { createPostQuery, keyExpiryNotice, isScheduleLimit, isLengthError, refreshPlan, textHash, editPostQuery, scheduledPostsQuery, notPremium, channelSubscriptionQuery } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
   section("SNS投稿: 選び方・文面・時刻");
@@ -140,5 +140,6 @@ export function xpostTests({ ok, section }) {
   const eq = editPostQuery({ id: "b1", text: '改行\nと"引用"' });
   ok(eq.includes('editPost(input: { id: "b1", text: "改行\\nと\\"引用\\"" })') && !/dueAt|mode/.test(eq.split(")")[0]), "書き換えは文面だけ(予約の時刻は変えない)");
   ok(scheduledPostsQuery({ organizationId: "o", channelId: "c" }).includes("status: [scheduled]"), "見直すのは、まだ出ていない予約だけ");
-  ok(isLengthError("Text exceeds the character limit of 280") && !isLengthError("Scheduled posts limit reached. You have 10 scheduled posts out of 10 allowed.") && !isLengthError("Invalid channel"), "文字数で断られたときだけ、280字の文面で送り直す");
+  ok(notPremium("") && notPremium(null) && notPremium("None") && notPremium("free") && !notPremium("premium") && !notPremium("basic") && channelSubscriptionQuery("c1").includes('channel(input: { id: "c1" })') && channelSubscriptionQuery("c1").includes("subscriptionType"), "Buffer が X の有料プランを認識していないときだけ、最初から280字にする(分からない値なら長い投稿を試す)");
+  ok(isLengthError("Invalid post: Twitter / X posts cannot exceed 280 characters.") && isLengthError("Text exceeds the character limit of 280") && !isLengthError("Scheduled posts limit reached. You have 10 scheduled posts out of 10 allowed.") && !isLengthError("Invalid channel"), "文字数で断られたときだけ、280字の文面で送り直す");
 }
