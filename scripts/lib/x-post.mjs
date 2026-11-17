@@ -125,10 +125,9 @@ export function readingExtras(k, x, { id = "", theme, current = "", events = [],
   const about = theme !== "kind" && x.intro ? `▼${k}とは\n${x.intro}` : "";
   const names = (x.programs ?? []).map((p) => p.name).filter((n) => n && n !== current);
   const programs = names.length ? `${theme === "program" ? "▼ほかの演目" : "▼主な演目"}\n${names.slice(0, 6).join("・")}` : "";
-  // 見学の話は、投稿ごとに違うものを選ぶ(同じ神楽の投稿が続いても、後半が同じにならないように)
-  const tips = theme === "viewing" ? [] : x.viewing ?? [];
-  const viewing = tips.length ? `▼見に行くなら\n${tips[hash(id) % tips.length]}` : "";
-  // 紹介文の投稿は演目と見学の両方、ほかは投稿ごとに片方(紹介の節が入る分、長くなりすぎないように)
+  // 見学の話は、最初の一文(場所・日時などがそろった、いちばん中身のある案内)。2文目以降は前の文を受けた補足が多く、単独では分かりにくい
+  const viewing = theme !== "viewing" && x.viewing?.[0] ? `▼見に行くなら\n${x.viewing[0]}` : "";
+  // 紹介文の投稿は演目と見学の両方、ほかは投稿ごとに片方(紹介の節が入る分、長くなりすぎないように。同じ神楽の投稿が続いても、後半が同じになりにくい)
   const middle = theme === "kind" ? [programs, viewing] : [hash(`${id}:pick`) % 2 ? programs || viewing : viewing || programs];
   const next = afterYmd ? upcomingOf(events, k, afterYmd) : [];
   const upcoming = next.length ? `▼次に観られる日\n${next.map(eventLine).join("\n")}` : "";
