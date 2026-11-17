@@ -497,7 +497,9 @@
     "link": false,
     "dueAt": "2026-11-17T18:00:00.000Z",
     "bufferId": "6afb7f3da2c06fdf1d771f96",
-    "date": "2026-11-17"
+    "date": "2026-11-17",
+    "long": false,
+    "hash": "623d7b9ee15d36d1"
   },
   {
     "id": "tsuwano-yokagura-2026-11-21",
@@ -506,7 +508,9 @@
     "link": true,
     "dueAt": "2026-11-17T22:00:00.000Z",
     "bufferId": "6afb7f3e8dc84d52cb2c2656",
-    "date": "2026-11-18"
+    "date": "2026-11-18",
+    "long": false,
+    "hash": "f7740b51565b6d26"
   },
   {
     "id": "r:history:江戸里神楽:0",
@@ -515,7 +519,9 @@
     "link": false,
     "dueAt": "2026-11-18T02:00:00.000Z",
     "bufferId": "6afb7f3e11b73d0136647339",
-    "date": "2026-11-18"
+    "date": "2026-11-18",
+    "long": false,
+    "hash": "787f92007db8b51b"
   },
   {
     "id": "r:feature:出雲神楽:1",
@@ -524,7 +530,9 @@
     "link": false,
     "dueAt": "2026-11-18T06:00:00.000Z",
     "bufferId": "6afb7f3ea2c06fdf1d772059",
-    "date": "2026-11-18"
+    "date": "2026-11-18",
+    "long": false,
+    "hash": "dea04cb9a4d54654"
   },
   {
     "id": "ichinohe-kyodo-geinosai-2026",
@@ -533,7 +541,9 @@
     "link": true,
     "dueAt": "2026-11-18T10:00:00.000Z",
     "bufferId": "6afb7f3f80d99e1a131bebed",
-    "date": "2026-11-18"
+    "date": "2026-11-18",
+    "long": false,
+    "hash": "0babd431345dd05f"
   },
   {
     "id": "r:kind:早池峰神楽",
@@ -542,6 +552,52 @@
     "link": false,
     "dueAt": "2026-11-18T14:00:00.000Z",
     "bufferId": "6afb7f3fa8487284b68ef50c",
-    "date": "2026-11-18"
+    "date": "2026-11-18",
+    "long": false,
+    "hash": "d550291f996857f5"
+  },
+  {
+    "id": "r:history:伊勢大神楽:2",
+    "type": "reading",
+    "style": "hook",
+    "link": false,
+    "long": false,
+    "dueAt": "2026-11-18T18:00:00.000Z",
+    "bufferId": "6afc74e9104bf3e6248ae1ca",
+    "date": "2026-11-18",
+    "hash": "c7afc8ce987c662d"
+  },
+  {
+    "id": "npo-hiroshima-3e6e2116d8",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": false,
+    "dueAt": "2026-11-18T22:00:00.000Z",
+    "bufferId": "6afc74ea104bf3e6248ae1f8",
+    "date": "2026-11-19",
+    "hash": "0239aa18bed6afea"
+  },
+  {
+    "id": "r:feature:番楽:4",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "dueAt": "2026-11-19T02:00:00.000Z",
+    "bufferId": "6afc74eaafa176f59994317b",
+    "date": "2026-11-19",
+    "hash": "fb56bea1e94d8cd6"
+  },
+  {
+    "id": "r:kind:都々古別神社の御神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": false,
+    "long": false,
+    "dueAt": "2026-11-19T06:00:00.000Z",
+    "bufferId": "6afc74eb104bf3e6248ae245",
+    "date": "2026-11-19",
+    "hash": "6d82dc58b9da0709"
   }
 ]
