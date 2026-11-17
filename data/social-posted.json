@@ -509,19 +509,21 @@
     "dueAt": "2026-11-17T22:00:00.000Z",
     "bufferId": "6afb7f3e8dc84d52cb2c2656",
     "date": "2026-11-18",
-    "long": false,
-    "hash": "f7740b51565b6d26"
+    "long": true,
+    "hash": "9deea849400b59a4",
+    "format": "long"
   },
   {
     "id": "r:history:江戸里神楽:0",
     "type": "reading",
     "style": "label",
-    "link": false,
+    "link": "tail",
     "dueAt": "2026-11-18T02:00:00.000Z",
     "bufferId": "6afb7f3e11b73d0136647339",
     "date": "2026-11-18",
-    "long": false,
-    "hash": "787f92007db8b51b"
+    "long": true,
+    "hash": "d78685b94706e4c5",
+    "format": "medium"
   },
   {
     "id": "r:feature:出雲神楽:1",
@@ -542,8 +544,9 @@
     "dueAt": "2026-11-18T10:00:00.000Z",
     "bufferId": "6afb7f3f80d99e1a131bebed",
     "date": "2026-11-18",
-    "long": false,
-    "hash": "0babd431345dd05f"
+    "long": true,
+    "hash": "8702be5d7817ffaf",
+    "format": "medium"
   },
   {
     "id": "r:kind:早池峰神楽",
@@ -560,23 +563,25 @@
     "id": "r:history:伊勢大神楽:2",
     "type": "reading",
     "style": "hook",
-    "link": false,
-    "long": false,
+    "link": "tail",
+    "long": true,
     "dueAt": "2026-11-18T18:00:00.000Z",
     "bufferId": "6afc74e9104bf3e6248ae1ca",
     "date": "2026-11-18",
-    "hash": "c7afc8ce987c662d"
+    "hash": "654841c87cda2bbf",
+    "format": "long"
   },
   {
     "id": "npo-hiroshima-3e6e2116d8",
     "type": "event",
     "style": "event",
     "link": true,
-    "long": false,
+    "long": true,
     "dueAt": "2026-11-18T22:00:00.000Z",
     "bufferId": "6afc74ea104bf3e6248ae1f8",
     "date": "2026-11-19",
-    "hash": "0239aa18bed6afea"
+    "hash": "293aec05ec6185da",
+    "format": "medium"
   },
   {
     "id": "r:feature:番楽:4",
@@ -593,11 +598,12 @@
     "id": "r:kind:都々古別神社の御神楽",
     "type": "reading",
     "style": "hook",
-    "link": false,
-    "long": false,
+    "link": "tail",
+    "long": true,
     "dueAt": "2026-11-19T06:00:00.000Z",
     "bufferId": "6afc74eb104bf3e6248ae245",
     "date": "2026-11-19",
-    "hash": "6d82dc58b9da0709"
+    "hash": "dcd5436fbecfecdb",
+    "format": "long"
   }
 ]
