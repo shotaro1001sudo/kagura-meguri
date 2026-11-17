@@ -56,7 +56,7 @@ export function weightedLength(text) {
  * 開催のお知らせ。long(X Premium)のときは、見える部分(280)に名前・日時・場所・URL(リンクのカードが出る)を収め、
  * 「もっと見る」の先に、公式の説明・会場・料金と、その神楽の紹介(data/kagura-info.json、出典つき)を足す
  */
-export function composeText(e, baseUrl, { long = false, info = {} } = {}) {
+export function composeText(e, baseUrl, { long = false, info = {}, format = "long" } = {}) {
   const time = e.timeUnknown ? "" : ` ${e.start.slice(11, 16)}〜`;
   const place = `${e.prefecture}${e.city ?? ""}`;
   const tags = ["#神楽", e.kagura ? tag(e.kagura) : ""].filter(Boolean).join(" ");
@@ -66,13 +66,14 @@ export function composeText(e, baseUrl, { long = false, info = {} } = {}) {
   let name = e.name;
   while (weightedLength(build(name)) > LIMIT && name.length > 4) name = `${name.slice(0, -2)}…`;
   if (!long) return build(name);
-  const about = e.kagura && info?.[e.kagura]?.source && info[e.kagura].intro ? info[e.kagura].intro : "";
+  // 中くらい(format: medium)は、神楽の紹介を足さない(公式の説明・会場・料金まで)
+  const about = format === "long" && e.kagura && info?.[e.kagura]?.source && info[e.kagura].intro ? info[e.kagura].intro : "";
   const more = [
     e.description ?? "",
     [e.venue ? `会場: ${e.venue}` : "", e.fee ? `料金: ${e.fee}` : ""].filter(Boolean).join("\n"),
     about ? `▼${e.kagura}とは\n${about}` : "",
     // 説明に、すでに公式の確認のお願いがあれば重ねない
-    /公式(の)?情報.{0,6}確認/.test(e.description ?? "") ? "" : "※日時や内容は変わることがあります。お出かけ前に、公式の情報をご確認ください。",
+    /公式(の)?(情報|案内|発表|サイト|ページ).{0,8}確認/.test(e.description ?? "") ? "" : "※日時や内容は変わることがあります。お出かけ前に、公式の情報をご確認ください。",
   ].filter(Boolean);
   const text = [...head(name), url, "", more.join("\n\n"), "", tags].join("\n");
   return weightedLength(text) <= LONG_LIMIT ? text : build(name);
@@ -121,7 +122,7 @@ const DAY_THEME = ["page", "program", "kind", "history", "feature", "page", "vie
  * 長い投稿(X Premium)で、読み物の本文のあとに足す節。どれも data/kagura-info.json(出典つき)と data/events.json から作り、
  * 本文と同じ話は重ねない(紹介文の投稿に「とは」を足さない、など)
  */
-export function readingExtras(k, x, { id = "", theme, current = "", events = [], afterYmd = "" }) {
+export function readingExtras(k, x, { id = "", theme, current = "", events = [], afterYmd = "", format = "long" }) {
   const about = theme !== "kind" && x.intro ? `▼${k}とは\n${x.intro}` : "";
   const names = (x.programs ?? []).map((p) => p.name).filter((n) => n && n !== current);
   const programs = names.length ? `${theme === "program" ? "▼ほかの演目" : "▼主な演目"}\n${names.slice(0, 6).join("・")}` : "";
@@ -131,6 +132,8 @@ export function readingExtras(k, x, { id = "", theme, current = "", events = [],
   const middle = theme === "kind" ? [programs, viewing] : [hash(`${id}:pick`) % 2 ? programs || viewing : viewing || programs];
   const next = afterYmd ? upcomingOf(events, k, afterYmd) : [];
   const upcoming = next.length ? `▼次に観られる日\n${next.map(eventLine).join("\n")}` : "";
+  // 中くらい: 本文に1節だけ(観に行ける日があればそれ、なければ演目か見学)
+  if (format === "medium") return [upcoming || middle.find(Boolean) || about].filter(Boolean);
   return [about, ...middle, upcoming].filter(Boolean);
 }
 
@@ -160,13 +163,27 @@ export function readingCandidates(info, baseUrl, todayJst, hooks = {}, { long = 
   return out.map(({ info: x, program, ...c }) => {
     const hook = validHook(hooks?.[c.id]) ? hooks[c.id].trim() : "";
     const shortText = composeReading({ label: THEMES[c.theme], ...c, hook });
-    // 長い投稿は、神楽の種類ごとの読み物だけ(案内ページの紹介は、短いままで足りる)
-    const extra = long && x ? readingExtras(c.kagura, x, { id: c.id, theme: c.theme, current: program, events, afterYmd: todayJst }) : null;
-    const text = extra ? composeReading({ label: THEMES[c.theme], ...c, hook, extra, tailUrl: c.pageUrl }) : shortText;
-    const isLong = text !== shortText;
-    // link: "tail" = 長い投稿の最後(見える部分の外)にだけURLがある。反応の比べ合わせで、URLあり・なしと分ける
-    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", link: c.url ? true : isLong && text.includes(c.pageUrl) ? "tail" : false, long: isLong, text, shortText };
+    // 長い投稿は、神楽の種類ごとの読み物だけ(案内ページの紹介は、短いままで足りる)。長い・中くらいの2つを作り、枠ごとに選ぶ(chooseFormat)
+    const variant = (format) => {
+      const extra = long && x ? readingExtras(c.kagura, x, { id: c.id, theme: c.theme, current: program, events, afterYmd: todayJst, format }) : null;
+      const text = extra ? composeReading({ label: THEMES[c.theme], ...c, hook, extra, tailUrl: c.pageUrl }) : shortText;
+      const isLong = text !== shortText;
+      // link: "tail" = 長い投稿の最後(見える部分の外)にだけURLがある。反応の比べ合わせで、URLあり・なしと分ける
+      return { format: isLong ? format : "short", link: c.url ? true : isLong && text.includes(c.pageUrl) ? "tail" : false, long: isLong, text };
+    };
+    const formats = { long: variant("long"), medium: variant("medium"), short: { format: "short", link: !!c.url, long: false, text: shortText } };
+    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", ...formats.long, shortText, formats };
   });
+}
+
+// 長さの順番(X Premium の間)。毎回長いと飽きられるので、日と枠でずらし、1日の読み物4つに3種類が混ざるようにする
+export const FORMATS = ["long", "medium", "short"];
+/** その枠の投稿の長さ。Premium の期間外は、いつも short(280字) */
+export function chooseFormat(social, ymd, dueAt) {
+  if (!premiumOn(social, ymd)) return "short";
+  const slots = daySlots(ymd, social);
+  const i = Math.max(0, slots.indexOf(dueAt));
+  return FORMATS[(dayNum(ymd) + i + Math.floor(i / 3)) % 3];
 }
 
 export const HOOK_MAX = 40; // 書き出しの1行の長さの上限(文字数。本文を削りすぎないように)
@@ -255,31 +272,38 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const cands = readingCandidates(info, baseUrl, todayJst, hooks, { long, events }).filter((c) => !(c.kagura && over.has(c.kagura)));
   const reads = pickReadings(cands, posted, todayJst, readSlots.length, weights);
   const plan = [
-    ...evs.map((e, i) => eventPost(e, { baseUrl, info, long, dueAt: evSlots[i] })),
-    // shortText: Buffer が長い投稿を受け付けなかったとき(X の Premium を認識していない等)に、代わりに送る280字の文面
-    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, link: r.link, long: r.long, dueAt: readSlots[i], text: r.text, shortText: r.shortText })),
+    ...evs.map((e, i) => eventPost(e, { baseUrl, info, social, date: todayJst, dueAt: evSlots[i] })),
+    ...reads.map((r, i) => readingPost(r, { social, date: todayJst, dueAt: readSlots[i] })),
   ];
   return plan.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
 }
 
-function eventPost(e, { baseUrl, info, long, dueAt }) {
+// shortText: Buffer が長い投稿を受け付けなかったとき(X の Premium を認識していない等)に、代わりに送る280字の文面
+function readingPost(r, { social, date, dueAt }) {
+  const f = r.formats?.[chooseFormat(social, date, dueAt)] ?? r.formats?.short ?? r;
+  return { id: r.id, type: "reading", style: r.style, link: f.link, long: f.long, format: f.format ?? "short", dueAt, text: f.text, shortText: r.shortText };
+}
+
+// 開催のお知らせは、Premium の間は短くしない(日時・会場・料金を伝えるため)。長い枠では神楽の紹介まで、ほかは公式の説明・会場・料金まで
+function eventPost(e, { baseUrl, info, social, date, dueAt }) {
   const shortText = composeText(e, baseUrl);
-  const text = long ? composeText(e, baseUrl, { long: true, info }) : shortText;
-  return { id: e.id, type: "event", style: "event", link: true, long: text !== shortText, dueAt, text, shortText };
+  const format = premiumOn(social, date) ? (chooseFormat(social, date, dueAt) === "long" ? "long" : "medium") : "short";
+  const text = format === "short" ? shortText : composeText(e, baseUrl, { long: true, info, format });
+  return { id: e.id, type: "event", style: "event", link: true, long: text !== shortText, format: text !== shortText ? format : "short", dueAt, text, shortText };
 }
 
 /**
  * 予約済みの投稿を、今の作り方で作り直す(Premium の切り替え・書き出しの追加・開催の情報の更新を、予約済みの分にも反映するため)。
  * 見つからない(開催が取り下げられた・読み物が消えた)ときは null
  */
-export function composeById({ id, date, events, info, baseUrl, social = {}, hooks = {} }) {
+export function composeById({ id, date, dueAt = "", events, info, baseUrl, social = {}, hooks = {} }) {
   const long = premiumOn(social, date);
   if (id.startsWith("r:")) {
     const c = readingCandidates(info, baseUrl, date, hooks, { long, events }).find((x) => x.id === id);
-    return c ? { id, type: "reading", style: c.style, link: c.link, long: c.long, text: c.text, shortText: c.shortText } : null;
+    return c ? readingPost(c, { social, date, dueAt }) : null;
   }
   const e = (events ?? []).find((x) => x.id === id && x.status === "published");
-  return e ? eventPost(e, { baseUrl, info, long }) : null;
+  return e ? eventPost(e, { baseUrl, info, social, date, dueAt }) : null;
 }
 
 /** 日本時間の日付に n 日足す(YYYY-MM-DD) */

@@ -55,7 +55,7 @@ export function summarizePerformance(buffer, posted, todayJst) {
     const hour = String(new Date(at + 9 * 3600e3).getUTCHours()).padStart(2, "0");
     // URLあり・なし(2026-11-09 から、演目・歴史などの読み物はURLなし)。記録に link がない以前の予約は、すべてURLあり
     // "tail" = X Premium の長い投稿の最後(見える部分の外)にだけURL(2026-11-18 から)。long = 長い投稿
-    all.push({ id: p?.id, theme: p ? themeOf(p.id) : null, style, hour, link: p ? (p.link === "tail" ? "tail" : p.link !== false) : null, long: !!p?.long, score: engagements / views, views, site: !!p });
+    all.push({ id: p?.id, theme: p ? themeOf(p.id) : null, style, hour, link: p ? (p.link === "tail" ? "tail" : p.link !== false) : null, long: !!p?.long, format: p?.format ?? (p?.long ? "long" : "short"), score: engagements / views, views, site: !!p });
   }
   const rows = all.filter((r) => r.site); // テーマ・時間帯は、このサイトの予約(post-social)で入れた投稿だけ
   const overall = median(rows.map((r) => r.score));
@@ -76,8 +76,8 @@ export function summarizePerformance(buffer, posted, todayJst) {
   const styles = groupIndex(all, (r) => r.style);
   // URLの有無(読み物だけで比べる。開催のお知らせは常にURLありなので、混ぜると比べられない)
   const links = groupIndex(rows.filter((r) => r.theme !== "event"), (r) => (r.link === "tail" ? "tail" : r.link ? "url" : "nourl"));
-  // 長い投稿(X Premium)と、280字の投稿
-  const lengths = groupIndex(rows, (r) => (r.long ? "long" : "short"));
+  // 長さ(X Premium): long 長い / medium 中くらい / short 280字
+  const lengths = groupIndex(rows, (r) => r.format);
   // 反応率の上位・下位の投稿(IDだけ。週次の分析が、書き出しの1行を書くときの手本・反面教師にする)
   const ranked = [...rows].sort((a, b) => b.score - a.score);
   const top = rows.length >= 2 * TOP_N ? ranked.slice(0, TOP_N).map((r) => r.id) : [];

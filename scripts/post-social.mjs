@@ -161,7 +161,7 @@ async function main() {
   if (social.xPremiumUntil) console.log(`X Premium の長い投稿: ${social.xPremiumUntil} の前日に出る投稿まで(それ以降は280字)`);
   const plan = planDays({ days, events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights, hooks });
   const save = () => writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n");
-  const label = (p) => `[${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.long ? "・長い投稿" : ""}${p.link === "tail" ? "・URLは最後" : p.link ? "" : "・URLなし"}]`;
+  const label = (p) => `[${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.long ? (p.format === "medium" ? "・中くらい" : "・長い投稿") : ""}${p.link === "tail" ? "・URLは最後" : p.link ? "" : "・URLなし"}]`;
 
   // Buffer が X の Premium を認識していなければ、長い投稿は断られるので、最初から280字の文面にする
   let target = null, shortOnly = false;
@@ -173,7 +173,7 @@ async function main() {
       console.log(`Buffer が認識している X のサブスク: ${type || "(なし)"}${shortOnly ? " → 長い投稿は断られるため、280字で送ります。Buffer で X のチャンネルを接続し直すと、Premium が認識される見込みです(認識されたら、予約済みの分も次の起動で長い投稿に書き換えます)" : ""}`);
     } catch (err) { console.error(`X のサブスクの種類を読めませんでした(長い投稿を試します): ${err.message}`); }
   }
-  if (shortOnly) for (const p of plan) Object.assign(p, { text: p.shortText ?? p.text, long: false, link: p.link === "tail" ? false : p.link });
+  if (shortOnly) for (const p of plan) Object.assign(p, { text: p.shortText ?? p.text, long: false, format: "short", link: p.link === "tail" ? false : p.link });
 
   // 予約済みの見直し(Buffer を読めるときだけ。試運転では、変える予定を表示するだけ)
   if (key) {
@@ -188,9 +188,9 @@ async function main() {
         after = page.pageInfo.endCursor;
       }
       const ctx = { events, info, baseUrl: cfg.baseUrl };
-      const compose = (rec) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social: shortOnly ? { ...social, xPremiumUntil: "" } : social, hooks });
+      const compose = (rec) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, dueAt: rec.dueAt, social: shortOnly ? { ...social, xPremiumUntil: "" } : social, hooks });
       // 指紋の記録がない以前の予約: 280字の作り方で、今の書き出しあり・なしのどちらかと同じなら、送ったときのまま
-      const legacy = (rec) => [hooks, {}].map((h) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social: {}, hooks: h })?.text).filter(Boolean);
+      const legacy = (rec) => [hooks, {}].map((h) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, dueAt: rec.dueAt, social: {}, hooks: h })?.text).filter(Boolean);
       const { edits, skipped, manual } = refreshPlan({ queue, posted, now: Date.now(), compose, legacy });
       console.log(`予約済みの見直し: Buffer の予約 ${queue.length} 件 → 書き換え ${edits.length} 件・そのまま ${queue.length - edits.length} 件`);
       for (const { q, rec, why } of skipped) console.log(`  そのまま: ${jstLabel(q.dueAt ?? rec.dueAt)} ${rec.id}(${why})`);
@@ -205,7 +205,7 @@ async function main() {
           r = (await gql(key, editPostQuery({ id: q.id, text: sent }))).editPost ?? {};
         }
         if (!r.post?.id) { console.error(`書き換えられませんでした(予約はそのまま): ${rec.id} ${r.message ?? ""}`); continue; }
-        Object.assign(rec, { style: next.style, link: sent === next.text ? next.link : next.link === "tail" ? false : next.link, long: sent === next.text && next.long, hash: textHash(sent) });
+        Object.assign(rec, { style: next.style, link: sent === next.text ? next.link : next.link === "tail" ? false : next.link, long: sent === next.text && next.long, format: sent === next.text ? next.format ?? "short" : "short", hash: textHash(sent) });
         save();
       }
     } catch (err) {
@@ -235,7 +235,7 @@ async function main() {
       }
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
       const short = sent !== p.text;
-      posted.push({ id: p.id, type: p.type, style: p.style, link: short && p.link === "tail" ? false : p.link, long: !short && !!p.long, dueAt: p.dueAt, bufferId: r.post.id, date: p.date, hash: textHash(sent) });
+      posted.push({ id: p.id, type: p.type, style: p.style, link: short && p.link === "tail" ? false : p.link, long: !short && !!p.long, format: short ? "short" : p.format ?? "short", dueAt: p.dueAt, bufferId: r.post.id, date: p.date, hash: textHash(sent) });
       save(); // 1件ごとに記録(途中で失敗しても、重複しない)
       console.log(`予約しました: ${r.post.id}`);
     } catch (err) { console.error(err.message); failed = true; break; }

@@ -1,5 +1,5 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
-import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura, premiumOn, composeById, LONG_LIMIT } from "../scripts/lib/x-post.mjs";
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura, premiumOn, composeById, LONG_LIMIT, chooseFormat } from "../scripts/lib/x-post.mjs";
 import { mergeHooks } from "../scripts/social-hooks.mjs";
 import { createPostQuery, keyExpiryNotice, isScheduleLimit, isLengthError, refreshPlan, textHash, editPostQuery, scheduledPostsQuery, notPremium, channelSubscriptionQuery } from "../scripts/post-social.mjs";
 
@@ -114,13 +114,28 @@ export function xpostTests({ ok, section }) {
   ok(lc.filter((c) => c.theme === "page").every((c) => !c.long && c.text === c.shortText), "案内ページの紹介は、短いまま");
   const evPost = composeText({ ...evL[0], name: "長".repeat(200) }, base, { long: true, info: infoL });
   ok(head280(evPost).includes(`${base}/events/iw1.html?utm_source=x`) && evPost.includes("公式の説明。") && evPost.includes("会場: 神社\n料金: 無料") && evPost.includes("▼石見神楽とは") && evPost.includes("公式の情報をご確認ください"), "開催のお知らせ: 見える部分にURL(カードが出る)、続きに公式の説明・会場・料金・神楽の紹介");
-  ok(!/確認ください。[\s\S]*確認ください/.test(composeText({ ...evL[0], description: "出発前に公式情報をご確認ください。" }, base, { long: true, info: infoL })), "説明に公式の確認のお願いがあれば、注意書きを重ねない");
+  ok(["出発前に公式情報をご確認ください。", "出発前に公式案内をご確認ください。"].every((d) => !/確認ください。[\s\S]*確認ください/.test(composeText({ ...evL[0], description: d }, base, { long: true, info: infoL }))), "説明に公式の確認のお願いがあれば、注意書きを重ねない");
   const pl = planDays({ days: 1, events: evL, info: infoL, posted: [], todayJst: "2026-11-20", baseUrl: base, social: premium, now: Date.parse("2026-11-20T00:00:00+09:00") });
   ok(pl.length && pl.every((p) => p.shortText && weightedLength(p.shortText) <= 280 && weightedLength(p.text) <= LONG_LIMIT) && pl.some((p) => p.long), "Premium の期間の予約は長い投稿。どれも280字の文面を持つ");
   const after17 = planDays({ days: 1, events: evL, info: infoL, posted: [], todayJst: "2026-12-17", baseUrl: base, social: premium, now: Date.parse("2026-12-17T00:00:00+09:00") });
   ok(after17.length && after17.every((p) => !p.long && weightedLength(p.text) <= 280), "期限の日からは、自動で280字に戻る");
-  const byId = composeById({ id: "r:program:石見神楽:0", date: "2026-11-20", events: evL, info: infoL, baseUrl: base, social: premium });
-  ok(byId?.text === prog.text && composeById({ id: "iw2", date: "2026-11-20", events: evL, info: infoL, baseUrl: base, social: premium }) === null, "予約済みの投稿を、IDから作り直せる(掲載前・取り下げの開催は作り直さない)");
+  // 長さを混ぜる: 1日の読み物の枠(2〜3・5〜6本目)に3種類がそろい、日ごとにずれる。開催のお知らせは短くしない
+  const s20 = daySlots("2026-11-20");
+  for (const d of ["2026-11-20", "2026-11-21", "2026-11-22"]) {
+    const fs = [1, 2, 4, 5].map((i) => chooseFormat(premium, d, daySlots(d)[i]));
+    ok(["long", "medium", "short"].every((f) => fs.includes(f)), `${d}: 読み物の4枠に、長い・中くらい・短いが混ざる`, fs.join());
+  }
+  ok(chooseFormat(premium, "2026-11-20", s20[1]) !== chooseFormat(premium, "2026-11-21", daySlots("2026-11-21")[1]), "同じ時間帯でも、日によって長さが変わる");
+  ok(chooseFormat(premium, "2026-12-17", daySlots("2026-12-17")[1]) === "short" && chooseFormat({}, "2026-11-20", s20[1]) === "short", "Premium の期間外は、いつも280字");
+  const mix = planDays({ days: 3, events: evL, info: infoL, posted: [], todayJst: "2026-11-20", baseUrl: base, social: premium, now: Date.parse("2026-11-20T00:00:00+09:00") });
+  ok(new Set(mix.filter((p) => p.type === "reading").map((p) => p.format)).size === 3 && mix.every((p) => p.type !== "event" || p.format !== "short"), "予約には長さ(format)を記録し、開催のお知らせは Premium の間は短くしない", mix.map((p) => `${p.type}:${p.format}`).join());
+  const medium = readingCandidates(infoL, base, "2026-11-20", {}, { long: true, events: evL }).find((c) => c.id === "r:program:石見神楽:0").formats.medium;
+  ok(medium.text.includes("▼次に観られる日") && !medium.text.includes("▼石見神楽とは") && medium.text.includes(longBody), "中くらいは、本文を削らずに1節だけ(観に行ける日があればそれ)");
+  const evMedium = composeText(evL[0], base, { long: true, info: infoL, format: "medium" });
+  ok(evMedium.includes("公式の説明。") && !evMedium.includes("▼石見神楽とは"), "開催のお知らせの中くらいは、神楽の紹介を足さない");
+  const longSlot = s20.find((s, i) => [1, 2, 4, 5].includes(i) && chooseFormat(premium, "2026-11-20", s) === "long");
+  const byId = composeById({ id: "r:program:石見神楽:0", date: "2026-11-20", dueAt: longSlot, events: evL, info: infoL, baseUrl: base, social: premium });
+  ok(byId?.text === prog.text && byId.format === "long" && composeById({ id: "iw2", date: "2026-11-20", events: evL, info: infoL, baseUrl: base, social: premium }) === null, "予約済みの投稿を、IDから作り直せる(掲載前・取り下げの開催は作り直さない)");
 
   const now = Date.parse("2026-11-20T00:00:00+09:00");
   const rec = (id, bufferId, extra = {}) => ({ id, bufferId, dueAt: "2026-11-20T10:00:00.000Z", date: "2026-11-20", ...extra });
