@@ -1,7 +1,7 @@
 // SNS投稿: 選び方・文面・時刻の割り当て・Buffer への送信文のテスト(外部へは送らない)
-import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura } from "../scripts/lib/x-post.mjs";
+import { pickEvents, composeText, composeReading, weightedLength, readingCandidates, pickReadings, daySlots, planDay, planDays, validHook, RERUN_GAP_DAYS, justOverKagura, premiumOn, composeById, LONG_LIMIT } from "../scripts/lib/x-post.mjs";
 import { mergeHooks } from "../scripts/social-hooks.mjs";
-import { createPostQuery, keyExpiryNotice, isScheduleLimit } from "../scripts/post-social.mjs";
+import { createPostQuery, keyExpiryNotice, isScheduleLimit, isLengthError, refreshPlan, textHash, editPostQuery, scheduledPostsQuery } from "../scripts/post-social.mjs";
 
 export function xpostTests({ ok, section }) {
   section("SNS投稿: 選び方・文面・時刻");
@@ -93,4 +93,52 @@ export function xpostTests({ ok, section }) {
   const after = planDays({ days: 2, events: evs2, info: info2, posted: [], todayJst: "2026-11-08", baseUrl: base, now: Date.parse("2026-11-08T21:15:00+09:00") });
   ok(ids(before).includes("r:kind:保呂羽山の霜月神楽"), "開催の前は、その神楽を紹介する", ids(before));
   ok(!ids(after).includes("保呂羽山") && ids(after).includes("r:kind:石見神楽"), "前の晩に作る翌日分(11/9)にも、11/8 に終わった神楽の紹介を入れない", ids(after));
+
+  section("X Premium の長い投稿(期限まで)と、予約済みの見直し");
+  const premium = { xPremiumUntil: "2026-12-17" };
+  ok(premiumOn(premium, "2026-12-16") && !premiumOn(premium, "2026-12-17") && !premiumOn(premium, "2027-01-05") && !premiumOn({}, "2026-11-20") && !premiumOn({ xPremiumUntil: "12月17日" }, "2026-11-20"), "長い投稿は、期限の前日に出る投稿まで。期限の日・未設定・書式の誤りなら280字");
+  const longBody = "あ".repeat(60) + "。" + "い".repeat(90) + "。";
+  const infoL = { 石見神楽: { source: "出典", intro: "石見地方の神楽。", programs: [{ name: "塩祓", text: longBody }, { name: "大蛇", text: "大蛇の舞。" }], history: ["歴史。"], features: ["特徴。"], viewing: ["座布団があると安心。", "夜は冷える。"] } };
+  const evL = [ev("iw1", "2026-11-28T19:00", { venue: "神社", description: "公式の説明。", fee: "無料" }), ev("iw0", "2026-11-19T19:00"), ev("iw2", "2026-12-05T19:00", { status: "pending" })];
+  const lc = readingCandidates(infoL, base, "2026-11-20", {}, { long: true, events: evL });
+  const prog = lc.find((c) => c.id === "r:program:石見神楽:0");
+  ok(prog.long && prog.text.includes(longBody) && !prog.shortText.includes("い".repeat(90)) && weightedLength(prog.shortText) <= 280, "長い投稿では本文を削らない(280字の文面も、断られたとき用に持つ)");
+  ok(prog.text.includes("▼石見神楽とは\n石見地方の神楽。") && prog.text.includes("▼次に観られる日\n・11/28(土) 19:00〜 島根県益田市 神社") && !prog.text.includes("11/19") && !prog.text.includes("12/5"), "同じ神楽の紹介と、出る日より後の掲載中の開催を足す(過ぎた・掲載前の開催は入れない)");
+  ok(/▼(ほかの演目\n大蛇|見に行くなら\n)/.test(prog.text) && !/▼ほかの演目\n[^\n]*塩祓/.test(prog.text), "演目か見学のコツを足す(その投稿の演目は「ほかの演目」に入れない)");
+  const kindL = lc.find((c) => c.id === "r:kind:石見神楽");
+  ok(!kindL.text.includes("▼石見神楽とは") && kindL.text.includes("▼主な演目\n塩祓・大蛇") && kindL.text.includes("▼見に行くなら"), "紹介文の投稿には「とは」を重ねず、演目と見学のコツを足す");
+  const head280 = (s) => { let v = ""; for (const ch of s) { if (weightedLength(v + ch) > 280) break; v += ch; } return v; };
+  const longs = lc.filter((c) => c.long);
+  ok(longs.length && longs.every((c) => head280(c.text).startsWith(`【${c.label}】`) && !/https?:/.test(head280(c.text)) && (c.link === "tail") === c.text.endsWith(`${c.pageUrl}\n${c.tags}`)), "読み物のURLは最後だけで、見える部分には出さない(全体が短ければ付けない)。付けたものは link: tail");
+  ok(longs.some((c) => c.link === "tail") && longs.some((c) => c.link === false), "長い読み物の、URLあり(最後)・なしの両方を作れる", longs.map((c) => `${c.id}:${c.link}`).join());
+  ok(lc.filter((c) => c.theme === "page").every((c) => !c.long && c.text === c.shortText), "案内ページの紹介は、短いまま");
+  const evPost = composeText({ ...evL[0], name: "長".repeat(200) }, base, { long: true, info: infoL });
+  ok(head280(evPost).includes(`${base}/events/iw1.html?utm_source=x`) && evPost.includes("公式の説明。") && evPost.includes("会場: 神社\n料金: 無料") && evPost.includes("▼石見神楽とは") && evPost.includes("公式の情報をご確認ください"), "開催のお知らせ: 見える部分にURL(カードが出る)、続きに公式の説明・会場・料金・神楽の紹介");
+  ok(!/確認ください。[\s\S]*確認ください/.test(composeText({ ...evL[0], description: "出発前に公式情報をご確認ください。" }, base, { long: true, info: infoL })), "説明に公式の確認のお願いがあれば、注意書きを重ねない");
+  const pl = planDays({ days: 1, events: evL, info: infoL, posted: [], todayJst: "2026-11-20", baseUrl: base, social: premium, now: Date.parse("2026-11-20T00:00:00+09:00") });
+  ok(pl.length && pl.every((p) => p.shortText && weightedLength(p.shortText) <= 280 && weightedLength(p.text) <= LONG_LIMIT) && pl.some((p) => p.long), "Premium の期間の予約は長い投稿。どれも280字の文面を持つ");
+  const after17 = planDays({ days: 1, events: evL, info: infoL, posted: [], todayJst: "2026-12-17", baseUrl: base, social: premium, now: Date.parse("2026-12-17T00:00:00+09:00") });
+  ok(after17.length && after17.every((p) => !p.long && weightedLength(p.text) <= 280), "期限の日からは、自動で280字に戻る");
+  const byId = composeById({ id: "r:program:石見神楽:0", date: "2026-11-20", events: evL, info: infoL, baseUrl: base, social: premium });
+  ok(byId?.text === prog.text && composeById({ id: "iw2", date: "2026-11-20", events: evL, info: infoL, baseUrl: base, social: premium }) === null, "予約済みの投稿を、IDから作り直せる(掲載前・取り下げの開催は作り直さない)");
+
+  const now = Date.parse("2026-11-20T00:00:00+09:00");
+  const rec = (id, bufferId, extra = {}) => ({ id, bufferId, dueAt: "2026-11-20T10:00:00.000Z", date: "2026-11-20", ...extra });
+  const queue = [
+    { id: "b1", text: "旧い文面", dueAt: "2026-11-20T10:00:00.000Z" },
+    { id: "b2", text: "手で直した文面", dueAt: "2026-11-20T10:00:00.000Z" },
+    { id: "b3", text: "旧い文面", dueAt: "2026-11-19T15:10:00.000Z" },
+    { id: "b4", text: "手で入れた投稿", dueAt: "2026-11-20T10:00:00.000Z" },
+    { id: "b5", text: "送ったまま", dueAt: "2026-11-20T10:00:00.000Z" },
+    { id: "b6", text: "新しい文面", dueAt: "2026-11-20T10:00:00.000Z" },
+  ];
+  const posted2 = [rec("p1", "b1"), rec("p2", "b2", { hash: textHash("送ったときの文面") }), rec("p3", "b3"), rec("p5", "b5", { hash: textHash("送ったまま") }), rec("p6", "b6")];
+  const rp = refreshPlan({ queue, posted: posted2, now, compose: () => ({ text: "新しい文面", shortText: "短い文面" }), legacy: () => ["旧い文面"] });
+  ok(rp.edits.map((e) => e.q.id).join() === "b1,b5", "送ったときのまま(指紋が同じ・以前の作り方と同じ)の予約だけを書き換える", rp.edits.map((e) => e.q.id).join());
+  ok(rp.skipped.find((s) => s.q.id === "b2")?.why.includes("手で直され") && rp.skipped.find((s) => s.q.id === "b3")?.why.includes("まもなく") && rp.manual.map((q) => q.id).join() === "b4", "手で直された予約・まもなく出る予約・手で入れた予約は変えない");
+  ok(refreshPlan({ queue: [queue[0]], posted: posted2, now, compose: () => null, legacy: () => ["旧い文面"] }).edits.length === 0, "作り直せない(開催の取り下げなど)ときは変えない");
+  const eq = editPostQuery({ id: "b1", text: '改行\nと"引用"' });
+  ok(eq.includes('editPost(input: { id: "b1", text: "改行\\nと\\"引用\\"" })') && !/dueAt|mode/.test(eq.split(")")[0]), "書き換えは文面だけ(予約の時刻は変えない)");
+  ok(scheduledPostsQuery({ organizationId: "o", channelId: "c" }).includes("status: [scheduled]"), "見直すのは、まだ出ていない予約だけ");
+  ok(isLengthError("Text exceeds the character limit of 280") && !isLengthError("Scheduled posts limit reached. You have 10 scheduled posts out of 10 allowed.") && !isLengthError("Invalid channel"), "文字数で断られたときだけ、280字の文面で送り直す");
 }

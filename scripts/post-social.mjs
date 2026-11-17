@@ -9,9 +9,13 @@
 // 投稿済みの記録: data/social-posted.json(同じ開催・同じ枠を、二度入れないため)
 // POST_DAYS: 何日分を決めるか(既定 2 = 今日の残りと翌日。朝の念のための起動は 1 = 今日だけ。Buffer の無料プランは予約10件まで)
 // テスト用の切り替え: EVENTS_FILE / POSTED_FILE / POST_NOW(日本時間の日付 YYYY-MM-DD)
+// X Premium(config.json の social.xPremiumUntil の前日まで): 長い投稿にする。Buffer が長い投稿を断ったときは、その投稿だけ280字の文面で送り直す。
+// 予約済みの見直し: 毎回、Buffer の予約済み(まだ出ていない)の投稿を読み、今の作り方で作り直した文面と違えば書き換える
+//   (Premium の切り替え・書き出しの1行・開催の情報の更新を、予約済みの分にも反映する)。手で直された投稿・30分以内に出る投稿は変えない。
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { planDays } from "./lib/x-post.mjs";
+import { planDays, composeById } from "./lib/x-post.mjs";
 import { themeWeights } from "./lib/social-performance.mjs";
 
 const API = "https://api.buffer.com";
@@ -64,6 +68,53 @@ export const createPostQuery = ({ text, channelId, dueAt }) => `mutation {
 
 // Buffer の予約件数の上限(無料プランは10件)に当たったときの返事。失敗ではなく、残りは次の起動で埋める
 export const isScheduleLimit = (message) => /scheduled posts limit reached/i.test(String(message ?? ""));
+// 文字数の上限で断られたときの返事(Buffer が X の Premium をまだ認識していない等)。280字の文面で送り直す
+export const isLengthError = (message) => !isScheduleLimit(message) && /character|too long|length|文字/i.test(String(message ?? ""));
+
+/** 送った文面の指紋。予約済みを見直すとき、手で直されていないか(送ったときのままか)を確かめる */
+export const textHash = (text) => createHash("sha256").update(String(text)).digest("hex").slice(0, 16);
+
+export const scheduledPostsQuery = ({ organizationId, channelId, after }) => `query {
+  posts(first: 50${after ? `, after: ${gqlStr(after)}` : ""}, input: {
+    organizationId: ${gqlStr(organizationId)},
+    filter: { status: [scheduled], channelIds: [${gqlStr(channelId)}] }
+  }) {
+    edges { node { id text dueAt } }
+    pageInfo { endCursor hasNextPage }
+  }
+}`;
+
+// 時刻(mode・dueAt)は渡さない = 予約の時刻はそのままで、文面だけを変える
+export const editPostQuery = ({ id, text }) => `mutation {
+  editPost(input: { id: ${gqlStr(id)}, text: ${gqlStr(text)} }) {
+    ... on PostActionSuccess { post { id dueAt } }
+    ... on MutationError { message }
+  }
+}`;
+
+export const REFRESH_MARGIN_MIN = 30; // これより先に出る予約だけを書き換える(送信の直前に変えない)
+
+/**
+ * 予約済みの見直しで、書き換えるものを決める(外部へは送らない部分)。
+ * queue: Buffer の予約済み [{ id, text, dueAt }]、compose(rec): 今の作り方の文面 { text, shortText, style, link, long } か null、
+ * legacy(rec): 指紋の記録がない以前の予約が「送ったときのまま」とみなせる文面の候補
+ */
+export function refreshPlan({ queue, posted, now, compose, legacy = () => [] }) {
+  const byBuffer = new Map(posted.filter((p) => p.bufferId).map((p) => [p.bufferId, p]));
+  const edits = [], skipped = [], manual = [];
+  for (const q of queue) {
+    const rec = byBuffer.get(q.id);
+    if (!rec) { manual.push(q); continue; } // Buffer で手で入れた予約は、変えない(表示だけ)
+    if (!(Date.parse(q.dueAt ?? rec.dueAt) > now + REFRESH_MARGIN_MIN * 60e3)) { skipped.push({ q, rec, why: "まもなく出る" }); continue; }
+    const next = compose(rec);
+    if (!next) { skipped.push({ q, rec, why: "今のデータから作り直せない(開催の取り下げなど)" }); continue; }
+    if (q.text === next.text) continue;
+    const untouched = rec.hash ? textHash(q.text) === rec.hash : legacy(rec).includes(q.text);
+    if (!untouched) { skipped.push({ q, rec, why: "Buffer で手で直されている" }); continue; }
+    edits.push({ q, rec, next });
+  }
+  return { edits, skipped, manual };
+}
 
 export const KEY_NOTICE_DAYS = 14;
 /** APIキーの期限(config.json の social.bufferKeyExpires, YYYY-MM-DD)が近い・過ぎたときの知らせ。なければ "" */
@@ -100,25 +151,74 @@ async function main() {
   const days = process.env.POST_DAYS === "1" ? 1 : 2;
   // 書き出しの1行(週次の分析が、反応を見ながら書く。管理者用ページが自動で公開する)
   const hooks = readJson(process.env.HOOKS_FILE ?? "data/social-hooks.json", {});
+  if (social.xPremiumUntil) console.log(`X Premium の長い投稿: ${social.xPremiumUntil} の前日に出る投稿まで(それ以降は280字)`);
   const plan = planDays({ days, events, info, posted, todayJst: today, baseUrl: cfg.baseUrl, social, now, weights, hooks });
-  if (!plan.length) { console.log(`${today}〜翌日: 予約する投稿はありません(枠はすべて予約済みか、過ぎています)`); return; }
+  const save = () => writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n");
+  const label = (p) => `[${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.long ? "・長い投稿" : ""}${p.link === "tail" ? "・URLは最後" : p.link ? "" : "・URLなし"}]`;
 
-  const channelId = live ? (social.bufferChannelId || await findChannel(key)) : "";
+  // 予約済みの見直し(Buffer を読めるときだけ。試運転では、変える予定を表示するだけ)
+  let target = null;
+  if (key) {
+    try {
+      target = await findXChannel(key, social.bufferChannelId || "");
+      const queue = [];
+      let after = "";
+      for (let i = 0; i < 4; i++) {
+        const { posts: page } = await gql(key, scheduledPostsQuery({ ...target, after }));
+        queue.push(...(page?.edges ?? []).map((e) => e.node));
+        if (!page?.pageInfo?.hasNextPage) break;
+        after = page.pageInfo.endCursor;
+      }
+      const ctx = { events, info, baseUrl: cfg.baseUrl };
+      const compose = (rec) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social, hooks });
+      // 指紋の記録がない以前の予約: 280字の作り方で、今の書き出しあり・なしのどちらかと同じなら、送ったときのまま
+      const legacy = (rec) => [hooks, {}].map((h) => composeById({ ...ctx, id: rec.id, date: rec.date ?? today, social: {}, hooks: h })?.text).filter(Boolean);
+      const { edits, skipped, manual } = refreshPlan({ queue, posted, now: Date.now(), compose, legacy });
+      console.log(`予約済みの見直し: Buffer の予約 ${queue.length} 件 → 書き換え ${edits.length} 件・そのまま ${queue.length - edits.length} 件`);
+      for (const { q, rec, why } of skipped) console.log(`  そのまま: ${jstLabel(q.dueAt ?? rec.dueAt)} ${rec.id}(${why})`);
+      for (const q of manual) console.log(`--- 手で入れた予約(変えません) ${jstLabel(q.dueAt)} ---\n${q.text}\n`);
+      for (const { q, rec, next } of edits) {
+        console.log(`--- 書き換え ${jstLabel(q.dueAt ?? rec.dueAt)} ${label(next)} ${rec.id} ---\n${next.text}\n`);
+        if (!live) continue;
+        let sent = next.text, r = (await gql(key, editPostQuery({ id: q.id, text: sent }))).editPost ?? {};
+        if (!r.post?.id && isLengthError(r.message) && next.shortText !== next.text) {
+          console.log(`長い投稿を受け付けなかったため、280字の文面にします: ${r.message}`);
+          sent = next.shortText;
+          r = (await gql(key, editPostQuery({ id: q.id, text: sent }))).editPost ?? {};
+        }
+        if (!r.post?.id) { console.error(`書き換えられませんでした(予約はそのまま): ${rec.id} ${r.message ?? ""}`); continue; }
+        Object.assign(rec, { style: next.style, link: sent === next.text ? next.link : next.link === "tail" ? false : next.link, long: sent === next.text && next.long, hash: textHash(sent) });
+        save();
+      }
+    } catch (err) {
+      // 見直しに失敗しても、新しい予約は続ける(予約済みは、元の文面のまま出る)
+      console.error(`予約済みの見直しに失敗しました(新しい予約は続けます): ${err.message}`);
+    }
+  }
+
+  if (!plan.length) { console.log(`${today}〜翌日: 予約する投稿はありません(枠はすべて予約済みか、過ぎています)`); return; }
+  const channelId = live ? (target?.channelId || social.bufferChannelId || await findChannel(key)) : "";
   let failed = false;
   for (const p of plan) {
-    console.log(`--- ${jstLabel(p.dueAt)} [${p.type}${p.style === "hook" ? "・書き出しあり" : ""}${p.link ? "" : "・URLなし"}] ${p.id} ---\n${p.text}\n`);
+    console.log(`--- ${jstLabel(p.dueAt)} ${label(p)} ${p.id} ---\n${p.text}\n`);
     if (!live) continue;
     try {
-      const data = await gql(key, createPostQuery({ text: p.text, channelId, dueAt: p.dueAt }));
-      const r = data.createPost ?? {};
+      let sent = p.text;
+      let r = (await gql(key, createPostQuery({ text: sent, channelId, dueAt: p.dueAt }))).createPost ?? {};
+      if (!r.post?.id && isLengthError(r.message) && p.shortText && p.shortText !== p.text) {
+        console.log(`長い投稿を受け付けなかったため、280字の文面で予約します: ${r.message}`);
+        sent = p.shortText;
+        r = (await gql(key, createPostQuery({ text: sent, channelId, dueAt: p.dueAt }))).createPost ?? {};
+      }
       if (!r.post?.id && isScheduleLimit(r.message)) {
         // 夜の起動が翌朝まで遅れると、今日の残り+翌日で10件を超えることがある。入らなかった枠は記録せず、次の起動で入れる
         console.log(`Buffer の予約件数の上限に達したため、ここで止めます(残りは次の起動で入れます): ${r.message}`);
         break;
       }
       if (!r.post?.id) throw new Error(`Buffer に予約できませんでした: ${r.message ?? JSON.stringify(r).slice(0, 200)}`);
-      posted.push({ id: p.id, type: p.type, style: p.style, link: p.link, dueAt: p.dueAt, bufferId: r.post.id, date: p.date });
-      writeFileSync(postedFile, JSON.stringify(posted, null, 2) + "\n"); // 1件ごとに記録(途中で失敗しても、重複しない)
+      const short = sent !== p.text;
+      posted.push({ id: p.id, type: p.type, style: p.style, link: short && p.link === "tail" ? false : p.link, long: !short && !!p.long, dueAt: p.dueAt, bufferId: r.post.id, date: p.date, hash: textHash(sent) });
+      save(); // 1件ごとに記録(途中で失敗しても、重複しない)
       console.log(`予約しました: ${r.post.id}`);
     } catch (err) { console.error(err.message); failed = true; break; }
   }

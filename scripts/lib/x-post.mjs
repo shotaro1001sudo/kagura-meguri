@@ -5,8 +5,26 @@ export const WINDOW_MIN = 3;   // 開催の3日前までに
 export const WINDOW_MAX = 14;  // 開催の2週間前から、紹介する(SEO.md の方針)
 export const MAX_PER_RUN = 2;  // 1日に紹介する開催の最大件数(連投を避ける)
 export const RERUN_GAP_DAYS = 30; // 読み物を出し切ったあと、同じものを再投稿するまでの最短の日数
-export const LIMIT = 280;      // Xの上限(全角2・半角1・URL23で数える)
+export const LIMIT = 280;      // Xの上限(全角2・半角1・URL23で数える)。Premium のときは、タイムラインに見える部分
+export const LONG_LIMIT = 25000; // X Premium の長い投稿の上限(Buffer の無料プランも対応)
 const WD = "日月火水木金土";
+
+/**
+ * X Premium の長い投稿を使うか。config.json の social.xPremiumUntil(YYYY-MM-DD)の前日までに出る投稿だけ。
+ * 期限の日とそのあとは、自動で280字に戻る(Premium が切れたあとに長い投稿が出ると、送信に失敗するため)。
+ */
+export const premiumOn = (social, ymd) => /^\d{4}-\d{2}-\d{2}$/.test(social?.xPremiumUntil ?? "") && !!ymd && ymd < social.xPremiumUntil;
+
+const mdw = (ymd) => { const [y, m, d] = ymd.split("-").map(Number); return `${m}/${d}(${WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`; };
+
+/** その神楽の、出る日より後の開催(近い順に n 件)。長い投稿の「次に観られる日」に使う */
+export function upcomingOf(events, kagura, afterYmd, n = 3) {
+  return (events ?? [])
+    .filter((e) => e?.status === "published" && e.kagura === kagura && e.start && e.start.slice(0, 10) > afterYmd)
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .slice(0, n);
+}
+const eventLine = (e) => `・${mdw(e.start.slice(0, 10))}${e.timeUnknown ? "" : ` ${e.start.slice(11, 16)}〜`} ${e.prefecture}${e.city ?? ""}${e.venue ? ` ${e.venue}` : ""}`;
 const UTM = "utm_source=x&utm_medium=social";
 
 const dayNum = (ymd) => Math.floor(Date.parse(`${ymd}T00:00:00Z`) / 86400e3);
@@ -34,23 +52,45 @@ export function weightedLength(text) {
   return n;
 }
 
-export function composeText(e, baseUrl) {
-  const [y, m, d] = e.start.slice(0, 10).split("-").map(Number);
-  const wd = WD[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+/**
+ * 開催のお知らせ。long(X Premium)のときは、見える部分(280)に名前・日時・場所・URL(リンクのカードが出る)を収め、
+ * 「もっと見る」の先に、公式の説明・会場・料金と、その神楽の紹介(data/kagura-info.json、出典つき)を足す
+ */
+export function composeText(e, baseUrl, { long = false, info = {} } = {}) {
   const time = e.timeUnknown ? "" : ` ${e.start.slice(11, 16)}〜`;
   const place = `${e.prefecture}${e.city ?? ""}`;
   const tags = ["#神楽", e.kagura ? tag(e.kagura) : ""].filter(Boolean).join(" ");
   const url = `${baseUrl}/events/${e.id}.html?${UTM}`;
-  const build = (name) => [`【神楽】${name}`, `${m}/${d}(${wd})${time}`, `${place}${e.kagura ? ` ・ ${e.kagura}` : ""}`, "", url, tags].join("\n");
+  const head = (name) => [`【神楽】${name}`, `${mdw(e.start.slice(0, 10))}${time}`, `${place}${e.kagura ? ` ・ ${e.kagura}` : ""}`];
+  const build = (name) => [...head(name), "", url, tags].join("\n");
   let name = e.name;
   while (weightedLength(build(name)) > LIMIT && name.length > 4) name = `${name.slice(0, -2)}…`;
-  return build(name);
+  if (!long) return build(name);
+  const about = e.kagura && info?.[e.kagura]?.source && info[e.kagura].intro ? info[e.kagura].intro : "";
+  const more = [
+    e.description ?? "",
+    [e.venue ? `会場: ${e.venue}` : "", e.fee ? `料金: ${e.fee}` : ""].filter(Boolean).join("\n"),
+    about ? `▼${e.kagura}とは\n${about}` : "",
+    // 説明に、すでに公式の確認のお願いがあれば重ねない
+    /公式(の)?情報.{0,6}確認/.test(e.description ?? "") ? "" : "※日時や内容は変わることがあります。お出かけ前に、公式の情報をご確認ください。",
+  ].filter(Boolean);
+  const text = [...head(name), url, "", more.join("\n\n"), "", tags].join("\n");
+  return weightedLength(text) <= LONG_LIMIT ? text : build(name);
 }
 
 /** 読み物の文面。本文が長いときは、文の切れ目(。)で収まるところまでにする */
-export function composeReading({ label, title, body, url, tags, hook }) {
+export function composeReading({ label, title, body, url, tags, hook, extra = null, tailUrl = "" }) {
   // hook: 週次の分析(Claude)が、反応を見ながら書く1行目(data/social-hooks.json)。あれば先頭に置く
   const head = hook ? [hook, "", `【${label}】${title}`] : [`【${label}】${title}`];
+  // X Premium の長い投稿(extra あり): 本文を削らず、同じ神楽の紹介・演目・見学・次の開催を「もっと見る」の先に足す。
+  // URL は最後に置く(見える部分の外なので、リンクのカードが出ず、タイムラインはうるさくならない)
+  if (extra) {
+    const main = [...head, body, ...extra.flatMap((s) => ["", s]), ""].join("\n");
+    // 全体が短く、最後のURLまで見える部分に入ってしまうときは、URLを付けない(カードが出てうるさくならないように)
+    const tail = url || (tailUrl && weightedLength(`${main}\n${tailUrl}`) > LIMIT ? tailUrl : "");
+    const text = [main, ...(tail ? [tail] : []), tags].join("\n");
+    if (weightedLength(text) <= LONG_LIMIT) return text;
+  }
   // url がなければ、URLの行を入れない(全部の投稿にURLが付くと、タイムラインでうるさく見えるため。
   // 読み物は本文だけで読み切れる形にし、URLはサイトのページ紹介と開催のお知らせにだけ付ける)
   const build = (b) => [...head, b, "", ...(url ? [url] : []), tags].join("\n");
@@ -77,15 +117,33 @@ export const THEMES = {
 const DAY_THEME = ["page", "program", "kind", "history", "feature", "page", "viewing"]; // 日〜土(金曜は「今週末の神楽」から)
 
 /** 読み物の候補。data/kagura-info.json(出典つきの紹介文)と、サイトの案内ページから作る */
-export function readingCandidates(info, baseUrl, todayJst, hooks = {}) {
+/**
+ * 長い投稿(X Premium)で、読み物の本文のあとに足す節。どれも data/kagura-info.json(出典つき)と data/events.json から作り、
+ * 本文と同じ話は重ねない(紹介文の投稿に「とは」を足さない、など)
+ */
+export function readingExtras(k, x, { id = "", theme, current = "", events = [], afterYmd = "" }) {
+  const about = theme !== "kind" && x.intro ? `▼${k}とは\n${x.intro}` : "";
+  const names = (x.programs ?? []).map((p) => p.name).filter((n) => n && n !== current);
+  const programs = names.length ? `${theme === "program" ? "▼ほかの演目" : "▼主な演目"}\n${names.slice(0, 6).join("・")}` : "";
+  // 見学の話は、投稿ごとに違うものを選ぶ(同じ神楽の投稿が続いても、後半が同じにならないように)
+  const tips = theme === "viewing" ? [] : x.viewing ?? [];
+  const viewing = tips.length ? `▼見に行くなら\n${tips[hash(id) % tips.length]}` : "";
+  // 紹介文の投稿は演目と見学の両方、ほかは投稿ごとに片方(紹介の節が入る分、長くなりすぎないように)
+  const middle = theme === "kind" ? [programs, viewing] : [hash(`${id}:pick`) % 2 ? programs || viewing : viewing || programs];
+  const next = afterYmd ? upcomingOf(events, k, afterYmd) : [];
+  const upcoming = next.length ? `▼次に観られる日\n${next.map(eventLine).join("\n")}` : "";
+  return [about, ...middle, upcoming].filter(Boolean);
+}
+
+export function readingCandidates(info, baseUrl, todayJst, hooks = {}, { long = false, events = [] } = {}) {
   const out = [];
   const kindUrl = (k) => `${baseUrl}${encodeURI(`/kagura/${k}.html`)}?${UTM}`;
   for (const [k, x] of Object.entries(info)) {
     if (!x?.source) continue; // 出典のないものは出さない
-    // 演目・歴史などの読み物にはURLを付けない(本文だけで読み切る)。種類のページは pageUrl に残す(手で使うとき用)
-    const base = { title: k, url: "", pageUrl: kindUrl(k), tags: `#神楽 ${tag(k)}`, kagura: k };
+    // 演目・歴史などの読み物にはURLを付けない(本文だけで読み切る)。種類のページは pageUrl に残す(手で使うとき用。長い投稿では最後に付ける)
+    const base = { title: k, url: "", pageUrl: kindUrl(k), tags: `#神楽 ${tag(k)}`, kagura: k, info: x };
     if (x.intro) out.push({ ...base, id: `r:kind:${k}`, theme: "kind", body: x.intro });
-    (x.programs ?? []).forEach((p, i) => out.push({ ...base, id: `r:program:${k}:${i}`, theme: "program", title: `${p.name}(${k})`, body: p.text }));
+    (x.programs ?? []).forEach((p, i) => out.push({ ...base, id: `r:program:${k}:${i}`, theme: "program", title: `${p.name}(${k})`, program: p.name, body: p.text }));
     (x.history ?? []).forEach((t, i) => out.push({ ...base, id: `r:history:${k}:${i}`, theme: "history", body: t }));
     (x.features ?? []).forEach((t, i) => out.push({ ...base, id: `r:feature:${k}:${i}`, theme: "feature", body: t }));
     (x.viewing ?? []).forEach((t, i) => out.push({ ...base, id: `r:viewing:${k}:${i}`, theme: "viewing", body: t }));
@@ -100,9 +158,15 @@ export function readingCandidates(info, baseUrl, todayJst, hooks = {}) {
     if (weekday(todayJst) === 5) page(`weekend:${todayJst}`, "今週末の神楽", "今週末に各地で観られる神楽を、日付順にまとめました。お出かけ前に、公式情報もご確認ください。", "/weekend.html", true);
     if (Number(todayJst.slice(8, 10)) <= 7 && weekday(todayJst) === 0) page(`month:${todayJst.slice(0, 7)}`, "今月の神楽", "今月、各地で観られる神楽の開催予定をまとめています。", "/this-month.html", true);
   }
-  return out.map((c) => {
+  return out.map(({ info: x, program, ...c }) => {
     const hook = validHook(hooks?.[c.id]) ? hooks[c.id].trim() : "";
-    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", link: !!c.url, text: composeReading({ label: THEMES[c.theme], ...c, hook }) };
+    const shortText = composeReading({ label: THEMES[c.theme], ...c, hook });
+    // 長い投稿は、神楽の種類ごとの読み物だけ(案内ページの紹介は、短いままで足りる)
+    const extra = long && x ? readingExtras(c.kagura, x, { id: c.id, theme: c.theme, current: program, events, afterYmd: todayJst }) : null;
+    const text = extra ? composeReading({ label: THEMES[c.theme], ...c, hook, extra, tailUrl: c.pageUrl }) : shortText;
+    const isLong = text !== shortText;
+    // link: "tail" = 長い投稿の最後(見える部分の外)にだけURLがある。反応の比べ合わせで、URLあり・なしと分ける
+    return { ...c, label: THEMES[c.theme], style: hook ? "hook" : "label", link: c.url ? true : isLong && text.includes(c.pageUrl) ? "tail" : false, long: isLong, text, shortText };
   });
 }
 
@@ -188,13 +252,35 @@ export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, 
   const readSlots = open.filter((s) => !evSlots.includes(s));
   // その日のいちばん遅い枠の時刻で判断する(どの枠に入っても、終わった直後の神楽を紹介しない)
   const over = justOverKagura(events, Date.parse(slots[slots.length - 1]));
-  const cands = readingCandidates(info, baseUrl, todayJst, hooks).filter((c) => !(c.kagura && over.has(c.kagura)));
+  const long = premiumOn(social, todayJst);
+  const cands = readingCandidates(info, baseUrl, todayJst, hooks, { long, events }).filter((c) => !(c.kagura && over.has(c.kagura)));
   const reads = pickReadings(cands, posted, todayJst, readSlots.length, weights);
   const plan = [
-    ...evs.map((e, i) => ({ id: e.id, type: "event", style: "event", link: true, dueAt: evSlots[i], text: composeText(e, baseUrl) })),
-    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, link: r.link, dueAt: readSlots[i], text: r.text })),
+    ...evs.map((e, i) => eventPost(e, { baseUrl, info, long, dueAt: evSlots[i] })),
+    // shortText: Buffer が長い投稿を受け付けなかったとき(X の Premium を認識していない等)に、代わりに送る280字の文面
+    ...reads.map((r, i) => ({ id: r.id, type: "reading", style: r.style, link: r.link, long: r.long, dueAt: readSlots[i], text: r.text, shortText: r.shortText })),
   ];
   return plan.sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+}
+
+function eventPost(e, { baseUrl, info, long, dueAt }) {
+  const shortText = composeText(e, baseUrl);
+  const text = long ? composeText(e, baseUrl, { long: true, info }) : shortText;
+  return { id: e.id, type: "event", style: "event", link: true, long: text !== shortText, dueAt, text, shortText };
+}
+
+/**
+ * 予約済みの投稿を、今の作り方で作り直す(Premium の切り替え・書き出しの追加・開催の情報の更新を、予約済みの分にも反映するため)。
+ * 見つからない(開催が取り下げられた・読み物が消えた)ときは null
+ */
+export function composeById({ id, date, events, info, baseUrl, social = {}, hooks = {} }) {
+  const long = premiumOn(social, date);
+  if (id.startsWith("r:")) {
+    const c = readingCandidates(info, baseUrl, date, hooks, { long, events }).find((x) => x.id === id);
+    return c ? { id, type: "reading", style: c.style, link: c.link, long: c.long, text: c.text, shortText: c.shortText } : null;
+  }
+  const e = (events ?? []).find((x) => x.id === id && x.status === "published");
+  return e ? eventPost(e, { baseUrl, info, long }) : null;
 }
 
 /** 日本時間の日付に n 日足す(YYYY-MM-DD) */
