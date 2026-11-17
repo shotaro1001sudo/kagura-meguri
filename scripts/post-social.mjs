@@ -170,7 +170,7 @@ async function main() {
       target = await findXChannel(key, social.bufferChannelId || "");
       const type = (await gql(key, channelSubscriptionQuery(target.channelId))).channel?.metadata?.subscriptionType ?? "";
       shortOnly = notPremium(type);
-      console.log(`Buffer が認識している X のサブスク: ${type || "(なし)"}${shortOnly ? " → 長い投稿は断られるため、280字で送ります。Buffer で X のチャンネルを接続し直すと、Premium が認識されます" : ""}`);
+      console.log(`Buffer が認識している X のサブスク: ${type || "(なし)"}${shortOnly ? " → 長い投稿は断られるため、280字で送ります。Buffer で X のチャンネルを接続し直すと、Premium が認識される見込みです(認識されたら、予約済みの分も次の起動で長い投稿に書き換えます)" : ""}`);
     } catch (err) { console.error(`X のサブスクの種類を読めませんでした(長い投稿を試します): ${err.message}`); }
   }
   if (shortOnly) for (const p of plan) Object.assign(p, { text: p.shortText ?? p.text, long: false, link: p.link === "tail" ? false : p.link });
