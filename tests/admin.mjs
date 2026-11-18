@@ -686,15 +686,19 @@ export async function adminTests({ ok, section }) {
       "説明の下書きの形: 40字以上・「。」で終える・URL を書かない・終了は開始より後・予約の要否は決まった値・参考のページ(https)。会場など、ほかの項目は下書きで変えない");
       { const evs1 = JSON.parse(read(join(ROOT, "data/events.json"))); evs1.push({ id: "auto-nodesc", name: "自動収集の開催", kagura: "平戸神楽", prefecture: "長崎県", city: "平戸市", start: "2026-12-06T10:00", description: "", auto: true, status: "published" }); writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(evs1, null, 2)); }
       const st = (await req("/api/state")).json, g = st.eventGaps?.find((x) => x.id === "ev-hirado");
-      ok(!!g && g.draft === null && g.url === "https://iimori.example.jp" && g.unknown.fee && g.unknown.end && g.unknown.reservationStatus && !st.eventGaps.some((x) => x.id === "ev-held" || x.id === "auto-nodesc"),
-        "説明のない掲載中の開催と、「未確認」の項目(料金・終了・予約要否)を画面に渡す(保留と、週次の自動収集の開催は除く)", JSON.stringify(g));
+      ok(!!g && g.draft === null && g.url === "https://iimori.example.jp" && g.unknown.fee && g.unknown.end && g.unknown.reservationStatus && !st.eventGaps.some((x) => x.id === "ev-held") && st.eventGaps.some((x) => x.id === "auto-nodesc"),
+        "説明のない掲載中の開催(申請・手で載せたもの、週次の自動収集のもの)と、「未確認」の項目(料金・終了・予約要否)を画面に渡す(保留は除く)", JSON.stringify(g));
+      // 1回の予定タスクで書く分: 作り直し → これからの開催(近い順) → 終わった開催(新しい順)。5件まで
+      const gp = (id, start, status) => ({ id, start, end: "", draft: status ? { status } : null });
+      const batch = E.nextBatch([gp("past-old", "2026-09-01T10:00"), gp("up-late", "2026-12-20T10:00"), gp("past-new", "2026-11-01T10:00"), gp("drafted", "2026-11-30T10:00", "draft"), gp("up-soon", "2026-11-20T10:00"), gp("redo", "2026-08-01T10:00", "redo"), gp("up-mid", "2026-12-01T10:00")], "2026-11-18");
+      ok(batch.map((x) => x.id).join() === "redo,up-soon,up-mid,up-late,past-new" && E.PER_RUN === 5, "予定タスクは1回に5件まで: 作り直し → これからの開催の近い順 → 終わった開催の新しい順(確かめ待ちは書き直さない)", batch.map((x) => x.id).join());
       const ecli = (...a) => execFileSync(process.execPath, [join(process.cwd(), "scripts/admin/event-draft.mjs"), ...a], { cwd: ROOT, encoding: "utf8" });
       ok(/^due: .*ev-hirado 飯盛くんち\(テスト\)/.test(ecli("due")) && JSON.parse(ecli("show")).some((x) => x.id === "ev-hirado" && x.unknown.fee && x.redoNote === null) && Array.isArray(JSON.parse(ecli("examples"))["ev-hirado"]),
         "予定タスク: 説明の下書きが要る開催・未確認の項目・書き方の手本(ほかの開催の説明)を読める");
       writeFileSync(join(ROOT, "evdraft-in.json"), JSON.stringify({ "ev-hirado": { ...good, note: "終了時刻は神社の案内で確かめた" }, "ev-held": good, "no-such": good, "auto-nodesc": { ...good, end: "2026-12-06T12:00" } }));
       let out = ""; try { ecli("put", "evdraft-in.json"); } catch (err) { out = err.stdout; }
       const ed = JSON.parse(read(join(ROOT, ".admin/event-drafts.json")));
-      ok(/下書きに入れました: ev-hirado/.test(out) && /入れませんでした: ev-held/.test(out) && /入れませんでした: no-such/.test(out) && /入れませんでした: auto-nodesc[\s\S]*自動収集/.test(out) && ed["ev-hirado"].status === "draft" && ed["ev-hirado"].note.includes("神社") && !("note" in ed["ev-hirado"].draft)
+      ok(/下書きに入れました: ev-hirado/.test(out) && /下書きに入れました: auto-nodesc/.test(out) && /入れませんでした: ev-held/.test(out) && /入れませんでした: no-such/.test(out) && ed["ev-hirado"].status === "draft" && ed["auto-nodesc"].status === "draft" && ed["ev-hirado"].note.includes("神社") && !("note" in ed["ev-hirado"].draft)
         && !JSON.parse(read(join(ROOT, "data/events.json"))).find((x) => x.id === "ev-hirado").description,
         "予定タスクの下書きは .admin/ にだけ入る(保留・ない開催は入れず、理由を出す。events.json は変えない)", out);
       ok(!ecli("due").includes("ev-hirado"), "確かめ待ちの下書きがあれば、予定タスクは作り直さない");

@@ -1,5 +1,5 @@
 // 開催の説明(data/events.json の description = 開催ページの冒頭の概要)の下書き。
-// 申請から掲載した開催などで説明がないものは、予定タスク(kagurameguri-kagura-drafts)が公式の情報から、ほかの開催と同じ書き方で下書きを書く。
+// 説明がない開催(申請から掲載したもの・週次の自動収集で載ったもの)は、予定タスク(kagurameguri-kagura-drafts)が公式の情報から、ほかの開催と同じ書き方で下書きを書く(1回に PER_RUN 件まで)。
 // 料金・終了時刻・予約の要否が「未確認」のままで、公式の情報に書いてあれば、それも下書きに入れる(すでに入っている値は変えない)。
 // 運営者が管理者用ページの「やること」で読んで「公開する」を押したときだけ、events.json に入れてサイトに出す。
 // 下書きは .admin/event-drafts.json(このPCだけ。確かめる前の文を、公開のリポジトリに出さない)。
@@ -31,15 +31,28 @@ const unknowns = (e) => ({ fee: !str(e.fee), end: !e.end && !e.timeUnknown, rese
 
 /**
  * 説明のない、掲載中の開催と、その下書きの状態(draft: 確かめ待ち / redo: 作り直しを頼んだ / なし: 予定タスクが書くのを待っている)。
- * 申請・管理者用ページから載せた開催だけ(週次の自動収集の開催 auto は、取得元に説明がないことがあり、数も多いので対象にしない)
+ * 申請・管理者用ページから載せた開催も、週次の自動収集の開催(auto)も対象(2026-11-18 運営者「すべて対象」)。
+ * 自動収集は、すでにある開催の lastSeen・misses しか書き換えないので、入れた説明・料金などは次の収集で消えない
  */
 export function eventGaps(root) {
   const drafts = loadEventDrafts(root);
-  return loadEvents(root).filter((e) => e.status === "published" && !e.auto && !str(e.description)).map((e) => ({
+  return loadEvents(root).filter((e) => e.status === "published" && !str(e.description)).map((e) => ({
     id: e.id, name: e.name, kagura: e.kagura ?? "", prefecture: e.prefecture, city: e.city ?? "", venue: e.venue ?? "", address: e.address ?? "",
     start: e.start, end: e.end ?? "", fee: e.fee ?? "", reservation: reservationLabel(e), url: e.url ?? "", source: e.source ?? "",
     unknown: unknowns(e), draft: drafts[e.id] ?? null,
   }));
+}
+
+/**
+ * 1回の予定タスクで書く分(調べものが長くなりすぎないように、1回に PER_RUN 件まで)。
+ * 並び: 作り直しを頼んだもの → これからの開催(近い順。観に行く人の役に立つ) → 終わった開催(新しい順)
+ */
+export const PER_RUN = 5;
+export function nextBatch(gaps, today) {
+  const todo = gaps.filter((g) => !g.draft || g.draft.status === "redo");
+  const ended = (g) => (g.end || g.start).slice(0, 10) < today;
+  const rank = (g) => (g.draft?.status === "redo" ? 0 : ended(g) ? 2 : 1);
+  return todo.sort((a, b) => rank(a) - rank(b) || (rank(a) === 2 ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start))).slice(0, PER_RUN);
 }
 
 /** 書き方の手本: 同じ神楽の種類、なければ同じ県の、手で書いた説明(新しい順に3つまで) */
@@ -86,7 +99,6 @@ export function putEventDrafts(root, input, today) {
   for (const [id, raw] of Object.entries(input ?? {})) {
     const e = events.find((x) => x.id === id && x.status === "published");
     if (!e) { rejected.push({ id, errors: ["掲載中の開催に、この ID はありません"] }); continue; }
-    if (e.auto) { rejected.push({ id, errors: ["自動収集の開催は、下書きの対象にしません"] }); continue; }
     if (str(e.description)) { rejected.push({ id, errors: ["この開催には、もう説明があります"] }); continue; }
     const { note = "", ...body } = raw ?? {};
     const { errors } = validateEventDraft(body, e);
@@ -146,9 +158,9 @@ export function applyEventDraft(root, id) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const root = process.cwd(), [cmd, arg] = process.argv.slice(2);
   const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  const todo = eventGaps(root).filter((g) => !g.draft || g.draft.status === "redo");
+  const all = eventGaps(root).filter((g) => !g.draft || g.draft.status === "redo"), todo = nextBatch(all, today);
   if (cmd === "due") {
-    console.log(todo.length ? `due: ${todo.map((g) => `${g.id} ${g.name}${g.draft ? "(作り直し)" : ""}`).join("、")}` : "skip: 説明の下書きが要る開催はありません");
+    console.log(todo.length ? `due: ${todo.map((g) => `${g.id} ${g.name}${g.draft ? "(作り直し)" : ""}`).join("、")}${all.length > todo.length ? `(今回は${todo.length}件。残り${all.length - todo.length}件は次の回から)` : ""}` : "skip: 説明の下書きが要る開催はありません");
   } else if (cmd === "show") {
     console.log(JSON.stringify(todo.map(({ draft, ...g }) => ({ ...g, redoNote: draft?.redoNote ?? null, previous: draft?.draft ?? null })), null, 2));
   } else if (cmd === "examples") {

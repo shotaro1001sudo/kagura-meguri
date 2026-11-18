@@ -6,7 +6,13 @@ import { published } from "./events.js";
 
 // 確かめ待ちの下書き / 予定タスクが書くのを待っている開催(作り直しを頼んだものを含む)
 export const eventDrafts = () => (S.eventGaps || []).filter((g) => g.draft?.status === "draft");
-export const eventWaiting = () => (S.eventGaps || []).filter((g) => !g.draft || g.draft.status === "redo");
+// 並びは予定タスクが書く順(event-draft.mjs の nextBatch と同じ): 作り直し → これからの開催の近い順 → 終わった開催の新しい順
+export const eventWaiting = () => {
+  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const rank = (g) => (g.draft?.status === "redo" ? 0 : (g.end || g.start).slice(0, 10) < today ? 2 : 1);
+  return (S.eventGaps || []).filter((g) => !g.draft || g.draft.status === "redo")
+    .sort((a, b) => rank(a) - rank(b) || (rank(a) === 2 ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start)));
+};
 
 const RESERVATION = { required: "事前予約が必要", recommended: "事前予約を推奨", not_required: "事前申込不要" };
 const hm = (dt) => (dt ? `${+dt.slice(5, 7)}/${+dt.slice(8, 10)} ${dt.slice(11, 16)}` : "");
@@ -60,6 +66,6 @@ export function eventWaitingNote() {
   const w = eventWaiting();
   if (!w.length) return "";
   return h("p", { class: "mut small" }, "説明の下書きを待っている開催: ",
-    w.map((g) => `${g.name}${g.draft?.status === "redo" ? "(作り直しを頼みました)" : ""}`).join("、"),
-    "。毎朝の予定タスク「神楽の解説・開催の説明の下書き」が作ります。");
+    w.slice(0, 5).map((g) => `${g.name}${g.draft?.status === "redo" ? "(作り直しを頼みました)" : ""}`).join("、") + (w.length > 5 ? ` ほか${w.length - 5}件` : ""),
+    `。毎朝の予定タスク「神楽の解説・開催の説明の下書き」が、1回に5件まで(作り直し → これからの開催の近い順 → 終わった開催)作ります${w.length > 5 ? `(全部で${w.length}件。あと${Math.ceil(w.length / 5)}回ほど)` : ""}。`);
 }
