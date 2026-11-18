@@ -25,6 +25,7 @@ import { ignoredSender, ignoreKey, fetchFormMails, fetchLeadReplies } from "./ma
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
 import { kaguraKinds, kaguraGaps, applyDraft, redoDraft } from "./kagura-draft.mjs";
+import { eventGaps, applyEventDraft, redoEventDraft } from "./event-draft.mjs";
 import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, defaultDueAt, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
@@ -105,7 +106,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       earnings: earningsStatus(root, { local, today: today(), nowMs: now() }),
-      kaguraKinds: kaguraKinds(root), kaguraGaps: kaguraGaps(root),
+      kaguraKinds: kaguraKinds(root), kaguraGaps: kaguraGaps(root), eventGaps: eventGaps(root),
       refresh: { last: lastRefresh, hours: refreshHours }, codeChanged: codeStamp(codeDirs) !== bootStamp, canRestart };
   };
 
@@ -263,6 +264,19 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     }),
     "POST /api/kagura/redo": (body) => serial(async () => {
       try { redoDraft(root, String(body.kind ?? ""), String(body.note ?? "").slice(0, 1000), today()); } catch (err) { return [404, { error: err.message }]; }
+      return { state: await state() };
+    }),
+    // 開催の説明の下書き(event-draft.mjs): 「公開する」で events.json に入れ、ほかの開催の保存と同じ確認(ビルド・データのテスト・位置)を通して送る
+    "POST /api/event-draft/publish": (body) => serial(async () => {
+      const id = String(body.id ?? "");
+      let applied;
+      try { applied = applyEventDraft(root, id); } catch (err) { return [400, { error: err.message }]; }
+      const pub = await publisher(root, `data(admin): 開催の説明: ${applied.event.name}`).catch((err) => ({ ok: false, step: "push", log: err.message }));
+      if (!pub.ok && ["build", "test", "geo"].includes(pub.step)) applied.undo(pub.log);
+      return { id, event: applied.event, publish: pub, state: await state() };
+    }),
+    "POST /api/event-draft/redo": (body) => serial(async () => {
+      try { redoEventDraft(root, String(body.id ?? ""), String(body.note ?? "").slice(0, 1000), today()); } catch (err) { return [404, { error: err.message }]; }
       return { state: await state() };
     }),
 

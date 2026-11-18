@@ -673,6 +673,62 @@ export async function adminTests({ ok, section }) {
       ok(/id: "kagura", title: "神楽の解説の下書きを確かめる", n: kaguraDrafts\(\)\.length/.test(todoJs) && kJs.includes('"/api/kagura/publish"') && kJs.includes('"/api/kagura/redo"') && kJs.includes("ext(r.url, r.name)") && ["とは`", '"歴史"', '"特徴"', '"主な演目"', '"観賞のコツ"'].every((s) => kJs.includes(s)),
         "やること: 下書きを種類のページと同じ並びで読み、参考のページを開いて確かめ、「公開する」か「作り直しを頼む」を選ぶ");
     }
+
+    // ---------- 開催の説明の下書き(申請から掲載した開催など。予定タスクが書き、運営者が確かめて公開する。2026-11-18 運営者の依頼) ----------
+    {
+      const E = await import("../scripts/admin/event-draft.mjs");
+      const desc = "飯盛神社の秋の例大祭で、平戸神楽が奉納されます。テストのための説明で、四十字を超えるように書いています。出かける前に飯盛神社の案内をご確認ください。";
+      const good = { description: desc, fee: "無料", end: "2026-10-18T21:00", reservationStatus: "not_required", refs: [{ name: "飯盛神社", url: "https://iimori.example.jp" }] };
+      const v = (x) => E.validateEventDraft(x, { start: "2026-10-18T18:00" }).errors;
+      ok(v(good).length === 0 && v({ description: desc, refs: good.refs }).length === 0, "説明の下書きの形: 説明と参考のページがあれば通る(料金・終了・予約の要否は、分かるときだけ)");
+      ok(v({ ...good, description: "短い説明です。" }).some((e) => e.includes("40字以上")) && v({ ...good, description: desc.replace(/。$/, "") }).some((e) => e.includes("「。」")) && v({ ...good, description: desc + "詳しくは https://example.jp を見てください。" }).some((e) => e.includes("URL"))
+        && v({ ...good, end: "2026-10-18T17:00" }).some((e) => e.includes("開始より後")) && v({ ...good, reservationStatus: "maybe" }).some((e) => e.includes("reservationStatus")) && v({ ...good, refs: [] }).some((e) => e.includes("refs")) && v({ ...good, venue: "別の会場" }).some((e) => e.includes("venue")),
+      "説明の下書きの形: 40字以上・「。」で終える・URL を書かない・終了は開始より後・予約の要否は決まった値・参考のページ(https)。会場など、ほかの項目は下書きで変えない");
+      { const evs1 = JSON.parse(read(join(ROOT, "data/events.json"))); evs1.push({ id: "auto-nodesc", name: "自動収集の開催", kagura: "平戸神楽", prefecture: "長崎県", city: "平戸市", start: "2026-12-06T10:00", description: "", auto: true, status: "published" }); writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(evs1, null, 2)); }
+      const st = (await req("/api/state")).json, g = st.eventGaps?.find((x) => x.id === "ev-hirado");
+      ok(!!g && g.draft === null && g.url === "https://iimori.example.jp" && g.unknown.fee && g.unknown.end && g.unknown.reservationStatus && !st.eventGaps.some((x) => x.id === "ev-held" || x.id === "auto-nodesc"),
+        "説明のない掲載中の開催と、「未確認」の項目(料金・終了・予約要否)を画面に渡す(保留と、週次の自動収集の開催は除く)", JSON.stringify(g));
+      const ecli = (...a) => execFileSync(process.execPath, [join(process.cwd(), "scripts/admin/event-draft.mjs"), ...a], { cwd: ROOT, encoding: "utf8" });
+      ok(/^due: .*ev-hirado 飯盛くんち\(テスト\)/.test(ecli("due")) && JSON.parse(ecli("show")).some((x) => x.id === "ev-hirado" && x.unknown.fee && x.redoNote === null) && Array.isArray(JSON.parse(ecli("examples"))["ev-hirado"]),
+        "予定タスク: 説明の下書きが要る開催・未確認の項目・書き方の手本(ほかの開催の説明)を読める");
+      writeFileSync(join(ROOT, "evdraft-in.json"), JSON.stringify({ "ev-hirado": { ...good, note: "終了時刻は神社の案内で確かめた" }, "ev-held": good, "no-such": good, "auto-nodesc": { ...good, end: "2026-12-06T12:00" } }));
+      let out = ""; try { ecli("put", "evdraft-in.json"); } catch (err) { out = err.stdout; }
+      const ed = JSON.parse(read(join(ROOT, ".admin/event-drafts.json")));
+      ok(/下書きに入れました: ev-hirado/.test(out) && /入れませんでした: ev-held/.test(out) && /入れませんでした: no-such/.test(out) && /入れませんでした: auto-nodesc[\s\S]*自動収集/.test(out) && ed["ev-hirado"].status === "draft" && ed["ev-hirado"].note.includes("神社") && !("note" in ed["ev-hirado"].draft)
+        && !JSON.parse(read(join(ROOT, "data/events.json"))).find((x) => x.id === "ev-hirado").description,
+        "予定タスクの下書きは .admin/ にだけ入る(保留・ない開催は入れず、理由を出す。events.json は変えない)", out);
+      ok(!ecli("due").includes("ev-hirado"), "確かめ待ちの下書きがあれば、予定タスクは作り直さない");
+      ok((await req("/api/event-draft/redo", { body: { id: "ev-hirado", note: "開演時刻も入れてほしい" } })).json.state.eventGaps.find((x) => x.id === "ev-hirado").draft.status === "redo" && ecli("due").includes("ev-hirado 飯盛くんち(テスト)(作り直し)") && JSON.parse(ecli("show")).find((x) => x.id === "ev-hirado").redoNote === "開演時刻も入れてほしい",
+        "「作り直しを頼む」: 直してほしい点が、次の予定タスクに渡る");
+      writeFileSync(join(ROOT, "evdraft-in.json"), JSON.stringify({ "ev-hirado": good }));
+      ecli("put", "evdraft-in.json");
+      ok(JSON.parse(read(join(ROOT, ".admin/event-drafts.json")))["ev-hirado"].prevRedoNote === "開演時刻も入れてほしい", "作り直した下書きには、頼んだ点を残す");
+      // すでに入っている項目は、下書きで変えない
+      const evs2 = JSON.parse(read(join(ROOT, "data/events.json")));
+      evs2.push({ id: "ev-feeset", name: "料金のある開催", kagura: "平戸神楽", prefecture: "長崎県", city: "平戸市", start: "2026-12-05T10:00", fee: "500円", url: "https://x.example.jp", status: "published" });
+      writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(evs2, null, 2));
+      writeFileSync(join(ROOT, "evdraft-in.json"), JSON.stringify({ "ev-feeset": { ...good, end: "2026-12-05T12:00" } }));
+      out = ""; try { ecli("put", "evdraft-in.json"); } catch (err) { out = err.stdout; }
+      ok(/入れませんでした: ev-feeset[\s\S]*「fee」は、もう入っている/.test(out), "すでに入っている項目(料金など)は、下書きで変えない", out);
+      // 公開: ほかの開催の保存と同じ確認に通らなければ、元に戻して下書きに残す
+      const evBefore = read(join(ROOT, "data/events.json"));
+      pubNext.v = { ok: false, step: "build", log: "build\n✗ 開催の説明" };
+      let r = await req("/api/event-draft/publish", { body: { id: "ev-hirado" } });
+      ok(r.status === 200 && published.at(-1) === "data(admin): 開催の説明: 飯盛くんち(テスト)" && publishOpts.at(-1)?.check !== "full" && read(join(ROOT, "data/events.json")) === evBefore && r.json.state.eventGaps.find((x) => x.id === "ev-hirado").draft.lastError.includes("✗ 開催の説明"),
+        "公開は、ほかの開催の保存と同じ確認を通す。通らなければ events.json を元に戻し、理由をつけて下書きに残す", JSON.stringify(publishOpts.at(-1)));
+      pubNext.v = null;
+      r = await req("/api/event-draft/publish", { body: { id: "ev-hirado" } });
+      const after = JSON.parse(read(join(ROOT, "data/events.json"))).find((x) => x.id === "ev-hirado"), keys = Object.keys(after);
+      ok(r.status === 200 && r.json.publish.ok && after.description === desc && after.fee === "無料" && after.end === "2026-10-18T21:00" && after.reservationStatus === "not_required"
+        && keys.indexOf("end") < keys.indexOf("fee") && keys.indexOf("fee") < keys.indexOf("description") && keys.indexOf("description") < keys.indexOf("status")
+        && !r.json.state.eventGaps.some((x) => x.id === "ev-hirado") && !JSON.parse(read(join(ROOT, ".admin/event-drafts.json")))["ev-hirado"],
+        "通れば、説明と未確認だった項目を開催に入れ(項目の並びは保存と同じ)、サイトに送り、下書きから消す", JSON.stringify(after));
+      ok((await req("/api/event-draft/publish", { body: { id: "ev-hirado" } })).status === 400 && (await req("/api/event-draft/redo", { body: { id: "no-such" } })).status === 404, "確かめ待ちの下書きがない開催は、公開も作り直しもできない");
+      const todoJs = read("scripts/admin/todo.js"), eJs = read("scripts/admin/evdraft.js"), evJs = read("scripts/admin/events.js");
+      ok(/id: "evdraft", title: "開催の説明の下書きを確かめる", n: eventDrafts\(\)\.length/.test(todoJs) && eJs.includes('"/api/event-draft/publish"') && eJs.includes('"/api/event-draft/redo"') && eJs.includes("ext(r.url, r.name)") && eJs.includes("未確認だった項目に入れるもの")
+        && /空のまま掲載すると、毎朝の予定タスクが/.test(evJs),
+        "やること: 説明の下書きと、未確認の項目に入れるものを読み、参考のページを開いて確かめ、「公開する」か「作り直しを頼む」を選ぶ(掲載の画面の説明の欄にも、空なら下書きが届くと書く)");
+    }
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });

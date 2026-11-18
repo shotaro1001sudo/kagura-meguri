@@ -58,5 +58,5 @@ export function waitingNote() {
   if (!w.length) return "";
   return h("p", { class: "mut small" }, "下書きを待っている種類: ",
     w.map((g) => `${g.kind}${g.draft?.status === "redo" ? "(作り直しを頼みました)" : ""}`).join("、"),
-    "。毎朝の予定タスク「神楽の解説の下書き」が作ります。");
+    "。毎朝の予定タスク「神楽の解説・開催の説明の下書き」が作ります。");
 }

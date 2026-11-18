@@ -7,6 +7,7 @@ import { planOpen } from "./goal.js";
 import { salesTodos } from "./sales.js";
 import { overview, sigMark } from "./dash.js";
 import { kaguraDrafts, draftCard, waitingNote } from "./kagura.js";
+import { eventDrafts, eventDraftCard, eventWaitingNote } from "./evdraft.js";
 
 // ---------- 決めること(保留・振り返り・改善案・Claude に頼むこと) ----------
 export function decisions() {
@@ -140,6 +141,10 @@ ${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
       lead: "解説のない神楽の種類(申請で新しく載ったものなど)に、予定タスクが出典つきで下書きを作りました。参考にしたページを開いて中身を確かめ、「公開する」か「作り直しを頼む」を選びます。",
       help: "公開するまで、種類のページは開催の一覧だけです。下書きはこのPCだけにあり、サイトには出ていません。",
       body: () => [kaguraDrafts().map(draftCard), waitingNote()] },
+    { id: "evdraft", title: "開催の説明の下書きを確かめる", n: eventDrafts().length,
+      lead: "説明(開催ページの冒頭の概要)のない開催(申請から掲載したものなど)に、予定タスクが公式の情報から、ほかの開催と同じ書き方で下書きを作りました。参考にしたページを開いて中身を確かめ、「公開する」か「作り直しを頼む」を選びます。",
+      help: "料金・終了時刻・予約要否が「未確認」で、公式の情報に書いてあれば、それも入れます(すでに入っている値は変えません)。下書きはこのPCだけにあり、サイトには出ていません。",
+      body: () => [eventDrafts().map(eventDraftCard), eventWaitingNote()] },
     { id: "sales", title: "営業の相手に連絡する", n: sales.reduce((a, r) => a + (r.count ?? r.n), 0), clear: S.pipeline ? "営業で、いま連絡することはありません。" : null, lead: "協賛・有料プランの提案先とのやりとりです。「営業」で行います。",
       body: () => linkRows(sales) },
     { id: "claude", title: "Claude に頼む", n: d.openAdv.length + (d.claudeActs.length ? 1 : 0), clear: "いま Claude に頼めることはありません。",
