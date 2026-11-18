@@ -828,7 +828,9 @@ ${clientJs("map")}`,
 
 // ---------- 日付・会場・キーワードから探す(/calendar.html。URL は前のカレンダーのまま) ----------
 // 「いつ」(今週末・今月・来月・日付の範囲)と「どこ」(地方 → 都道府県)で、開催予定を絞り込む。条件は URL に残す(共有・戻るで同じ結果)
-const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => upcoming.some((e) => e.prefecture === p))]).filter(([, ps]) => ps.length);
+// 地方・都道府県の選択肢: 開催のある県([県, 終わった開催だけか])。終わった開催だけの県(data-past)は、「終了した開催も含める」のときだけ選べる
+// (2026-11-18 運営者の指摘「終了した開催にチェックしても、長崎県が出てこない」。以前は開催予定のある県だけだった)
+const finderPrefs = REGIONS.map(([r, ps]) => [r, ps.filter((p) => events.some((e) => e.prefecture === p)).map((p) => [p, !upcoming.some((e) => e.prefecture === p)])]).filter(([, ps]) => ps.length);
 // 検索の結果の途中にはさむ帯(スクリプトの中に文字として持つ。「<」は、スクリプトの終わりと見まちがえられないように書き換える)。
 // 帯の形は、1〜4本目(公演の掲載・宿・協賛のご案内・体験と行き方)と、5本目からの形(先頭のバナーをずらした数だけ)を持つ。先頭のマス(@LEAD@: 直前の5件に当てはまる協賛)と帯の番号(@N@)は、ブラウザで検索の結果から入れる(inlist-pr.mjs の inlistLead を、そのままスクリプトに入れる)
 const jsVal = (v) => JSON.stringify(v).replace(/</g, "\\u003c");
@@ -849,8 +851,8 @@ write("dist/calendar.html", layout({
 <div class="fpanel" role="tabpanel" id="panel-dp" aria-labelledby="tab-dp">
 <fieldset><legend>いつ</legend><div class="regions" role="group" aria-label="期間"><button type="button" data-w="all" aria-pressed="true">すべて</button><button type="button" data-w="weekend" aria-pressed="false">今週末</button><button type="button" data-w="month" aria-pressed="false">今月</button><button type="button" data-w="next" aria-pressed="false">来月</button><button type="button" data-w="range" aria-pressed="false">日付を指定</button></div>
 <div class="range" id="range" hidden><label><input type="date" id="from" aria-label="いつから"> から</label><label><input type="date" id="to" aria-label="いつまで"> まで</label></div></fieldset>
-<fieldset><legend>どこ</legend><div class="where"><label for="region" class="sr">地方</label><select id="region"><option value="">全国</option>${finderPrefs.map(([r]) => `<option value="${r}">${r}</option>`).join("")}</select>
-<label for="pref" class="sr">都道府県</label><select id="pref"><option value="">すべての都道府県</option>${finderPrefs.map(([r, ps]) => ps.map((p) => `<option value="${p}" data-r="${r}">${p}</option>`).join("")).join("")}</select></div></fieldset>
+<fieldset><legend>どこ</legend><div class="where"><label for="region" class="sr">地方</label><select id="region"><option value="">全国</option>${finderPrefs.map(([r, ps]) => `<option value="${r}"${ps.every(([, past]) => past) ? ' data-past="1"' : ""}>${r}</option>`).join("")}</select>
+<label for="pref" class="sr">都道府県</label><select id="pref"><option value="">すべての都道府県</option>${finderPrefs.map(([r, ps]) => ps.map(([p, past]) => `<option value="${p}" data-r="${r}"${past ? ' data-past="1"' : ""}>${p}</option>`).join("")).join("")}</select></div></fieldset>
 </div>
 <div class="fpanel keyword" role="tabpanel" id="panel-kw" aria-labelledby="tab-kw" hidden><label for="keyword">キーワード</label><input type="search" id="keyword" name="q" maxlength="100" placeholder="公演名・会場・市町村・神楽団名" aria-describedby="keyword-help"><p class="meta" id="keyword-help">スペースで区切ると、複数の言葉で絞り込めます。</p></div>
 <p class="fpast"><label><input type="checkbox" id="past"> 終了した開催も含める</label></p>
@@ -891,10 +893,13 @@ function span(){
   if(when==='range')return[fr.value||'',to.value||''];
   return['',''];
 }
-// 地方を選ぶと、都道府県の選択肢を、その地方だけにする
+// 地方を選ぶと、都道府県の選択肢を、その地方だけにする。終わった開催だけの地方・県(data-past)は、「終了した開催も含める」のときだけ選べる
 function syncPrefs(){
-  [].forEach.call(pf.options,function(o){if(o.value)o.hidden=o.disabled=!!rg.value&&o.dataset.r!==rg.value});
-  if(pf.value&&regionOf[pf.value]!==rg.value&&rg.value)pf.value='';
+  var p=pastBox.checked;
+  [].forEach.call(rg.options,function(o){if(o.value)o.hidden=o.disabled=!!o.dataset.past&&!p});
+  if(rg.value&&rg.options[rg.selectedIndex].disabled)rg.value='';
+  [].forEach.call(pf.options,function(o){if(o.value)o.hidden=o.disabled=(!!rg.value&&o.dataset.r!==rg.value)||(!!o.dataset.past&&!p)});
+  if(pf.value&&(pf.options[pf.selectedIndex].disabled||regionOf[pf.value]!==rg.value&&rg.value))pf.value='';
 }
 function draw(){
   var sp=span(),a=sp[0],b=sp[1],words=normalize(kw.value).split(/\\s+/).filter(Boolean),withPast=pastBox.checked;
@@ -939,7 +944,7 @@ pf.addEventListener('change',function(){if(pf.value)rg.value=regionOf[pf.value];
 fr.addEventListener('change',function(){if(to.value&&fr.value&&to.value<fr.value)to.value=fr.value;draw()});
 to.addEventListener('change',function(){if(fr.value&&to.value&&fr.value>to.value)fr.value=to.value;draw()});
 f.addEventListener('submit',function(ev){ev.preventDefault();draw()});
-pastBox.addEventListener('change',draw);
+pastBox.addEventListener('change',function(){syncPrefs();draw()});
 // URL の条件を戻す(共有されたリンク・戻る)
 var u=new URLSearchParams(location.search),okDate=function(v){return /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(v||'')};
 kw.value=(u.get('q')||'').slice(0,100);if(kw.value)setTab('kw');

@@ -6,11 +6,12 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
 import { editionName, editionKey, nextEdition, keepPastIndexed, recentPast, PAST_KEEP_DAYS } from "../scripts/lib/past-events.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 
-export function pastEventsTests({ ok, section, build }) {
+export async function pastEventsTests({ ok, section, build }) {
   section("終わった開催の決まり(past-events.mjs)");
   ok(editionName("第20回千代田まつり") === "千代田まつり" && editionName("第61回 大朝神楽競演大会") === "大朝神楽競演大会", "回の番号を外して、同じ催しにまとめる");
   ok(editionName("令和8年度 テスト神楽大会") === "テスト神楽大会" && editionName("2026 テスト神楽（大会）") === "テスト神楽(大会)", "年・年度と全角かっこをそろえる");
@@ -87,6 +88,35 @@ export function pastEventsTests({ ok, section, build }) {
     ok(ok2("details.past-more .past-list .card.past h3 a[href='/events/pe-y1.html']").length === 1 && ok2("details.past-more .past-note").text() === "2025年の開催(終了)" && ok2("details.past-more .card.past .tag").text() === "備中神楽", "たたんだ「これまでの開催」もカード(県のページでは種類の札を出す)");
     const oita = page("pref/大分県.html");
     ok(oita(".past-list .card.past h3 a[href='/events/pe-ended.html']").length === 1 && oita(".near-list .card h3 a[href='/events/pe-near.html']").length === 1, "開催予定のない県のページも、近くの開催・これまでの開催をカードで出す(見出し h2 の下の h3)");
+
+    // 日付・地域で探す: 終わった開催だけの県(大分県・鳥取県・沖縄県)は、「終了した開催も含める」のときだけ選べる
+    // (2026-11-18 運営者の指摘「終了した開催にチェックしても、長崎県が出てこない」)
+    {
+      const evJson = read(join(out, "events.json"));
+      const open = (url) => new JSDOM(read(join(out, "calendar.html")), { runScripts: "dangerously", url, beforeParse(w) { w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(evJson)) }); } });
+      const cd = open("https://kagurameguri.jp/calendar.html");
+      await new Promise((r) => setTimeout(r, 30));
+      const C = cd.window.document, pf = C.getElementById("pref"), rg = C.getElementById("region"), box = C.getElementById("past");
+      const opt = (sel, v) => [...sel.options].find((o) => o.value === v);
+      const usable = (sel, v) => !!opt(sel, v) && !opt(sel, v).hidden && !opt(sel, v).disabled;
+      const titles = () => [...C.querySelectorAll("#results li.card h3 a")].map((a) => a.getAttribute("href"));
+      ok(opt(pf, "大分県")?.dataset.past === "1" && !usable(pf, "大分県") && usable(pf, "岡山県") && usable(pf, "宮崎県") && !opt(pf, "岡山県").dataset.past, "終わった開催だけの県は、初めは選べない(開催予定のある県は、これまでどおり選べる)");
+      box.checked = true; box.dispatchEvent(new cd.window.Event("change"));
+      ok(usable(pf, "大分県") && usable(pf, "鳥取県"), "「終了した開催も含める」にすると、終わった開催だけの県も選べる");
+      pf.value = "大分県"; pf.dispatchEvent(new cd.window.Event("change"));
+      ok(titles().join() === "/events/pe-ended.html" && rg.value === opt(pf, "大分県").dataset.r && /pref=%E5%A4%A7%E5%88%86%E7%9C%8C/.test(cd.window.location.search), "選んだ県の終わった開催が出る(地方もその県の地方になる)", titles().join());
+      box.checked = false; box.dispatchEvent(new cd.window.Event("change"));
+      ok(pf.value === "" && !usable(pf, "大分県") && !/pref=/.test(cd.window.location.search), "チェックを外すと、終わった開催だけの県の選択は外れる");
+      cd.window.close();
+      const rd = open("https://kagurameguri.jp/calendar.html?pref=" + encodeURIComponent("大分県") + "&past=1");
+      await new Promise((r) => setTimeout(r, 30));
+      ok(rd.window.document.getElementById("pref").value === "大分県" && [...rd.window.document.querySelectorAll("#results li.card h3 a")].length === 1, "共有・戻る: URL の pref と past=1 から、終わった開催だけの県の検索を戻す");
+      rd.window.close();
+      const nd = open("https://kagurameguri.jp/calendar.html?pref=" + encodeURIComponent("大分県"));
+      await new Promise((r) => setTimeout(r, 30));
+      ok(nd.window.document.getElementById("pref").value === "", "past=1 のない URL では、終わった開催だけの県は選ばない");
+      nd.window.close();
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
