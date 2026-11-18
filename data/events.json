@@ -3924,5 +3924,19 @@
     "lat": 32.71167,
     "lng": 131.30778,
     "geoPrecision": "city"
+  },
+  {
+    "id": "ev-20261018",
+    "name": "飯盛神社例大祭　飯盛くんち",
+    "kagura": "平戸神楽",
+    "prefecture": "長崎県",
+    "city": "佐世保市相浦町2343",
+    "venue": "飯盛神社拝殿",
+    "start": "2026-10-18T18:00",
+    "fee": "",
+    "url": "https://iimori.net",
+    "source": "【公式】佐世保相浦 飯盛神社（いいもりじんじゃ）",
+    "checked": "2026-11-18",
+    "status": "published"
   }
 ]
