@@ -47,9 +47,11 @@ for (const e of events) {
     for (const q of tries) {
       const r = await lookup(q);
       if (!r) continue;
-      if (!r.title.startsWith(e.prefecture) || (cityName && !r.title.includes(cityName))) continue;
+      // 結果の住所は数字が全角(「相浦町２３４３番地」)。申請の市区町村に番地まで入っていても合うよう、全角・半角をそろえて比べる
+      const title = r.title.normalize("NFKC"), cityKey = cityName.normalize("NFKC");
+      if (!title.startsWith(e.prefecture) || (cityKey && !title.includes(cityKey))) continue;
       // 市区町村名より後ろの部分で精度を決める: 番地・丁目の数字まである→address / 町名まで→area / 市区町村の中心→city
-      const rest = r.title.slice(r.title.indexOf(cityName) + cityName.length);
+      const rest = title.slice(title.indexOf(cityKey) + cityKey.length);
       const precision = /[0-9０-９]|番|丁目/.test(rest) ? "address" : rest.length > 0 ? "area" : "city";      found = { ...r, precision };
       break;
     }

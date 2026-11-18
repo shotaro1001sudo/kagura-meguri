@@ -1,7 +1,7 @@
 // 管理者用ページの操作を、サイトに反映する: 確認のビルド → 開催データだけをコミット → push
 // GitHub 側に、週次の自動収集などの新しいコミットがあるときは、取り込んでから push し直す。
 import { execFile } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -76,8 +76,16 @@ export async function repoWebUrl(root, git = findGit()) {
   return m ? `https://github.com/${m[1]}/${m[2]}` : "";
 }
 
+/** 掲載中なのに、地図の位置(緯度経度)がない開催 */
+export function missingGeo(root) {
+  const f = join(root, "data/events.json");
+  if (!existsSync(f)) return [];
+  const rows = JSON.parse(readFileSync(f, "utf8").replace(/^﻿/, ""));
+  return rows.filter((e) => e.status === "published" && (e.lat == null || e.lng == null));
+}
+
 /**
- * 開催データをコミットして push する。返り値の ok が false なら、step(build / test / commit / push)と log で理由を示す。
+ * 開催データをコミットして push する。返り値の ok が false なら、step(build / test / geo / commit / push)と log で理由を示す。
  * データの保存は済んでいるので、失敗しても、あとで「もう一度公開する」でやり直せる。
  */
 export async function publish(root, message, { git = findGit(), check = true, only = null } = {}) {
@@ -95,6 +103,9 @@ export async function publish(root, message, { git = findGit(), check = true, on
       const r = await run(process.execPath, [t], { cwd: root });
       if (!r.ok) return { ok: false, step: "test", log: `${t}\n${r.out}`.slice(-2000) };
     }
+    // 掲載中の開催に、地図の位置(緯度経度)がないと、GitHub の公開処理のテスト(tests/extra.mjs)で落ちて、サイト全体の公開が止まる
+    const noGeo = missingGeo(root);
+    if (noGeo.length) return { ok: false, step: "geo", log: noGeo.map((e) => `${e.id} ${e.name ?? ""}(${e.prefecture ?? ""}${e.city ?? ""}${e.address ?? ""})`).join("\n") };
   }
 
   // 2. 開催データだけをコミット(ほかの作業中のファイルは、巻き込まない)

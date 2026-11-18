@@ -650,8 +650,28 @@ export async function adminTests({ ok, section }) {
     const before = g(A, "rev-parse", "HEAD");
     p = await publish(A, "x", { git, check: true });
     ok(!p.ok && p.step === "test" && p.log.includes("tests/social-evidence.mjs") && p.log.includes("保留の判断と合わない") && g(A, "rev-parse", "HEAD") === before, "開催データのテストが落ちるときは、コミットも送信もせず、どのテストかを知らせる", JSON.stringify(p));
+    // 掲載中の開催に地図の位置がないと、GitHub の公開処理(tests/extra.mjs)で落ちて、サイト全体の公開が止まる。送る前に止める
+    writeFileSync(join(A, "tests/social-evidence.mjs"), "");
+    writeFileSync(join(A, "data/events.json"), '[\n  {"id":"ev-20261018","name":"飯盛くんち","status":"published","prefecture":"長崎県","city":"佐世保市相浦町2343"},\n  {"id":"y","status":"withdrawn"}\n]');
+    p = await publish(A, "x", { git, check: true });
+    ok(!p.ok && p.step === "geo" && p.log.includes("ev-20261018") && !p.log.includes("y ") && g(A, "rev-parse", "HEAD") === before, "地図の位置がない掲載中の開催があるときは、コミットも送信もせず、どの開催かを知らせる", JSON.stringify(p));
+    ok(read("scripts/admin/events.js").includes('geo: "地図の位置が見つからない開催があります'), "画面では、位置がないときの直し方(番地は住所の欄へ)を知らせる");
     ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test === "node tests/all.mjs" && read("tests/all.mjs").includes("DATA_TESTS"), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
   } finally { rmSync(T, { recursive: true, force: true }); }
+
+  section("位置の取得: 市区町村に番地まで入った申請でも、全角・半角の違いで外さない");
+  {
+    // 国土地理院の結果は数字が全角。記録(geocache)に入れておき、通信せずに確かめる
+    const G = mkdtempSync(join(tmpdir(), "kagura-geo-"));
+    try {
+      mkdirSync(join(G, "data"));
+      writeFileSync(join(G, "data/events.json"), JSON.stringify([{ id: "ev-20261018", status: "published", prefecture: "長崎県", city: "佐世保市相浦町2343", venue: "飯盛神社拝殿" }]));
+      writeFileSync(join(G, "data/geocache.json"), JSON.stringify({ "長崎県佐世保市相浦町2343飯盛神社拝殿": { lng: 129.665894, lat: 33.196747, title: "長崎県佐世保市相浦町２３４３番地" } }));
+      const out = execFileSync(process.execPath, [join(process.cwd(), "scripts/geocode.mjs")], { cwd: G, encoding: "utf8", env: { ...process.env, GEOCODE_FILES: "data/events.json" } });
+      const e = JSON.parse(readFileSync(join(G, "data/events.json"), "utf8"))[0];
+      ok(e.lat === 33.19675 && e.lng === 129.66589 && !e.geoPrecision, "結果の住所の全角の番地と、申請の半角の番地を同じものとして、番地の精度で位置を付ける", out);
+    } finally { rmSync(G, { recursive: true, force: true }); }
+  }
 
   section("管理者用ページ: 定期の更新(GitHub の最新の取り込み)");
   {

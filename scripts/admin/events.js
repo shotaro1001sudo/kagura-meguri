@@ -23,7 +23,7 @@ export function published(r, what) {
   const p = r.publish;
   const geo = r.geocode ? "\n" + r.geocode.split("\n").filter((l) => /^(OK|NG|--)/.test(l)).join("\n") : "";
   if (!p || p.ok) return toast(`${what}。サイトに送りました(数分後に表示が変わります)${geo}`);
-  const step = { build: "サイトを作る確認で、問題が見つかりました", test: "開催データの検査で、問題が見つかりました(このまま送ると、サイトの公開が止まります)", commit: "変更を記録できませんでした", push: "GitHub に送れませんでした" }[p.step] || "公開できませんでした";
+  const step = { build: "サイトを作る確認で、問題が見つかりました", test: "開催データの検査で、問題が見つかりました(このまま送ると、サイトの公開が止まります)", geo: "地図の位置が見つからない開催があります(このまま送ると、サイトの公開が止まります)。開催を開いて、市区町村は「〇〇市」までにし、番地は「番地までの住所」の欄に入れて保存し直してください", commit: "変更を記録できませんでした", push: "GitHub に送れませんでした" }[p.step] || "公開できませんでした";
   toast(`${what}が、サイトにはまだ出ていません。${step}。\n保存はできています。画面の上の「もう一度公開する」で、やり直せます。\n${(p.log || "").split("\n").slice(-4).join("\n")}`, { bad: true, keep: true });
 }
 const sending = () => toast("保存して、サイトに送っています…(数十秒かかることがあります)", { busy: true });
