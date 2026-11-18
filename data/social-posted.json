@@ -617,5 +617,77 @@
     "bufferId": "6afcc00dea84dfa925464577",
     "date": "2026-11-19",
     "hash": "52fff135e60e9ec4"
+  },
+  {
+    "id": "r:feature:飯南神楽:0",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-19T14:00:00.000Z",
+    "bufferId": "6afe0c5e1173b0b5f0e33b7b",
+    "date": "2026-11-19",
+    "hash": "d88f51512fdd8938"
+  },
+  {
+    "id": "r:kind:平戸神楽",
+    "type": "reading",
+    "style": "label",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-19T18:00:00.000Z",
+    "bufferId": "6afe0c5ef5888642f69ca61a",
+    "date": "2026-11-19",
+    "hash": "e3fe211051ab923a"
+  },
+  {
+    "id": "niyodogawa-ikegawa-kagura-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-19T22:00:00.000Z",
+    "bufferId": "6afe0c5e750db4a2bff609dc",
+    "date": "2026-11-20",
+    "hash": "c4907f8fff1e4f4f"
+  },
+  {
+    "id": "r:page:weekend:2026-11-20",
+    "type": "reading",
+    "style": "label",
+    "link": true,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-20T02:00:00.000Z",
+    "bufferId": "6afe0c5ef5888642f69ca648",
+    "date": "2026-11-20",
+    "hash": "d3e4089385e42077"
+  },
+  {
+    "id": "r:feature:番楽:2",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-20T06:00:00.000Z",
+    "bufferId": "6afe0c5f0fd3f6beff50804b",
+    "date": "2026-11-20",
+    "hash": "00170ec1e037259d"
+  },
+  {
+    "id": "hachioji-yomigaeri-kagura-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-20T10:00:00.000Z",
+    "bufferId": "6afe0c5f1173b0b5f0e33bc6",
+    "date": "2026-11-20",
+    "hash": "f51e52e209be6d83"
   }
 ]
