@@ -70,7 +70,7 @@ export async function pastEventsTests({ ok, section, build }) {
 
     const k = page("kagura/庄内神楽.html");
     ok(/^index,follow/.test(robots("kagura/庄内神楽.html")) && inSm("/kagura/庄内神楽.html"), "開催予定のない種類のページも、これまでの開催と解説があれば検索に残す");
-    ok(k("#k-past").length === 1 && k(".past-list a[href='/events/pe-ended.html']").length === 1 && k(".ended-note").text().includes("次の日程は、公式の発表を確かめ次第載せます"), "これまでの開催と、次の日程の載せ方を出す");
+    ok(k("#k-past").length === 1 && k(".past-list a[href='/events/pe-ended.html']").length === 1 && k(".ended-note").text().includes("現在の開催予定はありません") && !k(".ended-note").text().includes("確かめ次第") && !k('meta[name="description"]').attr("content").includes("確かめ次第"), "これまでの開催を出し、次の日程を載せるとは約束しない(載るかどうか分からないため)");
     ok(k("#k-schedule[open] #k-past").length === 1, "これまでの開催は、開いた「開催予定」の欄の中に入れる");
     // 2026-11-18 運営者の依頼「近くで観られる神楽、これまでの開催もカード形式に」: 開催予定と同じカード(見出しは欄の見出し h3 の下の h4)
     ok(k(".near-list .card:not(.past) h4 a[href='/events/pe-near.html']").length === 1 && k(".near-list .card .tag").text() === "高千穂神楽" && k(".near-list .event-facts").text().includes("料金"), "近くで観られる神楽は、開催予定と同じカード(種類の札・会場・料金)");
