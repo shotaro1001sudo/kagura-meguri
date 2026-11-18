@@ -98,6 +98,32 @@ export async function homeTests({ ok, section, OUT, build }) {
     NK.dispatchEvent(new normalized.window.CompositionEvent('compositionend'));
     ok(ND.querySelectorAll('#results li').length === 0, '日本語IMEの入力確定時に結果を更新');
     normalized.window.close();
+    // 終了した開催も探せる(2026-11-18 運営者の依頼): 「終了した開催も含める」のチェック。初めはオフ。すべての終了した開催を、これからの開催の後ろに新しい順で
+    {
+      const evs = JSON.parse(evJson), past = evs.filter((x) => !x.up), upc = evs.filter((x) => x.up);
+      const open = (url) => new JSDOM(read(join(OUT, 'calendar.html')), { runScripts: 'dangerously', url, beforeParse(w) { w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(evJson)) }); } });
+      const pd = open('https://kagurameguri.jp/calendar.html');
+      await new Promise((r) => setTimeout(r, 30));
+      const P = pd.window.document, box = P.getElementById('past'), change = () => box.dispatchEvent(new pd.window.Event('change'));
+      ok(!!box && box.type === 'checkbox' && !box.checked && !!box.closest('#finder') && box.closest('label').textContent.trim() === '終了した開催も含める' && P.querySelectorAll('#results .rpast').length === 0 && P.querySelectorAll('#results li.card').length === upc.length, '「終了した開催も含める」は、初めはオフで、これからの開催だけを出す');
+      box.checked = true; change();
+      const pastCards = [...P.querySelectorAll('#results .rpast li.card')], starts = pastCards.map((li) => byId[li.querySelector('h3 a').getAttribute('href').slice(8, -5)]?.start ?? '');
+      ok(past.length > 0 && pastCards.length === past.length && starts.every((s, i) => i === 0 || s <= starts[i - 1]) && pastCards.every((li) => /^\d{4}年の開催\(終了\)$/.test(li.querySelector('.past-note')?.textContent ?? '') && li.querySelectorAll('.event-facts>div').length === 1)
+        && P.querySelectorAll('#results .rgroup:not(.rpast) li.card').length === upc.length && P.getElementById('count').textContent === `これからの開催 ${upc.length}件・終了した開催 ${past.length}件` && new URL(pd.window.location.href).searchParams.get('past') === '1',
+      'チェックすると、終了した開催をすべて、これからの開催の後ろに「終了した開催」として新しい順に出し、年を添える。条件を URL に残す', P.getElementById('count').textContent);
+      P.getElementById('tab-kw').click();
+      const k = P.getElementById('keyword'); k.value = '終了した神楽'; k.dispatchEvent(new pd.window.Event('input'));
+      ok(P.querySelectorAll('#results li.card').length === 1 && P.querySelectorAll('#results .rpast li.card').length === 1 && P.querySelector('#results .rpast').open, 'キーワードでも終了した開催を探せる(これからの開催がなければ、終了した開催の欄を開いて出す)');
+      box.checked = false; change();
+      ok(P.querySelectorAll('#results li.card').length === 0 && P.getElementById('count').textContent.includes('「終了した開催も含める」'), 'オフに戻すと、終了した開催は出ない。0件のときは「終了した開催も含める」で探せることを知らせる');
+      box.checked = true; change(); P.getElementById('reset').click();
+      ok(!box.checked && !/past=/.test(pd.window.location.search), 'リセットで、終了した開催のチェックも外す');
+      pd.window.close();
+      const rd = open('https://kagurameguri.jp/calendar.html?q=' + encodeURIComponent('終了した神楽') + '&past=1');
+      await new Promise((r) => setTimeout(r, 30));
+      ok(rd.window.document.getElementById('past').checked && rd.window.document.querySelectorAll('#results .rpast li.card').length === 1, '共有・戻るときに、URL の past=1 から「終了した開催も含める」を戻す');
+      rd.window.close();
+    }
     // Empty dated-event results must not imply there are no recurring performances.
     let finishEmpty;
     const emptyDom = new JSDOM(read(join(OUT, 'calendar.html')), {runScripts:'dangerously',url:'https://kagurameguri.jp/calendar.html?when=weekend&region='+encodeURIComponent('中国')+'&pref='+encodeURIComponent('島根県'),beforeParse(w){w.fetch=()=>new Promise(resolve=>{finishEmpty=resolve;});}});

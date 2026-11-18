@@ -9,7 +9,10 @@ import { join } from "node:path";
 // 協賛のページのアクセスの概数(media-stats.json。週次の分析タスクが scripts/media-stats.mjs で作る。丸めた数字だけ)も、ここから公開する
 // X投稿の書き出しの1行(social-hooks.json。週次の分析タスクが scripts/social-hooks.mjs で書く)は、定期の更新で自動で公開する(AUTO_DATA)
 export const AUTO_DATA = ["data/social-hooks.json"];
-const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "data/media-stats.json", ...AUTO_DATA];
+// 神楽の種類の解説(kagura-info.json)は、運営者が管理者用ページで下書きを確かめて「公開する」を押したときに送る(scripts/admin/kagura-draft.mjs)
+const DATA = ["data/events.json", "data/geocache.json", "data/rejected.json", "data/media-stats.json", "data/kagura-info.json", ...AUTO_DATA];
+// check: "full" のときに走らせる、全部のテスト(npm test と同じ)
+export const FULL_TESTS = ["tests/all.mjs"];
 
 // 公開前に走らせる、開催データを確かめるテスト(package.json の test:data と同じもの)。
 // GitHub の公開処理は npm test(この6本 + tests/run.mjs)が通らないと公開しないので、データで落ちるものはここで止める。
@@ -88,12 +91,18 @@ export function missingGeo(root) {
  * 開催データをコミットして push する。返り値の ok が false なら、step(build / test / geo / commit / push)と log で理由を示す。
  * データの保存は済んでいるので、失敗しても、あとで「もう一度公開する」でやり直せる。
  */
-export async function publish(root, message, { git = findGit(), check = true, only = null } = {}) {
+export async function publish(root, message, { git = findGit(), check = true, only = null, fullTests = FULL_TESTS } = {}) {
   const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   const g = (...a) => run(git, a, { cwd: root, env });
 
+  // 1a. 神楽の解説など、ページの文が大きく変わるもの(check: "full"): GitHub の公開処理と同じ、全部のテストを通す
+  //     (検索結果の説明文の長さなど、開催データのテストだけでは確かめられない決まりがある)
+  if (check === "full") {
+    const r = await run(process.execPath, fullTests, { cwd: root, timeout: 600_000 });
+    if (!r.ok) return { ok: false, step: "test", log: `npm test\n${r.out.split("\n").filter((l) => /✗|失敗|Error/.test(l)).slice(-30).join("\n") || r.out.slice(-2000)}`.slice(-3000) };
+  }
   // 1. 公開前の確認: サイトを作れるか、開催データのテストが通るか(GitHub の公開処理で落ちるデータを送らない)
-  if (check) {
+  else if (check) {
     const out = mkdtempSync(join(tmpdir(), "kagura-admin-"));
     const b = await run(process.execPath, ["scripts/build.mjs"], { cwd: root, env: { ...process.env, OUT_DIR: out } });
     rmSync(out, { recursive: true, force: true });

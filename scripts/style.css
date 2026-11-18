@@ -652,6 +652,10 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .finder .keyword p{margin:6px 0 0}
 .linkbtn{background:none;border:0;padding:8px 0;min-height:44px;color:var(--ac);text-decoration:underline;text-underline-offset:4px;font:inherit;font-size:var(--fs-s);cursor:pointer}
 .freset{margin:6px 0 0}
+.fpast{margin:-6px 0 0;font-size:var(--fs-s)}
+.fpast label{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.finder .fpast input{width:20px;height:20px;min-height:0;padding:0;margin:0;accent-color:var(--ac)}
+.rpast .past-note{margin:4px 0 0}
 @media(max-width:560px){.finder .regions button{padding:6px 14px}}
 .count{margin:36px 0 0;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em}.count:empty{display:none}
 .monthlist .md small{font-size:var(--fs-2xs);color:var(--mut);margin-left:1px}

@@ -6,6 +6,7 @@ import { ended, openEditor, rejectEvent, staleEvents } from "./events.js";
 import { planOpen } from "./goal.js";
 import { salesTodos } from "./sales.js";
 import { overview, sigMark } from "./dash.js";
+import { kaguraDrafts, draftCard, waitingNote } from "./kagura.js";
 
 // ---------- 決めること(保留・振り返り・改善案・Claude に頼むこと) ----------
 export function decisions() {
@@ -135,6 +136,10 @@ ${d.claudeActs.map((a) => `- ${a.text}`).join("\n")}
         d.past.length ? h("details", { class: "more", open: d.upcoming.length ? null : true }, h("summary", null, `開催日が過ぎた保留(${d.past.length}件)`), h("p", { class: "mut small" }, "サイトには載っていません。却下すると、一覧から片付きます。"), d.past.map((e) => pendCard(e, true))) : ""] },
     { id: "inbox", title: "申請・問い合わせに対応する", n: inboxOpen("submit") + inboxOpen("contact"), clear: "未対応の申請・問い合わせはありません。", lead: "フォームから届いたものです。「受信箱」で対応します。",
       body: () => linkRows([{ n: inboxOpen("submit"), label: "未対応の掲載の申請(掲載のお知らせを送っていないものを含む)", go: ["inbox", { box: "submit", sub: "open" }] }, { n: inboxOpen("contact"), label: "未対応・対応中の問い合わせ", go: ["inbox", { box: "contact", con: "open" }] }]) },
+    { id: "kagura", title: "神楽の解説の下書きを確かめる", n: kaguraDrafts().length,
+      lead: "解説のない神楽の種類(申請で新しく載ったものなど)に、予定タスクが出典つきで下書きを作りました。参考にしたページを開いて中身を確かめ、「公開する」か「作り直しを頼む」を選びます。",
+      help: "公開するまで、種類のページは開催の一覧だけです。下書きはこのPCだけにあり、サイトには出ていません。",
+      body: () => [kaguraDrafts().map(draftCard), waitingNote()] },
     { id: "sales", title: "営業の相手に連絡する", n: sales.reduce((a, r) => a + (r.count ?? r.n), 0), clear: S.pipeline ? "営業で、いま連絡することはありません。" : null, lead: "協賛・有料プランの提案先とのやりとりです。「営業」で行います。",
       body: () => linkRows(sales) },
     { id: "claude", title: "Claude に頼む", n: d.openAdv.length + (d.claudeActs.length ? 1 : 0), clear: "いま Claude に頼めることはありません。",

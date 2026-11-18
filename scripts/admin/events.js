@@ -1,6 +1,7 @@
 // 開催: 一覧(掲載中・保留・終了・取り下げ)、追加・編集、取り下げ・再掲載、保留の掲載・却下。
 // 開催データを変える操作は、保存と同時にサイトへ送る(公開)。だから、押す前に確認の画面を出す
 import { h, $, S, view, render, call, toast, fail, confirmBox, openForm, field, input, badge, seg, ext, pageUrl, when, jpDate, nowJst, daysSince, note, icon, busy, empty } from "./ui.js";
+import { nearKinds } from "./kinds.js";
 
 // サイトと同じ考え方: 終了時刻がなければ、開始から3時間(時刻未定は、その日いっぱい)を開催中とみなす
 export function ended(e) {
@@ -97,6 +98,13 @@ export function eventsView() {
   ];
 }
 
+async function confirmNewKind(name) {
+  const near = nearKinds(name, S.kaguraKinds || []);
+  return confirmBox({ title: `「${name}」は、サイトにない神楽の種類です`, ok: "新しい種類として掲載する", cancel: "名前を直す",
+    body: near.length ? `似た名前の種類があります: ${near.join("、")}。同じ神楽なら「名前を直す」を押して、そちらを選んでください。` : "サイトにある種類の別の書き方(地名の書き方・「の」の有無・神楽団の名前など)でないかを確かめてください。",
+    points: [["site", "新しい種類のページができます(はじめは開催の一覧だけ)。"], ["info", "種類の解説(概要・歴史など)は、毎朝の予定タスクが出典つきで下書きを作り、「やること」に出ます。読んで「公開する」を押すと、種類のページに出ます。"]] });
+}
+
 // ---------- 開催の編集(申請の許可・保留の掲載にも使う) ----------
 // opts.approve: 保留中の開催を、内容を確かめて掲載する(自動収集の ID は変えない)
 export function openEditor(e, item, opts = {}) {
@@ -110,7 +118,8 @@ export function openEditor(e, item, opts = {}) {
     opts.approve && (d.holdReasons || []).length ? note("info", h("b", null, "保留になった理由"), h("ul", { class: "reasons" }, d.holdReasons.map((r) => h("li", null, r)))) : "",
     group("名前と種類",
       field("name", "名称", input("name", d.name, { required: true, maxlength: 80 }), { wide: true }),
-      field("kagura", "神楽の種類", input("kagura", d.kagura, { required: true, maxlength: 40, placeholder: "例: 石見神楽" })),
+      field("kagura", "神楽の種類", input("kagura", d.kagura, { required: true, maxlength: 40, placeholder: "例: 石見神楽", list: "kagura-kinds", autocomplete: "off" }), { help: "サイトにある種類から選べます。ない名前のときは、新しい種類として載せるかを確かめます" }),
+      h("datalist", { id: "kagura-kinds" }, (S.kaguraKinds || []).map((k) => h("option", { value: k }))),
       field("fee", "料金", input("fee", d.fee, { maxlength: 80, placeholder: "例: 無料" }), { optional: true })),
     group("いつ",
       field("date", "開催日", input("date", start.slice(0, 10), { type: "date" })),
@@ -149,6 +158,9 @@ export function openEditor(e, item, opts = {}) {
       const ev2 = { id: v("id"), name: v("name"), kagura: v("kagura"), prefecture: v("prefecture"), city: v("city"), venue: v("venue"), address: v("address"),
         start: date ? `${date}T${unknown ? "00:00" : v("time") || "00:00"}` : "", end: v("endtime") && date ? `${endDate}T${v("endtime")}` : "",
         timeUnknown: unknown || (!!date && !v("time")), fee: v("fee"), url: v("url"), description: v("description"), source: v("source"), checked: v("checked"), socialOrganizer: v("socialOrganizer"), socialAuthorityUrl: v("socialAuthorityUrl"), socialAuthorityNote: v("socialAuthorityNote"), socialVerified: $("#f-socialVerified").checked };
+      // サイトにない神楽の種類: 別の書き方(「石見の神楽」・神楽団の名前など)で、種類が増えてしまわないよう確かめる
+      if (ev2.kagura && ev2.kagura !== d.kagura && !(S.kaguraKinds || []).includes(ev2.kagura) && !(await confirmNewKind(ev2.kagura)))
+        throw Object.assign(new Error("神楽の種類を確かめてください"), { fields: { kagura: "サイトにある種類から選ぶか、名前を直してください" } });
       const r = await call("/api/events/save", { event: ev2, originalId: e && !item ? e.id : null, inboxId: item ? item.id : null, approve: !!opts.approve });
       published(r, posting ? "掲載しました" : "保存しました");
       render();

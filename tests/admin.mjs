@@ -217,7 +217,7 @@ export async function adminTests({ ok, section }) {
   const fakeMail = { calls: 0 };
   const ovCalls = { runs: 0, site: 0 };
   // コミットと push は、本物のリポジトリに触れないよう、記録するだけの偽物にする
-  const published = [], publishOpts = [];
+  const published = [], publishOpts = [], pubNext = { v: null };
   const autoFlag = { v: false };
   const fakeReplies = { calls: [], next: [] };
   const fakeIssues = { v: [], calls: 0 };
@@ -226,7 +226,7 @@ export async function adminTests({ ok, section }) {
   mkdirSync(CODE, { recursive: true }); writeFileSync(join(CODE, "a.mjs"), "export const v = 1;\n"); writeFileSync(join(CODE, "note.txt"), "x");
   const restarts = { n: 0 };
   const { server, token, url } = await startAdmin({ codeDirs: [CODE], canRestart: true, restarter: () => { restarts.n++; }, reviewIssues: async () => { fakeIssues.calls++; return fakeIssues.v; }, root: ROOT, port: 0, today: () => "2026-10-10", geocode: async () => "OK  stub",
-    publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
+    publisher: async (root, msg, opts) => { published.push(msg); publishOpts.push(opts ?? null); return pubNext.v ?? { ok: true, commit: "abc1234" }; }, autoChanged: async () => autoFlag.v, pending: async () => ({ uncommitted: false, unpushed: 0 }),
     commitIds: async () => ["SEO-20261001-1"], repoUrl: async () => "https://github.com/o/r", phoneHost: async () => "pc.tail-test.ts.net", tasks: (o) => loadTasks({ file: TF, now: NOW, startup: () => null, ...o }),
     refreshHours: 0, sync: async () => ({ ok: true, text: "最新です" }),
     runs: async () => { ovCalls.runs++; return [{ workflowName: "build-and-deploy", status: "completed", conclusion: "success", createdAt: "2026-10-10T01:00:00Z", url: "https://github.com/o/r/actions/runs/1" }]; },
@@ -618,6 +618,61 @@ export async function adminTests({ ok, section }) {
     ok(js.includes("function promptFor(") && js.includes('"頼む文をコピー"') && js.includes('promptBox(promptFor("proposal", p))') && js.includes('promptBox(promptFor("mon", m))'), "検索の改善案と収益化の案は、提案と頼む文(コピーのボタンつき)を出すだけ");
     ok((await req("/api/jobs/start", { body: { kind: "proposal", id: "x" } })).status === 404, "Claude に頼む API はない");
     ok(/setInterval\(reload, hours \* 3600e3/.test(js) && /typing\(\)/.test(js), "画面は数時間おきに状況を読み直す(入力の途中は、描き直さない)");
+
+    // ---------- 神楽の種類の解説の下書き(予定タスクが書き、運営者が確かめて公開する) ----------
+    {
+      const K = await import("../scripts/admin/kagura-draft.mjs");
+      const { nearKinds } = await import("../scripts/admin/kinds.js");
+      const goodInfo = { tagline: "長崎県平戸市 ・ テスト用のひとこと", intro: "長崎県平戸市に伝わる神楽です。テストのための紹介文で、六十字を超えるように、少し長めに書いています。種類のページの冒頭に出ます。", source: "テスト市「テスト神楽」",
+        history: ["起源には諸説あります。"], features: ["特徴の文です。"], programs: [{ name: "演目", text: "説明です。" }], viewing: ["観賞のコツです。"], refs: [{ name: "テスト市", url: "https://example.jp/kagura" }] };
+      writeFileSync(join(ROOT, "data/kagura-info.json"), JSON.stringify({ 石見神楽: { ...goodInfo, tagline: "島根県西部 ・ x" } }, null, 2) + "\n");
+      const evs = JSON.parse(read(join(ROOT, "data/events.json")));
+      evs.push({ id: "ev-hirado", name: "飯盛くんち(テスト)", kagura: "平戸神楽", prefecture: "長崎県", city: "佐世保市", start: "2026-10-18T18:00", url: "https://iimori.example.jp", status: "published" },
+        { id: "ev-held", name: "保留の開催", kagura: "保留だけの神楽", prefecture: "長崎県", start: "2026-12-01T18:00", status: "pending" });
+      writeFileSync(join(ROOT, "data/events.json"), JSON.stringify(evs, null, 2));
+      const v = (x) => K.validateKaguraInfo(x);
+      ok(v(goodInfo).errors.length === 0 && v(goodInfo).warnings.length === 0, "解説の形: 種類のページと同じ項目がそろっていれば通る");
+      ok(v({ ...goodInfo, intro: "短い紹介文です。" }).errors.some((e) => e.includes("60字以上")) && v({ ...goodInfo, tagline: "長崎県" }).errors.some((e) => e.includes("地域 ・ ひとこと")) && v({ ...goodInfo, source: "" }).errors.some((e) => e.includes("出典"))
+        && v({ ...goodInfo, refs: [{ name: "x", url: "http://example.jp" }] }).errors.some((e) => e.includes("https")) && v({ ...goodInfo, extra: 1 }).errors.some((e) => e.includes("extra")) && v({ ...goodInfo, history: [] }).errors.some((e) => e.includes("歴史")),
+      "解説の形: 紹介文60字以上・「地域 ・ ひとこと」・出典・参考のページ(https)・歴史がないもの、知らない項目は通さない(npm test と種類のページの決まり)");
+      ok(v({ ...goodInfo, programs: [], viewing: [] }).errors.length === 0 && v({ ...goodInfo, programs: [], viewing: [] }).warnings.length === 2, "確かめられない演目・観賞のコツは空でもよい(「情報がありません。」と出ることを知らせる)");
+      const st0 = (await req("/api/state")).json;
+      ok(st0.kaguraKinds.includes("平戸神楽") && st0.kaguraKinds.includes("石見神楽") && !st0.kaguraKinds.includes("保留だけの神楽") && st0.kaguraGaps.map((g) => g.kind).join() === "平戸神楽" && st0.kaguraGaps[0].draft === null && st0.kaguraGaps[0].items[0].url === "https://iimori.example.jp",
+        "解説のない種類(掲載中の開催・定期公演にあるもの。保留は除く)と、入力の候補(サイトにある種類)を画面に渡す", JSON.stringify(st0.kaguraGaps?.map((g) => g.kind)));
+      const cli = (...a) => execFileSync(process.execPath, [join(process.cwd(), "scripts/admin/kagura-draft.mjs"), ...a], { cwd: ROOT, encoding: "utf8" });
+      ok(cli("due").startsWith("due: 平戸神楽") && JSON.parse(cli("show"))[0].items[0].name === "飯盛くんち(テスト)", "予定タスク: 下書きの要る種類と、その開催(公式の URL つき)を読める");
+      writeFileSync(join(ROOT, "draft-in.json"), JSON.stringify({ 平戸神楽: { ...goodInfo, note: "演目の名前は保存会の案内で確かめた" }, 石見神楽: goodInfo, 形の悪い神楽: { ...goodInfo, intro: "短い。" } }));
+      let out = ""; try { cli("put", "draft-in.json"); } catch (err) { out = err.stdout; }
+      const drafts = JSON.parse(read(join(ROOT, ".admin/kagura-drafts.json")));
+      ok(/下書きに入れました: 平戸神楽/.test(out) && /入れませんでした: 石見神楽/.test(out) && /入れませんでした: 形の悪い神楽[\s\S]*60字以上/.test(out) && drafts.平戸神楽.status === "draft" && drafts.平戸神楽.note.includes("保存会") && !("note" in drafts.平戸神楽.info) && !drafts.石見神楽 && !read(join(ROOT, "data/kagura-info.json")).includes("平戸神楽"),
+        "予定タスクの下書きは .admin/ にだけ入る(解説のある種類・形の悪いものは入れず、理由を出す。kagura-info.json は変えない)", out);
+      ok(cli("due").startsWith("skip:"), "確かめ待ちの下書きがあれば、予定タスクは作り直さない");
+      ok((await req("/api/kagura/redo", { body: { kind: "平戸神楽", note: "歴史の出典を公的なページに" } })).json.state.kaguraGaps[0].draft.status === "redo" && cli("due").includes("平戸神楽(作り直し)") && JSON.parse(cli("show"))[0].redoNote === "歴史の出典を公的なページに",
+        "「作り直しを頼む」: 直してほしい点が、次の予定タスクに渡る");
+      writeFileSync(join(ROOT, "draft-in.json"), JSON.stringify({ 平戸神楽: goodInfo }));
+      cli("put", "draft-in.json");
+      ok(JSON.parse(read(join(ROOT, ".admin/kagura-drafts.json"))).平戸神楽.prevRedoNote === "歴史の出典を公的なページに", "作り直した下書きには、頼んだ点を残す(確かめるときに見比べる)");
+      // 公開: 全部のテストに通らなければ、元に戻して下書きに残す
+      const before = read(join(ROOT, "data/kagura-info.json"));
+      pubNext.v = { ok: false, step: "test", log: "npm test\n✗ 説明文の長さ" };
+      let r = await req("/api/kagura/publish", { body: { kind: "平戸神楽" } });
+      ok(r.status === 200 && publishOpts.at(-1)?.check === "full" && published.at(-1) === "data(admin): 神楽の解説: 平戸神楽" && read(join(ROOT, "data/kagura-info.json")) === before && r.json.state.kaguraGaps[0].draft.status === "draft" && r.json.state.kaguraGaps[0].draft.lastError.includes("説明文の長さ"),
+        "公開は、全部のテスト(check: full)を通す。通らなければ kagura-info.json を元に戻し、理由をつけて下書きに残す", JSON.stringify(publishOpts.at(-1)));
+      pubNext.v = null;
+      r = await req("/api/kagura/publish", { body: { kind: "平戸神楽" } });
+      const info = JSON.parse(read(join(ROOT, "data/kagura-info.json")));
+      ok(r.status === 200 && r.json.publish.ok && info.平戸神楽?.intro === goodInfo.intro && !("note" in info.平戸神楽) && Object.keys(info).join() === "石見神楽,平戸神楽" && read(join(ROOT, "data/kagura-info.json")).endsWith("}\n") && !JSON.parse(read(join(ROOT, ".admin/kagura-drafts.json"))).平戸神楽 && r.json.state.kaguraGaps.length === 0,
+        "テストに通れば、kagura-info.json(2字下げ・最後に改行)に入れてサイトに送り、下書きから消す");
+      ok((await req("/api/kagura/publish", { body: { kind: "平戸神楽" } })).status === 400 && (await req("/api/kagura/redo", { body: { kind: "ない神楽" } })).status === 404, "確かめ待ちの下書きがない種類は、公開も作り直しもできない");
+      ok(nearKinds("石見の神楽", ["石見神楽", "高千穂神楽"]).join() === "石見神楽" && nearKinds("高千穂の夜神楽", ["石見神楽", "高千穂神楽"]).join() === "高千穂神楽" && nearKinds("ＩＷＡＭＩ神楽", ["iwami神楽"]).length === 1 && nearKinds("平戸神楽", ["石見神楽", "高千穂神楽"]).length === 0,
+        "似た名前の種類を見つける(「の」の有無・地名を含む別の書き方・全角半角)");
+      const evJs = read("scripts/admin/events.js");
+      ok(/list: "kagura-kinds"/.test(evJs) && /h\("datalist", \{ id: "kagura-kinds" \}/.test(evJs) && /!\(S\.kaguraKinds \|\| \[\]\)\.includes\(ev2\.kagura\) && !\(await confirmNewKind\(ev2\.kagura\)\)/.test(evJs) && evJs.indexOf("confirmNewKind(ev2.kagura)") < evJs.indexOf('call("/api/events/save"'),
+        "掲載の画面: 神楽の種類はサイトにある種類から選べ、ない名前のときは、保存の前に新しい種類として載せるかを確かめる");
+      const todoJs = read("scripts/admin/todo.js"), kJs = read("scripts/admin/kagura.js");
+      ok(/id: "kagura", title: "神楽の解説の下書きを確かめる", n: kaguraDrafts\(\)\.length/.test(todoJs) && kJs.includes('"/api/kagura/publish"') && kJs.includes('"/api/kagura/redo"') && kJs.includes("ext(r.url, r.name)") && ["とは`", '"歴史"', '"特徴"', '"主な演目"', '"観賞のコツ"'].every((s) => kJs.includes(s)),
+        "やること: 下書きを種類のページと同じ並びで読み、参考のページを開いて確かめ、「公開する」か「作り直しを頼む」を選ぶ");
+    }
   } finally {
     server.close();
     rmSync(ROOT, { recursive: true, force: true });
@@ -669,6 +724,11 @@ export async function adminTests({ ok, section }) {
     p = await publish(A, "x", { git, check: true });
     ok(!p.ok && p.step === "geo" && p.log.includes("ev-20261018") && !p.log.includes("y ") && g(A, "rev-parse", "HEAD") === before, "地図の位置がない掲載中の開催があるときは、コミットも送信もせず、どの開催かを知らせる", JSON.stringify(p));
     ok(read("scripts/admin/events.js").includes('geo: "地図の位置が見つからない開催があります'), "画面では、位置がないときの直し方(番地は住所の欄へ)を知らせる");
+    // 神楽の解説の公開(check: "full"): 全部のテスト(npm test と同じ)に通らなければ送らない
+    writeFileSync(join(A, "tests/full.mjs"), "console.log('■ SEO'); console.log('  ✗ /kagura/x.html: 説明文の長さ'); process.exit(1);");
+    p = await publish(A, "x", { git, check: "full", fullTests: ["tests/full.mjs"] });
+    ok(!p.ok && p.step === "test" && p.log.includes("説明文の長さ") && g(A, "rev-parse", "HEAD") === before, "神楽の解説の公開は、全部のテストを通し、落ちたらコミットも送信もせず、落ちた項目を知らせる", JSON.stringify(p));
+    ok((await import("../scripts/admin/publish.mjs")).FULL_TESTS.join() === "tests/all.mjs" && read("scripts/admin/publish.mjs").includes('"data/kagura-info.json"'), "全部のテストは npm test と同じ。神楽の解説(kagura-info.json)も、管理者用ページから送るデータに入る");
     ok(JSON.parse(read("package.json")).scripts["test:data"] === DATA_TESTS.map((t) => `node ${t}`).join(" && ") && JSON.parse(read("package.json")).scripts.test === "node tests/all.mjs" && read("tests/all.mjs").includes("DATA_TESTS"), "管理者用ページの確認と、npm test の開催データのテスト(test:data)は、同じもの");
   } finally { rmSync(T, { recursive: true, force: true }); }
 

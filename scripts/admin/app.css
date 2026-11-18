@@ -111,6 +111,12 @@ input[readonly]{background:var(--sunken);color:var(--mut)}
 dl.kv{display:grid;grid-template-columns:minmax(5em,max-content) minmax(0,1fr);gap:4px 14px;font-size:.92rem}
 dl.kv dt{color:var(--mut)}dl.kv dd{margin:0;white-space:pre-wrap}
 .reasons,.acts,.steps,.caveats{padding-left:1.3em;display:flex;flex-direction:column;gap:4px}
+/* 神楽の解説の下書き: 種類のページと同じ並びで読む */
+.kdraft .kd-tagline{font-weight:600;margin:12px 0 4px}
+.kdraft .kd-sec{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.kdraft .kd-sec h4{margin:0 0 6px;font-size:.95rem}
+.kdraft .kd-sec p{margin:0 0 8px;line-height:1.8}
+.kdraft .kd-sec ul{padding-left:1.3em;margin:0;display:flex;flex-direction:column;gap:4px;line-height:1.7}
 .next{background:var(--sunken);border-radius:var(--r-s);padding:8px 12px}
 code{background:var(--sunken);border-radius:4px;padding:1px 6px;font-size:.9em}
 /* 畳んだ説明 */

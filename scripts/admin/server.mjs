@@ -24,6 +24,7 @@ import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, lo
 import { ignoredSender, ignoreKey, fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
+import { kaguraKinds, kaguraGaps, applyDraft, redoDraft } from "./kagura-draft.mjs";
 import { loadBilling, saveBilling, billingReady, addInvoice, setInvoiceStatus, billingSummary, invoiceMail, INVOICE_STATUS, RENEW_NOTICE_DAYS, defaultDueAt, addQuote, setQuoteStatus, quoteMail, receiptMail, QUOTE_STATUS, QUOTE_VALID_DAYS, QUOTE_MAX_LINES } from "./billing.mjs";
 import { loadPipeline, saveLead, setStage, pipelineSummary, recordReplies, markRepliesSeen, STAGES, KINDS, OFFERS, FOLLOW_DAYS } from "./pipeline.mjs";
 import { buildOverview, loadRuns, checkSite, loadReviewIssues } from "./overview.mjs";
@@ -104,6 +105,7 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       review: loadReview(root, await reviewIssueList()), proposals: loadProposals(root), proposalStatus: PROPOSAL_STATUS, advice: loadAdvice(root), adviceKinds: ADVICE_KINDS, adviceStatus: ADVICE_STATUS, committedIds: await commitIds(root).catch(() => []), repo: await repoUrl(root).catch(() => ""),
       plan: loadPlan(root, today()), planStatus: PLAN_STATUS, manualFields: MANUAL_FIELDS, tasks: safeTasks({}), pipeline: pipelineState(),
       earnings: earningsStatus(root, { local, today: today(), nowMs: now() }),
+      kaguraKinds: kaguraKinds(root), kaguraGaps: kaguraGaps(root),
       refresh: { last: lastRefresh, hours: refreshHours }, codeChanged: codeStamp(codeDirs) !== bootStamp, canRestart };
   };
 
@@ -250,6 +252,20 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
     }),
 
     // 保留中の開催の却下(開催データから外し、rejected.json に記録。自動収集が取り直さない)
+    // 神楽の種類の解説の下書き(予定タスクが書く)を、運営者が確かめて公開する。全部のテストに通らなければ、元に戻して下書きに残す
+    "POST /api/kagura/publish": (body) => serial(async () => {
+      const kind = String(body.kind ?? "");
+      let applied;
+      try { applied = applyDraft(root, kind); } catch (err) { return [400, { error: err.message }]; }
+      const pub = await publisher(root, `data(admin): 神楽の解説: ${kind}`, { check: "full" }).catch((err) => ({ ok: false, step: "push", log: err.message }));
+      if (!pub.ok && ["build", "test", "geo"].includes(pub.step)) applied.undo(pub.log);
+      return { kind, publish: pub, state: await state() };
+    }),
+    "POST /api/kagura/redo": (body) => serial(async () => {
+      try { redoDraft(root, String(body.kind ?? ""), String(body.note ?? "").slice(0, 1000), today()); } catch (err) { return [404, { error: err.message }]; }
+      return { state: await state() };
+    }),
+
     "POST /api/events/reject": (body) => serial(async () => {
       const r = rejectPending(root, body.id);
       if (r.error) return [r.code, { error: r.error }];

@@ -850,6 +850,7 @@ write("dist/calendar.html", layout({
 <label for="pref" class="sr">都道府県</label><select id="pref"><option value="">すべての都道府県</option>${finderPrefs.map(([r, ps]) => ps.map((p) => `<option value="${p}" data-r="${r}">${p}</option>`).join("")).join("")}</select></div></fieldset>
 </div>
 <div class="fpanel keyword" role="tabpanel" id="panel-kw" aria-labelledby="tab-kw" hidden><label for="keyword">キーワード</label><input type="search" id="keyword" name="q" maxlength="100" placeholder="公演名・会場・市町村・神楽団名" aria-describedby="keyword-help"><p class="meta" id="keyword-help">スペースで区切ると、複数の言葉で絞り込めます。</p></div>
+<p class="fpast"><label><input type="checkbox" id="past"> 終了した開催も含める</label></p>
 <p class="freset" hidden><button type="button" class="linkbtn" id="reset">条件をリセット</button></p>
 </form>
 <p class="count" id="count" aria-live="polite"></p>
@@ -864,7 +865,7 @@ ${prStripFor("/calendar.html")}${months.length ? `<h2>月ごとの一覧</h2>${m
 (function(){
 var f=document.getElementById('finder'),out=document.getElementById('results'),cnt=document.getElementById('count');
 var rg=document.getElementById('region'),pf=document.getElementById('pref'),fr=document.getElementById('from'),to=document.getElementById('to'),rangeBox=document.getElementById('range'),rs=document.getElementById('reset');
-var kw=document.getElementById('keyword');
+var kw=document.getElementById('keyword'),pastBox=document.getElementById('past');
 function normalize(v){return String(v||'').normalize('NFKC').toLowerCase().trim()}
 var list=[],loaded=false,failed=false,when='all',tab='dp',regionOf={};
 var strips=${finderStrips},EVERY=${STRIP_EVERY};
@@ -893,9 +894,10 @@ function syncPrefs(){
   if(pf.value&&regionOf[pf.value]!==rg.value&&rg.value)pf.value='';
 }
 function draw(){
-  var sp=span(),a=sp[0],b=sp[1],words=normalize(kw.value).split(/\\s+/).filter(Boolean);
-  var hit=list.filter(function(x){
-    if(!x.up)return false;
+  var sp=span(),a=sp[0],b=sp[1],words=normalize(kw.value).split(/\\s+/).filter(Boolean),withPast=pastBox.checked;
+  // 終了した開催は「終了した開催も含める」のときだけ(2026-11-18 運営者の依頼)。これからの開催の後ろに、新しい順で分けて出す
+  var all=list.filter(function(x){
+    if(!x.up&&!withPast)return false;
     var s=x.start.slice(0,10),e=(x.end||x.start).slice(0,10);
     if(tab==='kw'){var text=normalize([x.name,x.kagura,x.prefecture,x.city,x.venue,x.description].join(' '));return words.every(function(w){return text.indexOf(w)>=0})}
     if(a&&e<a)return false;if(b&&s>b)return false;
@@ -903,26 +905,29 @@ function draw(){
     if(rg.value)return regionOf[x.prefecture]===rg.value;
     return true;
   });
+  var hit=all.filter(function(x){return x.up}),done=all.filter(function(x){return !x.up}).reverse();
   // 月ごとに折りたたむ(最初の月だけ開く)
   var groups=[],byM={};hit.forEach(function(x){var m=x.start.slice(0,7);if(!byM[m]){byM[m]=[];groups.push(m)}byM[m].push(x)});
   // 帯の番号は、月をまたいで通して数える(都道府県のページ・トップと同じ。月ごとに1本目に戻ると、同じ「公演を掲載しませんか」が何度も出る。2026-11-15 の監査)
   var K=0,TOT=groups.reduce(function(n,m){return n+Math.max(0,Math.floor((byM[m].length-1)/EVERY))},0);
-  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="fcards">'+rows(byM[m])+'</ol></details>'}).join('');
+  out.innerHTML=groups.map(function(m,i){return '<details class="rgroup"'+(i?'':' open')+'><summary>'+(+m.slice(0,4))+'年'+(+m.slice(5,7))+'月 <span class="meta">'+byM[m].length+'件</span></summary><ol class="fcards">'+rows(byM[m])+'</ol></details>'}).join('')
+    +(done.length?'<details class="rgroup rpast"'+(groups.length?'':' open')+'><summary>終了した開催 <span class="meta">'+done.length+'件</span></summary><ol class="fcards">'+done.map(row).join('')+'</ol></details>':'');
   // 5件ごとに、帯をはさむ(その月に、まだ続きがあるときだけ)
   // 帯の先頭には、その帯の直前の5件に合わせた宿・協賛を入れる。帯の番号(list1・list2…)は、クリックの名前に入る
   function rows(xs){var o='',tot=TOT;xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=K++,its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO)[0]||'',s=strips[k<THEMES?k:THEMES+(k-THEMES)%Math.max(1,strips.length-THEMES)],v=s?(h?s.l:s.b):'';if(v)o+='<li class="pr-li">'+v.replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
   // 1件ずつカード(2026-11-15 運営者の依頼): 日付・公演名・会場だけ。日付の段は、ほかの一覧のカードと同じ形
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li class="card"><div class="date"><small>'+(d.getMonth()+1)+'月</small><b>'+d.getDate()+'</b><small>'+WD[d.getDay()]+'曜</small></div><div><h3><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></div></div></div></li>'}
-  cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。';
-  document.getElementById('weekend-empty').hidden=!(loaded&&!failed&&!hit.length&&tab==='dp'&&when==='weekend');
+    return '<li class="card"><div class="date"><small>'+(d.getMonth()+1)+'月</small><b>'+d.getDate()+'</b><small>'+WD[d.getDay()]+'曜</small></div><div><h3><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></div></div>'+(x.up?'':'<p class="meta past-note">'+(+x.start.slice(0,4))+'年の開催(終了)</p>')+'</div></li>'}
+  cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':withPast&&all.length?'これからの開催 '+hit.length+'件・終了した開催 '+done.length+'件':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。'+(withPast?'':'終わった開催は「終了した開催も含める」で探せます。');
+  document.getElementById('weekend-empty').hidden=!(loaded&&!failed&&!all.length&&tab==='dp'&&when==='weekend');
   var q=new URLSearchParams();if(tab==='kw'){if(kw.value.trim())q.set('q',kw.value.trim())}else{if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value)}
+  if(withPast)q.set('past','1');
   var s=q.toString();try{history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}
   rs.parentNode.hidden=!s;
 }
 function setWhen(v){when=v;[].forEach.call(f.querySelectorAll('[data-w]'),function(b){b.setAttribute('aria-pressed',String(b.dataset.w===v))});rangeBox.hidden=v!=='range'}
 f.addEventListener('click',function(ev){var t=ev.target.closest('[role=tab]');if(t){setTab(t.id.slice(4));draw();if(tab==='kw')kw.focus();return}var b=ev.target.closest('[data-w]');if(!b)return;setWhen(b.dataset.w);draw();if(when==='range'&&!fr.value){fr.focus();try{fr.showPicker()}catch(e){}}});
-rs.addEventListener('click',function(){setWhen('all');rg.value='';pf.value='';fr.value='';to.value='';kw.value='';syncPrefs();draw();(tab==='kw'?kw:f.querySelector('[data-w=all]')).focus()});
+rs.addEventListener('click',function(){setWhen('all');rg.value='';pf.value='';fr.value='';to.value='';kw.value='';pastBox.checked=false;syncPrefs();draw();(tab==='kw'?kw:f.querySelector('[data-w=all]')).focus()});
 f.querySelector('[role=tablist]').addEventListener('keydown',function(ev){if(ev.key!=='ArrowLeft'&&ev.key!=='ArrowRight')return;ev.preventDefault();setTab(tab==='dp'?'kw':'dp',true);draw()});
 kw.addEventListener('input',function(ev){if(!ev.isComposing)draw()});
 kw.addEventListener('compositionend',draw);
@@ -931,6 +936,7 @@ pf.addEventListener('change',function(){if(pf.value)rg.value=regionOf[pf.value];
 fr.addEventListener('change',function(){if(to.value&&fr.value&&to.value<fr.value)to.value=fr.value;draw()});
 to.addEventListener('change',function(){if(fr.value&&to.value&&fr.value>to.value)fr.value=to.value;draw()});
 f.addEventListener('submit',function(ev){ev.preventDefault();draw()});
+pastBox.addEventListener('change',draw);
 // URL の条件を戻す(共有されたリンク・戻る)
 var u=new URLSearchParams(location.search),okDate=function(v){return /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(v||'')};
 kw.value=(u.get('q')||'').slice(0,100);if(kw.value)setTab('kw');
@@ -938,6 +944,7 @@ if(['weekend','month','next','range'].indexOf(u.get('when'))>=0)setWhen(u.get('w
 if(okDate(u.get('from')))fr.value=u.get('from');if(okDate(u.get('to')))to.value=u.get('to');
 if(u.get('region')&&[].some.call(rg.options,function(o){return o.value&&o.value===u.get('region')}))rg.value=u.get('region');
 if(regionOf[u.get('pref')]){pf.value=u.get('pref');rg.value=regionOf[pf.value]}
+if(u.get('past')==='1')pastBox.checked=true;
 syncPrefs();draw();
 fetch('/events.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(l){list=l.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});loaded=true;draw()}).catch(function(){failed=true;draw()});
 })();
