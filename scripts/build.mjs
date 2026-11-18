@@ -1128,9 +1128,10 @@ const endedNote = (e) => {
     ? (isUpcoming(n)
       ? `<p class="ended-next">次の回は <strong>${nobr(esc(dayLabel(n.start.slice(0, 10))))}</strong> です。</p><p class="actions"><a class="btn" href="/events/${n.id}.html" data-goatcounter-click="ended-next">次の回のページを見る</a></p>`
       : `<p class="ended-next">その後の回(${nobr(esc(dayLabel(n.start.slice(0, 10))))})も終了しました。<a href="/events/${n.id}.html">いちばん新しい回のページ</a>に、確かめた情報をまとめています。</p>`)
-    : `<p class="ended-next">次の回の日程は、公式の発表を確かめ次第ご案内します。</p>`;
+    : `<p class="ended-next">次の回の日程は、公式の発表を確かめ次第載せます。</p>`;
   const links = [e.kagura ? `<a href="${kaguraHref(e.kagura)}">${esc(e.kagura)}の日程</a>` : "", `<a href="${prefHref(e.prefecture)}">${esc(e.prefecture)}の神楽の日程</a>`].filter(Boolean);
-  return `<section class="ended-note" aria-label="開催の終了"><p><strong>この開催は終了しました。</strong>${nobr(esc(held))}に開かれました。下の情報は、開催の時点のものです。</p>${nextHtml}<p class="meta">これからの開催: ${links.join("・")}</p></section>`;
+  // 文(2026-11-18 運営者の依頼で直した): 「終了しました」「開かれました」の重なりをまとめ、下の要点が当時の情報だと具体的に書く
+  return `<section class="ended-note" aria-label="開催の終了"><p><strong>${nobr(esc(held))}に開かれ、終了しました。</strong>下の日時や料金などは、そのときの情報です。</p>${nextHtml}<p class="meta">ほかの開催は、${links.join("や")}から探せます。</p></section>`;
 };
 for (const e of events) {
   const JST = "+09:00";

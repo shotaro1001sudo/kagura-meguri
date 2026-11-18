@@ -53,7 +53,7 @@ export async function pastEventsTests({ ok, section, build }) {
 
     const ended = page("events/pe-ended.html");
     ok(/^index,follow/.test(robots("events/pe-ended.html")) && inSm("/events/pe-ended.html"), "説明があり次の回のない終わった開催は、検索に残し、サイトマップに入れる");
-    ok(ended(".d-top .ended-note").text().includes("この開催は終了しました") && ended(".ended-note").text().includes("次の回の日程は、公式の発表を確かめ次第"), "冒頭で終了を知らせ、次の回は発表を確かめ次第と書く");
+    ok(/に開かれ、終了しました。$/.test(ended(".d-top .ended-note strong").first().text()) && ended(".ended-note").text().includes("次の回の日程は、公式の発表を確かめ次第") && ended(".ended-note").text().includes("ほかの開催は、"), "冒頭で、開かれた日と終了を一文で知らせ、次の回は発表を確かめ次第と書き、ほかの開催へ案内する");
     ok(ended(".ended-note a[href='/kagura/%E5%BA%84%E5%86%85%E7%A5%9E%E6%A5%BD.html']").length === 1 && ended(".ended-note a[href='/pref/%E5%A4%A7%E5%88%86%E7%9C%8C.html']").length === 1, "同じ種類・同じ県の日程へ案内する");
     ok(ended('meta[name="description"]').attr("content").includes("で開催された") && !ended('meta[name="description"]').attr("content").includes("で開催される"), "説明文は過去形");
     ok(ended(".tocal").length === 0 && ended(".d-side").length === 0, "終わった開催には、カレンダー登録・宿の列を出さない");
