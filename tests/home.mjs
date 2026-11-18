@@ -108,7 +108,8 @@ export async function homeTests({ ok, section, OUT, build }) {
       ok(!!box && box.type === 'checkbox' && !box.checked && !!box.closest('#finder') && box.closest('label').textContent.trim() === '終了した開催も含める' && P.querySelectorAll('#results .rpast').length === 0 && P.querySelectorAll('#results li.card').length === upc.length, '「終了した開催も含める」は、初めはオフで、これからの開催だけを出す');
       box.checked = true; change();
       const pastCards = [...P.querySelectorAll('#results .rpast li.card')], starts = pastCards.map((li) => byId[li.querySelector('h3 a').getAttribute('href').slice(8, -5)]?.start ?? '');
-      ok(past.length > 0 && pastCards.length === past.length && starts.every((s, i) => i === 0 || s <= starts[i - 1]) && pastCards.every((li) => /^\d{4}年の開催\(終了\)$/.test(li.querySelector('.past-note')?.textContent ?? '') && li.querySelectorAll('.event-facts>div').length === 1)
+      ok(past.length > 0 && pastCards.length === past.length && starts.every((s, i) => i === 0 || s <= starts[i - 1]) && pastCards.every((li) => li.classList.contains('past') && /^\d{4}年の開催\(終了\)$/.test(li.querySelector('.past-note')?.textContent ?? '') && li.querySelectorAll('.event-facts>div').length === 1)
+        && P.querySelectorAll('#results .rgroup:not(.rpast) li.card.past').length === 0
         && P.querySelectorAll('#results .rgroup:not(.rpast) li.card').length === upc.length && P.getElementById('count').textContent === `これからの開催 ${upc.length}件・終了した開催 ${past.length}件` && new URL(pd.window.location.href).searchParams.get('past') === '1',
       'チェックすると、終了した開催をすべて、これからの開催の後ろに「終了した開催」として新しい順に出し、年を添える。条件を URL に残す', P.getElementById('count').textContent);
       P.getElementById('tab-kw').click();

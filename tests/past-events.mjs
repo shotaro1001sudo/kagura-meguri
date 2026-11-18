@@ -37,6 +37,8 @@ export function pastEventsTests({ ok, section, build }) {
       { ...base, id: "pe-y2", name: "第2回 テスト年次神楽まつり", kagura: "備中神楽", prefecture: "岡山県", city: "岡山市", start: "2026-11-01T10:00", end: "2026-11-01T15:00", description: "今年の回。" },
       { ...base, id: "pe-thin", name: "テスト説明なし神楽", prefecture: "鳥取県", city: "鳥取市", start: "2026-09-20T10:00", end: "2026-09-20T12:00" },
       { ...base, id: "pe-ancient", name: "テスト古い神楽", kagura: "テスト古神楽", prefecture: "沖縄県", city: "那覇市", start: "2025-07-01T10:00", end: "2025-07-01T12:00", description: "古い開催。" },
+      // 開催予定のない種類のページ(庄内神楽・大分県)の「近くで観られる神楽」に出る、同じ地方の開催予定
+      { ...base, id: "pe-near", name: "テスト近くの夜神楽", kagura: "高千穂神楽", prefecture: "宮崎県", city: "高千穂町", start: "2026-11-20T19:00", end: "2026-11-21T09:00", description: "近くの開催。" },
     ];
     const evFile = join(dir, "events.json");
     writeFileSync(evFile, JSON.stringify(evs));
@@ -68,6 +70,11 @@ export function pastEventsTests({ ok, section, build }) {
     ok(/^index,follow/.test(robots("kagura/庄内神楽.html")) && inSm("/kagura/庄内神楽.html"), "開催予定のない種類のページも、これまでの開催と解説があれば検索に残す");
     ok(k("#k-past").length === 1 && k(".past-list a[href='/events/pe-ended.html']").length === 1 && k(".ended-note").text().includes("次の日程は、公式の発表を確かめ次第載せます"), "これまでの開催と、次の日程の載せ方を出す");
     ok(k("#k-schedule[open] #k-past").length === 1, "これまでの開催は、開いた「開催予定」の欄の中に入れる");
+    // 2026-11-18 運営者の依頼「近くで観られる神楽、これまでの開催もカード形式に」: 開催予定と同じカード(見出しは欄の見出し h3 の下の h4)
+    ok(k(".near-list .card:not(.past) h4 a[href='/events/pe-near.html']").length === 1 && k(".near-list .card .tag").text() === "高千穂神楽" && k(".near-list .event-facts").text().includes("料金"), "近くで観られる神楽は、開催予定と同じカード(種類の札・会場・料金)");
+    const kPast = k(".past-list .card.past");
+    ok(kPast.length === 1 && kPast.find("h4 a[href='/events/pe-ended.html']").length === 1 && kPast.find(".past-note").text() === "2026年の開催(終了)" && kPast.find(".event-facts").text().includes("テスト会場") && !kPast.find(".event-facts").text().includes("料金") && kPast.find(".tag").length === 0, "これまでの開催もカード(年と終了を書き添え、会場だけ。種類のページでは種類の札を出さない)", kPast.text().slice(0, 120));
+    ok(k("#k-schedule .monthlist").length === 0, "種類のページの開催予定の欄に、日付と名前だけの行の一覧は残さない");
     ok(k(".hero p").text().trim() === "開催予定はありません", "見出しの下の件数の文は変えない");
     ok(robots("kagura/テスト古神楽.html") === "noindex,follow" && !inSm("/kagura/テスト古神楽.html"), "解説も直近の記録もない種類のページは、検索に載せない");
 
@@ -77,6 +84,9 @@ export function pastEventsTests({ ok, section, build }) {
     const ok2 = page("pref/岡山県.html");
     ok(ok2(".ended-note").length === 0 && ok2("#pref-past").length === 0, "開催予定のある県のページには、開催予定なしの案内を出さない");
     ok(ok2("details.past-more a[href='/events/pe-y1.html']").length === 1 && !ok2("details.past-more").attr("open"), "開催予定のある県のページでも、これまでの開催はたたんで載せる(終了ページへのリンクが切れない)");
+    ok(ok2("details.past-more .past-list .card.past h3 a[href='/events/pe-y1.html']").length === 1 && ok2("details.past-more .past-note").text() === "2025年の開催(終了)" && ok2("details.past-more .card.past .tag").text() === "備中神楽", "たたんだ「これまでの開催」もカード(県のページでは種類の札を出す)");
+    const oita = page("pref/大分県.html");
+    ok(oita(".past-list .card.past h3 a[href='/events/pe-ended.html']").length === 1 && oita(".near-list .card h3 a[href='/events/pe-near.html']").length === 1, "開催予定のない県のページも、近くの開催・これまでの開催をカードで出す(見出し h2 の下の h3)");
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });

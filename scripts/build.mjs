@@ -512,10 +512,11 @@ const sameSeries = (e) => events.filter((x) => x.id !== e.id && seriesKey(x) ===
 const TIME_UNKNOWN = "時刻未確認";
 const startTimes = (e) => hm(e.sessions?.length ? e.sessions.map((x) => x.slice(0, 5) + "〜").join("・") : `${e.start.slice(11, 16)}〜`);
 // 一覧カードの会場・料金・予約: 分かっている項目だけを出す(会場は常に。分からなければ「未確認」)。出典・確認日は開催ページで見せる
-const cardFacts = (e) => {
+// venueOnly: 終わった開催のカード(料金・予約は、その年のもので、次の回の案内にならないため出さない。検索の「終了した開催」と同じ)
+const cardFacts = (e, { venueOnly = false } = {}) => {
   const fact = (k, v) => `<div><span class="k">${k}:</span><span>${v ? esc(v) : '<span class="tbd">未確認</span>'}</span></div>`;
   const reservation = reservationLabel(e);
-  return `<div class="meta event-facts">${fact("会場", e.venue)}${e.fee ? fact("料金", e.fee) : ""}${reservation !== "要確認" ? fact("予約要否", reservation) : ""}</div>`;
+  return `<div class="meta event-facts">${fact("会場", e.venue)}${!venueOnly && e.fee ? fact("料金", e.fee) : ""}${!venueOnly && reservation !== "要確認" ? fact("予約要否", reservation) : ""}</div>`;
 };
 // 地名と、名前の最後の「(会場名)」は、まとまりの途中で改行しない(.ph)。Safari など文節で折り返せないブラウザ向け
 const ph = (s) => `<span class="ph">${esc(s)}</span>`;
@@ -524,12 +525,13 @@ const namePh = (s = "") => { const m = s.match(/^(.+?)([(（][^()（）]+[)）])
 // 「・」で区切る並び: 区切りは各項目の前に置き、行の頭に来たものは枠の外に隠す(行頭・行末に「・」だけが残らない)
 const sepList = (items) => { const xs = items.filter(Boolean); return xs.length ? `<span class="sl"><span class="sl-in">${xs.map((x) => `<span>${x}</span>`).join("")}</span></span>` : ""; };
 // withTag: 種類のページでは false(どのカードも同じ種類なので、種類の札をくり返さない)
-const card = (e, h = "h3", withFacts = true, withTag = true) => {
+// past: 終わった開催(「これまでの開催」)。会場だけを出し、年と終了を書き添える(検索の「終了した開催」と同じ書き方)
+const card = (e, h = "h3", withFacts = true, withTag = true, { past = false } = {}) => {
   const p = parts(e.start);
-  return `<div class="card"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
+  return `<div class="card${past ? " past" : ""}"><div class="date"><small>${p.mo}月</small><b>${p.d}</b><small>${WD[p.wd]}曜</small></div><div>
 <${h}><a href="/events/${e.id}.html">${namePh(e.name)}</a></${h}>
 <div class="meta">${sepList([sameSeries(e).length ? '<span class="rep">定例開催</span>' : "", e.timeUnknown ? TIME_UNKNOWN : nobr(startTimes(e)), placePh(e.prefecture, e.city), !withFacts && e.fee ? esc(e.fee) : ""])}</div>
-${withFacts ? cardFacts(e) : ""}${withTag ? kaguraTag(e.kagura) : ""}</div></div>`;
+${withFacts ? cardFacts(e, { venueOnly: past }) : ""}${past ? `<p class="meta past-note">${+e.start.slice(0, 4)}年の開催(終了)</p>` : ""}${withTag ? kaguraTag(e.kagura) : ""}</div></div>`;
 };
 // 休演の時期(秋祭りの間など)は、曜日の決まりだけを見せると、いつでも観られると誤解されるため、「休演中」と次の公演日を出す
 // 県・種類のページの一覧: 月が変わるところに、月の区切りを入れる(2か月以上にまたがるときだけ)。「いつ」を拾いやすくする。
@@ -615,8 +617,9 @@ const pastRecords = (list) => { const rec = recentPast(list, { today, isUpcoming
 // 開催予定が0件の種類・県のページも、直近1年の開催の記録と解説があれば検索に残す(「◯◯神楽 日程」で来年の日程を探す人の入口)
 const kaguraIndexed = (k) => upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k) || (!!kaguraInfo[k] && pastRecords(events.filter((e) => e.kagura === k)).length > 0);
 const prefIndexed = (p) => upcoming.some((e) => e.prefecture === p) || regular.some((r) => r.prefecture === p) || (() => { const rec = pastRecords(events.filter((e) => e.prefecture === p)); return rec.length > 0 && (!!(prefLeads[p] || prefInfo[p]) || rec.some((e) => String(e.description ?? "").trim())); })();
-// 「これまでの開催」の一覧(新しい順)。年は札の横に出す(1年をまたぐため)
-const pastList = (list, { withKagura = true } = {}) => `<ol class="monthlist past-list">${list.map((x) => `<li><span class="md">${esc(mdw(x.start.slice(0, 10)).replace(/\((.)\)$/, ""))}<small>(${WD[parts(x.start).wd]})</small></span><span><a href="/events/${x.id}.html">${namePh(x.name)}</a><span class="meta">${sepList([`${x.start.slice(0, 4)}年`, withKagura && x.kagura ? esc(x.kagura) : "", placePh(x.prefecture, x.city)])}</span></span></li>`).join("")}</ol>`;
+// 「これまでの開催」の一覧(新しい順)。開催予定と同じカードで、年と終了を書き添える(1年をまたぐため)
+// (2026-11-18 運営者の依頼「近くで観られる神楽、これまでの開催もカード形式に」。以前は日付と名前だけの行の一覧)
+const pastList = (list, { withKagura = true, h = "h3" } = {}) => `<div class="past-list">${list.map((x) => card(x, h, true, withKagura, { past: true })).join("")}</div>`;
 // 開催予定のない種類・県のページの案内(次の日程の載せ方と、近くで観られる開催)
 // 開催予定のあるページの「これまでの開催」: たたんで、ページの下のほうに置く
 const pastMore = (past, o) => past.length ? `<details class="past-more"><summary>これまでの開催(${past.length}件)</summary><p class="meta">終了した開催です。日程は年によって変わります。</p>${pastList(past, o)}</details>` : "";
@@ -627,7 +630,7 @@ const nearbyUpcoming = (prefList, n = 4) => {
   return [...upcoming.filter((x) => ps.has(x.prefecture)), ...upcoming.filter((x) => !ps.has(x.prefecture) && rs.has(regionOf(x.prefecture)))]
     .filter((x) => !seen.has(seriesKey(x)) && seen.add(seriesKey(x))).slice(0, n).sort((a, b) => a.start.localeCompare(b.start));
 };
-const pendingBlock = ({ label, past, near, pastId, withKagura = true, h = "h2" }) => `<section class="ended-note" aria-label="${esc(label)}の次の日程"><p><strong>現在の開催予定はありません。</strong>${NEXT_PENDING}</p>${past.length ? `<p class="meta">例年の時期の目安に、<a href="#${pastId}">これまでの開催</a>を載せています。</p>` : ""}</section>${near.length ? `<${h}>近くで観られる神楽</${h}><ol class="monthlist">${near.map((x) => `<li><span class="md">${esc(mdw(x.start.slice(0, 10)).replace(/\((.)\)$/, ""))}<small>(${WD[parts(x.start).wd]})</small></span><span><a href="/events/${x.id}.html">${namePh(x.name)}</a><span class="meta">${sepList([x.kagura ? esc(x.kagura) : "", placePh(x.prefecture, x.city)])}</span></span></li>`).join("")}</ol>` : ""}${past.length ? `<${h} id="${pastId}">これまでの開催</${h}><p class="meta">直近1年に掲載した開催です(終了しています)。日程は年によって変わります。</p>${pastList(past, { withKagura })}` : ""}`;
+const pendingBlock = ({ label, past, near, pastId, withKagura = true, h = "h2" }) => `<section class="ended-note" aria-label="${esc(label)}の次の日程"><p><strong>現在の開催予定はありません。</strong>${NEXT_PENDING}</p>${past.length ? `<p class="meta">例年の時期の目安に、<a href="#${pastId}">これまでの開催</a>を載せています。</p>` : ""}</section>${near.length ? `<${h}>近くで観られる神楽</${h}><div class="near-list">${near.map((x) => card(x, h === "h2" ? "h3" : "h4")).join("")}</div>` : ""}${past.length ? `<${h} id="${pastId}">これまでの開催</${h}><p class="meta">直近1年に掲載した開催です(終了しています)。日程は年によって変わります。</p>${pastList(past, { withKagura, h: h === "h2" ? "h3" : "h4" })}` : ""}`;
 // 毎週などの定期公演の、期間中の公演日。毎日の公演は、別に扱う(一覧が、同じ公演で埋まらないように)
 const regularDates = (days) => regular.filter((r) => !isDaily(r)).map((r) => ({ r, dates: days.filter((d) => regularOn(r, d)) })).filter((x) => x.dates.length);
 const dailyIn = (days) => regular.filter((r) => isDaily(r) && days.some((d) => regularOn(r, d))).map((r) => ({ r, closed: days.filter((d) => !regularOn(r, d)) }));
@@ -917,7 +920,7 @@ function draw(){
   function rows(xs){var o='',tot=TOT;xs.forEach(function(x,i){o+=row(x);if(strips.length&&(i+1)%EVERY===0&&i+1<xs.length){var k=K++,its=xs.slice(i+1-EVERY,i+1).map(function(y){return{prefecture:y.prefecture,city:y.city,day:y.start.slice(0,10),id:y.id}}),h=inlistLead(its,k,tot,LO)[0]||'',s=strips[k<THEMES?k:THEMES+(k-THEMES)%Math.max(1,strips.length-THEMES)],v=s?(h?s.l:s.b):'';if(v)o+='<li class="pr-li">'+v.replace(/@N@/g,String(k+1)).replace('@LEAD@',function(){return h})+'</li>'}});return o}
   // 1件ずつカード(2026-11-15 運営者の依頼): 日付・公演名・会場だけ。日付の段は、ほかの一覧のカードと同じ形
   function row(x){var d=new Date(+x.start.slice(0,4),+x.start.slice(5,7)-1,+x.start.slice(8,10));
-    return '<li class="card"><div class="date"><small>'+(d.getMonth()+1)+'月</small><b>'+d.getDate()+'</b><small>'+WD[d.getDay()]+'曜</small></div><div><h3><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></div></div>'+(x.up?'':'<p class="meta past-note">'+(+x.start.slice(0,4))+'年の開催(終了)</p>')+'</div></li>'}
+    return '<li class="card'+(x.up?'':' past')+'"><div class="date"><small>'+(d.getMonth()+1)+'月</small><b>'+d.getDate()+'</b><small>'+WD[d.getDay()]+'曜</small></div><div><h3><a href="/events/'+esc(x.id)+'.html">'+esc(x.name)+'</a></h3><div class="meta event-facts"><div><span class="k">会場:</span><span>'+(x.venue?esc(x.venue):'<span class="tbd">未確認</span>')+'</span></div></div>'+(x.up?'':'<p class="meta past-note">'+(+x.start.slice(0,4))+'年の開催(終了)</p>')+'</div></li>'}
   cnt.textContent=failed?'開催情報を読み込めませんでした。時間をおいて再読み込みしてください。':!loaded?'読み込んでいます…':withPast&&all.length?'これからの開催 '+hit.length+'件・終了した開催 '+done.length+'件':hit.length?'当てはまる開催 '+hit.length+'件':'条件に合う日付付きの公演情報は、現在掲載されていません。キーワードを短くするか、期間・地域を広げて探してみてください。'+(withPast?'':'終わった開催は「終了した開催も含める」で探せます。');
   document.getElementById('weekend-empty').hidden=!(loaded&&!failed&&!all.length&&tab==='dp'&&when==='weekend');
   var q=new URLSearchParams();if(tab==='kw'){if(kw.value.trim())q.set('q',kw.value.trim())}else{if(when!=='all')q.set('when',when);if(when==='range'){if(fr.value)q.set('from',fr.value);if(to.value)q.set('to',to.value)}if(rg.value)q.set('region',rg.value);if(pf.value)q.set('pref',pf.value)}

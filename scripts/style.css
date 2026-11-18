@@ -655,7 +655,9 @@ table.info th,table.info td{padding:12px 4px;border-bottom:1px solid var(--line)
 .fpast{margin:-6px 0 0;font-size:var(--fs-s)}
 .fpast label{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
 .finder .fpast input{width:20px;height:20px;min-height:0;padding:0;margin:0;accent-color:var(--ac)}
-.rpast .past-note{margin:4px 0 0}
+.card .past-note{margin:4px 0 0}
+/* 終わった開催のカード(検索の「終了した開催」・種類と県のページの「これまでの開催」): 日付を抑えた色にして、これからの開催と見分ける */
+.card.past .date b{color:var(--mut)}
 @media(max-width:560px){.finder .regions button{padding:6px 14px}}
 .count{margin:36px 0 0;font-family:var(--serif);font-size:var(--fs-l);color:var(--fg);letter-spacing:.08em}.count:empty{display:none}
 .monthlist .md small{font-size:var(--fs-2xs);color:var(--mut);margin-left:1px}
@@ -813,7 +815,7 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
 .about{max-width:680px;margin:8px 0 4px}.about h2{margin-top:36px}
 /* 日程を県のページへ任せる神楽ページ: 日程への入口(SEO-20261107-1) */
 .schedule-hub{max-width:680px;margin:18px 0 8px;padding:14px 16px}.schedule-hub p{margin:0 0 10px}
-.past-more{margin:28px 0 8px}.past-more summary{cursor:pointer;font-weight:500;padding:10px 0;min-height:44px}.past-more .monthlist{margin-top:8px}
+.past-more{margin:28px 0 8px}.past-more summary{cursor:pointer;font-weight:500;padding:10px 0;min-height:44px}.past-more .past-list{margin-top:8px}
 .ended-note{margin:0 0 18px;padding:14px 16px;border-left:4px solid var(--ac)}.ended-note p{margin:0 0 8px}.ended-note p:last-child{margin-bottom:0}.ended-note .actions{margin:4px 0 10px}
 /* 町ごとに分けた開催予定(花祭など。SEO-20261107-2) */
 .town-group h3{margin-top:24px}
