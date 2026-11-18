@@ -46,6 +46,11 @@ export function setInboxStatus(item, status, today) {
   if (CLOSED.has(status)) item.closedAt ??= today; else delete item.closedAt;
 }
 
+// 掲載した申請の「掲載のお知らせ」を、投稿した人へ送ったか(送るのは運営者。Gmail の作成画面から送ったあとに記録する)
+export function setInboxNotified(item, on, today) {
+  if (on) item.notifiedAt ??= today; else delete item.notifiedAt;
+}
+
 // プライバシーポリシーの保存期間(対応完了から12か月を目安)を過ぎた記録を消す
 export function pruneInbox(box, today) {
   const limit = new Date(`${today}T00:00:00Z`); limit.setUTCFullYear(limit.getUTCFullYear() - 1);

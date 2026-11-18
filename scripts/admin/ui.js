@@ -212,7 +212,9 @@ export const whenText = (x) => (!x ? "" : x.length === 10 ? md(x) : at(x));
 // ---------- リンク・コピー ----------
 export const ext = (href, text) => (/^https:\/\//.test(href || "") ? h("a", { href, target: "_blank", rel: "noopener noreferrer" }, text || href, h("span", { class: "sr" }, "(新しいタブで開きます)")) : text || href || "");
 export const pageUrl = (id) => `${S.baseUrl}/events/${id}.html`;
-export const isOpen = (x) => x.status === "new" || x.status === "doing";
+// 掲載したが、投稿した人へ「掲載のお知らせ」をまだ送っていない申請(送ったら、運営者が「お知らせを送った」を押す)
+export const needsNotice = (x) => x.kind === "submit" && x.status === "published" && !!x.email && !x.notifiedAt;
+export const isOpen = (x) => x.status === "new" || x.status === "doing" || needsNotice(x);
 export const inboxOpen = (k) => S.inbox.filter((x) => x.kind === k && isOpen(x)).length;
 export async function copyText(text, msg) {
   try { await navigator.clipboard.writeText(text); toast(msg); } catch { toast("コピーできませんでした。文を選んでコピーしてください", true); }

@@ -1,7 +1,7 @@
 // 受信箱: 投稿フォームからの掲載の申請と、お問い合わせ。メールから読み込んだものを一覧にし、選ぶと中身と操作が出る。
 // 編集部のアドレスに直接届いたメール(x.direct)も、「問い合わせ」に並べる(件名を見出しに、差出人と種類を下に出す)。
 // 投稿者の名前・メールアドレス・メモは、このPCの中だけに保存する
-import { h, S, view, render, call, toast, fail, confirmBox, badge, seg, kv, note, icon, ext, pageUrl, jpDate, recv, isOpen, inboxOpen, openMail, busy, empty, more } from "./ui.js";
+import { h, S, view, render, call, toast, fail, confirmBox, badge, seg, kv, note, icon, ext, pageUrl, jpDate, recv, isOpen, needsNotice, inboxOpen, openMail, busy, empty, more } from "./ui.js";
 import { openEditor, setEventStatus, evState } from "./events.js";
 
 const STATUS_FILTER = { submit: [["open", "未対応"], ["published", "掲載済み"], ["rejected", "却下"], ["all", "すべて"]], contact: [["open", "未対応・対応中"], ["done", "完了"], ["all", "すべて"]] };
@@ -48,13 +48,17 @@ function detail(x, back) {
   };
   return h("section", { class: "card", "aria-labelledby": "inb-h" },
     h("button", { class: "btn sm quiet", onclick: back }, icon("back"), "一覧に戻る"),
-    h("div", { class: "card-h" }, h("h2", { id: "inb-h", tabindex: "-1" }, x.subject), badge(TONE[x.status] || "info", S.inboxStatus[x.status])),
+    h("div", { class: "card-h" }, h("h2", { id: "inb-h", tabindex: "-1" }, x.subject), needsNotice(x) ? badge("warn", "掲載済み・お知らせ未送信") : badge(TONE[x.status] || "info", S.inboxStatus[x.status])),
     x.direct ? note("info", "編集部のアドレスに、フォームを通さずに直接届いたメールです。", x.messageId && S.gmailUser ? [" ", ext(gmailMsg(x.messageId), "Gmail で開く")] : "")
       : !x.viaForm ? note("warn", "このメールは、フォームの送信サービス以外から届いています。なりすましの可能性があるので、内容を慎重に確かめてください。") : "",
     kv(["受信", new Date(x.received).toLocaleString("ja-JP")], ["送った人", `${x.sender || "(名前なし)"} ${x.email ? "<" + x.email + ">" : ""}`],
       ...Object.entries(x.fields).filter(([k]) => !/お名前|メールアドレス/.test(k)).map(([k, v]) => [k, /^https:\/\//.test(v) ? ext(v) : v])),
     x.kind === "contact" && !Object.keys(x.fields).length ? h("pre", { class: "draft" }, x.message) : "",
     ev ? h("p", null, "掲載した開催: ", ext(pageUrl(ev.id), ev.name), " ", badge(evState(ev)[2], evState(ev)[1])) : "",
+    // 掲載のお知らせを送るまでは、未対応に残す(送ったかは自動ではわからないので、送ったあとに記録する)
+    needsNotice(x) ? note("warn", "掲載しましたが、投稿した人への「掲載のお知らせ」がまだです。下の「掲載のお知らせ」で Gmail を開いて送り、送ったら「お知らせを送った」を押してください。それまでは未対応に残します。",
+      h("div", { class: "bar" }, h("button", { class: "btn tonal", onclick: () => upd({ notified: true }, "お知らせを送ったと記録しました(対応済みになりました)") }, icon("check"), "お知らせを送った"))) : "",
+    sub && x.status === "published" && x.notifiedAt ? h("p", { class: "mut small" }, `掲載のお知らせ: ${jpDate(x.notifiedAt)}に送信済み `, h("button", { class: "btn sm quiet", onclick: () => upd({ notified: false }, "お知らせを未送信に戻しました") }, "未送信に戻す")) : "",
     h("h3", null, "対応する"),
     h("div", { class: "bar" },
       sub && x.status !== "published" ? h("button", { class: "btn tonal", onclick: () => openEditor({ ...x.draft, source: "", checked: S.today, status: "pending" }, x) }, "内容を確かめて掲載する") : "",
@@ -94,7 +98,7 @@ export function inboxView() {
       h("span", { class: "inb-when" }, recv(x.received)),
       h("span", { class: "inb-main" }, h("b", null, kind === "submit" ? x.draft?.name || x.subject : x.direct ? x.subject || "(件名なし)" : x.topic || x.subject),
         h("span", { class: "mut small" }, kind === "submit" ? `${jpDate(x.draft?.start)} ${x.draft?.prefecture || ""}${x.draft?.city || ""}` : x.direct ? [x.sender || x.email, x.topic].filter(Boolean).join(" ・ ") : x.sender || "")),
-      badge(TONE[x.status] || "info", S.inboxStatus[x.status]), icon("chev")))))
+      needsNotice(x) ? badge("warn", "お知らせ未送信") : badge(TONE[x.status] || "info", S.inboxStatus[x.status]), icon("chev")))))
       : empty(view[key] === "open" ? (kind === "submit" ? "未対応の申請はありません" : "未対応の問い合わせはありません") : "当てはまるものはありません", kind === "contact" ? "フォームや、編集部あてのメールで届くと、ここに並びます。" : "フォームから届くと、ここに並びます。"),
     kind === "contact" && (S.mailIgnore || []).length ? more(`出さない差出人(${S.mailIgnore.length}件)`, h("p", { class: "mut small" }, "編集部あての直接のメールのうち、ここにある差出人のものは、受信箱に出しません。戻すと、次の読み込みから、直近60日の分がまた出ます。"),
       h("ul", { class: "plan-rows" }, S.mailIgnore.map((k) => h("li", null, h("span", { class: "t" }, k), h("button", { class: "btn sm quiet", onclick: async () => { try { await call("/api/inbox/unignore", { key: k }); toast(`「${k}」を戻しました`); render(); } catch (err) { fail(err); } } }, "戻す"))))) : "",

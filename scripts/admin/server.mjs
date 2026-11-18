@@ -20,7 +20,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PREFECTURES } from "../lib/util.mjs";
-import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, loadMailIgnore, saveMailIgnore, pruneInbox, setInboxStatus, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, decideTargetPlan, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
+import { loadEvents, saveEvents, loadConfig, loadLocal, loadInbox, saveInbox, loadMailIgnore, saveMailIgnore, pruneInbox, setInboxStatus, setInboxNotified, upsertEvent, suggestId, INBOX_STATUS, rejectPending, loadReview, loadProposals, setProposalStatus, PROPOSAL_STATUS, loadAdvice, setAdviceStatus, ADVICE_KINDS, ADVICE_STATUS, loadPlan, setPlanItem, decideTargetPlan, setManual, PLAN_STATUS, MANUAL_FIELDS } from "./store.mjs";
 import { ignoredSender, ignoreKey, fetchFormMails, fetchLeadReplies } from "./mail.mjs";
 import { publish, pendingChanges, mentionedIds, repoWebUrl, syncMain, autoDataChanged, AUTO_DATA } from "./publish.mjs";
 import { loadTasks } from "./tasks.mjs";
@@ -389,6 +389,10 @@ export function startAdmin({ root = process.cwd(), port = 4300, fetchMails = fet
       const item = box.items.find((x) => x.id === body.id);
       if (!item) return [404, { error: "見つかりません" }];
       if (body.status) { try { setInboxStatus(item, body.status, today()); } catch (err) { return [400, { error: err.message }]; } }
+      if (typeof body.notified === "boolean") {
+        if (item.kind !== "submit" || item.status !== "published") return [400, { error: "掲載のお知らせを記録できるのは、掲載済みの申請だけです" }];
+        setInboxNotified(item, body.notified, today());
+      }
       if (typeof body.memo === "string") item.memo = body.memo.slice(0, 2000);
       saveInbox(root, box);
       return { state: await state() };

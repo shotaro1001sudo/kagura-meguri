@@ -317,6 +317,19 @@ export async function adminTests({ ok, section }) {
     ok(r.status === 200 && saved?.status === "published" && saved.source === "テスト保存会の公式サイト" && r.json.geocode === "OK  stub", "申請を許可すると、開催データに「掲載」で加わり、位置の取得が走る");
     const done = r.json.state.inbox.find((x) => x.id === subItem.id);
     ok(done.status === "published" && done.eventId === "ev-20261103" && done.closedAt === "2026-10-10", "許可した申請は「掲載済み」になり、開催と結び付く");
+    {
+      // 掲載のお知らせを送るまでは、未対応に残す
+      const uiSrc = read("scripts/admin/ui.js");
+      ok(!done.notifiedAt && /needsNotice = \(x\) => x\.kind === "submit" && x\.status === "published" && !!x\.email && !x\.notifiedAt/.test(uiSrc) && /isOpen = \(x\) => [^\n]*needsNotice\(x\)/.test(uiSrc), "掲載しても、掲載のお知らせを送ったと記録するまでは、未対応に数える");
+      let n = await req("/api/inbox/update", { body: { id: subItem.id, notified: true } });
+      ok(n.status === 200 && n.json.state.inbox.find((x) => x.id === subItem.id).notifiedAt === "2026-10-10" && n.json.state.inbox.find((x) => x.id === subItem.id).status === "published", "「お知らせを送った」で、送った日を記録する(掲載済みのまま)");
+      n = await req("/api/inbox/update", { body: { id: subItem.id, notified: false } });
+      ok(n.status === 200 && !n.json.state.inbox.find((x) => x.id === subItem.id).notifiedAt, "「未送信に戻す」で、記録を消す");
+      n = await req("/api/inbox/update", { body: { id: r.json.state.inbox.find((x) => x.kind === "contact").id, notified: true } });
+      ok(n.status === 400, "掲載のお知らせを記録できるのは、掲載済みの申請だけ");
+      const inboxJs = read("scripts/admin/inbox.js");
+      ok(inboxJs.includes('upd({ notified: true }') && inboxJs.includes('"お知らせを送った"') && inboxJs.includes('badge("warn", "お知らせ未送信")'), "画面: お知らせ未送信の印と、「お知らせを送った」のボタン");
+    }
     ok(published.length === 1 && published[0] === "data(admin): 掲載(申請): 第1回 テスト神楽まつり" && r.json.publish?.ok, "許可すると、そのままコミットと push をする(入力の誤りで止まった保存では、しない)", published.join(" / "));
     r = await req("/api/events/status", { body: { id: "ev-20261103", status: "withdrawn" } });
     ok(r.status === 200 && JSON.parse(read(join(ROOT, "data/events.json"))).find((e) => e.id === "ev-20261103").status === "withdrawn", "掲載の取り下げ");
