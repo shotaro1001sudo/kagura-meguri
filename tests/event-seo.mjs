@@ -61,6 +61,36 @@ export function eventSeoTests({ ok, section, build }) {
       rmSync(out2, { recursive: true, force: true });
     }
   }
+  // SEO-20261117-1: 定期公演の「予約」の語に、タイトル・説明文と「予約と当日の流れ」の段で答える(高千穂神社の神楽殿の毎晩の神楽から)
+  section("定期公演: 予約の語に合わせたタイトル・説明文と「予約と当日の流れ」(SEO-20261117-1)");
+  {
+    const out3 = "dist-test-regular-seo", dir3 = mkdtempSync(join(tmpdir(), "regular-seo-"));
+    try {
+      const base = JSON.parse(read("tests/fixtures/regular.test.json").replace(/^﻿/, "")).find((x) => x.id === "r-weekly");
+      const plain = { ...base, id: "t-reg-plain" };
+      const flowed = { ...base, id: "t-reg-flow", seoTitle: "テスト神楽の予約と当日券｜当日18:30から受付・1,000円",
+        seoDesc: "テスト文化センターで毎週水曜19時から。予約しなくても、当日18時30分から受付で当日券を買えます。料金は1人1,000円。ネット予約は30日前から前日まで。予約した人の受付は18時から。",
+        bookingFlow: { lead: "予約しなくても、当日券で観られます。", steps: [{ t: "予約(しなくても観られます)", d: "ネット予約は30日前から。<b>電話</b>では予約できません。" }, { t: "18:30 当日券の販売", d: "受付で料金を払って入ります。" }, { t: "19:00 上演" }] } };
+      const f = join(dir3, "regular.json");
+      writeFileSync(f, JSON.stringify([flowed, plain]));
+      const r = build("tests/fixtures/events.test.json", out3, { REGULAR_FILE: f, TEST_AFF_TRAVEL: "1" });
+      ok(r.status === 0, "ビルドが通る", (r.stderr ?? "").slice(0, 300));
+      const pg = (id) => cheerio.load(read(join(out3, "regular", `${id}.html`)));
+      const $ = pg("t-reg-flow"), p = pg("t-reg-plain");
+      ok($("title").text() === `${flowed.seoTitle} | 神楽めぐり` && $('meta[name="description"]').attr("content") === flowed.seoDesc, "seoTitle・seoDesc があれば、タイトル・説明文をそれにする", $('meta[name="description"]').attr("content"));
+      ok(p('meta[name="description"]').attr("content").startsWith("広島県広島市中区のテスト文化センターで観られる、広島神楽の定期公演です。"), "seoDesc のない定期公演は、これまでどおりの説明文");
+      const sec = $(".booking-flow");
+      ok(sec.length === 1 && $(".d-top").children().first().is(".booking-flow") && sec.next().is(".keyinfo") && $(".d-lead .booking-flow").length === 0, "「予約と当日の流れ」は、説明と公式のボタンのすぐ下・要点の表の上(左の列の先頭)に置く");
+      ok(sec.find("h2").text() === "予約と当日の流れ" && sec.find(".bf-lead").text() === flowed.bookingFlow.lead && sec.find("ol.flow > li").length === 3 && sec.find("ol.flow > li").first().find("b").text() === "予約(しなくても観られます)" && sec.find("ol.flow > li").last().find(".d").length === 0, "見出し・答えの一文・手順を、データのとおりに出す(説明のない手順は見出しだけ)");
+      ok(sec.find("ol.flow > li").first().find(".d").text().includes("<b>電話</b>") && sec.find("ol.flow b b").length === 0, "手順の文は、HTMLとして解釈しない(エスケープする)");
+      const sideOf = (x) => x(".d-side").children().map((_, c) => x(c).attr("class")).get().join(" ");
+      ok(sideOf($) === sideOf(p) && sideOf($).length > 0, "右の列(宿の枠など)は、流れの段があってもなくても同じ", `${sideOf($)} / ${sideOf(p)}`);
+      ok(p(".booking-flow").length === 0 && p(".d-top").children().first().is(".keyinfo"), "bookingFlow のない定期公演には、流れの段を出さない(要点の表から)");
+    } finally {
+      rmSync(dir3, { recursive: true, force: true });
+      rmSync(out3, { recursive: true, force: true });
+    }
+  }
   // 実際のデータ: 検索語「あさひが丘神楽団」
   const L = JSON.parse(read("data/events.json").replace(/^﻿/, ""));
   const asa = (Array.isArray(L) ? L : L.events).find((e) => e.id === "npo-hiroshima-0cf097bb64");

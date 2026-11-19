@@ -5,6 +5,7 @@ import { calendarNotice } from './lib/calendar-notice.mjs';
 import { eventFeeSchema } from './lib/event-fee-schema.mjs';
 import { upcomingSummary, upcomingSummaryDescription } from './lib/upcoming-summary.mjs';
 import { reservationLabel } from './lib/reservation.mjs';
+import { flow as flowFig } from './lib/figures.mjs';
 import { glossHtml } from './lib/glossary.mjs';
 import { isKaguraKaikanMonthly, kaguraKaikanTitle, kaguraKaikanDesc } from './lib/kagura-kaikan-seo.mjs';
 import { nextEdition, keepPastIndexed, recentPast, editionKey } from './lib/past-events.mjs';
@@ -1191,16 +1192,24 @@ const programTable = (r) => {
 ${rows.map((p) => `<tr><td>${label(p.date)}</td><td>${esc(p.time ?? "")}</td><td>${esc(p.troupe)}</td><td>${esc(p.hall ?? "")}</td></tr>`).join("")}
 </tbody></table></div>${r.programNote ? `<p class="meta annotation">${esc(r.programNote)}</p>` : ""}</section>`;
 };
+// 「予約と当日の流れ」(bookingFlow: { lead, steps: [{ t, d }] }): 予約の語で探して来た人に、予約が要るか・当日の受付・料金をページの最初に答える。
+// 置き場所は、説明と「公式情報を見る」のすぐ下、要点の表の上(左の列の先頭)。PC では右の列の宿の枠と上端がそろい、宿の枠は下がらない。
+// 文は公式の案内で確かめた事実だけ(SEO-20261117-1。高千穂神社の神楽殿の毎晩の神楽から)
+const bookingFlowHtml = (r) => {
+  const b = r.bookingFlow;
+  if (!b?.steps?.length) return "";
+  return `<section class="booking-flow" aria-labelledby="booking-flow-h"><h2 id="booking-flow-h">予約と当日の流れ</h2>${b.lead ? phrasesHtml(`<p class="bf-lead">${esc(b.lead)}</p>`) : ""}${flowFig(b.steps.map((s) => ({ t: esc(s.t), d: s.d ? esc(s.d) : "" })), "予約と当日の流れ")}</section>`;
+};
 for (const r of regular) {
   const row = (th, v) => (v ? `<tr><th>${th}</th><td>${cellLines(v)}</td></tr>` : "");
   write(`dist/regular/${r.id}.html`, layout({
-    // seoTitle: 検索語に合わせたタイトル(なければ、名前と公演日時から作る)
+    // seoTitle: 検索語に合わせたタイトル(なければ、名前と公演日時から作る)。seoDesc: 検索語に合わせた説明文(どちらも、公式の情報で確かめたことだけを書く)
     title: r.seoTitle ? `${r.seoTitle} | ${cfg.siteName}` : `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
-    desc: padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
+    desc: r.seoDesc ? clip(r.seoDesc, 150) : padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-lead"><div class="desc-lead">${descParas(shownDesc(r, !r.fee || !r.venue || reservationLabel(r) === "要確認"))}</div>
-${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top"><div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
+${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top">${bookingFlowHtml(r)}<div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}</div>
 <div class="d-side">${sponsorFor("regular", r, { side: true })}${affiliateBlock(r)}${planningLinks(r,today,experienceAff,{prep:false,rakuten:rakutenOn})}${prStrip(r,'regular_rental')}</div><div class="d-rest">
