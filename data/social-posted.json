@@ -689,5 +689,77 @@
     "bufferId": "6afe0c5f1173b0b5f0e33bc6",
     "date": "2026-11-20",
     "hash": "f51e52e209be6d83"
+  },
+  {
+    "id": "r:feature:飯南神楽:1",
+    "type": "reading",
+    "style": "hook",
+    "link": false,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-20T14:00:00.000Z",
+    "bufferId": "6aff5ef91f6cb90e69ecec15",
+    "date": "2026-11-20",
+    "hash": "3c19c833c54e496b"
+  },
+  {
+    "id": "r:kind:南部神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-20T18:00:00.000Z",
+    "bufferId": "6aff5ef9afbc367fe2f9de48",
+    "date": "2026-11-20",
+    "hash": "2f51dd0cf354be9c"
+  },
+  {
+    "id": "keichiku-20261127",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-20T22:00:00.000Z",
+    "bufferId": "6aff5ef99f214429ff7e5873",
+    "date": "2026-11-21",
+    "hash": "e1b654e380aa88da"
+  },
+  {
+    "id": "r:viewing:早池峰神楽:1",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-21T02:00:00.000Z",
+    "bufferId": "6aff5ef9eda1c6ed2378c248",
+    "date": "2026-11-21",
+    "hash": "01db765b054182f8"
+  },
+  {
+    "id": "r:feature:番楽:3",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-21T06:00:00.000Z",
+    "bufferId": "6aff5efa086d649842583593",
+    "date": "2026-11-21",
+    "hash": "a45afaa54cfe8201"
+  },
+  {
+    "id": "sagami-satokagura-planetarium-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-21T10:00:00.000Z",
+    "bufferId": "6aff5efac233673006c2ccf1",
+    "date": "2026-11-21",
+    "hash": "60002d73e41727e5"
   }
 ]
