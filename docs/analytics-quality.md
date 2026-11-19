@@ -491,3 +491,32 @@ GA4 の画面(1日ずつのレポートのスナップショット)と `12_計�
 - 反映のあと、週次の分析が「取れている / 取れていない」を判定します。
 
 一次資料: https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/OrderBy / https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FilterExpression
+
+## 2026-11-20: 宿の枠の表示数を、置き場所 event_stay・travel_block で取る(MEAS-20261117-2)
+
+### 何が足りなかったか
+
+- 2026-11-14 に宿の枠を、文字のボタンから楽天トラベル・じゃらんの公式バナー(画像)に置き換えてから、開催ページの宿の枠も、種類・県・定期公演のページの宿の枠も、表示(affiliate_view)とクリック(affiliate_click)が `stay_banner` の名前で送られていました。`event_stay`・`travel_block` の名前では、表示もクリックも送られていませんでした。
+- そのため `event_stay` のクリック(11/14 より前の、文字のボタンのもの)に対応する表示が無く、「クリック ÷ 表示」が出せませんでした。
+- 会場近くの宿の写真カード(`stay-hotel/<開催ID>`)は、広告主の判定に当てはまらず、クリックが GA4 に送られない作りでした(カードはまだ本番に出ていないので、実害はありません)。
+
+### 直したこと(サイト側の計測のコードだけ)
+
+| 枠 | 置き場所(affiliate_placement) | 広告主(affiliate_partner) |
+|---|---|---|
+| 開催ページの宿の枠(`aside.stay`) | `event_stay` | `rakuten`・`jalan`(写真カードも `rakuten`) |
+| 種類・県・定期公演のページの宿の枠(`aside.aff`、「◯◯県の宿」「会場周辺の宿」) | `travel_block` | `rakuten`・`jalan` |
+| 今週末・今月の宿の帯 | `stay_banner`(変えない) | 同上 |
+| PC の両サイドの PR 枠・スマホの帯「旅の手配」 | `side_rail`(変えない) | 同上 |
+
+- 枠に `data-aff-box` を付け、`scripts/client/affiliate.js` がその名前で、表示とクリックを同じ置き場所として送ります。GoatCounter のクリック名(`banner-*/<開催ID・県名>`)は変えていません。
+- 表示の数え方は、ほかの枠と同じです。統計の同意がある訪問だけ、画面に半分以上入ったときに、1ページ1回。送るのは、広告主・置き場所・公開ID(開催ID・県名)・ページのパスだけで、個人を特定できる情報や URL の問い合わせ部分は送りません。ほかの枠ですでに送っている affiliate_view と同じイベントを、送る枠を増やしただけなので、プライバシーポリシーの「7. アクセス解析について」(同意のうえの Google アナリティクス、匿名のデータ)の範囲の中です。
+
+### Google 側の作業
+
+- ありません。カスタムディメンション(affiliate_partner・affiliate_placement)は 2026-10-20 に登録済みで、Apps Script の `AFF_PLACEMENTS` にも `event_stay`・`travel_block` が入っています(`tests/analytics-sync.mjs` で、サイトの送る名前と一致することを確かめています)。
+
+### 読み方の注意
+
+- 2026-11-14 から、この変更の公開(2026-11-20)までの、これらの枠の数は `stay_banner` に入っています。前後を比べるときは、`stay_banner`・`event_stay`・`travel_block` の合計で見るか、ページのパス(`/events/…` かどうか)で分けます。
+- `event_stay` の「クリック ÷ 表示」は、公開の翌日(2026-11-21)以降の分だけで出します。それより前の `event_stay` のクリックは文字のボタンのもので、対応する表示がありません。

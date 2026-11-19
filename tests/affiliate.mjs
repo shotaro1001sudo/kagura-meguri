@@ -2,6 +2,7 @@
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
+import { JSDOM } from "jsdom";
 import { renderedCheerio as cheerio } from "./rendered-vc.mjs";
 import { VC } from "../scripts/lib/valuecommerce.mjs";
 import { EXP_BANNER, expBannersHtml } from "../scripts/lib/stay-banners.mjs";
@@ -30,6 +31,12 @@ export function affiliateTests({ ok, section, OUT, build }) {
     const regular = cheerio.load(readFileSync("dist-test-ga4-affiliate/regular/r-nightly.html", "utf8"));
     ok(regular('.d-side .aff a.stay-banner[data-goatcounter-click="banner-rakuten/r-nightly"]').length === 1 && regular('.d-side .staylinks').length === 0, "定期公演の宿も、公式バナー(画像)で案内する");
     ok($('meta[http-equiv="Content-Security-Policy"]').attr("content")?.includes("sha256-"), "追加スクリプトがCSPのハッシュに含まれる");
+    // MEAS-20261117-2: 宿の枠に、表示・クリックの置き場所の名前(開催ページ event_stay、種類・県・定期公演のページ travel_block)。今週末・今月の宿の帯と、体験の枠には付けない
+    { const kf = cheerio.load(readFileSync(join("dist-test-ga4-affiliate", "kagura", readdirSync("dist-test-ga4-affiliate/kagura").find((f) => f !== "index.html")), "utf8"));
+      const pf = cheerio.load(readFileSync(join("dist-test-ga4-affiliate", "pref", readdirSync("dist-test-ga4-affiliate/pref")[0]), "utf8"));
+      const wk = cheerio.load(readFileSync("dist-test-ga4-affiliate/weekend.html", "utf8"));
+      ok($('.d-side aside.stay[data-aff-box="event_stay"]').length === 1 && regular('.d-side aside.aff[data-aff-box="travel_block"]').length === 1 && kf('main aside.aff:not(.aff-exp)[data-aff-box="travel_block"]').length === 1 && pf('main aside.aff:not(.aff-exp)[data-aff-box="travel_block"]').length === 1, "宿の枠に置き場所の名前: 開催ページは event_stay、定期公演・種類・県のページは travel_block");
+      ok(wk("[data-aff-box]").length === 0 && pf("aside.aff-exp[data-aff-box]").length === 0 && kf("aside.aff-exp[data-aff-box]").length === 0, "今週末の宿の帯・体験の枠には付けない(これまでどおり stay_banner など)"); }
     // PCの両サイドのPR枠(2026-11-15): 開催・定期公演・県・種類のページだけ。左右の枠ごとに「PR」を1つ
     const rails = ($$) => $$(".side-rail");
     const dir = "dist-test-ga4-affiliate", listChecks = []; // listChecks: 都道府県のページの一覧の帯を確かめる(下の、開催の多いテスト用のビルドでも使う)
@@ -251,4 +258,35 @@ export function affiliateTests({ ok, section, OUT, build }) {
   ok(fire({ label: "share-line" }).length === 0, "共有リンクは除外");
   ok(fire({ gtag: false }).length === 0, "GA4未読込でもエラーなく終了");
   ok(fire({ cookieBot: false }).length === 1, "Cookiebot未設定時も計測可能");
+
+  // MEAS-20261117-2: 宿の枠(開催ページ event_stay・種類などのページ travel_block)が画面に入ったら、クリックと同じ置き場所で affiliate_view を1回
+  section("宿の枠の表示数: event_stay・travel_block(MEAS-20261117-2)");
+  {
+    const html = `<aside class="stay" data-aff-box="event_stay"><a id="sb" class="stay-banner" href="https://hb.afl.rakuten.co.jp/x?y=1" rel="sponsored noopener" data-goatcounter-click="banner-rakuten/t-ev" data-banner-partner="rakuten"><img alt=""></a><span id="vj" data-vc-ad="banner" data-goatcounter-click="banner-jalan/t-ev" data-banner-partner="jalan"><a href="//ck.jp.ap.valuecommerce.com/x" rel="nofollow sponsored noopener"><img alt=""></a></span><ul><li><a id="hc" class="hotel-card" href="https://hb.afl.rakuten.co.jp/h?f_no=1" rel="sponsored noopener" data-goatcounter-click="stay-hotel/t-ev">宿</a></li></ul></aside>`
+      + `<aside class="aff" data-aff-box="travel_block"><a id="tb" class="stay-banner" href="https://hb.afl.rakuten.co.jp/x" rel="sponsored noopener" data-goatcounter-click="banner-rakuten/島根県" data-banner-partner="rakuten"><img alt=""></a></aside>`
+      + `<aside class="aff trip-band"><a id="wk" class="stay-banner" href="https://hb.afl.rakuten.co.jp/x" rel="sponsored noopener" data-goatcounter-click="banner-rakuten/weekend" data-banner-partner="rakuten"><img alt=""></a></aside>`
+      + `<aside class="side-rail"><a id="rl" href="https://hb.afl.rakuten.co.jp/r" rel="sponsored noopener" data-goatcounter-click="rail-rakuten/onsen" data-banner-partner="rakuten"><img alt=""></a></aside>`;
+    const dom = new JSDOM(html, { url: "https://kagurameguri.jp/events/t-ev.html?utm_source=private", runScripts: "outside-only", pretendToBeVisual: true });
+    const w = dom.window, sent = []; let notify; const watched = new Set();
+    w.IntersectionObserver = class { constructor(fn) { notify = fn; } observe(el) { watched.add(el); } unobserve() {} };
+    w.gtag = (...args) => sent.push(args); w.kaguraGa4Allowed = false;
+    w.eval(script);
+    const $id = (id) => w.document.getElementById(id);
+    const show = (...ids) => notify(ids.map((id) => ({ target: $id(id), isIntersecting: true, intersectionRatio: 1 })));
+    show("sb", "hc", "tb"); ok(sent.length === 0, "同意前は、宿の枠が見えても表示を送らない");
+    w.kaguraGa4Allowed = true;
+    ok(["sb", "vj", "hc", "tb", "wk", "rl"].every((id) => watched.has($id(id))), "宿の枠のバナー・じゃらんの枠・写真カードを、表示の見張りに入れる");
+    show("sb", "vj", "hc", "tb", "wk", "rl"); show("sb", "hc", "tb");
+    const views = sent.filter((s) => s[1] === "affiliate_view").map((s) => s[2]), by = (id) => views.filter((v) => v.affiliate_content_id === id);
+    ok(views.length === 6, "1ページ1回ずつ(同じ枠がまた見えても重ねない)", String(views.length));
+    ok(by("t-ev").filter((v) => v.affiliate_placement === "event_stay").map((v) => v.affiliate_partner).sort().join() === "jalan,rakuten,rakuten", "開催ページの宿の枠(楽天・じゃらんのバナー、写真カード)は、置き場所 event_stay・広告主つき");
+    ok(by("島根県")[0]?.affiliate_placement === "travel_block" && by("島根県")[0]?.affiliate_partner === "rakuten", "種類・県・定期公演のページの宿の枠は、置き場所 travel_block");
+    ok(by("weekend")[0]?.affiliate_placement === "stay_banner" && by("onsen")[0]?.affiliate_placement === "side_rail", "今週末の宿の帯は stay_banner、PR枠は side_rail のまま");
+    ok(views.every((v) => v.affiliate_page_path === "/events/t-ev.html") && !JSON.stringify(sent).includes("private") && !JSON.stringify(sent).includes("http"), "ページのパスと公開IDだけを送る(URLの問い合わせ・リンク先は送らない)");
+    for (const id of ["sb", "hc", "tb", "wk"]) { $id(id).addEventListener("click", (e) => e.preventDefault()); $id(id).click(); }
+    const clicks = sent.filter((s) => s[1] === "affiliate_click").map((s) => `${s[2].affiliate_partner}:${s[2].affiliate_placement}:${s[2].affiliate_content_id}`);
+    ok(clicks.join() === "rakuten:event_stay:t-ev,rakuten:event_stay:t-ev,rakuten:travel_block:島根県,rakuten:stay_banner:weekend", "クリックも、表示と同じ置き場所の名前で数える(写真カードの広告主は楽天)", clicks.join());
+    w.kaguraGa4Allowed = false; const before = sent.length; $id("sb").click(); ok(sent.length === before, "同意を取り消したあとは送らない");
+    dom.window.close();
+  }
 }

@@ -290,7 +290,8 @@ function stayBlock(e) {
   // 例外(MON-6、2026-11-08 運営者の依頼): 公式の名称・説明に「夜神楽」「夜通し」などがある公演だけ、泊まりが前提になることを一文で伝える
   // 2026-11-14 運営者の依頼: 文字のボタン(開催日・市町村つきの検索)をやめ、楽天トラベル・じゃらんの公式バナー(画像)にする
   const links = stayBanners(e.id), night = overnightKagura(e);
-  return `<aside class="stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
+  // data-aff-box: 表示・クリックの置き場所の名前(GA4 の affiliate_placement。MEAS-20261117-2)
+  return `<aside class="stay" data-aff-box="event_stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
 ${night ? `<p class="stay-lead">${cl(`${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。帰りの交通が限られるため、会場の近くに泊まる予定で計画すると安心です。`)}</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
 <details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿泊日(${esc(jpDate(day))})・人数・地域は、リンク先で指定してください。${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
 ${prNote(on)}</aside>`;
@@ -302,7 +303,7 @@ function affiliateBlock(e) {
   // 宿は、楽天トラベル・じゃらんの公式バナー(画像)。定期公演のページも同じ(2026-11-14 運営者の依頼で、文字のボタンから置き換え)
   const bn = stayBanners(e.id ?? e.prefecture);
   const goods = amazonOn ? `<div class="afflist"><a href="${esc(amazon(e.kagura || "神楽"))}" ${affAttrs(true, `aff-amazon/${e.prefecture}`)}><b>神楽の本・グッズ</b><small>Amazon</small></a></div>` : "";
-  return `<aside class="aff"><h2>${e.venue ? "会場周辺の宿" :`${esc(e.prefecture)}の宿`}</h2>${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
+  return `<aside class="aff" data-aff-box="travel_block"><h2>${e.venue ? "会場周辺の宿" :`${esc(e.prefecture)}の宿`}</h2>${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
 }
 /** 都道府県のページの「◯◯県の体験」。宿の枠のすぐ下に、宿の枠と同じ形で(2026-11-15 運営者の依頼) */
 function expBlock(p) {
