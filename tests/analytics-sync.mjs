@@ -62,10 +62,12 @@ export function harness({sessions=false} = {}) {
       }
       if(state.gaFailure)throw new Error("403 Permission denied: secret-response-token");
       // 広告クリックの内訳(MEAS-20261110-1): ページのパスを正規表現で絞る要求。固定ページの page_event とは別に扱う
+      // 公式サイトへのクリックの内訳(MEAS-20261117-1)も同じ形の要求。イベント名の絞り込みで見分ける
       if(request.dimensionFilter?.andGroup?.expressions?.[0]?.filter?.stringFilter) {
-        const kind=request.dimensions.length===2?"aff_page":"aff_detail";
+        const official=request.dimensionFilter.andGroup.expressions[1]?.filter?.inListFilter?.values?.includes("official_link_click");
+        const kind=official?"official_page":request.dimensions.length===2?"aff_page":"aff_detail";
         if(state.affFailure?.[kind])throw new Error(state.affFailure[kind]);
-        const sample={pagePath:"/events/test-1.html",eventName:"affiliate_click","customEvent:affiliate_partner":"jalan","customEvent:affiliate_placement":"event_stay"};
+        const sample={pagePath:"/events/test-1.html",eventName:official?"official_link_click":"affiliate_click","customEvent:affiliate_partner":"jalan","customEvent:affiliate_placement":"event_stay"};
         const rows=state.affRows?.[kind]!==undefined?state.affRows[kind]:state.empty?[]:[{dimensionValues:request.dimensions.map(d=>({value:sample[d.name]})),metricValues:[{value:"1"}]}];
         return {dimensionHeaders:request.dimensions,metricHeaders:request.metrics,rows,rowCount:rows.length,metadata:{timeZone:state.zone}};
       }
@@ -116,7 +118,7 @@ export function analyticsSyncTests({ok,section}) {
   repair.tabs.get('13_計測内訳').values.push(['stale-partial','GSC','query','','','','old','[]','','']);
   ok(repair.run().status==='success'&&repair.props.KAGURA_ANALYTICS_LAST_SUCCESS==='2026-10-24','通常の2回目で原文を再取得して全体ガード更新');
   ok(repair.records('13_計測内訳').filter(r=>r[1]==='GSC'&&r[2]==='query').length===1&&repair.records('13_計測内訳').find(r=>r[1]==='GSC'&&r[2]==='query')[6]==='4/7','部分行を重複なく置換し古い行を除去');
-  ok(JSON.stringify(repair.records('13_計測内訳').filter(r=>r[1]!=='GSC'))===preserved&&repair.calls.filter(c=>c.source==='GA4').length===13&&repair.calls.filter(c=>c.source==='GSC').length===8,'GA4と実在GA4_SESSIONの成功行・APIスキップを維持');
+  ok(JSON.stringify(repair.records('13_計測内訳').filter(r=>r[1]!=='GSC'))===preserved&&repair.calls.filter(c=>c.source==='GA4').length===14&&repair.calls.filter(c=>c.source==='GSC').length===8,'GA4と実在GA4_SESSIONの成功行・APIスキップを維持');
   const limited=harness({sessions:true});limited.ready();limited.state.coerceDimensions=true;limited.state.ignorePlainText=true;limited.state.query='4/7';limited.run();limited.run();const limitedCount=limited.calls.length;limited.state.ignorePlainText=false;
   ok(limited.run().error==='SYNC_PARTIAL'&&limited.calls.length===limitedCount&&!limited.props.KAGURA_ANALYTICS_LAST_SUCCESS,'修正後も1日2回上限を超えず全体成功にしない');
   const formatting=harness();formatting.ready();formatting.state.formatFailure=true;
@@ -178,14 +180,14 @@ export function analyticsSyncTests({ok,section}) {
   h.props.KAGURA_ANALYTICS_FREE_CONFIRMED="yes";
   ok(h.run().error==="PROPERTY_ID_REQUIRED"&&h.calls.length===0,"プロパティ未設定もAPIなしで理由を区別する");
   h.ready();
-  ok(h.run().status==="success"&&h.calls.length===12,"1回の正常実行は12読取(GA4 8＋GSC 4)で成功");
+  ok(h.run().status==="success"&&h.calls.length===13,"1回の正常実行は13読取(GA4 9＋GSC 4)で成功");
   const daily=h.records("12_計測日次"),ga=daily.find(r=>r[0]==="GA4-2026-10-20"),gsc=daily.find(r=>r[0]==="GSC-2026-10-20");
   ok(daily.length===56&&ga[4]===1&&gsc[4]===""&&gsc[8]===1,"28日×2媒体を別定義で保存");
   ok(ga[3]==="Asia/Tokyo"&&gsc[3]==="America/Los_Angeles","GA4とGSCの異なる時間帯を保持");
   const missing=daily.find(r=>r[0]==="GA4-2026-10-23");
   ok(missing[4]===""&&missing[12].includes("not_returned"),"未返却日を明示して0アクセスと混同しない");
   ok(h.calls.find(c=>c.source==="GSC").request.endDate==="2026-10-22"&&h.calls[0].request.dateRanges[0].endDate==="2026-10-23","GSCのPT前日とGA4のプロパティ前日を使う");
-  h.run();ok(h.calls.length===12,"同日成功済みの媒体を再取得しない");
+  h.run();ok(h.calls.length===13,"同日成功済みの媒体を再取得しない");
   const details=h.records("13_計測内訳");
   const pageRequest=h.calls.find(c=>c.source==="GSC"&&c.request.dimensions[0]==="page").request;
   ok(JSON.stringify(pageRequest)==='{"startDate":"2026-09-25","endDate":"2026-10-22","dimensions":["page"],"type":"web","dataState":"final","rowLimit":1000}',"GSC page単独・PTの28日・final・最大1000件、追加filter/paginationなし");
@@ -202,7 +204,7 @@ export function analyticsSyncTests({ok,section}) {
   ok(partial.run().error==="SYNC_PARTIAL"&&partial.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4==="2026-10-24"&&!partial.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC,"GSC失敗でもGA4を保存し全体はpartial");
   ok(partial.log("2026-10-24-GSC")[3].includes("GSC_HTTP_403")&&!JSON.stringify(partial.records("14_計測実行")).includes("secret"),"HTTP原因を安全なコードで残しトークン/応答本文を残さない");
   partial.state.gscStatus=200;partial.run();
-  ok(partial.calls.filter(c=>c.source==="GA4").length===8&&partial.calls.filter(c=>c.source==="GSC").length===5,"再実行では失敗した媒体だけ取得");
+  ok(partial.calls.filter(c=>c.source==="GA4").length===9&&partial.calls.filter(c=>c.source==="GSC").length===5,"再実行では失敗した媒体だけ取得");
 
   const failed=harness();failed.ready();failed.state.gaFailure=true;failed.state.gscStatus=429;
   failed.run();failed.run();const count=failed.calls.length;failed.run();
@@ -242,7 +244,7 @@ export function analyticsSyncTests({ok,section}) {
     const both=harness({sessions:true});both.ready();both.run();const n=both.calls.length;
     ok(both.context.retryKaguraAnalyticsSync().status==="already_synced"&&both.calls.length===n,"取り直し: 訪問の内訳までそろっていれば、APIを呼ばない"); }
   const config=harness();config.ready();config.run();config.props.KAGURA_GA4_PROPERTY_ID="999999";config.run();
-  ok(config.calls.filter(c=>c.source==="GA4").length===16,"プロパティ設定変更時に別プロパティの成功記録を流用しない");
+  ok(config.calls.filter(c=>c.source==="GA4").length===18,"プロパティ設定変更時に別プロパティの成功記録を流用しない");
   config.props.KAGURA_GA4_PROPERTY_ID="777777";rejected=false;
   try{config.context.installKaguraAnalyticsDailyTrigger();}catch(_){rejected=true;}
   ok(rejected,"設定変更後に旧プロパティの成功でトリガーを作らない");
@@ -252,7 +254,7 @@ export function analyticsSyncTests({ok,section}) {
   section("GSCページ内訳: 上限・失敗・置換・読戻");
   const pageRow=(url="https://kagurameguri.jp/guide.html")=>({keys:[url],clicks:1,impressions:10,ctr:0.1,position:5});
   const capped=harness();capped.ready();capped.state.pageRows=Array.from({length:1000},(_,i)=>pageRow("https://kagurameguri.jp/events/test-"+i+".html"));
-  ok(capped.run().status==="success"&&capped.calls.length===12&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1000,"1000ページでも追加ページングせず1回で保存する");
+  ok(capped.run().status==="success"&&capped.calls.length===13&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1000,"1000ページでも追加ページングせず1回で保存する");
   ok(capped.log("2026-10-24-GSC")[3].includes("limit reached; completeness not guaranteed")&&capped.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").every(r=>r[8].includes("limit reached")),"上限到達を行と実行ログの両方に残し、全件とは扱わない");
   const gaSnapshot=JSON.stringify(capped.records("13_計測内訳").filter(r=>r[1]==="GA4"));
   const historicalDaily=[...capped.records("12_計測日次").find(r=>r[1]==="GSC")];historicalDaily[0]="GSC-2026-08-01";historicalDaily[2]="2026-08-01";
@@ -275,7 +277,7 @@ export function analyticsSyncTests({ok,section}) {
   const readback=harness();readback.ready();readback.state.brokenPageRead=true;
   ok(readback.run().error==="SYNC_PARTIAL"&&readback.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&!readback.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&readback.log("2026-10-24-GSC")[3].includes("SHEET_READBACK_MISMATCH"),"page保存の読戻不一致はGSC成功を更新せずGA4を保持");
   readback.state.brokenPageRead=false;
-  ok(readback.run().status==="success"&&readback.calls.filter(c=>c.source==="GA4").length===8&&readback.calls.filter(c=>c.source==="GSC").length===8&&readback.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1,"読戻失敗後はGSCだけ再取得し、pageを重複させず回復する");
+  ok(readback.run().status==="success"&&readback.calls.filter(c=>c.source==="GA4").length===9&&readback.calls.filter(c=>c.source==="GSC").length===8&&readback.records("13_計測内訳").filter(r=>r[1]==="GSC"&&r[2]==="page").length===1,"読戻失敗後はGSCだけ再取得し、pageを重複させず回復する");
 
   section("意思決定用内訳: 流入元品質・固定ページ導線・検索端末");
   const sourceReq=h.calls.find(c=>c.source==="GA4"&&c.request.dimensions[0].name==="sessionSourceMedium").request;
@@ -324,19 +326,20 @@ export function analyticsSyncTests({ok,section}) {
   const corruptFunnel=harness();corruptFunnel.ready();corruptFunnel.state.brokenFunnelRead=true;
   ok(corruptFunnel.run().error==='SYNC_PARTIAL'&&!corruptFunnel.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4&&corruptFunnel.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC&&corruptFunnel.log('2026-10-24-GA4')[3].includes('SHEET_READBACK_MISMATCH'),'複合dimension行のreadback不一致でも成功ガードを進めない');
   corruptFunnel.state.brokenFunnelRead=false;
-  ok(corruptFunnel.run().status==='success'&&corruptFunnel.records('13_計測内訳').filter(r=>r[2]==='page_event').length===1&&corruptFunnel.calls.filter(c=>c.source==='GA4').length===16&&corruptFunnel.calls.filter(c=>c.source==='GSC').length===4,'読戻失敗はGA4だけ上限内で再取得し、重複なく回復する');
+  ok(corruptFunnel.run().status==='success'&&corruptFunnel.records('13_計測内訳').filter(r=>r[2]==='page_event').length===1&&corruptFunnel.calls.filter(c=>c.source==='GA4').length===18&&corruptFunnel.calls.filter(c=>c.source==='GSC').length===4,'読戻失敗はGA4だけ上限内で再取得し、重複なく回復する');
   const truncated=harness();truncated.ready();truncated.state.funnelRowCount=1001;
-  ok(truncated.run().status==='success'&&truncated.records('13_計測内訳').find(r=>r[2]==='page_event')[8].includes('truncated')&&truncated.calls.length===12,'GA4返却件数が総行数より少なければ打切り注記、追加ページングなし');
+  ok(truncated.run().status==='success'&&truncated.records('13_計測内訳').find(r=>r[2]==='page_event')[8].includes('truncated')&&truncated.calls.length===13,'GA4返却件数が総行数より少なければ打切り注記、追加ページングなし');
   const deviceFailure=harness();deviceFailure.ready();deviceFailure.run();const prior=JSON.stringify(deviceFailure.records('13_計測内訳'));
   deviceFailure.props.KAGURA_ANALYTICS_LAST_SUCCESS_GSC='';deviceFailure.state.deviceStatus=429;
-  ok(deviceFailure.run().error==='SYNC_PARTIAL'&&JSON.stringify(deviceFailure.records('13_計測内訳'))===prior&&deviceFailure.log('2026-10-24-GSC')[3].includes('GSC_HTTP_429')&&deviceFailure.calls.filter(c=>c.source==='GA4').length===8,'device要求失敗でもGSC旧行を保持しGA4成功と取得回数を維持');
+  ok(deviceFailure.run().error==='SYNC_PARTIAL'&&JSON.stringify(deviceFailure.records('13_計測内訳'))===prior&&deviceFailure.log('2026-10-24-GSC')[3].includes('GSC_HTTP_429')&&deviceFailure.calls.filter(c=>c.source==='GA4').length===9,'device要求失敗でもGSC旧行を保持しGA4成功と取得回数を維持');
   let badHeader=false;
   try{h.context.kaguraReportRows_({dimensionHeaders:[{name:'sessionSourceMedium'}],metricHeaders:[{name:'sessions'}],rows:[]},['sessionSourceMedium'],['sessions','engagedSessions','engagementRate'],['engagedSessions','engagementRate']);}catch(_){badHeader=true;}
   ok(badHeader,'任意指標でも列定義欠落はschemaエラーとし、旧配列を新schemaとして誤読しない');
 
   section("広告クリックの内訳(MEAS-20261110-1): 全ページのページ別・広告別、失敗しても本体は止めない");
   const S=runInNewContext(code+";KAGURA_ANALYTICS_SYNC",{});
-  const affReqs=h.calls.filter(c=>c.source==="GA4"&&c.request.dimensionFilter?.andGroup?.expressions?.[0]?.filter?.stringFilter).map(c=>c.request);
+  const isOfficialReq=r=>r.dimensionFilter.andGroup.expressions[1].filter.inListFilter.values.includes("official_link_click");
+  const affReqs=h.calls.filter(c=>c.source==="GA4"&&c.request.dimensionFilter?.andGroup?.expressions?.[0]?.filter?.stringFilter).map(c=>c.request).filter(r=>!isOfficialReq(r));
   ok(affReqs.length>=2&&affReqs.length%2===0&&affReqs[0].dimensions.map(d=>d.name).join()==="pagePath,eventName"&&affReqs[1].dimensions.map(d=>d.name).join()==="pagePath,customEvent:affiliate_partner,customEvent:affiliate_placement,eventName"&&affReqs.every(r=>r.metrics.map(m=>m.name).join()==="eventCount"&&r.limit===1000&&r.dateRanges[0].startDate==="2026-09-26"&&r.dateRanges[0].endDate==="2026-10-23"),"ページ別(標準の項目だけ)と、ページ×広告×置き場所(カスタムディメンション)の2要求。28日・eventCount・1000件上限");
   const affFilters=affReqs.map(r=>r.dimensionFilter.andGroup.expressions.map(e=>e.filter));
   ok(affFilters.every(f=>f[0].fieldName==="pagePath"&&f[0].stringFilter.matchType==="FULL_REGEXP"&&f[0].stringFilter.caseSensitive===true&&f[0].stringFilter.value===S.AFF_ROUTE&&f[1].fieldName==="eventName"&&f[1].inListFilter.values.join()==="affiliate_click,affiliate_view"&&f[1].inListFilter.caseSensitive===true),"API側で、公開ページのパスの形と、広告の表示・クリックのイベントだけに絞る");
@@ -363,7 +366,7 @@ export function analyticsSyncTests({ok,section}) {
   const unreg=harness();unreg.ready();unreg.state.affFailure={aff_detail:"API call failed: Field customEvent:affiliate_partner is not a valid dimension. secret-response-body"};
   ok(unreg.run().status==="success"&&unreg.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4==="2026-10-24"&&unreg.props.KAGURA_ANALYTICS_LAST_SUCCESS==="2026-10-24","広告・置き場所別の取得に失敗しても、GA4 と全体は成功のまま");
   ok(unreg.log("2026-10-24-GA4")[3].includes("aff_detail: unavailable (GA4_DIMENSION_NOT_REGISTERED); optional breakdown not saved; missing is not zero")&&!JSON.stringify(unreg.records("14_計測実行")).includes("secret"),"未登録を安全な原因コードで実行記録に残し、APIの応答本文は残さない");
-  ok(unreg.records("13_計測内訳").some(r=>r[2]==="aff_page")&&!unreg.records("13_計測内訳").some(r=>r[2]==="aff_detail")&&unreg.records("13_計測内訳").some(r=>r[2]==="page_event")&&unreg.calls.length===12,"失敗した内訳だけを保存せず、ページ別・既存の内訳は保存する。取得回数も増やさない");
+  ok(unreg.records("13_計測内訳").some(r=>r[2]==="aff_page")&&!unreg.records("13_計測内訳").some(r=>r[2]==="aff_detail")&&unreg.records("13_計測内訳").some(r=>r[2]==="page_event")&&unreg.calls.length===13,"失敗した内訳だけを保存せず、ページ別・既存の内訳は保存する。取得回数も増やさない");
   const bothDown=harness();bothDown.ready();bothDown.state.affFailure={aff_page:"429 quota secret",aff_detail:"403 permission secret"};
   ok(bothDown.run().status==="success"&&!bothDown.records("13_計測内訳").some(r=>/^aff_/.test(r[2]))&&bothDown.log("2026-10-24-GA4")[3].includes("aff_page: unavailable (QUOTA_EXCEEDED)")&&bothDown.records("12_計測日次").length===56,"両方の内訳が失敗しても、日次と既存の内訳は保存する");
   // 登録後に取れるようになったら、次の取得で入る。古い行は残さない
@@ -383,4 +386,30 @@ export function analyticsSyncTests({ok,section}) {
   ok(unset.run().status==="success"&&unset.records("13_計測内訳").filter(r=>r[2]==="aff_detail").map(r=>r[7]).join()==="[12],[3]","登録前の (not set) の行は、そのまま保存する(別の広告主に置き換えない)");
   const noAds=harness();noAds.ready();noAds.state.affRows={aff_page:[],aff_detail:[]};
   ok(noAds.run().status==="success"&&!noAds.records("13_計測内訳").some(r=>/^aff_/.test(r[2]))&&noAds.log("2026-10-24-GA4")[3].includes("missing rows are not zero; no_rows / aff_detail:"),"広告のイベントが1件もない期間は、0の行を作らず no_rows と記録する");
+
+  section("公式サイトへ進んだ回数の内訳(MEAS-20261117-1): 開催・定期公演のページ別、上位200行、失敗しても本体は止めない");
+  const offReqs=h.calls.filter(c=>c.source==="GA4"&&c.request.dimensionFilter?.andGroup?.expressions?.[0]?.filter?.stringFilter&&isOfficialReq(c.request)).map(c=>c.request);
+  const offReq=offReqs[0],offFilters=offReq?.dimensionFilter.andGroup.expressions.map(e=>e.filter)??[];
+  const ga4Runs=h.calls.filter(c=>c.source==="GA4"&&c.request.dimensions[0]?.name==="date").length;
+  ok(ga4Runs>0&&offReqs.length===ga4Runs&&offReqs.every(r=>JSON.stringify(r)===JSON.stringify(offReq))&&offReq.dimensions.map(d=>d.name).join()==="pagePath,eventName"&&offReq.metrics.map(m=>m.name).join()==="eventCount"&&offReq.limit===200&&offReq.dateRanges[0].startDate==="2026-09-26"&&offReq.dateRanges[0].endDate==="2026-10-23","1回の取得で1要求。[ページ, イベント名]・eventCount・28日・200行まで");
+  ok(offReq.orderBys[0].metric?.metricName==="eventCount"&&offReq.orderBys[0].desc===true&&offReq.orderBys[1].dimension?.dimensionName==="pagePath","多い順に並べて上位200行を取る(同数はパスの順)");
+  ok(offFilters[0].fieldName==="pagePath"&&offFilters[0].stringFilter.matchType==="FULL_REGEXP"&&offFilters[0].stringFilter.caseSensitive===true&&offFilters[0].stringFilter.value===S.OFFICIAL_ROUTE&&offFilters[1].fieldName==="eventName"&&offFilters[1].inListFilter.values.join()==="official_link_click"&&offFilters[1].inListFilter.caseSensitive===true,"API側で、開催・定期公演のページのパスと official_link_click だけに絞る");
+  ok(!JSON.stringify(offReq).includes("pageLocation")&&!JSON.stringify(offReq).includes("customEvent")&&!/user|client|session/i.test(offReq.dimensions.map(d=>d.name).join()),"フルURL・利用者ID・セッションID・カスタムディメンションは要求しない");
+  const clientEvents=readFileSync("scripts/client/analytics-events.js","utf8"),offRoute=new RegExp(S.OFFICIAL_ROUTE);
+  ok(clientEvents.includes('send("official_link_click"')&&/data-official-link/.test(clientEvents)&&clientEvents.includes("/^\\/(events|regular)\\/([A-Za-z0-9_-]+)\\.html$/"),"サイトは、開催・定期公演のページの「公式情報を見る」からだけ official_link_click を送る(新しく測るものはない)");
+  ok(["/events/hanamatsuri-toei-tsuki-2026.html","/regular/takachiho-jinja-kagura.html","/events/npo-hiroshima-71199c5a25.html"].every(p=>offRoute.test(p))&&["/","/guide.html","/kagura/石見神楽.html","/events/x.html?email=a@example.jp","/events/private name.html","/events/a/b.html","/events/.html","//evil.test/events/a.html"].every(p=>!offRoute.test(p)),"開催・定期公演のページのパスだけを通す(クエリ付き・空白入り・ほかの階層は通さない)");
+  const offRow=details.find(r=>r[2]==="official_page");
+  ok(offRow?.[0]==='GA4-official_page-2026-10-23-["/events/test-1.html","official_link_click"]'&&offRow[6]==='["/events/test-1.html","official_link_click"]'&&offRow[7]==='[1]'&&offRow[8].includes("top 200 event/regular pages by eventCount")&&offRow[8].includes("events are not users or conversions")&&offRow[8].includes("missing rows are not zero"),"ページ別の回数を、複合のIDと注記つきで保存する(回数は人数・成約ではない)");
+  ok(h.log("2026-10-24-GA4")[3].includes("official_page:"),"取得したことを、実行記録に残す");
+  const offDown=harness();offDown.ready();offDown.state.affFailure={official_page:"429 quota secret-response"};
+  ok(offDown.run().status==="success"&&offDown.props.KAGURA_ANALYTICS_LAST_SUCCESS_GA4==="2026-10-24"&&!offDown.records("13_計測内訳").some(r=>r[2]==="official_page")&&offDown.records("13_計測内訳").some(r=>r[2]==="aff_page")&&offDown.records("13_計測内訳").some(r=>r[2]==="page_event")&&offDown.log("2026-10-24-GA4")[3].includes("official_page: unavailable (QUOTA_EXCEEDED); optional breakdown not saved; missing is not zero")&&!JSON.stringify(offDown.records("14_計測実行")).includes("secret"),"取得に失敗しても GA4 は成功のまま。この内訳だけ保存せず、ほかの内訳は保存する");
+  const off=(path,value="1",event="official_link_click")=>({dimensionValues:[{value:path},{value:event}],metricValues:[{value}]});
+  for(const rows of [[off("/guide.html")],[off("/user/secret-person.html")],[off("/events/a.html","1","affiliate_click")],[off("/events/a.html"),off("/events/a.html")],[off("/events/a.html",null)],Array.from({length:201},(_,i)=>off(`/events/e-${i}.html`))]) {
+    const invalid=harness();invalid.ready();invalid.state.affRows={official_page:rows};
+    ok(invalid.run().status==="success"&&!invalid.records("13_計測内訳").some(r=>r[2]==="official_page")&&invalid.records("13_計測内訳").some(r=>r[2]==="aff_page")&&/official_page: unavailable \(GA4_(SCHEMA|METRIC)_INVALID\)/.test(invalid.log("2026-10-24-GA4")[3])&&!JSON.stringify(invalid.records("14_計測実行")).includes("secret-person"),"返ってきたパス・イベント・件数・重複・行数を確かめ直し、想定外なら保存も記録もしない");
+  }
+  const full=harness();full.ready();full.state.affRows={official_page:Array.from({length:200},(_,i)=>off(`/events/e-${i}.html`,String(200-i)))};
+  ok(full.run().status==="success"&&full.records("13_計測内訳").filter(r=>r[2]==="official_page").length===200&&full.records("13_計測内訳").find(r=>r[2]==="official_page")[8].includes("limit reached; completeness not guaranteed"),"200行ちょうどなら、上位だけで全部ではないと注記する");
+  const noClicks=harness();noClicks.ready();noClicks.state.affRows={official_page:[]};
+  ok(noClicks.run().status==="success"&&!noClicks.records("13_計測内訳").some(r=>r[2]==="official_page")&&((n)=>n.slice(n.indexOf("official_page:")).split(" / ")[0].includes("missing rows are not zero; no_rows"))(noClicks.log("2026-10-24-GA4")[3]),"1回も押されていない期間は、0の行を作らず no_rows と記録する");
 }

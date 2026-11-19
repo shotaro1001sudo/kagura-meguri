@@ -125,6 +125,8 @@ const latestSnapshot = (history, key) => Object.values(history).map((d) => d.sna
 const KINDS = {
   "GSC/query": { gsc: true }, "GSC/page": { gsc: true }, "GSC/device": { gsc: true },
   "GA4/page": {}, "GA4/source": {}, "GA4/event": {}, "GA4/device": {}, "GA4/page_event": {},
+  // MEAS-20261117-1: 開催・定期公演のページごとの、公式サイトへ進んだ回数(上位200ページ)
+  "GA4/official_page": {},
 };
 
 /**

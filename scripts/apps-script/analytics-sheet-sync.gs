@@ -12,8 +12,14 @@ const KAGURA_ANALYTICS_SYNC = Object.freeze({
   FUNNEL_EVENTS: ["official_link_click","affiliate_click","affiliate_view"],
   // MEAS-20261110-1: sponsored-link breakdowns for every public page (event pages included).
   // Optional kinds: a failure is recorded in the run note and never breaks GA4/GSC success.
-  OPTIONAL_KINDS: ["aff_page","aff_detail"],
+  OPTIONAL_KINDS: ["aff_page","aff_detail","official_page"],
   AFF_EVENTS: ["affiliate_click","affiliate_view"],
+  // MEAS-20261117-1: taps on the official-site button (公式情報を見る), per event/regular page.
+  // The site sends official_link_click only from /events/<id>.html and /regular/<id>.html
+  // (scripts/client/analytics-events.js), so only those route shapes are accepted.
+  // Top OFFICIAL_LIMIT pages by eventCount; standard dimensions only (no custom dimension).
+  OFFICIAL_EVENTS: ["official_link_click"], OFFICIAL_LIMIT: 200,
+  OFFICIAL_ROUTE: "^/(?:events|regular)/[A-Za-z0-9_-]{1,80}\\.html$",
   // Public route shapes of the static site only. No query strings, no free-form or user paths.
   AFF_ROUTE: "^/(?:(?:events|regular)/[-a-z0-9]{1,80}\\.html|(?:kagura|pref)/[^/?#\\s]{1,60}\\.html|month/\\d{4}-\\d{2}\\.html|history/(?:[-a-z0-9]{1,40}\\.html)?|(?:index|guide|experiences|weekend|this-month|map|calendar)\\.html)?$",
   // Values the site itself sends (scripts/client/affiliate.js). "(not set)" = before the GA4
@@ -141,25 +147,30 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
     // views and clicks came from. aff_page uses standard dimensions only; aff_detail needs the
     // event-scoped custom dimensions affiliate_partner and affiliate_placement registered in GA4.
     ["aff_page",["pagePath","eventName"],["eventCount"]],
-    ["aff_detail",["pagePath","customEvent:affiliate_partner","customEvent:affiliate_placement","eventName"],["eventCount"]]
+    ["aff_detail",["pagePath","customEvent:affiliate_partner","customEvent:affiliate_placement","eventName"],["eventCount"]],
+    // MEAS-20261117-1 (optional): how many times each event/regular page sent visitors on to the
+    // official site. Top 200 pages by eventCount, so event pages are included (page_event is fixed pages only).
+    ["official_page",["pagePath","eventName"],["eventCount"]]
   ];
   const S=KAGURA_ANALYTICS_SYNC;
   const runJob=([kind,dimensions,metrics])=>{
-    const optional=S.OPTIONAL_KINDS.includes(kind);
+    const optional=S.OPTIONAL_KINDS.includes(kind),official=kind==="official_page";
+    const limit=official?S.OFFICIAL_LIMIT:S.LIMIT,events=official?S.OFFICIAL_EVENTS:S.AFF_EVENTS,routeShape=official?S.OFFICIAL_ROUTE:S.AFF_ROUTE;
     const request={dateRanges:[{startDate:from,endDate:to}],
-      dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),limit:KAGURA_ANALYTICS_SYNC.LIMIT,returnPropertyQuota:true,
-      orderBys:dimensions.map(dimensionName=>({dimension:{dimensionName}}))};
+      dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),limit,returnPropertyQuota:true,
+      // The official breakdown keeps the pages with the most taps (top 200); ties by path. Others sort by dimension.
+      orderBys:official?[{metric:{metricName:"eventCount"},desc:true},{dimension:{dimensionName:"pagePath"}}]:dimensions.map(dimensionName=>({dimension:{dimensionName}}))};
     if(kind==="page_event") request.dimensionFilter={andGroup:{expressions:[
       {filter:{fieldName:"pagePath",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_PAGES,caseSensitive:true}}},
       {filter:{fieldName:"eventName",inListFilter:{values:KAGURA_ANALYTICS_SYNC.FUNNEL_EVENTS,caseSensitive:true}}}
     ]}};
     if(optional) request.dimensionFilter={andGroup:{expressions:[
-      {filter:{fieldName:"pagePath",stringFilter:{matchType:"FULL_REGEXP",value:S.AFF_ROUTE,caseSensitive:true}}},
-      {filter:{fieldName:"eventName",inListFilter:{values:S.AFF_EVENTS,caseSensitive:true}}}
+      {filter:{fieldName:"pagePath",stringFilter:{matchType:"FULL_REGEXP",value:routeShape,caseSensitive:true}}},
+      {filter:{fieldName:"eventName",inListFilter:{values:events,caseSensitive:true}}}
     ]}};
     const report=AnalyticsData.Properties.runReport(request,"properties/"+property);
     const rows=kaguraReportRows_(report,dimensions,metrics,kind==="source"?["engagedSessions","engagementRate"]:[]);
-    if(rows.length>KAGURA_ANALYTICS_SYNC.LIMIT) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+    if(rows.length>limit) throw kaguraFailure_("GA4_SCHEMA_INVALID");
     if(kind==="source" && rows.some(row=>(row[2]!==null&&row[2]>row[1])||(row[3]!==null&&row[3]>1))) throw kaguraFailure_("GA4_METRIC_INVALID");
     if(kind==="page_event") {
       const seen=new Set();
@@ -172,11 +183,11 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
     if(optional) {
       // Re-check what the API returned: route shape, known events, known partner/placement
       // values and no duplicate composite key. Nothing unexpected is saved or logged.
-      const route=new RegExp(S.AFF_ROUTE),seen=new Set(),unset="(not set)";
+      const route=new RegExp(routeShape),seen=new Set(),unset="(not set)";
       rows.forEach(row=>{
         const key=JSON.stringify(row.slice(0,dimensions.length));
         if(typeof row[0]!=="string" || row[0].length>160 || !route.test(row[0]) ||
-          !S.AFF_EVENTS.includes(row[dimensions.length-1]) || seen.has(key)) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+          !events.includes(row[dimensions.length-1]) || seen.has(key)) throw kaguraFailure_("GA4_SCHEMA_INVALID");
         if(kind==="aff_detail" && ((row[1]!==unset && !S.AFF_PARTNERS.includes(row[1])) ||
           (row[2]!==unset && !S.AFF_PLACEMENTS.includes(row[2])))) throw kaguraFailure_("GA4_SCHEMA_INVALID");
         seen.add(key);
@@ -184,10 +195,11 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
     }
     if(report.metadata?.timeZone!==zone) throw kaguraFailure_("GA4_TIMEZONE_MISMATCH");
     const quality=["processing/revisions possible; self/debug not certified",
-      report.rowCount>rows.length?"truncated":"",rows.length===KAGURA_ANALYTICS_SYNC.LIMIT?"limit reached; completeness not guaranteed":"",
+      report.rowCount>rows.length?"truncated":"",rows.length===limit?"limit reached; completeness not guaranteed":"",
       kind==="source"?"metrics=sessions,engagedSessions,engagementRate; schema=2" : "",
       kind==="source"&&rows.some(row=>row.slice(1).includes(null))?"optional_metrics_missing (not zero)":"",
       kind==="page_event"?"fixed public routes only; metrics=eventCount; events are not users or conversions":"",
+      official?"top "+S.OFFICIAL_LIMIT+" event/regular pages by eventCount; official-site button only; consented visits only; metrics=eventCount; events are not users or conversions; missing rows are not zero":
       optional?"public route shapes only; sponsored links; consented visits only; metrics=eventCount; events are not users or conversions; missing rows are not zero":"",
       kind==="aff_detail"?"dimension=[pagePath,affiliate_partner,affiliate_placement,eventName]; (not set)=before custom dimension registration or parameter missing":"",
       report.metadata?.subjectToThresholding?"thresholded":"",
