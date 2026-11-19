@@ -179,7 +179,8 @@ const jpDate = (s) => { const [y, m, d] = s.split("-").map(Number); return `${y}
 const events = rawEvents.sort((a, b) => a.start.localeCompare(b.start));
 const upcoming = events.filter(isUpcoming);
 const regular = rawRegular.filter((r) => !r.until || r.until >= nowJst.slice(0, 10));
-const kaguraInfo = existsSync("data/kagura-info.json") ? readJson("data/kagura-info.json") : {};
+const KAGURA_INFO_FILE = process.env.KAGURA_INFO_FILE ?? "data/kagura-info.json"; // テストで差し替えられる
+const kaguraInfo = existsSync(KAGURA_INFO_FILE) ? readJson(KAGURA_INFO_FILE) : {};
 const prefInfo = existsSync("data/pref-info.json") ? readJson("data/pref-info.json") : {};
 // 出典リンクの一覧(外部リンクは、新しいタブで開き、推薦しない旨の rel を付ける)
 const refList = (refs = []) => refs.length ? `<p class="meta">参考: ${refs.map((r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`).join(" / ")}</p>` : "";
@@ -983,6 +984,24 @@ const monthSpan = (list) => { if (!list.length) return ""; const ks = list.map((
 const townOf = (city = "") => city.replace(/^.+?郡/, "");
 // 「11月13日 小林」のように、日付と、名前のかっこ内の地区名(町名は除く)を並べる
 const districtOf = (e, town) => (e.name.match(/[(（]([^()（）]+)[)）]$/)?.[1] ?? "").replace(town, "").trim();
+// 毎年決まった奉納日(鷲宮催馬楽神楽など。SEO-20261117-2): 冒頭の「〇〇とは」の中に、日と祭礼の表。
+// 掲載中の開催(match の語を名前に含む、いちばん近いもの)があれば、その日付と開催ページへのリンクを添える。公式で確かめた日だけを data/kagura-info.json の fixedDays に書く
+const fixedDayEvent = (it, list) => (it.match ? list.find((e) => e.name.includes(it.match)) : undefined);
+const fixedDaysHtml = (info, list) => {
+  const d = info?.fixedDays;
+  if (!d?.items?.length) return "";
+  const rows = d.items.map((it) => {
+    const ev = fixedDayEvent(it, list);
+    return `<tr><th scope="row">${esc(it.date)}</th><td><b>${esc(it.name)}</b>${it.note ? `<span class="fd-note">${esc(it.note)}</span>` : ""}${ev ? `<a class="textlink fd-next" href="/events/${esc(ev.id)}.html">${cl(`${dayLabel(ev.start.slice(0, 10))}の開催を見る`)}</a>` : ""}</td></tr>`;
+  }).join("");
+  const src = d.source?.url ? `<p class="meta">出典: <a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.name)}</a>${d.checked ? `(${esc(jpDate(d.checked))}確認)` : ""}</p>` : "";
+  return `<section class="fixed-days" aria-labelledby="k-days"><h3 id="k-days">${esc(d.heading)}</h3><table class="info fd-table">${rows}</table>${d.note ? `<p class="fd-lead">${cl(d.note)}</p>` : ""}${src}</section>`;
+};
+// 説明文の {next}: 掲載中のいちばん近い奉納日(「次は12月1日(火)の大酉祭。」)。なければ消す
+const fixedNextText = (info, list) => {
+  const ev = list[0], it = ev && info?.fixedDays?.items?.find((x) => fixedDayEvent(x, [ev]));
+  return ev && it ? `次は${mdw(ev.start.slice(0, 10))}の${it.name}。` : "";
+};
 for (const k of kaguras) {
   const list = upcoming.filter((e) => e.kagura === k), reg = regular.filter((r) => r.kagura === k);
   const first = [...events, ...regular].find((e) => e.kagura === k);
@@ -1016,11 +1035,11 @@ for (const k of kaguras) {
   // 日程の一覧は県のページが受け持つ神楽(広島神楽): 開催予定の欄の先頭に、県のスケジュールへの入口
   const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub.replace(/県$/, ""))}神楽スケジュールを見る</a></section>` : "";
   // 冒頭の要約: 「〇〇とは」と概要(3行ほど)。その下に折り畳みの5つの欄(kaguraFolds)
-  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}</section>`;
+  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}${fixedDaysHtml(info, list)}</section>`;
   const scheduleHtml = `${hubHtml}${k === "庄内神楽" && !none ? upcomingSummary(list, { formatWhen: whenOf, level: "h3" }) : ""}${listHtml}${reg.length ? `${list.length ? `<p class="mhead">毎週・毎晩の定期公演</p>` : ""}${reg.map((r, j) => regCard(r, { withTag: false }) + kAt(kOrder.length + j)).join("")}` : ""}${none ? pendingBlock({ label: k, past, near: nearbyUpcoming([...new Set(past.map((e) => e.prefecture).concat(first.prefecture))]), pastId: "k-past", withKagura: false, h: "h3" }) : pastMore(past, { withKagura: false })}`;
   write(`dist/kagura/${k}.html`, layout({
     title: `${title} | ${cfg.siteName}`,
-    desc: fillDesc(seo.desc ?? (none && past.length ? `${k}の日程。現在の開催予定はありません。直近では${jpDate(past[0].start.slice(0, 10))}に${past[0].name}が開かれました。${info ? info.intro : ""}` : k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : grouped ? `${k}${seo.title?.match(/^[^(（]+([(（][^)）]+[)）])/)?.[1] ?? ""}の日程。${townLead}会場・料金をまとめています。${info ? info.intro : ""}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + (reg.length ? "、" : "。") : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`), [placesOf([...list, ...reg], true) && `主な開催地は${placesOf([...list, ...reg], true)}です。`, "日時・会場・料金と、公式情報へのリンクを載せています。", info && `${k}の特徴や見どころも紹介しています。`]),
+    desc: fillDesc(seo.desc?.replace("{next}", fixedNextText(info, list)) ?? (none && past.length ? `${k}の日程。現在の開催予定はありません。直近では${jpDate(past[0].start.slice(0, 10))}に${past[0].name}が開かれました。${info ? info.intro : ""}` : k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : grouped ? `${k}${seo.title?.match(/^[^(（]+([(（][^)）]+[)）])/)?.[1] ?? ""}の日程。${townLead}会場・料金をまとめています。${info ? info.intro : ""}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + (reg.length ? "、" : "。") : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`), [placesOf([...list, ...reg], true) && `主な開催地は${placesOf([...list, ...reg], true)}です。`, "日時・会場・料金と、公式情報へのリンクを載せています。", info && `${k}の特徴や見どころも紹介しています。`]),
     path: kaguraHref(k), active: "/kagura/", noindex: !kaguraIndexed(k),
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}

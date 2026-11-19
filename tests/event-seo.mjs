@@ -91,6 +91,47 @@ export function eventSeoTests({ ok, section, build }) {
       rmSync(out3, { recursive: true, force: true });
     }
   }
+  // SEO-20261117-2: 毎年決まった奉納日のある神楽(鷲宮催馬楽神楽から)。種類のページのタイトル・説明文を「年◯回の奉納日」の型にし、冒頭の「〇〇とは」に奉納日の表
+  section("種類のページ: 毎年決まった奉納日の表と、タイトル・説明文(SEO-20261117-2)");
+  {
+    const out4 = "dist-test-kagura-days", dir4 = mkdtempSync(join(tmpdir(), "kagura-days-"));
+    try {
+      const base = JSON.parse(read("tests/fixtures/events.test.json").replace(/^﻿/, "")).find((x) => x.id === "t-full");
+      const mk = (id, name, start) => ({ ...base, id, name, kagura: "テスト奉納神楽", start, end: undefined });
+      // 並びは日付順でなくてよい(ビルドが日付で並べる)。過去の開催は「次」にしない
+      const evs = [mk("t-days-b", "テスト神社 冬祭のテスト奉納神楽", "2027-01-01T00:00"), mk("t-days-a", "テスト神社 初酉祭のテスト奉納神楽", "2026-12-01T00:00"), mk("t-days-old", "テスト神社 秋祭のテスト奉納神楽", "2026-10-01T00:00")];
+      const evFile = join(dir4, "events.json"), infoFile = join(dir4, "kagura-info.json");
+      writeFileSync(evFile, JSON.stringify(evs));
+      const info = {
+        tagline: "テスト県 ・ 年3回奉納される神楽", intro: "テスト神社に伝わる神楽です。", source: "テスト市",
+        fixedDays: { heading: "年3回の奉納日", items: [{ date: "1月1日", name: "冬祭", match: "冬祭", note: "午前0時ごろからも" }, { date: "10月1日", name: "秋祭", match: "秋祭" }, { date: "12月の最初の酉の日", name: "初酉祭", match: "初酉祭" }], note: "どの日も<b>テスト神社</b>の神楽殿で奉納されます。", source: { name: "テスト市「テスト奉納神楽」", url: "https://example.com/days" }, checked: "2026-11-20" },
+        seo: { title: "テスト奉納神楽 — 年3回の奉納日と見どころ(テスト神社)", desc: "テスト神社の神楽殿で、1月1日・10月1日・12月の最初の酉の日の年3回奉納される神楽。{next}自由に見学できます。" },
+      };
+      // ほかの種類の情報(クイズの出典などに使う)は実際のデータのまま、テスト用の種類を1つ足す
+      writeFileSync(infoFile, JSON.stringify({ ...JSON.parse(read("data/kagura-info.json").replace(/^﻿/, "")), "テスト奉納神楽": info }));
+      const r = build(evFile, out4, { KAGURA_INFO_FILE: infoFile, BUILD_NOW: "2026-11-20T12:00" });
+      ok(r.status === 0, "ビルドが通る", (r.stderr ?? "").slice(0, 300));
+      const $ = cheerio.load(read(join(out4, "kagura", "テスト奉納神楽.html")));
+      ok($("title").text() === `${info.seo.title} | 神楽めぐり` && $("h1").text().trim() === "テスト奉納神楽", "タイトルは seo.title のとおり(見出し h1 は名前のまま)", $("title").text());
+      ok($('meta[name="description"]').attr("content").startsWith("テスト神社の神楽殿で、1月1日・10月1日・12月の最初の酉の日の年3回奉納される神楽。次は12月1日(火)の初酉祭。自由に見学できます。"), "説明文の {next} は、掲載中のいちばん近い奉納日(過去の開催は使わない)", $('meta[name="description"]').attr("content"));
+      const sec = $("main .kagura-summary .fixed-days"), rows = sec.find("tr");
+      ok(sec.length === 1 && $("main h2").first().text() === "テスト奉納神楽とは" && sec.find("h3").text() === "年3回の奉納日", "奉納日の表は、冒頭の「〇〇とは」の段の中(最初の h2 は「〇〇とは」のまま)");
+      ok(rows.length === 3 && rows.map((_, tr) => $(tr).find("th").text()).get().join() === "1月1日,10月1日,12月の最初の酉の日" && rows.first().find(".fd-note").text() === "午前0時ごろからも", "データの順に、日・祭礼・注記を出す");
+      ok(rows.eq(0).find("a.fd-next").attr("href") === "/events/t-days-b.html" && rows.eq(2).find("a.fd-next").attr("href") === "/events/t-days-a.html" && rows.eq(1).find("a").length === 0, "掲載中の開催がある日だけ、開催ページへのリンク(終わった開催にはつながない)");
+      ok(rows.eq(2).find("a.fd-next").text().replace(/\s/g, "") === "2026年12月1日(火)の開催を見る", "リンクの文は開催の日付(曜日つき)", rows.eq(2).find("a.fd-next").text());
+      ok(sec.find(".fd-lead").text().includes("<b>テスト神社</b>") && sec.find(`.meta a[href="${info.fixedDays.source.url}"]`).length === 1 && sec.find(".meta").text().includes("2026年11月20日確認"), "注記はエスケープし、出典のリンクと確認日を添える");
+      ok($(".kagura-folds").length === 1 && $("main").html().indexOf("fixed-days") < $("main").html().indexOf("kagura-folds"), "表は折り畳み(歴史〜開催予定)より上");
+    } finally {
+      rmSync(dir4, { recursive: true, force: true });
+      rmSync(out4, { recursive: true, force: true });
+    }
+  }
+  // 実際のデータ: fixedDays を持つ神楽は、日の重複がなく、出典の URL と確認日がある(特定の神楽には縛らない)
+  {
+    const K = JSON.parse(read("data/kagura-info.json").replace(/^﻿/, ""));
+    const bad = Object.entries(K).filter(([, v]) => v.fixedDays).filter(([, v]) => { const d = v.fixedDays; return !d.items?.length || new Set(d.items.map((x) => x.date)).size !== d.items.length || !d.items.every((x) => x.date && x.name) || !/^https:\/\//.test(d.source?.url ?? "") || !/^\d{4}-\d\d-\d\d$/.test(d.checked ?? ""); }).map(([k]) => k);
+    ok(!bad.length, "奉納日の表のデータ: 日の重複がなく、日・祭礼・出典の URL・確認日がそろう", bad.join(" "));
+  }
   // 実際のデータ: 検索語「あさひが丘神楽団」
   const L = JSON.parse(read("data/events.json").replace(/^﻿/, ""));
   const asa = (Array.isArray(L) ? L : L.events).find((e) => e.id === "npo-hiroshima-0cf097bb64");
