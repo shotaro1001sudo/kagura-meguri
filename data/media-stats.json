@@ -1,31 +1,31 @@
 {
- "updated": "2026-11-17",
+ "updated": "2026-11-20",
  "window": 28,
  "search": {
-  "from": "2026-10-18",
-  "to": "2026-11-14",
-  "impressions": 16000,
-  "clicks": 1500,
-  "impressions7": 6700,
-  "clicks7": 650
+  "from": "2026-10-21",
+  "to": "2026-11-17",
+  "impressions": 19000,
+  "clicks": 1800,
+  "impressions7": 7300,
+  "clicks7": 720
  },
  "analytics": {
-  "from": "2026-10-18",
-  "to": "2026-11-16",
-  "pageviews": 3100,
-  "users": 810
+  "from": "2026-10-21",
+  "to": "2026-11-19",
+  "pageviews": 2900,
+  "users": 890
  },
  "total": {
   "from": "2026-10-19",
-  "to": "2026-11-16",
-  "pageviews": 3100
+  "to": "2026-11-19",
+  "pageviews": 3500
  },
  "topPages": [
   "/pref/広島県.html",
+  "/events/npo-hiroshima-c63449d5cb.html",
+  "/events/geihoku-kagura-kenkyu-2026.html",
+  "/events/hamada-nihon-iwami-kagura-taikai-2027.html",
   "/kagura/遠山の霜月祭.html",
-  "/kagura/広島神楽.html",
-  "/events/tohyama-shimotsuki-kamimachi-2026.html",
-  "/history/",
-  "/kagura/花祭.html"
+  "/month/2026-11.html"
  ]
 }
