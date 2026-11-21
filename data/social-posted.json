@@ -833,5 +833,77 @@
     "bufferId": "6b00acddd425f1473a102095",
     "date": "2026-11-22",
     "hash": "90fbae01effd2017"
+  },
+  {
+    "id": "r:feature:番楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": "tail",
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-22T14:00:00.000Z",
+    "bufferId": "6b01ef158bd84d5966121f0c",
+    "date": "2026-11-22",
+    "hash": "3c6d10e54d78fc64"
+  },
+  {
+    "id": "r:kind:鶴岡八幡宮の御神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-22T18:00:00.000Z",
+    "bufferId": "6b01ef150247969092f7b6c5",
+    "date": "2026-11-22",
+    "hash": "6c74664359194300"
+  },
+  {
+    "id": "hanamatsuri-toei-ashikome-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-22T22:00:00.000Z",
+    "bufferId": "6b01ef15846b0ee9073114b9",
+    "date": "2026-11-23",
+    "hash": "f83a6c15968a63df"
+  },
+  {
+    "id": "r:program:岩手の神楽:3",
+    "type": "reading",
+    "style": "label",
+    "link": "tail",
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-23T02:00:00.000Z",
+    "bufferId": "6b01ef15846b0ee9073114e6",
+    "date": "2026-11-23",
+    "hash": "b83e311051343788"
+  },
+  {
+    "id": "r:feature:平戸神楽:2",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-23T06:00:00.000Z",
+    "bufferId": "6b01ef16846b0ee90731150c",
+    "date": "2026-11-23",
+    "hash": "bc0f8340138cdcdd"
+  },
+  {
+    "id": "npo-hiroshima-4163cf22c6",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-23T10:00:00.000Z",
+    "bufferId": "6b01ef16846b0ee907311534",
+    "date": "2026-11-23",
+    "hash": "686d4e275c6b4dde"
   }
 ]
