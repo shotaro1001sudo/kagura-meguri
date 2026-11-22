@@ -6,8 +6,11 @@
 // サイト本体のテストは、テスト用のサイト(dist-test)を先に1回だけ組み立ててから、いくつかのグループに分けて同時に動かす
 // (分け方は tests/run.mjs の SECONDS と groupOf)。グループの数は TEST_GROUPS で変えられる(既定は CPU の数に合わせて 2〜5)。
 // 結果は、終わったものから順ではなく、決まった順(開催データ → サイト本体)にまとめて出す。どれか1つでも落ちたら失敗。
+// 全部成功したら、テストが作った出力フォルダ(dist-test-…)を最後に消す。フォルダの一番上に溜まらないように(2026-11-22)。
+// 共通のテスト用サイト dist-test は、中身を見られるように残す。失敗したときは、原因を見られるように何も消さない。
 import { spawn } from "node:child_process";
 import { cpus } from "node:os";
+import { readdirSync, rmSync } from "node:fs";
 import { DATA_TESTS } from "../scripts/admin/publish.mjs";
 
 const quick = process.argv.includes("--quick");
@@ -44,4 +47,6 @@ if (failed.length) {
   console.log(`失敗したファイル: ${failed.map((r) => r.file).join(", ")}`);
   process.exit(1);
 }
-console.log("すべて成功しました");
+const leftovers = readdirSync(".", { withFileTypes: true }).filter((d) => d.isDirectory() && d.name.startsWith("dist-test-")).map((d) => d.name);
+for (const d of leftovers) rmSync(d, { recursive: true, force: true });
+console.log(`すべて成功しました${leftovers.length ? `(テストの出力フォルダ ${leftovers.length} 個を片づけました)` : ""}`);
