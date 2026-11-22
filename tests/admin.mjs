@@ -149,6 +149,10 @@ export async function adminTests({ ok, section }) {
   // 前回の予定は動いていても、その前に動かなかった回があれば、数えて知らせる(止めていた期間は数えない)
   const slotsMissed = missedSlots("0 18 */2 * *", { now: J("2026-11-08T10:00"), floor: J("2026-10-30T00:00"), runStarts: [J("2026-11-07T18:05"), J("2026-11-03T18:30")] });
   ok(slotsMissed.map((x) => new Date(x + 9 * 3600e3).toISOString().slice(0, 10)).join() === "2026-10-31,2026-11-01,2026-11-05", "直近の予定のうち、動いた記録がない回だけを数える(数え始めより前は数えない)", JSON.stringify(slotsMissed));
+  // PC が寝ていて、アプリが開いたときに遅れて動いた回は「動いた」(2026-11-22 運営者の判断)。次の予定より後に始まった実行は、前の回の分にはしない
+  const lateRun = missedSlots("0 18 */2 * *", { now: J("2026-11-08T10:00"), floor: J("2026-11-04T00:00"), runStarts: [J("2026-11-05T21:15"), J("2026-11-07T18:05")] });
+  const lateDays = (xs) => xs.map((x) => new Date(x + 9 * 3600e3).toISOString().slice(0, 10)).join();
+  ok(lateDays(lateRun) === "" && lateDays(missedSlots("0 18 */2 * *", { now: J("2026-11-08T10:00"), floor: J("2026-11-04T00:00"), runStarts: [J("2026-11-07T18:05")] })) === "2026-11-05", "遅れても次の予定までに動いた回は数えず、次の予定の実行を前の回の分にはしない", JSON.stringify(lateRun));
   ok(tk.once.finished && !tk.note.finished && tk.note.issues.some((x) => /途中で止まりました.*Note にログインする/.test(x)) && TT.attention >= 1, "1回だけのタスクで動き終えたものは「完了」。前回の実行が途中で止まったものは、人がやることを添えて知らせる", JSON.stringify(tk.note.issues));
   // 止まった実行のセッションをアーカイブしたら(=別のところで対応が済んだ)、知らせない(2026-11 の調査: 17件は別のセッションで掲載済みなのに、注意が残っていた)
   writeFileSync(join(TD, "local_a.json"), JSON.stringify({ scheduledTaskId: "note", createdAt: J("2026-10-21T20:59"), isArchived: true, postTurnSummary: { status_category: "blocked", status_detail: "ログインしていない", needs_action: "Note にログインする" } }));

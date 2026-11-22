@@ -130,7 +130,8 @@ const LOOKBACK = 14 * 864e5;
 /**
  * 直近の予定(cron)のうち、動いた記録がないものの時刻。
  * 数え始めは、作った日・アプリが記録している「ここから数える」時刻(止めていた期間を除く)・14日前の遅いほう。
- * 動いた記録: 予定の時刻の10分前〜2時間後に始まった実行(runStarts)か、lastScheduledFor
+ * 動いた記録: 予定の時刻の10分前〜次の予定の10分前に始まった実行(runStarts)か、lastScheduledFor。
+ * PC が寝ていて、アプリが開いたときに取り戻した(遅れて動いた)回も「動いた」と数える(2026-11-22 運営者の判断)
  */
 export function missedSlots(cron, { now, floor = null, runStarts = [], lastScheduledFor = null }) {
   const out = [];
@@ -138,7 +139,8 @@ export function missedSlots(cron, { now, floor = null, runStarts = [], lastSched
   for (let i = 0; i < 100; i++) {
     const slot = cronStep(cron, at, 1);
     if (slot == null || slot > now - GRACE) break;
-    const ran = runStarts.some((r) => r != null && r >= slot - 10 * 60e3 && r <= slot + GRACE) || (lastScheduledFor != null && Math.abs(lastScheduledFor - slot) < 60e3);
+    const until = (cronStep(cron, slot, 1) ?? Infinity) - 10 * 60e3;
+    const ran = runStarts.some((r) => r != null && r >= slot - 10 * 60e3 && r < until) || (lastScheduledFor != null && Math.abs(lastScheduledFor - slot) < 60e3);
     if (!ran) out.push(slot);
     at = slot;
   }
@@ -172,7 +174,7 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
     const ranSince = Math.max(lastFor ?? -Infinity, last ?? -Infinity);
     const missed = !!(t.enabled && prev != null && prev > (created ?? -Infinity) && !(ranSince >= prev - GRACE));
     const list = runMap.get(t.id) || [];
-    // 直近14日で、予定どおりに動かなかった回(止めているタスクは数えない)
+    // 直近14日で、動かなかった回(遅れても次の予定までに動いた回と、止めているタスクは数えない)
     let recentMissed = [];
     if (t.enabled && t.cronExpression && !error) {
       const floor = Math.max(created ?? -Infinity, ms(t.missedRunScanFloor) ?? -Infinity);
@@ -184,7 +186,7 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
     // 気をつけること(予定タスクの画面と、概要の「予定タスク」の信号に出す)
     const issues = [];
     if (missed) issues.push(`${fmt(prev)} の予定に、動いた記録がありません`);
-    else if (recentMissed.length) issues.push(`直近14日で、予定どおりに動かなかった回が ${recentMissed.length} 回あります(${recentMissed.slice(-3).map(fmt).join("・")})`);
+    else if (recentMissed.length) issues.push(`直近14日で、動かなかった回が ${recentMissed.length} 回あります(${recentMissed.slice(-3).map(fmt).join("・")})`);
     // 止まった実行も、そのセッションをアーカイブしたら(=対応が済んだ)知らせない。人の返事を待つ実行は、別のセッションで片づけることがある(2026-11 の調査は、別のセッションで17件を掲載済み)
     if (t.enabled && latest?.status === "blocked" && !latest.archived) issues.push(`前回の実行が途中で止まりました${latest.needsAction ? "(人がやること: " + latest.needsAction + "。済んでいれば、そのセッションをアーカイブすると消えます)" : ""}`);
     const out = { id: t.id, title: t.displayName || fm.name || t.id, description: fm.description || "", schedule, enabled: !!t.enabled,
