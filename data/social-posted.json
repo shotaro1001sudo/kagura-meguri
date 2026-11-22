@@ -905,5 +905,77 @@
     "bufferId": "6b01ef16846b0ee907311534",
     "date": "2026-11-23",
     "hash": "686d4e275c6b4dde"
+  },
+  {
+    "id": "r:program:巫女神楽:0",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-23T14:00:00.000Z",
+    "bufferId": "6b034633846b0ee907b1e710",
+    "date": "2026-11-23",
+    "hash": "f76276515c9560a2"
+  },
+  {
+    "id": "r:feature:平戸神楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-23T18:00:00.000Z",
+    "bufferId": "6b034634d864a01105ee23c7",
+    "date": "2026-11-23",
+    "hash": "a88ca587f4ae8d7b"
+  },
+  {
+    "id": "hamada-nagahama-kamiage-2026-11-28",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-23T22:00:00.000Z",
+    "bufferId": "6b034634d5eabfb8ccd4be87",
+    "date": "2026-11-24",
+    "hash": "7e90f89de11245c6"
+  },
+  {
+    "id": "r:kind:伊勢大神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-24T02:00:00.000Z",
+    "bufferId": "6b034634d5eabfb8ccd4bead",
+    "date": "2026-11-24",
+    "hash": "ae2b56c40e156320"
+  },
+  {
+    "id": "r:feature:平戸神楽:0",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-24T06:00:00.000Z",
+    "bufferId": "6b034634cc364169c17dfdcb",
+    "date": "2026-11-24",
+    "hash": "853ce49ac754ada0"
+  },
+  {
+    "id": "takachiho-yokagura-429a697da7",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-24T10:00:00.000Z",
+    "bufferId": "6b034634c72676f5e9560398",
+    "date": "2026-11-24",
+    "hash": "6213259153940858"
   }
 ]
