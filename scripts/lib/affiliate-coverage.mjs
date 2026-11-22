@@ -45,7 +45,9 @@ export function affiliateCoverage({ events, affiliate = {}, planning = {}, more 
     ].filter(Boolean);
     return { id: e.id, name: e.name, stay, experience, rental, learn, furusato, missing };
   });
-  const expiring = [...(planning.offers ?? []).map(o=>({...o,source:"data/visitor-planning.json"})), ...(more?.offers ?? []).map(o=>({...o,source:"data/more-offers.json"}))]
+  // 期限を知らせるのは、サイトに出る広告だけ。枠(カテゴリ)ごと止めているもの(運営者の判断で止めた観覧用品・本など)は、期限が切れても何も変わらないので数えない
+  const categoryOn = (settings, o) => settings?.categories?.[o.category]?.enabled === true;
+  const expiring = [...(planning.offers ?? []).filter(o=>categoryOn(planning,o)).map(o=>({...o,source:"data/visitor-planning.json"})), ...(more?.offers ?? []).filter(o=>categoryOn(more,o)).map(o=>({...o,source:"data/more-offers.json"}))]
     .filter((o) => o.enabled && o.approved && typeof o.expiresAt === "string")
     .map((o) => ({ id: o.id, source:o.source, title: o.title, expiresAt: o.expiresAt, days: daysUntil(today, o.expiresAt) }))
     .filter((o) => o.days <= warnDays)

@@ -6,16 +6,24 @@ export function affiliateCoverageTests({ ok, section }) {
   const planning = JSON.parse(readFileSync("data/visitor-planning.json", "utf8"));
   const affiliate = { rakutenAffiliateId: "r.test", valueCommerceSid: "1111111", jalanPid: "2222222", jalanActivityPid: "3333333" };
   const auto = { id: "auto-1", name: "自動収集の公演", start: "2026-11-01T18:00:00+09:00", prefecture: "高知県", city: "長岡郡大豊町", auto: true };
-  const today = "2026-10-26";
+  // 本番データの日付(確認日・期限)は、再確認のたびに変わる。決まった日付ではなく、データの日付から測る
+  const addDays = (d, k) => new Date(Date.parse(d) + k * 864e5).toISOString().slice(0, 10);
+  const shown = (s) => s.offers.filter((o) => o.enabled && o.approved && s.categories?.[o.category]?.enabled === true);
+  const today = shown(planning).map((o) => o.verifiedAt).sort().at(-1); // 出ている広告が、すべて確認済みになる日
+  const planningOn = { ...planning, categories: Object.fromEntries(Object.keys(planning.categories).map((k) => [k, { enabled: true }])) }; // 止めている枠も有効にした写し
   const cov = affiliateCoverage({ events: [auto], affiliate, planning, today });
   const row = cov.rows[0];
   ok(row.stay.join() === "じゃらん,楽天トラベル" && row.experience && row.rental.length === 2 && row.missing.length === 0, "提携IDと承認済みの広告がそろえば、自動収集の開催にも宿・体験・移動がすべて紐づく", JSON.stringify(row));
   ok(coverageReport(cov).text.includes("✅ 自動収集の公演: 宿 じゃらん・楽天トラベル / 体験 じゃらん遊び・体験 / 移動 レンタカー・カーシェア") && !coverageReport(cov).attention, "レポートに、開催ごとの紐づけを書く(足りなければ注意にする)");
   const none = affiliateCoverage({ events: [auto], affiliate: {}, planning, today });
   ok(none.missingIds.length === 3 && none.rows[0].missing.join() === "宿,体験" && coverageReport(none).attention, "提携IDが未設定なら、紐づかないことを注意として知らせる");
-  const soon = affiliateCoverage({ events: [], affiliate, planning, today: "2026-11-15" });
+  const soon = affiliateCoverage({ events: [], affiliate, planning: planningOn, today: addDays(shown(planningOn).map((o) => o.expiresAt).sort()[0], -9) });
   ok(soon.expiring.length > 0 && soon.expiring.every((o) => o.days <= 14) && coverageReport(soon).attention && coverageReport(soon).text.includes("再確認期限まで"), "掲載の再確認期限が14日以内の広告を、期限切れで表示が止まる前に知らせる");
-  const after = affiliateCoverage({ events: [auto], affiliate, planning, today: "2026-11-30" });
+  // 枠(カテゴリ)ごと止めている広告は、サイトに出ないので、期限を知らせない(2026-11-22: 止めている観覧用品・本の期限で、管理者ページが注意になっていた)
+  const offIds = planning.offers.filter((o) => planning.categories?.[o.category]?.enabled !== true).map((o) => o.id);
+  const offDay = addDays(planning.offers.filter((o) => offIds.includes(o.id)).map((o) => o.expiresAt).sort()[0] ?? today, -3);
+  ok(offIds.length > 0 && affiliateCoverage({ events: [], affiliate, planning: planningOn, today: offDay }).expiring.some((o) => offIds.includes(o.id)) && !affiliateCoverage({ events: [], affiliate, planning, today: offDay }).expiring.some((o) => offIds.includes(o.id)), "止めている枠の広告は、期限が近くても知らせない(枠を有効にすれば知らせる)");
+  const after = affiliateCoverage({ events: [auto], affiliate, planning, today: addDays(shown(planning).filter((o) => o.category === "rental").map((o) => o.expiresAt).sort().at(-1), 6) });
   ok(after.rows[0].rental.length === 0 && after.expiring.some((o) => o.days < 0) && coverageReport(after).text.includes("期限が切れて"), "期限切れの広告は紐づけず、止まっていることを知らせる");
   const unknownPref = affiliateCoverage({ events: [{ ...auto, prefecture: "未確認県" }], affiliate, planning, today });
   ok(!unknownPref.rows[0].experience && unknownPref.rows[0].missing.includes("体験"), "47都道府県にない県名は、体験を推測で紐づけない");
@@ -24,7 +32,7 @@ export function affiliateCoverageTests({ ok, section }) {
   const moreDay=more.offers.map(o=>o.verifiedAt).filter(Boolean).sort().at(-1), later={...auto,start:"2026-12-20T18:00:00+09:00"}; // 確認日が today より後の広告もあるので、その日で監査する
   const bookCov=affiliateCoverage({events:[{...later,prefecture:"島根県",city:"浜田市",kagura:"石見神楽"},{...later,id:"unknown",prefecture:"不明",kagura:"未確認"}],affiliate,planning,more:moreOn,today:moreDay});
   ok(bookCov.rows[0].learn.length>0&&bookCov.rows[0].furusato.length>0&&bookCov.counts.furusato_unmatched===1,"公開済み商品と自動公演の地域/typeを同じ索引で監査");
-  const expiredBooks=affiliateCoverage({events:[],affiliate,planning,more,today:"2026-12-01"});
+  const expiredBooks=affiliateCoverage({events:[],affiliate,planning,more:moreOn,today:addDays(more.offers.map(o=>o.expiresAt).sort().at(-1),1)});
   ok(expiredBooks.expiring.some(o=>o.source==="data/more-offers.json")&&expiredBooks.counts.expired>0,"本・返礼品の期限を共通監査へ含める");
   const many=affiliateCoverage({events:Array.from({length:10000},(_,i)=>({...auto,id:String(i)})),affiliate,planning,more,today});
   ok(many.counts.learn_unmatched===10000&&coverageReport(many).text.split("\n").length<60,"1万公演の診断は全件集計し表示を50件までに制限");

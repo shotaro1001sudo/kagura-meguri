@@ -167,7 +167,9 @@ ID がそろったら、Claude に「config.json に ◯◯ の ID を入れて�
 
 `data/more-offers.json` に、本人が楽天アフィリエイトで発行したリンクを登録すると表示されます。
 
-**2026-10-30 運営者の判断で停止中:** 本・DVD(`more-offers.json` の `categories.learn.enabled: false`)、ふるさと納税(同 `categories.furusato.enabled: false`)、観覧用品(`visitor-planning.json` の `categories.supplies.enabled: false`)は表示していません。来訪者の目的(公演を調べる)とずれ、購入・寄付が見込みにくいため。商品データは残してあるので、`enabled` を `true` に戻せば再開できます。宿・レンタカー/カーシェア・体験は続けています。
+**2026-10-30 運営者の判断で停止中:** 本・DVD(`more-offers.json` の `categories.learn.enabled: false`)、ふるさと納税(同 `categories.furusato.enabled: false`)、観覧用品(`visitor-planning.json` の `categories.supplies.enabled: false`)は表示していません。来訪者の目的(公演を調べる)とずれ、購入・寄付が見込みにくいため。商品データは残してあるので、`enabled` を `true` に戻せば再開できます。宿・レンタカー/カーシェア・体験は続けています。(ふるさと納税は 2026-11-08 に再開。MON-4)
+
+**広告の期限の知らせ(2026-11-22):** 管理者ページの「広告リンクの期限」と週次の収集レポートは、枠(カテゴリ)を表示している広告だけを数えます。止めている枠の商品は、期限が切れても表示は変わらないので知らせません。枠を再開するときは、商品のリンク先を確かめ直し、`verifiedAt`・`expiresAt` を更新してください。
 
 | カテゴリ | 表示する場所 | provider |
 |---|---|---|

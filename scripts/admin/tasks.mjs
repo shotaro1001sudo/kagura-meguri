@@ -185,7 +185,8 @@ export function loadTasks({ file = findTasksFile(), now = Date.now(), runs = fal
     const issues = [];
     if (missed) issues.push(`${fmt(prev)} の予定に、動いた記録がありません`);
     else if (recentMissed.length) issues.push(`直近14日で、予定どおりに動かなかった回が ${recentMissed.length} 回あります(${recentMissed.slice(-3).map(fmt).join("・")})`);
-    if (t.enabled && latest?.status === "blocked") issues.push(`前回の実行が途中で止まりました${latest.needsAction ? "(人がやること: " + latest.needsAction + ")" : ""}`);
+    // 止まった実行も、そのセッションをアーカイブしたら(=対応が済んだ)知らせない。人の返事を待つ実行は、別のセッションで片づけることがある(2026-11 の調査は、別のセッションで17件を掲載済み)
+    if (t.enabled && latest?.status === "blocked" && !latest.archived) issues.push(`前回の実行が途中で止まりました${latest.needsAction ? "(人がやること: " + latest.needsAction + "。済んでいれば、そのセッションをアーカイブすると消えます)" : ""}`);
     const out = { id: t.id, title: t.displayName || fm.name || t.id, description: fm.description || "", schedule, enabled: !!t.enabled,
       nextRun: iso(next), lastRun: iso(last), missed, missedAt: missed ? iso(prev) : null, error,
       recentMissed: recentMissed.map(iso), finished, browser: !!(fm.browser && t.enabled), issues };
@@ -212,7 +213,7 @@ export function loadRuns(dir) {
     const sum = s.postTurnSummary || {};
     const run = { startedAt: iso(ms(s.createdAt)), lastActivityAt: iso(ms(s.lastActivityAt)),
       status: sum.status_category || (s.completedTurns ? "completed" : "unknown"),
-      summary: String(sum.status_detail || s.turnWrapUp?.description || "").slice(0, 300), needsAction: String(sum.needs_action || "").slice(0, 300) };
+      summary: String(sum.status_detail || s.turnWrapUp?.description || "").slice(0, 300), needsAction: String(sum.needs_action || "").slice(0, 300), archived: s.isArchived === true };
     if (!map.has(s.scheduledTaskId)) map.set(s.scheduledTaskId, []);
     map.get(s.scheduledTaskId).push(run);
   }

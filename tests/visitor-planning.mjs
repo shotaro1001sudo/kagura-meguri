@@ -113,21 +113,23 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
   ok(!supplied.categories.experiences.enabled&&supplied.categories.rental.enabled&&!published.root().text().includes('ポイント10倍')&&!published.root().text().includes('2,268円'),'体験は無効、レンタカーのみ追加有効、期限付きの価格・ポイントを固定表示しない');
   ok(offersFor(suppliesOn,'supplies',{},'2026-11-24').length===3&&offersFor(suppliesOn,'supplies',{},'2026-11-25').length===0,'再確認期限の当日まで表示し、翌日から3商品を非表示');
 
+  // 本番のレンタカー・カーシェアは、再確認のたびに確認日・期限が変わる。決まった日付ではなく、データの日付から測る
+  const rentalOffers=supplied.offers.filter(o=>o.category==='rental'&&o.enabled),rentalDay=rentalOffers.map(o=>o.verifiedAt).sort().at(-1),rentalGone=new Date(Date.parse(rentalOffers.map(o=>o.expiresAt).sort().at(-1))+864e5).toISOString().slice(0,10);
   const ownerRental=supplied.offers.find(o=>o.provider==='rakuten-rental');
-  ok(validOffer(ownerRental,today),'本人発行のhsc画像バナーを承認条件つきで扱える');
-  for(const patch of [{url:ownerRental.url+'&pc=https://evil.test/'},{imageUrl:ownerRental.imageUrl.replace('2762496','1234567')},{url:ownerRental.url.replace('_RTLink152141','_RTLink111111')},{provider:'rakuten-ichiba'},{scope:undefined},{approved:false}])ok(!validOffer({...ownerRental,...patch},today),'バナーの組み替え・未承認・別用途を拒否: '+Object.keys(patch).join());
-  const banner=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
+  ok(validOffer(ownerRental,rentalDay),'本人発行のhsc画像バナーを承認条件つきで扱える');
+  for(const patch of [{url:ownerRental.url+'&pc=https://evil.test/'},{imageUrl:ownerRental.imageUrl.replace('2762496','1234567')},{url:ownerRental.url.replace('_RTLink152141','_RTLink111111')},{provider:'rakuten-ichiba'},{scope:undefined},{approved:false}])ok(!validOffer({...ownerRental,...patch},rentalDay),'バナーの組み替え・未承認・別用途を拒否: '+Object.keys(patch).join());
+  const banner=cheerio.load(rentalSearch(supplied,{guide:true},rentalDay,'guide_rental'));
   ok(banner('a[rel~=sponsored]').attr('href')===RENTAL_BANNER.url&&banner('img').attr('src')===RENTAL_BANNER.imageUrl&&banner('a').attr('aria-label').includes('レンタカー'),'本人発行のリンクと画像を保持し、画像に依存しないリンク名を持つ');
-  const expired=cheerio.load(rentalSearch(supplied,{},'2026-11-25','guide_rental'));
+  const expired=cheerio.load(rentalSearch(supplied,{},rentalGone,'guide_rental'));
   ok(expired("img,[rel~=sponsored],[data-rental-search]").length===0,"バナー期限切れで通常検索を含む収益枠を省略");
 
   const carshare=supplied.offers.find(o=>o.provider==='rakuten-carshare');
-  const cars=cheerio.load(rentalSearch(supplied,{guide:true},today,'guide_rental'));
+  const cars=cheerio.load(rentalSearch(supplied,{guide:true},rentalDay,'guide_rental'));
   const shareLink=cars('[data-affiliate-partner=rakuten-carshare]');
-  ok(validOffer(carshare,today)&&shareLink.length===1&&shareLink.attr('href')===CARSHARE_BANNER.url&&shareLink.find('img').attr('src')===CARSHARE_BANNER.imageUrl,'カーシェアも本人発行のURLと画像を保持');
+  ok(validOffer(carshare,rentalDay)&&shareLink.length===1&&shareLink.attr('href')===CARSHARE_BANNER.url&&shareLink.find('img').attr('src')===CARSHARE_BANNER.imageUrl,'カーシェアも本人発行のURLと画像を保持');
   ok(shareLink.attr('aria-label').includes('カーシェア')&&!shareLink.attr('aria-label').includes('レンタカー')&&shareLink.closest('article').find('h3').text()==='カーシェアを探す','サービス名で案内しレンタカーと混同しない');
-  ok(!validOffer({...carshare,provider:'rakuten-rental'},today)&&!validOffer({...ownerRental,provider:'rakuten-carshare'},today)&&!validOffer({...carshare,imageUrl:RENTAL_BANNER.imageUrl},today),'カーシェアとレンタカーのコード・画像の取り違えを拒否');
-  ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},today).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},today).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
+  ok(!validOffer({...carshare,provider:'rakuten-rental'},rentalDay)&&!validOffer({...ownerRental,provider:'rakuten-carshare'},rentalDay)&&!validOffer({...carshare,imageUrl:RENTAL_BANNER.imageUrl},rentalDay),'カーシェアとレンタカーのコード・画像の取り違えを拒否');
+  ok(offersFor(supplied,'rental',{prefecture:'宮崎県',city:'高千穂町'},rentalDay).length===2&&offersFor(supplied,'rental',{prefecture:'島根県',city:'浜田市'},rentalDay).length===2,'両サービスの入口を開催場所に限定せず案内し、利用可能と断言しない');
   const fullPage=cheerio.load(readFileSync(join(OUT,'events/t-full.html'),'utf8')),dayPage=cheerio.load(readFileSync(join(OUT,'events/t-long.html'),'utf8')),unknownPage=cheerio.load(readFileSync(join(OUT,'events/t-timeunknown.html'),'utf8')),pastPage=cheerio.load(readFileSync(join(OUT,'events/t-past.html'),'utf8'));
   ok([fullPage,dayPage,unknownPage].every(p=>p(".stay").length===0),"宿未設定では時刻に関わらず枠を省略");
   ok(!fullPage(".page-notes").text().includes("人数・宿泊日はリンク先で変更"),"未設定の宿泊条件注記も省略");
@@ -155,14 +157,14 @@ export function visitorPlanningTests({ok,section,OUT,build}) {
         const strip=event('.d-side > aside.pr-strip'),first=strip.find('.pr-strip-one').children().first();
         ok(strip.length===1&&strip.is(':last-child')&&strip.children('h2').text()==='旅の手配'&&first.is('a.strip-banner[data-affiliate-category=rental][data-affiliate-placement=event_rental]')&&first.attr('href')===rental.url&&first.is('.strip-text')&&first.find('img').length===0&&first.text().includes('レンタカーを探す')&&(first.attr('rel')||'').split(' ').includes('sponsored')&&first.attr('target')==='_blank'&&strip.find('.pr-strip-one').children().length===1&&strip.find('.pr').length===1&&strip.children().last().is('.pr.pr-foot')&&past('.pr-strip').length===0,'「旅の手配」は、宿・体験の下に1つ。中のPRは1個だけで、レンタカーの広告(画像のない広告は文字の箱)。「PR」は1つ。終了した開催には出さない');
         // 本番の設定: レンタカー・カーシェアは、発行した href と画像のまま、画像のバナーで帯に入る
-        const prod=cheerio.load(`<div>${rentalStripItems(supplied,context,today,'event_rental').join('')}</div>`),items=prod('a.strip-banner').toArray().map(x=>prod(x));
+        const prod=cheerio.load(`<div>${rentalStripItems(supplied,context,rentalDay,'event_rental').join('')}</div>`),items=prod('a.strip-banner').toArray().map(x=>prod(x));
         ok(items.length===2&&items[0].attr('href')===RENTAL_BANNER.url&&items[0].find('img').attr('src')===RENTAL_BANNER.imageUrl&&items[1].attr('href')===CARSHARE_BANNER.url&&items[1].find('img').attr('src')===CARSHARE_BANNER.imageUrl&&items.every(x=>!x.is('.strip-text')&&(x.attr('rel')||'').split(' ').includes('sponsored')&&x.attr('target')==='_blank'&&!!x.find('img').attr('alt')&&x.find('img').attr('loading')==='lazy'&&x.find('img').attr('width')==='300'&&x.find('img').attr('height')==='250'&&x.attr('data-affiliate-category')==='rental'&&x.attr('data-affiliate-placement')==='event_rental'),'帯の先頭に入るレンタカー・カーシェアは、発行済みのバナー(href と画像はそのまま。計測は今までどおり event_rental)'); }
       ok(past('.planning-ads,.planning-links,#nearby-experiences').length===0&&other(':is(a[data-affiliate-category=supplies],a[data-affiliate-category=experiences]:not(.nearby-banner),a[data-affiliate-category=rental])').length===0,'終了済み・地域不一致の公演に広告を出さない(本・ふるさと納税の紹介は別の仕組み)');
       ok(event('.d-side .stay .stay-banner').length===2&&event('[data-official-link]').length===1,'宿のバナー2件と公式情報ボタンを維持');
       ok(event('main').html().indexOf('data-official-link')<event('main').html().indexOf('planning-ads'),'公式予約情報を広告より先に表示');
     }
     const issuedOutput=join(temp,'issued');
-    const issued=build('tests/fixtures/events.test.json',issuedOutput,{VISITOR_PLANNING_FILE:'data/visitor-planning.json',TEST_PLANNING_OFF:'0',BUILD_NOW:today+'T12:00'});
+    const issued=build('tests/fixtures/events.test.json',issuedOutput,{VISITOR_PLANNING_FILE:'data/visitor-planning.json',TEST_PLANNING_OFF:'0',BUILD_NOW:rentalDay+'T12:00'});
     ok(issued.status===0,'本人提供コードの実設定でビルド成功',issued.stderr);
     if(issued.status===0){
       const actual=cheerio.load(readFileSync(join(issuedOutput,'guide.html'),'utf8'));
