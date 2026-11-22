@@ -71,6 +71,7 @@ GitHub の予定実行は 2026-11-08 ごろから毎日3〜7時間遅れ、3:00 
 - **予備:** deploy.yml の予定実行(3:00、実際は遅れて朝〜昼)は残してある。日本時間の今日すでに公開が成功していれば、組み立て・公開を飛ばす(`gate`)。Apps Script が動かなかった日も、遅れて公開はされる。
 - **鍵:** GitHub の fine-grained token(対象はこのリポジトリだけ、権限は Actions の Read and write だけ)を、Apps Script の Script properties の `KAGURA_GITHUB_DISPATCH_TOKEN` に本人が入れる。ソースや Git には書かない。期限が切れると 401 で止まり、Apps Script の失敗の通知メールが届く(公開は予備が続ける)。新しい token を同じ名前で入れ直せば戻る。
 - **有効にする手順(本人):** ① token を作る → ② 統合管理台帳の Apps Script にこのファイルを足し、Script properties に token を入れる → ③ `triggerKaguraNightlyDeploy` を手動で実行し、GitHub の Actions で build-and-deploy が動いたのを確かめる → ④ `installKaguraNightlyDeployTrigger` を手動で実行する。
+- **状態:** 2026-11-22 に設定済み(試しの起動で公開が成功し、毎日のトリガーは1件)。token の期限は 2027-11-22。期限の前に、新しい token を作って同じ名前で入れ直す。
 
 ## Claude の定期タスク(このPC)
 
