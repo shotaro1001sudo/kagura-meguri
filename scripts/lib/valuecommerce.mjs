@@ -9,8 +9,8 @@
 // 都道府県のページの「◯◯県の体験」の横長のバナー(2026-11-15 に本人のアカウントで発行。宿のバナー 468x60 と同じ大きさ)
 //   activityWide: じゃらん 遊び・体験予約(プログラムID 2139176)広告ID 2788650「汎用バナー」468x60。飛び先は jalan.net/activity/
 //   asoviewWide: アソビュー!(プログラムID 2130178)広告ID 2697387 468x60。飛び先は asoview.com
-export const VC = Object.freeze({sid:'3784232',stay:'892732997',activity:'892732911',banner:'892732859',rail:'892748424',railJtb:'892748443',railNta:'892748444',activityBanner:'892748544',asoview:'892748546',activityWide:'892748794',asoviewWide:'892748791'});
-const BANNER_ALT={banner:'じゃらんnetの宿泊予約',rail:'じゃらん限定プランの宿をじゃらんnetで探す',railJtb:'温泉宿・温泉旅行をJTBで探す',railNta:'JR・新幹線とホテルのセットを日本旅行で探す',activityBanner:'国内のレジャー・体験をじゃらん遊び・体験で予約する',asoview:'遊び・体験をアソビュー!で探す',activityWide:'国内のレジャー・体験をじゃらん遊び・体験で予約する',asoviewWide:'遊び・体験をアソビュー!で探す'};
+export const VC = Object.freeze({sid:'3784232',stay:'892732997',activity:'892732911',banner:'892755377',rail:'892748424',railJtb:'892748443',railNta:'892748444',activityBanner:'892748544',asoview:'892748546',activityWide:'892748794',asoviewWide:'892748791'});
+const BANNER_ALT={banner:'クチコミ4.3以上で1万円以下の宿のプランをじゃらんnetで探す',rail:'じゃらん限定プランの宿をじゃらんnetで探す',railJtb:'温泉宿・温泉旅行をJTBで探す',railNta:'JR・新幹線とホテルのセットを日本旅行で探す',activityBanner:'国内のレジャー・体験をじゃらん遊び・体験で予約する',asoview:'遊び・体験をアソビュー!で探す',activityWide:'国内のレジャー・体験をじゃらん遊び・体験で予約する',asoviewWide:'遊び・体験をアソビュー!で探す'};
 const BANNERS=new Set(Object.keys(BANNER_ALT));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const vcEnabled=(aff,kind)=>aff?.allowed===true && aff.sid===VC.sid && aff.pid===VC[kind];
