@@ -126,6 +126,72 @@ export function eventSeoTests({ ok, section, build }) {
       rmSync(out4, { recursive: true, force: true });
     }
   }
+  section("定期公演の「次の公演」(SEO-20261123-1)・種類のページの「次に観られる公演」(SEO-20261123-2)と月ごとの表(SEO-20261123-3)");
+  {
+    const out5 = "dist-test-next-shows", dir5 = mkdtempSync(join(tmpdir(), "next-shows-"));
+    try {
+      const base = JSON.parse(read("tests/fixtures/events.test.json").replace(/^﻿/, "")).find((x) => x.id === "t-full");
+      const mk = (id, kagura, name, start, extra = {}) => ({ ...base, id, kagura, name, start, end: undefined, venue: "テスト会館(3階)", city: "テスト郡テスト町", ...extra });
+      const evs = [
+        mk("t-nx-old", "テスト里神楽", "テスト里神楽 秋の公演", "2026-11-10T18:00"),
+        mk("t-nx-a", "テスト里神楽", "テスト里神楽 冬の公演", "2026-11-27T18:00"),
+        mk("t-nx-b", "テスト里神楽", "テスト里神楽 冬の公演", "2026-11-28T18:00"),
+        mk("t-nx-c", "テスト里神楽", "テスト里神楽 新春公演", "2027-01-02T13:00"),
+        mk("t-nx-d", "テスト里神楽", "テスト里神楽 節分公演", "2027-02-03T00:00", { timeUnknown: true }),
+        mk("t-ms-a", "テスト夜神楽", "テスト夜神楽 大会", "2026-12-05T19:30"),
+        mk("t-ms-b", "テスト夜神楽", "テスト夜神楽 新春", "2027-01-09T18:30"),
+      ];
+      const reg = JSON.parse(read("tests/fixtures/regular.test.json").replace(/^﻿/, ""));
+      const r0 = reg[0];
+      const progReg = { ...r0, id: "t-prog", name: "テスト湯治村の神楽公演", kagura: "テスト夜神楽", city: "テスト郡テスト町", seoTitle: "テスト湯治村の神楽スケジュール2026〜2027｜次の公演と料金", seoDesc: "{next}料金はおとな800〜1,200円。テスト湯治村で、地域の神楽団が週末に日替わりで上演します。", program: [{ date: "2026-11-15", time: "昼 12:30〜", troupe: "過去神楽団", hall: "ドーム" }, { date: "2026-11-21", time: "夜 20:30〜", troupe: "テスト神楽団", hall: "かむくら座" }, { date: "2026-12-05", time: "昼 12:30〜・14:30〜", troupe: "次神楽団", hall: "かむくら座" }] };
+      const evFile = join(dir5, "events.json"), regFile = join(dir5, "regular.json"), infoFile = join(dir5, "kagura-info.json");
+      writeFileSync(evFile, JSON.stringify(evs));
+      writeFileSync(regFile, JSON.stringify([...reg, progReg]));
+      const info = {
+        "テスト里神楽": { tagline: "テスト県 ・ 面をつけて演じる神楽", intro: "テスト県に伝わる里神楽で、面をつけて神話を演じます。神社への奉納のほか、ホールでの公演もあります。", source: "テスト市", seo: { title: "テスト里神楽とは｜次に観られる公演と見どころ(テスト県)", desc: "テスト県に伝わる、面をつけて神話を演じる里神楽。{upcoming}見どころと、公演の日時・会場・料金をまとめています。", nextBox: true } },
+        "テスト夜神楽": { tagline: "テスト県 ・ 夜通しの神楽", intro: "テスト県の西部に伝わる神楽で、秋祭りの夜にあちこちの神社で舞われます。囃子にのって、豪華な衣装で舞います。", source: "テスト市", seo: { title: "テスト夜神楽スケジュール{years}｜開催日程と定期公演", desc: "テスト夜神楽スケジュール{years}。これからの{counts}を、月ごとの表にまとめています。日時・会場・料金は公式で確かめた分を掲載。", monthTable: true } },
+      };
+      writeFileSync(infoFile, JSON.stringify({ ...JSON.parse(read("data/kagura-info.json").replace(/^﻿/, "")), ...info }));
+      const r = build(evFile, out5, { REGULAR_FILE: regFile, KAGURA_INFO_FILE: infoFile, BUILD_NOW: "2026-11-20T12:00" });
+      ok(r.status === 0, "ビルドが通る", (r.stderr ?? "").slice(0, 300));
+      // 定期公演: 次の公演(過去の回は使わない)を、説明文の先頭とページの先頭の段に
+      const $r = cheerio.load(read(join(out5, "regular", "t-prog.html")));
+      ok($r("title").text() === `${progReg.seoTitle} | 神楽めぐり`, "定期公演のタイトルは seoTitle のとおり", $r("title").text());
+      ok($r('meta[name="description"]').attr("content").startsWith("次の公演は11月21日(土)夜20:30〜、テスト神楽団(かむくら座)。料金はおとな800〜1,200円。"), "説明文の {next} は、今日以降でいちばん近い回の日・開演時刻・出演・会場", $r('meta[name="description"]').attr("content"));
+      const ns = $r(".d-lead > .next-show");
+      ok(ns.length === 1 && $r(".d-lead").children().first().is(".next-show") && ns.find("b").text().replace(/\s+/g, " ") === "11月21日(土) 夜 20:30〜" && ns.find(".ns-who").text() === "テスト神楽団・かむくら座" && ns.find('a[href="#program-h"]').length === 1, "ページの先頭の段(説明の上)に「次の公演」と、日程表へのリンク", ns.text());
+      ok($r("#program-h").length === 1, "リンク先の日程表がある");
+      // 日程表のない定期公演・{next} のない seoDesc は、これまでどおり
+      const $p = cheerio.load(read(join(out5, "regular", `${r0.id}.html`)));
+      ok($p(".next-show").length === 0, "日程表(program)のない定期公演には「次の公演」を出さない");
+      // 種類のページ: 次に観られる公演(同じ名前・会場で続く日はまとめる。過去の開催は使わない)
+      const $k = cheerio.load(read(join(out5, "kagura", "テスト里神楽.html")));
+      ok($k("title").text() === "テスト里神楽とは｜次に観られる公演と見どころ(テスト県) | 神楽めぐり", "種類のページのタイトルは seo.title のとおり", $k("title").text());
+      ok($k('meta[name="description"]').attr("content").includes("次に観られるのは11月27日(金)・11月28日(土)18:00〜、テスト町のテスト会館。見どころと"), "説明文の {upcoming}: 続く日をまとめ、町と会場(かっこ書きは除く)", $k('meta[name="description"]').attr("content"));
+      const nx = $k("main .kagura-summary .next-shows"), items = nx.find("li");
+      ok(nx.length === 1 && nx.find("h3").text() === "次に観られる公演" && $k("main h2").first().text() === "テスト里神楽とは", "「次に観られる公演」は冒頭の「〇〇とは」の段の中(最初の h2 は「〇〇とは」のまま)");
+      ok(items.length === 3 && items.map((_, li) => $k(li).find("a").attr("href")).get().join() === "/events/t-nx-a.html,/events/t-nx-b.html,/events/t-nx-c.html" && nx.find(".meta").text().includes("ほかの1件"), "近い順に3件まで(過去の開催は出さない)。残りの件数を添える");
+      ok(items.eq(2).find("b").text().replace(/\s+/g, " ") === "2027年1月2日(土) 13:00〜" && items.eq(0).find("b").text().replace(/\s+/g, " ") === "11月27日(金) 18:00〜", "来年の日付だけ年を付ける", items.eq(2).find("b").text());
+      ok($k(".month-schedule").length === 0, "seo.monthTable のない神楽には、月ごとの表を出さない");
+      // 種類のページ: 月ごとの日程の表と定期公演
+      const $m = cheerio.load(read(join(out5, "kagura", "テスト夜神楽.html")));
+      const ms = $m("main .kagura-summary .month-schedule"), mrows = ms.find(".ms-table:not(.ms-reg) tr");
+      ok($m("title").text() === "テスト夜神楽スケジュール2026〜2027｜開催日程と定期公演 | 神楽めぐり", "タイトルの {years} は、これからの開催の年の範囲", $m("title").text());
+      ok($m('meta[name="description"]').attr("content").startsWith("テスト夜神楽スケジュール2026〜2027。これからの開催予定2件・定期公演1件を、月ごとの表に"), "説明文の {counts} は、開催予定と定期公演の件数", $m('meta[name="description"]').attr("content"));
+      ok(ms.length === 1 && ms.find("h3").first().text() === "テスト夜神楽スケジュール(2026年12月〜2027年1月)" && mrows.length === 2 && mrows.map((_, tr) => $m(tr).find("th").text()).get().join() === "2026年12月,2027年1月", "月ごとに1行(開催のある月だけ)");
+      ok(mrows.eq(0).find("a").attr("href") === "/events/t-ms-a.html" && mrows.eq(0).find(".ms-day").text() === "5日(土) 19:30〜" && mrows.eq(0).find(".ms-where").text() === "テスト町", "各行に日・開始時刻・開催ページへのリンク・町");
+      ok(ms.find(`.ms-reg a[href="/regular/t-prog.html"]`).length === 1 && ms.find(".ms-reg td").text().includes(progReg.schedule), "定期公演は、名前(定期公演のページへ)と曜日・時刻の表");
+    } finally {
+      rmSync(dir5, { recursive: true, force: true });
+      rmSync(out5, { recursive: true, force: true });
+    }
+  }
+  // 実際のデータ: seoDesc に {next} を使う定期公演は、日ごとの日程表(program)を持つ(特定の公演には縛らない)
+  {
+    const R = JSON.parse(read("data/regular.json").replace(/^﻿/, ""));
+    const bad = R.filter((r) => r.seoDesc?.includes("{next}") && !r.program?.length).map((r) => r.id);
+    ok(!bad.length, "seoDesc の {next} は、日程表(program)のある定期公演だけ", bad.join(" "));
+  }
   // 実際のデータ: fixedDays を持つ神楽は、日の重複がなく、出典の URL と確認日がある(特定の神楽には縛らない)
   {
     const K = JSON.parse(read("data/kagura-info.json").replace(/^﻿/, ""));

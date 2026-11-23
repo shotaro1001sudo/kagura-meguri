@@ -1003,6 +1003,34 @@ const fixedNextText = (info, list) => {
   const ev = list[0], it = ev && info?.fixedDays?.items?.find((x) => fixedDayEvent(x, [ev]));
   return ev && it ? `次は${mdw(ev.start.slice(0, 10))}の${it.name}。` : "";
 };
+// 来年の日付だけ年を付ける(「11月27日(金)」「2027年1月2日(土)」)
+const dayShort = (d) => dayLabel(d, d.slice(0, 4) !== today.slice(0, 4));
+const startTime = (e) => (e.timeUnknown ? "" : `${e.start.slice(11, 16)}〜`);
+// 説明文の {upcoming}: 掲載中のいちばん近い開催(同じ名前・会場で続く日は、まとめて書く)。なければ消す(SEO-20261123-2)
+// 例: 「次に観られるのは11月27日(金)・11月28日(土)18:00〜、厚木市の神奈川工科大学厚木市子ども科学館。」
+const upcomingText = (list) => {
+  const ev = list[0];
+  if (!ev) return "";
+  const same = list.filter((e) => e.name === ev.name && e.venue === ev.venue).slice(0, 3);
+  const place = [townOf(ev.city ?? ""), (ev.venue ?? "").replace(/[(（].*$/, "")].filter(Boolean).join("の");
+  return `次に観られるのは${same.map((e) => mdw(e.start.slice(0, 10))).join("・")}${same.every((e) => startTime(e) === startTime(ev)) ? startTime(ev) : ""}${place ? `、${place}` : ""}。`;
+};
+// 説明文の {counts}: 「開催予定19件・定期公演5件」(SEO-20261123-3)
+const countsText = (list, reg) => [list.length ? `開催予定${list.length}件` : "", reg.length ? `定期公演${reg.length}件` : ""].filter(Boolean).join("・");
+// 「次に観られる公演」(seo.nextBox): 冒頭の「〇〇とは」の段の中に、近い開催を3件まで。日時・名前(開催ページへ)・会場(SEO-20261123-2)
+const nextShowsHtml = (list) => {
+  const xs = list.slice(0, 3);
+  if (!xs.length) return "";
+  return `<section class="next-shows" aria-labelledby="k-next"><h3 id="k-next">次に観られる公演</h3><ul>${xs.map((e) => `<li><b>${nobr(esc(dayShort(e.start.slice(0, 10))))}${startTime(e) ? ` ${esc(startTime(e))}` : ""}</b><a href="/events/${esc(e.id)}.html">${esc(e.name)}</a><span class="ns-where">${esc([e.venue, e.city].filter(Boolean).join("・"))}</span></li>`).join("")}</ul>${list.length > xs.length ? `<p class="meta">ほかの${list.length - xs.length}件は、下の「開催予定」に載せています。</p>` : ""}</section>`;
+};
+// 月ごとの日程の表(seo.monthTable): 冒頭の「〇〇とは」の段の中に、これからの開催を月ごとに1行、その下に定期公演の曜日・時刻(SEO-20261123-3)
+const monthTableHtml = (k, list, reg) => {
+  if (!list.length && !reg.length) return "";
+  const dayOf = (e) => { const d = e.start.slice(0, 10); return `${+d.slice(8, 10)}日(${WD[new Date(d + "T00:00:00Z").getUTCDay()]})`; };
+  const rows = [...new Set(list.map((e) => ym(e.start)))].map((key) => `<tr><th scope="row">${esc(monthLabel(key))}</th><td><ul class="ms-list">${list.filter((e) => ym(e.start) === key).map((e) => `<li><span class="ms-day">${esc(dayOf(e))}${startTime(e) ? ` ${esc(startTime(e))}` : ""}</span><a href="/events/${esc(e.id)}.html">${esc(e.name)}</a><span class="ms-where">${esc(townOf(e.city ?? ""))}</span></li>`).join("")}</ul></td></tr>`).join("");
+  const regRows = reg.map((r) => `<tr><th scope="row"><a href="/regular/${esc(r.id)}.html">${esc(r.name)}</a></th><td>${esc(regPause(r) || r.schedule)}<span class="ms-where">${esc(townOf(r.city ?? ""))}</span></td></tr>`).join("");
+  return `<section class="month-schedule" aria-labelledby="k-months">${list.length ? `<h3 id="k-months">${esc(k)}スケジュール(${esc(monthSpan(list))})</h3><div class="tablewrap"><table class="info ms-table">${rows}</table></div>` : ""}${reg.length ? `<h3${list.length ? "" : ' id="k-months"'}>毎週・毎月の定期公演</h3><div class="tablewrap"><table class="info ms-table ms-reg">${regRows}</table></div>` : ""}<p class="meta">掲載している分の日程です。演目・出演や、中止・変更は、各ページの公式情報で確かめてください。</p></section>`;
+};
 for (const k of kaguras) {
   const list = upcoming.filter((e) => e.kagura === k), reg = regular.filter((r) => r.kagura === k);
   const first = [...events, ...regular].find((e) => e.kagura === k);
@@ -1036,11 +1064,11 @@ for (const k of kaguras) {
   // 日程の一覧は県のページが受け持つ神楽(広島神楽): 開催予定の欄の先頭に、県のスケジュールへの入口
   const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub.replace(/県$/, ""))}神楽スケジュールを見る</a></section>` : "";
   // 冒頭の要約: 「〇〇とは」と概要(3行ほど)。その下に折り畳みの5つの欄(kaguraFolds)
-  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}${fixedDaysHtml(info, list)}</section>`;
+  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}${fixedDaysHtml(info, list)}${seo.nextBox ? nextShowsHtml(list) : ""}${seo.monthTable ? monthTableHtml(k, list, reg) : ""}</section>`;
   const scheduleHtml = `${hubHtml}${k === "庄内神楽" && !none ? upcomingSummary(list, { formatWhen: whenOf, level: "h3" }) : ""}${listHtml}${reg.length ? `${list.length ? `<p class="mhead">毎週・毎晩の定期公演</p>` : ""}${reg.map((r, j) => regCard(r, { withTag: false }) + kAt(kOrder.length + j)).join("")}` : ""}${none ? pendingBlock({ label: k, past, near: nearbyUpcoming([...new Set(past.map((e) => e.prefecture).concat(first.prefecture))]), pastId: "k-past", withKagura: false, h: "h3" }) : pastMore(past, { withKagura: false })}`;
   write(`dist/kagura/${k}.html`, layout({
     title: `${title} | ${cfg.siteName}`,
-    desc: fillDesc(seo.desc?.replace("{next}", fixedNextText(info, list)) ?? (none && past.length ? `${k}の日程。現在の開催予定はありません。直近では${jpDate(past[0].start.slice(0, 10))}に${past[0].name}が開かれました。${info ? info.intro : ""}` : k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : grouped ? `${k}${seo.title?.match(/^[^(（]+([(（][^)）]+[)）])/)?.[1] ?? ""}の日程。${townLead}会場・料金をまとめています。${info ? info.intro : ""}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + (reg.length ? "、" : "。") : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`), [placesOf([...list, ...reg], true) && `主な開催地は${placesOf([...list, ...reg], true)}です。`, "日時・会場・料金と、公式情報へのリンクを載せています。", info && `${k}の特徴や見どころも紹介しています。`]),
+    desc: fillDesc(seo.desc?.replace("{next}", fixedNextText(info, list)).replace("{upcoming}", upcomingText(list)).replace("{counts}", countsText(list, reg)).replace("{years}", yearsOf(list).replace(/年$/, "")) ?? (none && past.length ? `${k}の日程。現在の開催予定はありません。直近では${jpDate(past[0].start.slice(0, 10))}に${past[0].name}が開かれました。${info ? info.intro : ""}` : k === "庄内神楽" ? `${k}の日程。${upcomingSummaryDescription(list, { formatWhen: whenOf })}` : grouped ? `${k}${seo.title?.match(/^[^(（]+([(（][^)）]+[)）])/)?.[1] ?? ""}の日程。${townLead}会場・料金をまとめています。${info ? info.intro : ""}` : `${k}の公演日程・会場・料金をまとめています。${when ? when + (reg.length ? "、" : "。") : ""}${reg.length ? "定期公演" + reg.length + "件。" : ""}${info ? info.intro : ""}`), [placesOf([...list, ...reg], true) && `主な開催地は${placesOf([...list, ...reg], true)}です。`, "日時・会場・料金と、公式情報へのリンクを載せています。", info && `${k}の特徴や見どころも紹介しています。`]),
     path: kaguraHref(k), active: "/kagura/", noindex: !kaguraIndexed(k),
     ld: [crumbsLd([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]]), itemListLd(`${k}の開催情報`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
@@ -1215,6 +1243,14 @@ ${rows.map((p) => `<tr><td>${label(p.date)}</td><td>${esc(p.time ?? "")}</td><td
 // 「予約と当日の流れ」(bookingFlow: { lead, steps: [{ t, d }] }): 予約の語で探して来た人に、予約が要るか・当日の受付・料金をページの最初に答える。
 // 置き場所は、説明と「公式情報を見る」のすぐ下、要点の表の上(左の列の先頭)。PC では右の列の宿の枠と上端がそろい、宿の枠は下がらない。
 // 文は公式の案内で確かめた事実だけ(SEO-20261117-1。高千穂神社の神楽殿の毎晩の神楽から)
+// 次の公演(日ごとの日程表 program のうち、今日以降でいちばん近い回)。説明文の {next} と、ページの先頭の段に出す(SEO-20261123-1)
+const nextProgram = (r) => (r.program ?? []).find((p) => p.date >= today);
+const nextProgramText = (r) => { const p = nextProgram(r); return p ? `次の公演は${mdw(p.date)}${(p.time ?? "").replace(/\s+/g, "")}、${p.troupe}${p.hall ? `(${p.hall})` : ""}。` : ""; };
+const nextProgramHtml = (r) => {
+  const p = nextProgram(r);
+  if (!p) return "";
+  return `<p class="next-show"><span class="ns-label">次の公演</span><b>${nobr(esc(mdw(p.date)))}${p.time ? ` ${esc(p.time)}` : ""}</b><span class="ns-who">${esc([p.troupe, p.hall].filter(Boolean).join("・"))}</span><a class="textlink" href="#program-h">日程表を見る</a></p>`;
+};
 const bookingFlowHtml = (r) => {
   const b = r.bookingFlow;
   if (!b?.steps?.length) return "";
@@ -1225,10 +1261,11 @@ for (const r of regular) {
   write(`dist/regular/${r.id}.html`, layout({
     // seoTitle: 検索語に合わせたタイトル(なければ、名前と公演日時から作る)。seoDesc: 検索語に合わせた説明文(どちらも、公式の情報で確かめたことだけを書く)
     title: r.seoTitle ? `${r.seoTitle} | ${cfg.siteName}` : `${r.name} | ${r.schedule.replace(/\(.*$/, "").trim()} | ${cfg.siteName}`,
-    desc: r.seoDesc ? clip(r.seoDesc, 150) : padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
+    // seoDesc の {next}: 次の公演の日・開演時刻・出演(日程表 program から。なければ消す)。文の切れ目で切り、短ければ補う
+    desc: r.seoDesc?.includes("{next}") ? padDesc(r.seoDesc.replace("{next}", nextProgramText(r))) : r.seoDesc ? clip(r.seoDesc, 150) : padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
     body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
-<div class="dpage"><div class="d-lead"><div class="desc-lead">${descParas(shownDesc(r, !r.fee || !r.venue || reservationLabel(r) === "要確認"))}</div>
+<div class="dpage"><div class="d-lead">${nextProgramHtml(r)}<div class="desc-lead">${descParas(shownDesc(r, !r.fee || !r.venue || reservationLabel(r) === "要確認"))}</div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top">${bookingFlowHtml(r)}<div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
 ${shareBlock(`/regular/${r.id}.html`, r.name)}</div>

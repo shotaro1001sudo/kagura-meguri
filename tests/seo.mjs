@@ -207,7 +207,7 @@ export function seoTests({ ok, section, OUT, build }) {
     ok(reg.program.every((p) => !p.time.startsWith("夜") || [5, 6].includes(new Date(`${p.date}T00:00:00Z`).getUTCDay())), "湯治村: 夜の公演は金曜・土曜だけ(公式の「金・土 夜の公演」と合う)");
     ok(reg.program.every((p) => /神楽団$/.test(p.troupe) && ["神楽ドーム", "かむくら座"].includes(p.hall)), "湯治村: 出演は神楽団名、会場は神楽ドームかかむくら座");
     const $ = cheerio.load(read("dist-test-seo/regular/tojimura-kagura.html"));
-    ok($("title").text().startsWith("神楽門前湯治村 神楽公演スケジュール") && $("title").text().includes("神楽ドーム"), "湯治村: 検索語(湯治村・スケジュール・神楽ドーム)をタイトルに", $("title").text());
+    ok($("title").text().startsWith("神楽門前湯治村") && $("title").text().includes("スケジュール") && $("title").text().includes("神楽ドーム"), "湯治村: 検索語(湯治村・スケジュール・神楽ドーム)をタイトルに", $("title").text());
     const future = reg.program.filter((p) => p.date >= "2026-10-09").length;
     ok($(".program-table tbody tr").length === future && $(".program h2").text().includes("公演日程"), "湯治村: ページに、今日以降の公演日程を表で出す", String($(".program-table tbody tr").length)); }
   rmSync("dist-test-seo", { recursive: true, force: true });
