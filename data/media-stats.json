@@ -1,24 +1,24 @@
 {
- "updated": "2026-11-20",
+ "updated": "2026-11-23",
  "window": 28,
  "search": {
-  "from": "2026-10-21",
-  "to": "2026-11-17",
-  "impressions": 19000,
-  "clicks": 1800,
-  "impressions7": 7300,
-  "clicks7": 720
+  "from": "2026-10-24",
+  "to": "2026-11-20",
+  "impressions": 22000,
+  "clicks": 2000,
+  "impressions7": 8400,
+  "clicks7": 790
  },
  "analytics": {
-  "from": "2026-10-21",
-  "to": "2026-11-19",
-  "pageviews": 2900,
-  "users": 890
+  "from": "2026-10-24",
+  "to": "2026-11-22",
+  "pageviews": 3400,
+  "users": 1100
  },
  "total": {
   "from": "2026-10-19",
-  "to": "2026-11-19",
-  "pageviews": 3500
+  "to": "2026-11-22",
+  "pageviews": 4100
  },
  "topPages": [
   "/pref/広島県.html",
