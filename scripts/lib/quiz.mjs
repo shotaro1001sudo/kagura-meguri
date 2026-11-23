@@ -103,6 +103,8 @@ export const traditions = [
   // 2026-11-14 追加(11月の調査で掲載した椎葉神楽と、城南宮の巫女神楽。根拠は各解説の本文)
   { kind: '椎葉神楽', evidence: [['allnight', 'tagline'], ['rite', 'features.1'], ['dynamic', 'features.2'], ['monster', 'features.2'], ['classic', 'history.1'], ['together', 'viewing.0']] },
   { kind: '巫女神楽', evidence: [['rite', 'tagline'], ['music', 'programs.0.text'], ['easy', 'viewing.0']] },
+  // 2026-11-23 追加(平戸市の解説をもとにした平戸神楽。神社の祭礼・雅楽の囃子・江戸初期に整った24番の形。根拠は解説の本文)
+  { kind: '平戸神楽', evidence: [['rite', 'intro~0'], ['music', 'intro~1'], ['classic', 'history.1']] },
 ];
 // 解説はあるが、診断の対象にしない神楽と、その理由(週次の点検が「対象外」として扱う)
 export const QUIZ_EXCLUDED = {
