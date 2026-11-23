@@ -2,20 +2,20 @@
   "otaru-matsumae": {
     "sourceId": "otaru-matsumae",
     "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
-    "digest": "9b3bdaeb40954eff330939f9b677c82c66459a4652d07cdcefb2d4671eab2a96",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "18aa6b670b475b0c1b370d3b8a459024a74d502de2fdd6996164d04f99fdd068",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "9b3bdaeb40954eff330939f9b677c82c66459a4652d07cdcefb2d4671eab2a96",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
-        "digest": "224cdaf328b01f229d2d0318c14498eebbffefd1af554811ca1b0ca3d434f674",
+        "digest": "da83b60f469af292c1bcc48a452de2bc663092d9fec40480ade336065b3fdfcc",
         "linkCount": 161
       },
       {
         "url": "https://otaru.gr.jp/category/tourist/ibennto",
-        "digest": "bc43b70002d278167c531667eda3438729d5189eb8bec84df711f99aa4910ce2",
+        "digest": "9fbdd12bc95783aaddec0243df3d044f5eb18a33ed20da28b914a89ddc2f640d",
         "linkCount": 187
       }
     ],
@@ -25,7 +25,7 @@
     "sourceId": "tanagura-kagura",
     "url": "https://www.town.tanagura.fukushima.jp/kasseika-kannkoubussann/event/page000338.html",
     "digest": "68b19e69250a7ee8379c0c72f22bffc1c87db7eab25fc6ae4c4ce792bebdb666",
-    "checked": "2026-11-16",
+    "checked": "2026-11-23",
     "changed": "2026-11-04",
     "reviewedDigest": "68b19e69250a7ee8379c0c72f22bffc1c87db7eab25fc6ae4c4ce792bebdb666",
     "pending": false,
@@ -41,15 +41,15 @@
   "chichibu-jinja-kagura": {
     "sourceId": "chichibu-jinja-kagura",
     "url": "https://www.chichibu-jinja.or.jp/kagura/",
-    "digest": "467684feea9924f4acd444ff304a80f7678c4770486e11377589420ae610e408",
-    "checked": "2026-11-16",
-    "changed": "2026-11-04",
+    "digest": "a76f5a1c1d380a2b0cd422aa88e54ddfed7bf2bf30e2054a02dc3089d63ecddb",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "467684feea9924f4acd444ff304a80f7678c4770486e11377589420ae610e408",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.chichibu-jinja.or.jp/kagura/",
-        "digest": "41bf9f7c643a9bf22659c06191d0d66053b783867d497e3bc9c240d5b070fb12",
+        "digest": "6f0af327619acfc14a162e6760af5a6513fb2725a155bf77f07d91902da48b19",
         "linkCount": 75
       }
     ],
@@ -58,15 +58,15 @@
   "toei-hanamatsuri": {
     "sourceId": "toei-hanamatsuri",
     "url": "https://www.toeinavi.jp/column/detail/72/",
-    "digest": "fa8f8a34e5324d35e6a34e271c76282b7990f16b9a91c0800098275ae8bb0c83",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "ec1d90b6118255ff2ba9d1ab019f8bbc54ea5cb751aa398fc49e00d8ff5a0f23",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "fa8f8a34e5324d35e6a34e271c76282b7990f16b9a91c0800098275ae8bb0c83",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.toeinavi.jp/column/detail/72/",
-        "digest": "834adccac2c64ecb98a04e8e2a9fa31eec3209211cf73354b6b3f5fae0c6415e",
+        "digest": "829fcacf09eace228604f8d9d68c19e61617ac88c284834aea6e869ca8d83da3",
         "linkCount": 141
       }
     ],
@@ -75,15 +75,15 @@
   "hamamatsu-kawai-hanamai": {
     "sourceId": "hamamatsu-kawai-hanamai",
     "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
-    "digest": "7e9e6406b2f7b8e5d808a83a959b9a3c8e4a76dea3d0f5ea6ce23eeff38e4050",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "f10138d45b09349365d78e0d26921a956467cf5819040a845082de330f4f4609",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "7e9e6406b2f7b8e5d808a83a959b9a3c8e4a76dea3d0f5ea6ce23eeff38e4050",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
-        "digest": "507d63b02156e4775c46b26673ed94ec9f29e27102cd3a953650e38711022c8a",
+        "digest": "74f368d0454a9edabf7fe0271b5e0eabd37db843e18be6a58107693a9ce44201",
         "linkCount": 39
       }
     ],
@@ -92,15 +92,15 @@
   "ise-daikagura-kandayu": {
     "sourceId": "ise-daikagura-kandayu",
     "url": "https://www.kandayuyamamoto.jp/category/kouen/",
-    "digest": "066407cb7b0fd4d72eca1618e5afd6286bed5406c907dc3139c9a47b92d6bc48",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "04b019cf548ad43ec27c09bd9971da27e446cfb82d5007610af188dcf7be3cb4",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "066407cb7b0fd4d72eca1618e5afd6286bed5406c907dc3139c9a47b92d6bc48",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.kandayuyamamoto.jp/category/kouen/",
-        "digest": "521a522845bc43b6e2110d4a1397ea92e447422b098b63aaa5b091e1974daaf3",
+        "digest": "1fd93f616b76574ddc3fc1c4f9f5428c4d413c99d3312f097ca8a5a88c30f9e3",
         "linkCount": 165
       }
     ],
@@ -109,15 +109,15 @@
   "kitahiroshima-kagura": {
     "sourceId": "kitahiroshima-kagura",
     "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
-    "digest": "e536d1be418efdc4bbdbaa369af7abdd17befd599d81344da868dd72ae07e228",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "c8b7f53bc17432add906289f4db57da1730b3bf90fd666168f8f696c1e41f19f",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "e536d1be418efdc4bbdbaa369af7abdd17befd599d81344da868dd72ae07e228",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
-        "digest": "02b288f0af743eca06decabe25e08bc4cd7caf0223ba3c277eb309890da4ddba",
+        "digest": "54e135771f997326940a236802201fbbb114aed7549f4f4ceea33df14c5729c0",
         "linkCount": 107
       }
     ],
@@ -126,15 +126,15 @@
   "iinan-kaguradan": {
     "sourceId": "iinan-kaguradan",
     "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
-    "digest": "46510837eabb19e83232ebf167bf95e51b3be57338e469d8e10f363f32580afa",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "177538eabd27fce2dc2dc622ebaab7e810a137815696f77d1b7888710deec30d",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "46510837eabb19e83232ebf167bf95e51b3be57338e469d8e10f363f32580afa",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
-        "digest": "b6ed54f692df6d54ba78d93e36d2ac7e3d2cd2d4654545f858769dacedee4ee8",
+        "digest": "0fd74d663b99c2ceedb3cb613d9aee6ea384f811d4fabc521e9d62d7653e8cb9",
         "linkCount": 47
       }
     ],
@@ -143,15 +143,15 @@
   "niyodogawa-tosa-kagura": {
     "sourceId": "niyodogawa-tosa-kagura",
     "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
-    "digest": "c3a39a886cb4a1f009ed4d21009d03e2d3aebb971c781ad1536f3c5a0e780736",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "9c332bf3e741f9763ba27d834b73e4e11919a85bbf8355bbf633dbae6afcb4d6",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "c3a39a886cb4a1f009ed4d21009d03e2d3aebb971c781ad1536f3c5a0e780736",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
-        "digest": "95f278b81ef1e97c56b21f63554febd597775845da7a14b22a35019225363419",
+        "digest": "4e53445617bdf11dd7fa1a6ebae4b6f467e4e9e891cb3309d5a611a403323fc2",
         "linkCount": 176
       }
     ],
@@ -160,11 +160,11 @@
   "yufu-shonai-kagura": {
     "sourceId": "yufu-shonai-kagura",
     "url": "https://yufuin.gr.jp/news/news-6903/",
-    "digest": "1d59163584e6e4c3c9127dcaf65833f961899a5b4edacb80c866880d62724dac",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "cc90aabfa3c5f909ffbe082de0f7202a552efe51a6133ff66163df84b4b6f5a8",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "1d59163584e6e4c3c9127dcaf65833f961899a5b4edacb80c866880d62724dac",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://yufuin.gr.jp/news/news-6903/",
@@ -173,7 +173,7 @@
       },
       {
         "url": "https://yufuin.gr.jp/news",
-        "digest": "8436652b72317e9e18cf3de993e1dddc5d8853315f25ce49895465936e83b2d8",
+        "digest": "6336332aab48dbd0f15589cecf87dc762eef2c49dec9796dd0ebce844dfa5a80",
         "linkCount": 93
       }
     ],
@@ -182,11 +182,11 @@
   "toyama-shimotsuki": {
     "sourceId": "toyama-shimotsuki",
     "url": "https://tohyamago.com/archives/1203",
-    "digest": "952d4334d30ea0cce4e7d05cbea4fd0f389f1bd1ceeca93c618e254582ac9b5f",
-    "checked": "2026-11-16",
-    "changed": "2026-11-04",
+    "digest": "b4dbecf3f5db726e4e9d83de86d7f82af397f109ba3370367ce7e09c6bfba8f6",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "952d4334d30ea0cce4e7d05cbea4fd0f389f1bd1ceeca93c618e254582ac9b5f",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://tohyamago.com/archives/1203",
@@ -195,7 +195,7 @@
       },
       {
         "url": "https://tohyamago.com/archives/category/information",
-        "digest": "888068afbf5da21ebdd68bc6aff94ead44f95a9d69377926ab6b28a84cd81371",
+        "digest": "98ae4731df7624f1005dcb36dddb175b684404135b12ee99a1e77123a9d45543",
         "linkCount": 92
       }
     ],
@@ -204,16 +204,16 @@
   "iwate-hanakitatoono": {
     "sourceId": "iwate-hanakitatoono",
     "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
-    "digest": "65d2af771175230df9de16722bc993f40cc66f8e9c3ecd50bbd68054d0b9ea7b",
-    "checked": "2026-11-16",
-    "changed": "2026-11-09",
+    "digest": "27009cefda9d8c49d6f21bacd40fbeb7b73f11d9b85d0e7d09af3274b66189de",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "65d2af771175230df9de16722bc993f40cc66f8e9c3ecd50bbd68054d0b9ea7b",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
-        "digest": "2df2b0b1a3b4bfd8da3eed1b241adbc264f5bcdd4c849a3e95e980286d481cc9",
-        "linkCount": 249
+        "digest": "9d4bc87028e5bceaf37db60d285c095ea9ca41c5b2b17ffde45c0dedad04d168",
+        "linkCount": 251
       }
     ],
     "reason": "A：表(公演日・名称・内容)から、会場が1つに決まる神楽の行だけ抽出。まつりのパレード等の複数会場の行は除外。"
@@ -222,7 +222,7 @@
     "sourceId": "kanagawa-minzoku-geino",
     "url": "https://www.city.yokohama.lg.jp/kurashi/kyodo-manabi/bunkazai/bunya12000.html",
     "digest": "80637814f883c31d5c203142d09022b4dfad8d4bf80e585fb9b83be20e24cadf",
-    "checked": "2026-11-16",
+    "checked": "2026-11-23",
     "changed": "2026-11-09",
     "reviewedDigest": "80637814f883c31d5c203142d09022b4dfad8d4bf80e585fb9b83be20e24cadf",
     "pending": false,
@@ -238,15 +238,15 @@
   "masuda-yokagura": {
     "sourceId": "masuda-yokagura",
     "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
-    "digest": "bd12cd674953041dccebb3ec95377b54835bb40c7b822870916d7cbe14e45677",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "20ca29a7386f23212995ca1a0e7797e4a9146ce86de1b05b2b9e6281de503ccd",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "bd12cd674953041dccebb3ec95377b54835bb40c7b822870916d7cbe14e45677",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
-        "digest": "1f4609e5a913064d78ed77f8cad75ea4d8e8ca2acf606f46d2fda0be56fd8e77",
+        "digest": "210cd34f011d30743bda9aa534e07a4e07a5ba1adc2eadb98f13f125d40fec76",
         "linkCount": 78
       }
     ],
@@ -255,15 +255,15 @@
   "tsuwano-yokagura": {
     "sourceId": "tsuwano-yokagura",
     "url": "https://tsuwano-kanko.net/yokagura2026/",
-    "digest": "dbbb98b301ea26955bb995c1c49fd883b68245c9db70bf1eaf91e0f1aed554bd",
-    "checked": "2026-11-16",
-    "changed": "2026-11-16",
+    "digest": "8c9866ed1d80d5db3b9e3d5f596ee067e79aa7aa51cb02de9c4fa642974afb43",
+    "checked": "2026-11-23",
+    "changed": "2026-11-23",
     "reviewedDigest": "dbbb98b301ea26955bb995c1c49fd883b68245c9db70bf1eaf91e0f1aed554bd",
-    "pending": false,
+    "pending": true,
     "pages": [
       {
         "url": "https://tsuwano-kanko.net/yokagura2026/",
-        "digest": "ec2af4bb6bd3db5a0a1884c072b034065581bce2c579a7261938af84146ef822",
+        "digest": "cf8b6bfa68ce9f19dacf83b1f7870772db9e996e33d7c4453b1f0cbfc194ccf7",
         "linkCount": 179
       }
     ],

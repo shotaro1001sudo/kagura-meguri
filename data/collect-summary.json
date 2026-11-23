@@ -1,11 +1,11 @@
 {
-  "date": "2026-11-16",
+  "date": "2026-11-23",
   "autoPublish": true,
   "published": 0,
-  "held": 0,
+  "held": 3,
   "stillPending": 0,
   "withdrawn": 0,
-  "errors": 0,
+  "errors": 1,
   "inactive": 0,
   "needsAttention": true,
   "sourceReviews": [
@@ -13,133 +13,129 @@
       "id": "otaru-matsumae",
       "url": "https://otaru.gr.jp/event/matsumae-kagura-2026",
       "reason": "B：2026/10/24は終了済み。次回告知の掲載導線を確認。単発ページを将来日程へ流用しない。",
-      "digest": "9b3bdaeb40954eff330939f9b677c82c66459a4652d07cdcefb2d4671eab2a96"
+      "digest": "18aa6b670b475b0c1b370d3b8a459024a74d502de2fdd6996164d04f99fdd068"
+    },
+    {
+      "id": "iwate-hanakitatoono",
+      "url": "https://www.pref.iwate.jp/kennan/tono_doboku/1087877/index.html",
+      "reason": "A：表(公演日・名称・内容)から、会場が1つに決まる神楽の行だけ抽出。まつりのパレード等の複数会場の行は除外。",
+      "digest": "27009cefda9d8c49d6f21bacd40fbeb7b73f11d9b85d0e7d09af3274b66189de"
+    },
+    {
+      "id": "chichibu-jinja-kagura",
+      "url": "https://www.chichibu-jinja.or.jp/kagura/",
+      "reason": "B：年間の奉納日を掲載。例年日程だけで当年開催を確定せず、当年告知と開始時刻を確認。",
+      "digest": "a76f5a1c1d380a2b0cd422aa88e54ddfed7bf2bf30e2054a02dc3089d63ecddb"
     },
     {
       "id": "toei-hanamatsuri",
       "url": "https://www.toeinavi.jp/column/detail/72/",
       "reason": "A：複数地区の令和8年度花祭日程。画像と町HTMLカレンダーを照合。終日表示00:00を終了時刻にしない。夜越し対応。",
-      "digest": "fa8f8a34e5324d35e6a34e271c76282b7990f16b9a91c0800098275ae8bb0c83"
+      "digest": "ec1d90b6118255ff2ba9d1ab019f8bbc54ea5cb751aa398fc49e00d8ff5a0f23"
     },
     {
       "id": "hamamatsu-kawai-hanamai",
       "url": "https://www.city.hamamatsu.shizuoka.jp/bunkazai/shitei/sakuma/sakuma/hanamai.html",
       "reason": "B：2026/10/31午後2時頃〜深夜。曖昧な終了時刻を補完しない。年次ページ更新を確認。",
-      "digest": "7e9e6406b2f7b8e5d808a83a959b9a3c8e4a76dea3d0f5ea6ce23eeff38e4050"
+      "digest": "f10138d45b09349365d78e0d26921a956467cf5819040a845082de330f4f4609"
     },
     {
       "id": "ise-daikagura-kandayu",
       "url": "https://www.kandayuyamamoto.jp/category/kouen/",
       "reason": "A：公演予定と公演報告が混在。開催予定のみ抽出。団体所在地ではなく実会場の都道府県で登録。非公開訪問を除外。",
-      "digest": "066407cb7b0fd4d72eca1618e5afd6286bed5406c907dc3139c9a47b92d6bc48"
+      "digest": "04b019cf548ad43ec27c09bd9971da27e446cfb82d5007610af188dcf7be3cb4"
     },
     {
       "id": "kitahiroshima-kagura",
       "url": "https://www.town.kitahiroshima.lg.jp/soshiki/11/48450.html",
       "reason": "B：令和8年度予定PDFと本文訂正を併読。本文の訂正を旧PDFより優先。既存広島収集との重複を統合。",
-      "digest": "e536d1be418efdc4bbdbaa369af7abdd17befd599d81344da868dd72ae07e228"
+      "digest": "c8b7f53bc17432add906289f4db57da1730b3bf90fd666168f8f696c1e41f19f"
     },
     {
       "id": "iinan-kaguradan",
       "url": "https://iinankagura.jimdofree.com/%E5%85%AC%E6%BC%94%E4%BA%88%E5%AE%9A/",
       "reason": "B：日付・会場・演目を掲載。11/14一般観覧不可などは公開公演から除外。催事開演と当団出演時刻を区別。",
-      "digest": "46510837eabb19e83232ebf167bf95e51b3be57338e469d8e10f363f32580afa"
+      "digest": "177538eabd27fce2dc2dc622ebaab7e810a137815696f77d1b7888710deec30d"
     },
     {
       "id": "niyodogawa-tosa-kagura",
       "url": "https://www.niyodogawa.tv/schedule/schedule-22516/",
       "reason": "B：池川神社秋季大祭。神楽時間未定と12〜16時が同ページ内で不一致のため要確認。稽古日を公演に混入しない。",
-      "digest": "c3a39a886cb4a1f009ed4d21009d03e2d3aebb971c781ad1536f3c5a0e780736"
+      "digest": "9c332bf3e741f9763ba27d834b73e4e11919a85bbf8355bbf633dbae6afcb4d6"
     },
     {
       "id": "yufu-shonai-kagura",
       "url": "https://yufuin.gr.jp/news/news-6903/",
       "reason": "B：庄内神楽定期公演の月別告知。確認した9/19は終了済み。翌年度へ例年規則で自動展開しない。中止告知との照合。",
-      "digest": "1d59163584e6e4c3c9127dcaf65833f961899a5b4edacb80c866880d62724dac"
+      "digest": "cc90aabfa3c5f909ffbe082de0f7202a552efe51a6133ff66163df84b4b6f5a8"
+    },
+    {
+      "id": "toyama-shimotsuki",
+      "url": "https://tohyamago.com/archives/1203",
+      "reason": "C・年度更新待ち：霜月祭案内と2025年日程を確認。2026年開催日程は未確認。翌日未明の時刻・隔年開催を要確認。",
+      "digest": "b4dbecf3f5db726e4e9d83de86d7f82af397f109ba3370367ce7e09c6bfba8f6"
     },
     {
       "id": "masuda-yokagura",
       "url": "https://www.city.masuda.lg.jp/soshikikarasagasu/seisakukikakukyoku/hishokouhouka/4_1/1/9467.html",
       "reason": "B：令和8年度の年間スケジュールPDF(土曜19:30の定期公演と特別公演)。PDFの差し替え・年度更新を確認し、data/regular.json と特別公演の開催を手で直す。",
-      "digest": "bd12cd674953041dccebb3ec95377b54835bb40c7b822870916d7cbe14e45677"
+      "digest": "20ca29a7386f23212995ca1a0e7797e4a9146ce86de1b05b2b9e6281de503ccd"
     },
     {
       "id": "tsuwano-yokagura",
       "url": "https://tsuwano-kanko.net/yokagura2026/",
       "reason": "B：月1回(土曜20:00)の通常公演と出演社中。社中の追記・変更と、2027年度のページ(URLの年)を確認する。",
-      "digest": "dbbb98b301ea26955bb995c1c49fd883b68245c9db70bf1eaf91e0f1aed554bd"
+      "digest": "8c9866ed1d80d5db3b9e3d5f596ee067e79aa7aa51cb02de9c4fa642974afb43"
     }
   ],
   "affiliate": {
     "missingIds": [],
-    "expiring": [
-      {
-        "id": "cold-night-blanket",
-        "source": "data/visitor-planning.json",
-        "title": "CAPTAIN STAG アプリール フリースブランケット UT-1023",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "portable-seat-cushion",
-        "source": "data/visitor-planning.json",
-        "title": "THERM-A-REST Zシート ソル 30947",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "portable-phone-battery",
-        "source": "data/visitor-planning.json",
-        "title": "ELECOM モバイルバッテリー DE-C45-5000WH",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "rakuten-rental-national",
-        "source": "data/visitor-planning.json",
-        "title": "レンタカーを探す",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "rakuten-carshare-stations",
-        "source": "data/visitor-planning.json",
-        "title": "カーシェアを探す",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "sanin-kagura-photobook",
-        "source": "data/more-offers.json",
-        "title": "山陰の神楽写真集(松浦敦男)",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "iwami-kagura-tokyo-dvd",
-        "source": "data/more-offers.json",
-        "title": "DVD 2019 石見神楽東京公演",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      },
-      {
-        "id": "hiroshima-kagura-dvd",
-        "source": "data/more-offers.json",
-        "title": "DVD 広島神楽",
-        "expiresAt": "2026-11-24",
-        "days": 8
-      }
-    ],
+    "expiring": [],
     "counts": {
       "learn_unconfigured": 1,
-      "category_disabled": 3
+      "category_disabled": 3,
+      "learn_unmatched": 1,
+      "furusato_unmatched": 1
     },
-    "unlinkedTotal": 0,
-    "unlinked": []
+    "unlinkedTotal": 1,
+    "unlinked": [
+      {
+        "id": "iwate-hanakitatoono-27d80f242d",
+        "missing": [
+          "本・グッズ",
+          "ふるさと納税"
+        ]
+      }
+    ]
   },
   "items": {
     "published": [],
-    "held": [],
+    "held": [
+      {
+        "name": "ハレ舞台 -広島広域都市圏-",
+        "start": "2026-11-28T00:00",
+        "prefecture": "広島県",
+        "city": "",
+        "url": "https://www.akitakata.jp/ja/shisei/section/kikaku/harebutai-kagura/",
+        "reason": "場所(市区町村・会場)が不明"
+      },
+      {
+        "name": "エールエールHIROSHIMA神楽の祭典 宮乃木神楽団",
+        "start": "2026-11-29T11:00",
+        "prefecture": "広島県",
+        "city": "",
+        "url": "https://hiro-chika.com/archives/event/event-706",
+        "reason": "場所(市区町村・会場)が不明"
+      },
+      {
+        "name": "ちょっと早い権現様の歳取り(塚沢早池峰神楽・平倉神楽・外山神楽)",
+        "start": "2026-12-06T13:00",
+        "prefecture": "岩手県",
+        "city": "粡町",
+        "url": "https://www.pref.iwate.jp/",
+        "reason": "緯度経度を確認できないため保留。会場の位置を確認してください"
+      }
+    ],
     "stillPending": [],
     "withdrawn": []
   }
