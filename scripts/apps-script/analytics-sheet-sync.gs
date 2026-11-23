@@ -12,7 +12,7 @@ const KAGURA_ANALYTICS_SYNC = Object.freeze({
   FUNNEL_EVENTS: ["official_link_click","affiliate_click","affiliate_view"],
   // MEAS-20261110-1: sponsored-link breakdowns for every public page (event pages included).
   // Optional kinds: a failure is recorded in the run note and never breaks GA4/GSC success.
-  OPTIONAL_KINDS: ["aff_page","aff_detail","official_page"],
+  OPTIONAL_KINDS: ["aff_page","aff_detail","aff_placement","official_page"],
   AFF_EVENTS: ["affiliate_click","affiliate_view"],
   // MEAS-20261117-1: taps on the official-site button (公式情報を見る), per event/regular page.
   // The site sends official_link_click only from /events/<id>.html and /regular/<id>.html
@@ -148,6 +148,10 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
     // event-scoped custom dimensions affiliate_partner and affiliate_placement registered in GA4.
     ["aff_page",["pagePath","eventName"],["eventCount"]],
     ["aff_detail",["pagePath","customEvent:affiliate_partner","customEvent:affiliate_placement","eventName"],["eventCount"]],
+    // MEAS-20261123-1 (optional): the same partner/placement totals WITHOUT the page, so every
+    // click is counted (aff_detail is cut at LIMIT rows once there are many pages; on 11-22 it
+    // reached 1000 rows and 9 of 40 clicks had no placement). Same public-route filter as aff_detail.
+    ["aff_placement",["customEvent:affiliate_partner","customEvent:affiliate_placement","eventName"],["eventCount"]],
     // MEAS-20261117-1 (optional): how many times each event/regular page sent visitors on to the
     // official site. Top 200 pages by eventCount, so event pages are included (page_event is fixed pages only).
     ["official_page",["pagePath","eventName"],["eventCount"]]
@@ -186,10 +190,12 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
       const route=new RegExp(routeShape),seen=new Set(),unset="(not set)";
       rows.forEach(row=>{
         const key=JSON.stringify(row.slice(0,dimensions.length));
-        if(typeof row[0]!=="string" || row[0].length>160 || !route.test(row[0]) ||
+        const byPage=kind!=="aff_placement";
+        if(byPage && (typeof row[0]!=="string" || row[0].length>160 || !route.test(row[0])) ||
           !events.includes(row[dimensions.length-1]) || seen.has(key)) throw kaguraFailure_("GA4_SCHEMA_INVALID");
-        if(kind==="aff_detail" && ((row[1]!==unset && !S.AFF_PARTNERS.includes(row[1])) ||
-          (row[2]!==unset && !S.AFF_PLACEMENTS.includes(row[2])))) throw kaguraFailure_("GA4_SCHEMA_INVALID");
+        const p=byPage?1:0;
+        if((kind==="aff_detail"||kind==="aff_placement") && ((row[p]!==unset && !S.AFF_PARTNERS.includes(row[p])) ||
+          (row[p+1]!==unset && !S.AFF_PLACEMENTS.includes(row[p+1])))) throw kaguraFailure_("GA4_SCHEMA_INVALID");
         seen.add(key);
       });
     }
@@ -202,6 +208,7 @@ function kaguraCollectGa4_(property,zone,now,fetched) {
       official?"top "+S.OFFICIAL_LIMIT+" event/regular pages by eventCount; official-site button only; consented visits only; metrics=eventCount; events are not users or conversions; missing rows are not zero":
       optional?"public route shapes only; sponsored links; consented visits only; metrics=eventCount; events are not users or conversions; missing rows are not zero":"",
       kind==="aff_detail"?"dimension=[pagePath,affiliate_partner,affiliate_placement,eventName]; (not set)=before custom dimension registration or parameter missing":"",
+      kind==="aff_placement"?"dimension=[affiliate_partner,affiliate_placement,eventName]; all public pages summed; (not set)=before custom dimension registration or parameter missing":"",
       report.metadata?.subjectToThresholding?"thresholded":"",
       report.metadata?.samplingMetadatas?.length?"sampled":""].filter(Boolean).join("; ");
     const out={flag:kind+": "+quality+(rows.length?"":"; no_rows"),details:[],daily:null};

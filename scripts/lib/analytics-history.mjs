@@ -127,6 +127,8 @@ const KINDS = {
   "GA4/page": {}, "GA4/source": {}, "GA4/event": {}, "GA4/device": {}, "GA4/page_event": {},
   // MEAS-20261117-1: 開催・定期公演のページごとの、公式サイトへ進んだ回数(上位200ページ)
   "GA4/official_page": {},
+  // MEAS-20261123-1: 広告の置き場所×広告主の合計(ページを分けないので、1000行で打ち切られない)
+  "GA4/aff_placement": {},
 };
 
 /**
