@@ -41,14 +41,20 @@ const providers = {
   'vc-jalan-rental':{category:'rental',name:'じゃらんレンタカー',host:'ck.jp.ap.valuecommerce.com'}
 };
 // 本人提供の不透明なhscバナーは、この発行済みのURLと画像の組だけを許可。
+// レンタカーは 2026-11-23 に、PCの両サイドのPR枠と同じ発行(2026-11-15、楽天トラベル レンタカー 300×300「大手レンタカー会社多数! 豊富な車種から比較&予約可能!」)に替えた。
+// それまでの 300×250(「旅行いくなら! 楽天トラベルレンタカー」の検索窓の絵)は、開催ページの枠で28日に表示約530回・クリック0回だった。行き先は同じ(travel.rakuten.co.jp/cars/)
 export const RENTAL_BANNER = {
-  "url": "https://hb.afl.rakuten.co.jp/hsc/58ccf272.42d284bf.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6Mjc2MjQ5NiwiYW1wIjpmYWxzZX0%3D",
-  "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58ccf272.42d284bf.585fa57b.dad29d3a/?me_id=2100017&me_adv_id=2762496&t=pict"
+  "url": "https://hb.afl.rakuten.co.jp/hsc/59865392.63f8ca10.585fa57b.dad29d3a/?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOiIxIiwiYmFuIjoyNzYyNTA2LCJhbXAiOmZhbHNlfQ%3D%3D",
+  "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/59865392.63f8ca10.585fa57b.dad29d3a/?me_id=2100017&me_adv_id=2762506&t=pict",
+  "width": 300, "height": 300
 };
 export const CARSHARE_BANNER = {
   "url": "https://hb.afl.rakuten.co.jp/hsc/58cd09f6.7960bea0.585fa57b.dad29d3a/_RTLink152141?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOjEsImJhbiI6MjEzODQyNiwiYW1wIjpmYWxzZX0%3D",
-  "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58cd09f6.7960bea0.585fa57b.dad29d3a/?me_id=2101064&me_adv_id=2138426&t=pict"
+  "imageUrl": "https://hbb.afl.rakuten.co.jp/hsb/58cd09f6.7960bea0.585fa57b.dad29d3a/?me_id=2101064&me_adv_id=2138426&t=pict",
+  "width": 300, "height": 250
 };
+// 発行した画像の大きさ(帯の中で場所を先に取るために書く)
+const bannerSize = (o) => { const b = [RENTAL_BANNER, CARSHARE_BANNER].find((x) => x.imageUrl === o.imageUrl); return b ? `width="${b.width}" height="${b.height}"` : 'width="300" height="250"'; };
 // 周辺体験のカードに出す、楽天トラベル 観光体験の横長バナー(600×200「旅行先で思い出に残る現地体験を予約しよう！」)。
 // 2026-11-15 に楽天アフィリエイトの管理画面(ショップリンクの作成、me_id=2100034)で発行した href と img のまま。同意の要らない広告なので、いつも出る
 export const EXPERIENCE_BANNER = {
@@ -142,8 +148,8 @@ export function experienceCard(context,today,aff,{rakuten=false}={}) {
   // じゃらんとアソビューはバリューコマースの発行コードのまま、広告の同意があるときだけ出す(vcTag)。楽天は同意が要らないので、いつも出る
   const vcBanner=(kind,partner,id,click)=>vcTag({kind,className:'nearby-banner',meta:{'data-goatcounter-click':click,'data-affiliate-category':'experiences','data-affiliate-partner':partner,'data-affiliate-placement':'nearby_experiences','data-affiliate-id':id}});
   const rakutenBanner=rakuten?`<a class="nearby-banner" href="${esc(EXPERIENCE_BANNER.url)}" aria-label="楽天トラベル 観光体験で体験を探す(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="experience-rakuten/banner" data-goatcounter-title="experience-rakuten/banner" data-affiliate-category="experiences" data-affiliate-partner="rakuten" data-affiliate-placement="nearby_experiences" data-affiliate-id="rakuten-experiences"><img src="${esc(EXPERIENCE_BANNER.imageUrl)}" alt="現地の観光体験を楽天トラベルで探す" width="600" height="200" loading="lazy" decoding="async"></a>`:'';
-  const asoview=affOn(aff)?vcBanner('asoview','vc-asoview','asoview-banner','experience-asoview/banner'):'';
-  const others=rakutenBanner||asoview?`<div class="nearby-others">${rakutenBanner}${asoview}</div>`:'';
+  // アソビュー!のバナーは 2026-11-23 に外した(絵柄が人物の写真で、28日に表示約160回・クリック0回。じゃらん・楽天と3つ並んで見づらかった。都道府県のページも 11-15 に2つにしている)
+  const others=rakutenBanner?`<div class="nearby-others">${rakutenBanner}</div>`:'';
   return `<section id="nearby-experiences" class="planning-nearby" aria-labelledby="nearby-experiences-h"><span class="meta">周辺体験</span><b id="nearby-experiences-h">神楽までの半日、何する？</b>${affOn(aff)?`<div class="nearby-main">${vcBanner('activityBanner','vc-jalan-activity','jalan-activity-banner','experience-jalan/banner')}</div>`:""}${others}<div class="nearby-sub">${affOn(aff)?`<a class="nearby-more" href="/experiences.html#${areaId(area)}">ほかの都道府県から探す</a>`:""}${experienceNotes(experiencesFor(context,today),aff,true)}</div>${affOn(aff)||rakuten?PR_FOOT:''}</section>`;
 }
 // 開催県がわかる公演では周辺体験をカードにまとめ、わからなければ全国の入口へのリンクにする。
@@ -171,6 +177,6 @@ export function transportSection(settings,context,today,placement,{rail=false}={
 export function rentalStripItems(settings,context,today,placement,{card=false}={}) {
   return offersFor(settings,'rental',context,today).map(o=>{
     const label=`${providers[o.provider].name}で${o.provider==='rakuten-carshare'?'カーシェア':'レンタカー'}を探す`;
-    return `<a class="strip-banner${o.imageUrl?(card?' strip-card':''):' strip-text'}" href="${esc(o.url)}" aria-label="${esc(label)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/${o.id}" data-affiliate-category="rental" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl&&card?`<img src="${esc(o.imageUrl)}" alt="" width="300" height="250" loading="lazy" decoding="async"><span><b>${esc(label)}</b><small>${esc(providers[o.provider].name)}で見る ›</small></span>`:o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="${esc(label)}" width="300" height="250" loading="lazy" decoding="async">`:`<span>${esc(label)}</span>`}</a>`;
+    return `<a class="strip-banner${o.imageUrl?(card?' strip-card':''):' strip-text'}" href="${esc(o.url)}" aria-label="${esc(label)}(広告)" target="_blank" rel="sponsored noopener noreferrer" data-goatcounter-click="planning-rental/${o.id}" data-affiliate-category="rental" data-affiliate-partner="${o.provider}" data-affiliate-placement="${esc(placement)}" data-affiliate-id="${o.id}">${o.imageUrl&&card?`<img src="${esc(o.imageUrl)}" alt="" ${bannerSize(o)} loading="lazy" decoding="async"><span><b>${esc(label)}</b><small>${esc(providers[o.provider].name)}で見る ›</small></span>`:o.imageUrl?`<img src="${esc(o.imageUrl)}" alt="${esc(label)}" ${bannerSize(o)} loading="lazy" decoding="async">`:`<span>${esc(label)}</span>`}</a>`;
   });
 }
