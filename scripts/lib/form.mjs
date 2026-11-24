@@ -149,10 +149,13 @@ form.addEventListener('submit',function(ev){
   btn.disabled=true;say('送信しています…');
   var payload={access_key:C.accessKey||undefined,subject:'【'+C.site+'】'+(kind==='submit'?'開催情報の掲載依頼: '+val('name'):'お問い合わせ: '+val('topic')),
     from_name:val('sender'),email:val('email'),message:lines().join('\\n')+(kind==='submit'?'\\n\\n【events.json 用】\\n'+jsonBlock():'')};
+  // 送れたことを GA4 に1回だけ伝える(MEAS-20261124-1)。送るのはフォームの種類とご用件の区分だけ(名前・連絡先・本文は送らない)。統計の同意がないときは送らない
+  var topicCode={'掲載内容の訂正':'fix','掲載の削除依頼':'remove','サイトの不具合':'bug','広告・取材などのご相談':'ads','その他':'other'}[val('topic')]||'';
+  function lead(){try{if(window.kaguraCheckAnalyticsConsent&&!window.kaguraCheckAnalyticsConsent())return;if(window.kaguraGa4Allowed!==true||typeof window.gtag!=='function')return;window.gtag('event','generate_lead',{form_type:kind,form_topic:kind==='submit'?'submit':topicCode,page_path:location.pathname})}catch(_){}}
   var ctl=new AbortController(),to=setTimeout(function(){ctl.abort()},15000);
   fetch(C.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload),signal:ctl.signal,referrerPolicy:'no-referrer',credentials:'omit'})
     .then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok||j.success===false||j.ok===false)throw 0;return j})})
-    .then(function(){sessionStorage.setItem('lastSend',String(Date.now()));form.reset();say('送信しました。ありがとうございます。内容を確認のうえ、ご連絡します。')})
+    .then(function(){sessionStorage.setItem('lastSend',String(Date.now()));lead();form.reset();say('送信しました。ありがとうございます。内容を確認のうえ、ご連絡します。')})
     .catch(function(){
       // 運営者のアドレスはページに載せないため、送信先がある場合は、メールでの予備はない(時間をおいて、もう一度)
       if(!form.dataset.u){say('送信できませんでした。入力内容は残っています。時間をおいて、もう一度お試しください。',true);return}

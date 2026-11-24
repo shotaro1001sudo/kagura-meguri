@@ -40,6 +40,7 @@ Google拡張機能側のDebug設定まで検出できるわけではない。
 | official_link_click | 明示した公式情報ボタンの操作 | 観覧検討行動。予約/来場ではない |
 | filter_events | 地方/県/日付の操作種類のみ | 探し方の利用。選択値・自由入力を送らない |
 | affiliate_click | 既存の広告主/掲載位置/対象ID付きクリック | 広告送客。成約/報酬ではない |
+| generate_lead | 掲載の依頼・お問い合わせのフォームが送信先に届いた1回(MEAS-20261124-1)。form_type(submit/contact)と form_topic(submit/fix/remove/bug/ads/other)・page_path だけ | 掲載・協賛の相談の入口。メール作成画面へ回った分・ハニーポットは数えない。入力値は送らない |
 
 `select_event`と`view_event`は別の行動で、足し合わせて「人数」にしない。
 GA4でcontent_id/content_type/source_page/filter_type/link_domainをイベント範囲のカスタムディメンションに登録すればUIで内訳を参照できる。

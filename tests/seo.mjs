@@ -232,5 +232,18 @@ export function seoTests({ ok, section, OUT, build }) {
     const pub = lds.flat().find((x) => x["@type"] === "WebSite")?.publisher;
     ok(Array.isArray(pub?.sameAs) && pub.sameAs.some((u) => /^https:\/\/note\.com\/[a-z0-9_]+$/.test(u)) && pub.sameAs.some((u) => /^https:\/\/x\.com\/[A-Za-z0-9_]+$/.test(u)), "トップの運営者に sameAs(X と note のアカウント)", JSON.stringify(pub));
     ok(/^@[A-Za-z0-9_]+$/.test($h('meta[name="twitter:site"]').attr("content") ?? ""), "X のカードにサイトのアカウント(twitter:site)"); }
+  section("宿の枠: 県・種類のページから、泊まりがけになる開催のページへ(ADV-20261124-1)");
+  { const pages = [...walk("dist-test-seo/pref"), ...walk("dist-test-seo/kagura")].filter((f) => !/index\.html$/.test(f));
+    const withList = pages.map((f) => ({ f, $: cheerio.load(read(f)) })).filter(({ $ }) => $('aside[data-aff-box="travel_block"] .stay-events').length);
+    const anyAff = pages.some((f) => read(f).includes('data-aff-box="travel_block"'));
+    ok(!anyAff || withList.length > 0, "宿の枠のある県・種類のページのうち、泊まりがけの開催のあるページに一覧が出る");
+    for (const { f, $ } of withList) {
+      const links = $('aside[data-aff-box="travel_block"] .stay-events a').map((_, a) => $(a).attr("href")).get();
+      const targets = links.map((h) => join("dist-test-seo", h));
+      const dates = $('aside[data-aff-box="travel_block"] .stay-events .md').map((_, s) => $(s).text()).get();
+      ok(links.length >= 1 && links.length <= 3 && links.every((h) => /^\/events\/[A-Za-z0-9_-]+\.html$/.test(h)) && targets.every((t) => existsSync(t)), `${f}: 3件まで、開催のページへ(リンク先がある)`, links.join(" "));
+      ok(targets.every((t) => cheerio.load(read(t))('aside.stay h2').text().startsWith("泊まりで観る")), `${f}: リンク先は、泊まりがけの案内のある開催のページ`);
+      ok(dates.length === links.length && $('aside[data-aff-box="travel_block"] .stay-events-note').length === 1, `${f}: 日付と、開催のページで宿を探せる案内`);
+    } }
   rmSync("dist-test-seo", { recursive: true, force: true });
 }

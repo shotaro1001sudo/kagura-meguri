@@ -302,13 +302,20 @@ ${prNote(on)}</aside>`;
 }
 
 /** 種類・都道府県・定期公演のページの宿の案内(日付なし)。見出しは、会場が決まっていれば「会場周辺の宿」(開催ページと同じ言葉。2026-11-15 の監査で「会場近くの宿」からそろえた)、県・種類のページは「◯◯県の宿」 */
-function affiliateBlock(e) {
+function affiliateBlock(e, { overnight = [] } = {}) {
   if (!rakutenOn && !jalanOn && !amazonOn) return "";
   // 宿は、楽天トラベル・じゃらんの公式バナー(画像)。定期公演のページも同じ(2026-11-14 運営者の依頼で、文字のボタンから置き換え)
   const bn = stayBanners(e.id ?? e.prefecture);
   const goods = amazonOn ? `<div class="afflist"><a href="${esc(amazon(e.kagura || "神楽"))}" ${affAttrs(true, `aff-amazon/${e.prefecture}`)}><b>神楽の本・グッズ</b><small>Amazon</small></a></div>` : "";
-  return `<aside class="aff" data-aff-box="travel_block"><h2>${e.venue ? "会場周辺の宿" :`${esc(e.prefecture)}の宿`}</h2>${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
+  return `<aside class="aff" data-aff-box="travel_block"><h2>${e.venue ? "会場周辺の宿" :`${esc(e.prefecture)}の宿`}</h2>${overnightPicks(overnight)}${goods}${bn}${prNote(!!bn || amazonOn)}</aside>`;
 }
+// 県・種類のページの宿の枠に、泊まりがけになる開催(夜神楽・夜通し。overnightKagura)を近い順に3つまで(ADV-20261124-1)。
+// GA4(2026-10-27〜11-23): 宿のバナーは、開催ページの宿の枠(日付の決まった泊まり)ではよく押され、日付のない県・種類のページの枠ではほぼ押されない。
+// 押されたのは夜神楽・花祭など泊まりが前提の開催のページ。県・種類のページから、その開催のページ(その日の会場周辺の宿)へ渡す
+const overnightPicks = (list) => {
+  const picks = list.filter((x) => isUpcoming(x) && x.stayLinks !== false && overnightKagura(x)).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
+  return picks.length ? `<p class="stay-cond"><span>泊まりがけになる開催</span></p><ul class="stay-events">${picks.map((x) => `<li><a href="/events/${x.id}.html"><span class="md">${esc(mdw(x.start.slice(0, 10)))}</span>${esc(x.name)}</a></li>`).join("")}</ul><p class="meta stay-events-note">開催のページで、その日の会場周辺の宿を探せます。</p>` : "";
+};
 /** 都道府県のページの「◯◯県の体験」。宿の枠のすぐ下に、宿の枠と同じ形で(2026-11-15 運営者の依頼) */
 function expBlock(p) {
   const bn = expBannersHtml({ on: { rakuten: rakutenOn, vc: vcEnabled(experienceAff, "activity") }, id: p, attrs: affAttrs, esc });
@@ -1097,7 +1104,7 @@ for (const k of kaguras) {
     body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [k]])}${hero(esc(k), countLine(list.length, reg.length))}
 ${info?.tagline ? `<p class="lead kagura-lead">${cl(info.tagline)}</p>` : ""}${sponsorFor("kagura", { kagura: k, places: [...list, ...reg] })}
 ${summaryHtml}
-${affiliateBlock({ prefecture: homePref, city: "", kagura: k })}${expBlock(homePref)}${adSlot(cfg.adsense.slotList)}
+${affiliateBlock({ prefecture: homePref, city: "", kagura: k }, { overnight: events.filter((x) => x.kagura === k) })}${expBlock(homePref)}${adSlot(cfg.adsense.slotList)}
 ${kaguraFolds(k, info, scheduleHtml)}${prStripFor("/kagura/")}
 ${learnBlock(moreOffers, { kagura: k }, today, "kagura_learn")}
 ${otherWays("", { lead: kindPrefs.map((p) => [prefHref(p), `${esc(p)}の神楽`]) })}`,
@@ -1128,8 +1135,8 @@ for (const p of prefPageSet) {
     ? monthKeys.map((key) => `<section class="pref-month" aria-labelledby="hiroshima-${key}"><h2 id="hiroshima-${key}">${esc(monthLabel(key))}の開催予定</h2><p class="meta"><a class="textlink" href="/month/${key}.html">${esc(monthLabel(key))}の全国日程を見る</a></p>${list.filter((e) => e.start.startsWith(key)).map((e) => { const i = list.indexOf(e); return card(e, "h3", true) + stripAt(i); }).join("")}</section>${list[furusatoAt]?.start.startsWith(key) ? furusato : ""}`).join("")
     : list.length ? `<h2>開催予定</h2>${cardsByMonth(list, true, after)}` : "";
   const stayHtml = isHiroshima
-    ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" })}</div>${expBlock(p)}`
-    : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }) + expBlock(p);
+    ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }, { overnight: list })}</div>${expBlock(p)}`
+    : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }, { overnight: list }) + expBlock(p);
   // 広島県の説明文の先頭: 今月・来月の開催の件数と、無料の公演の件数(「広島神楽スケジュール」「神楽 広島 無料」で探す人に、最初に答える)
   const thisKey = nowJst.slice(0, 7), nextKey = new Date(Date.UTC(+thisKey.slice(0, 4), +thisKey.slice(5, 7), 1)).toISOString().slice(0, 7);
   const monthCount = (key) => `${+key.slice(5, 7)}月${list.filter((e) => e.start.startsWith(key)).length}件`;

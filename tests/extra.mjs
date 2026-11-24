@@ -191,6 +191,20 @@ export async function extraTests({ ok, section, read, htmls, rel, OUT, build, ha
     t.advance(5000); await t.submit();
     ok(t.calls.length === 1 && JSON.parse(t.calls[0].init.body).subject.includes("お問い合わせ: 掲載内容の訂正") && !JSON.parse(t.calls[0].init.body).message.includes("events.json"), "お問い合わせが送れる(events.json の下書きは付かない)");
   }
+  { // 9b. 送れたときだけ、GA4 に generate_lead を1回(MEAS-20261124-1)。種類と用件の区分だけで、入力値は送らない。同意がなければ送らない
+    const ga = (allowed, fetchImpl) => async () => {
+      const t = await run("contact.html", { fetchImpl, setup: (a) => { a.w.gaCalls = []; a.w.gtag = (...x) => a.w.gaCalls.push(x); a.w.kaguraGa4Allowed = allowed; } });
+      t.set("topic", "広告・取材などのご相談"); t.set("sender", "太郎"); t.set("email", "t@example.com"); t.set("message", "協賛の相談です"); t.set("agree", true);
+      t.advance(5000); await t.submit(); return t.w.gaCalls;
+    };
+    const sent = await ga(true)();
+    ok(sent.length === 1 && sent[0][0] === "event" && sent[0][1] === "generate_lead" && sent[0][2].form_type === "contact" && sent[0][2].form_topic === "ads" && sent[0][2].page_path === "/contact.html", "送れたら generate_lead を1回送る(フォームの種類・用件の区分・ページ)", JSON.stringify(sent));
+    ok(!JSON.stringify(sent).includes("example.com") && !JSON.stringify(sent).includes("太郎") && !JSON.stringify(sent).includes("協賛の相談"), "名前・連絡先・本文は GA4 に送らない");
+    ok((await ga(false)()).length === 0, "統計の同意がない(GA4 が許されていない)ときは送らない");
+    ok((await ga(true, async () => ({ ok: false, json: async () => ({}) }))()).length === 0, "送信に失敗したときは送らない");
+    const s = await run("submit.html", { setup: (a) => { a.w.gaCalls = []; a.w.gtag = (...x) => a.w.gaCalls.push(x); a.w.kaguraGa4Allowed = true; } }); fillSubmit(s); s.advance(5000); await s.submit();
+    ok(s.w.gaCalls.length === 1 && s.w.gaCalls[0][2].form_type === "submit" && s.w.gaCalls[0][2].form_topic === "submit", "掲載の依頼は form_type・form_topic とも submit", JSON.stringify(s.w.gaCalls));
+  }
   { // 10. スクリプトが動いても、メールアドレスは、ページに現れない
     const t = await run("contact.html", {});
     ok(!t.d.querySelector("a[href^='mailto:']") && !t.d.querySelector("main").textContent.includes("@"), "スクリプトが動いても、メールのリンク・アドレスは現れない");

@@ -1124,6 +1124,9 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 /* 宿の検索条件(泊まる日・人数・場所)は押せないので、ボタンと同じ丸い枠にせず、文字だけで「・」区切りにする */
 .stay-cond{display:flex;flex-wrap:wrap;margin:0 0 12px!important;font-size:var(--fs-xs);letter-spacing:.06em;color:var(--mut)}
 .stay-cond span+span::before{content:"・";margin:0 .2em}
+.stay-events{list-style:none;margin:0 0 6px;padding:0}.stay-events li{border-top:1px solid var(--line)}.stay-events li:last-child{border-bottom:1px solid var(--line)}
+.stay-events a{display:flex;gap:.8em;align-items:baseline;padding:10px 2px;min-height:44px;box-sizing:border-box;text-decoration:none;font-weight:500}.stay-events .md{flex:none;font-size:var(--fs-s);font-weight:400;color:var(--mut)}
+.stay-events-note{margin:0 0 14px!important}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
 /* たたんだ注意書き: 小さく、薄く */
