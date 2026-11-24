@@ -306,7 +306,8 @@ export async function loadRuns(root) {
 /** 開いている週次の振り返りの Issue(gh)。返すのは [{ date, url, checked }](checked はチェックを付けた項目の key)。読めないときは { error } */
 export function loadReviewIssues(root) {
   return new Promise((resolve) => {
-    execFile("gh", ["issue", "list", "--state", "open", "--limit", "5", "--search", "週次の振り返り in:title", "--json", "title,body,url"], { cwd: root, timeout: 15000, windowsHide: true }, (err, out) => {
+    // 閉じた Issue も読む(全部チェックして閉じた週の項目が、「やること」に残らないように)。どの週かは本文の日付で合わせる
+    execFile("gh", ["issue", "list", "--state", "all", "--limit", "5", "--search", "週次の振り返り in:title", "--json", "title,body,url"], { cwd: root, timeout: 15000, windowsHide: true }, (err, out) => {
       if (err) return resolve({ error: err.code === "ENOENT" ? "gh が見つかりません" : "gh の実行に失敗しました" });
       try {
         resolve(JSON.parse(out).filter((x) => /^週次の振り返り[(（]/.test(x.title ?? "")).map((x) => ({ date: reviewIssueDate(x.body), url: x.url, checked: reviewChecks(x.body) })).filter((x) => x.date));
