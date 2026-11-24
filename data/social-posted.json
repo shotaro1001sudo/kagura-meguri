@@ -1061,5 +1061,77 @@
     "bufferId": "6b04d2e4f0d7b1e0de9776f1",
     "date": "2026-11-25",
     "hash": "094430026ae9db84"
+  },
+  {
+    "id": "r:history:安芸高田神楽:3",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-25T18:00:00.000Z",
+    "bufferId": "6b060fe768cb46d0540f90b8",
+    "date": "2026-11-25",
+    "hash": "63cdc09aa9ead9a2"
+  },
+  {
+    "id": "saeki-kagurasai-34-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-25T22:00:00.000Z",
+    "bufferId": "6b060fe8045c851eced2275b",
+    "date": "2026-11-26",
+    "hash": "71b97f1c27dcbacc"
+  },
+  {
+    "id": "npo-hiroshima-1fb5097b2a",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-26T02:00:00.000Z",
+    "bufferId": "6b060fe8045c851eced22782",
+    "date": "2026-11-26",
+    "hash": "fa3decec5f68d11e"
+  },
+  {
+    "id": "r:feature:相模里神楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-26T06:00:00.000Z",
+    "bufferId": "6b060fe84f7539498fcf75b7",
+    "date": "2026-11-26",
+    "hash": "0c7413647d527e6b"
+  },
+  {
+    "id": "irodori-garden-kagura-2026-11-29",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-26T10:00:00.000Z",
+    "bufferId": "6b060fe9045c851eced227d6",
+    "date": "2026-11-26",
+    "hash": "98aceae3c5d8e9c7"
+  },
+  {
+    "id": "r:kind:庄内神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-26T14:00:00.000Z",
+    "bufferId": "6b060fe9045c851eced22806",
+    "date": "2026-11-26",
+    "hash": "3574b061b017a430"
   }
 ]
