@@ -44,7 +44,9 @@ Google拡張機能側のDebug設定まで検出できるわけではない。
 
 `select_event`と`view_event`は別の行動で、足し合わせて「人数」にしない。
 GA4でcontent_id/content_type/source_page/filter_type/link_domainをイベント範囲のカスタムディメンションに登録すればUIで内訳を参照できる。
+2026-11-24 に source_page(一覧の元ページ)・filter_type(絞り込みの種類)・content_type(掲載の種類)・link_domain(公式サイトのドメイン)を登録した(運営者の許可)。content_id は未登録。
 登録前の過去データへ遡及適用はされない。Google受信の検証までは計測開始済みとしない。
+generate_lead のキーイベント登録は許可ずみ(2026-11-24)。GA4 は一度届いたイベントにしか印を付けられないため、最初の送信が届いたら「管理 → イベント → キーイベント」で星を付ける。
 既存のaffiliate_partner/affiliate_placement/affiliate_content_idは引き続き使用する。
 
 ## SNSのUTM規約（予約投稿はこの変更で編集しない）
