@@ -187,7 +187,9 @@ const kaguraInfoEn = existsSync(KAGURA_INFO_EN_FILE) ? readJson(KAGURA_INFO_EN_F
 const regularEn = existsSync("data/regular-en.json") ? readJson("data/regular-en.json") : {};
 const prefInfo = existsSync("data/pref-info.json") ? readJson("data/pref-info.json") : {};
 // 出典リンクの一覧(外部リンクは、新しいタブで開き、推薦しない旨の rel を付ける)
-const refList = (refs = []) => refs.length ? `<p class="meta">参考: ${refs.map((r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`).join(" / ")}</p>` : "";
+// 4件以上あるときは、たたんで1件ずつの行にする(「A / B / C / …」と1段落に10件も並ぶと、どこまでが1件か分かりにくい。2026-11-24)
+const refLink = (r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`;
+const refList = (refs = []) => !refs.length ? "" : refs.length <= 3 ? `<p class="meta">参考: ${refs.map(refLink).join(" / ")}</p>` : `<details class="refs"><summary>参考にした資料(${refs.length}件)</summary><ul>${refs.map((r) => `<li>${refLink(r)}</li>`).join("")}</ul></details>`;
 // 神楽の種類ページ(2026-11-15 運営者の依頼): 「〇〇とは」の概要(3行ほど)の下に、
 // 歴史・特徴・主な演目・観賞のコツ・開催予定を、この順に折り畳みで並べる。開催予定だけ最初から開く。
 // どの種類も(これから足す種類も)同じ並び。データのない欄は「情報がありません。」
@@ -297,7 +299,7 @@ function stayBlock(e) {
   // data-aff-box: 表示・クリックの置き場所の名前(GA4 の affiliate_placement。MEAS-20261117-2)
   return `<aside class="stay" data-aff-box="event_stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
 ${night ? `<p class="stay-lead">${cl(`${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。会場の近くに泊まる予定にしておくと安心です。`)}</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
-<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿泊日(${esc(jpDate(day))})・人数・地域は、リンク先で選んでください。${esc(place)}周辺で探すときは、会場からの距離と最終チェックインの時刻もご確認ください。</p></details>
+<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿は、リンク先で宿泊日(${esc(jpDate(day))})と人数を選び、${esc(place)}周辺で探してください。</p></details>
 ${prNote(on)}</aside>`;
 }
 

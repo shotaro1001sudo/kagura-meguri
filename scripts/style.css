@@ -1137,9 +1137,11 @@ main>p:not([class]){margin:20px 0;max-width:42em}
 @media(hover:hover){.stay-banner:hover{box-shadow:0 0 0 2px var(--ac2)}}
 .stay small.meta{border-left:0;padding-left:0;margin:6px 0 0}
 /* たたんだ注意書き: 小さく、薄く */
-:is(.stay-note,.pc-more){margin:8px 0 4px}
-:is(.stay-note,.pc-more) summary{cursor:pointer;width:fit-content;font-size:var(--fs-xs);color:var(--mut);padding:9px 0;min-height:var(--tap);list-style-position:inside}
-:is(.stay-note,.pc-more) summary:hover{color:var(--ac)}
+:is(.stay-note,.pc-more,.refs){margin:8px 0 4px}
+:is(.stay-note,.pc-more,.refs) summary{cursor:pointer;width:fit-content;font-size:var(--fs-xs);color:var(--mut);padding:9px 0;min-height:var(--tap);list-style-position:inside}
+:is(.stay-note,.pc-more,.refs) summary:hover{color:var(--ac)}
+/* 参考にした資料(4件以上): たたんで、1件を1行に */
+.refs ul{margin:2px 0 8px;padding-left:1.2em;font-size:var(--fs-xs);color:var(--mut);line-height:var(--lh-sub)}.refs li{margin:2px 0}
 .pc-more dl{margin:6px 0 0}
 /* 交通・体験・準備のカード */
 .planning-lead{font-size:var(--fs-m);margin:0 0 6px}
