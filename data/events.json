@@ -4555,5 +4555,44 @@
     "overnightStay": true,
     "lat": 35.144205,
     "lng": 137.697583
+  },
+  {
+    "id": "gotsu-uyagawa-myoken-2026-12-05",
+    "name": "妙見神社大祭の奉納神楽(長澤社中)",
+    "kagura": "石見神楽",
+    "prefecture": "島根県",
+    "city": "江津市",
+    "venue": "敬川八幡宮",
+    "address": "敬川町1768-1",
+    "start": "2026-12-05T19:00",
+    "end": "2026-12-06T01:30",
+    "fee": "",
+    "url": "https://www.instagram.com/p/Df_ro6vzWyG/",
+    "description": "江津市敬川町の妙見神社の大祭で、石見神楽長澤社中が敬川八幡宮で神楽を奉納します。19時から翌1時30分まで(長澤社中の公演情報)。観覧料・駐車場は公表されていません。地域の祭礼での奉納のため、現地の案内に従い、参拝や祭事の妨げにならないようご配慮ください。出発前に公式情報をご確認ください。",
+    "source": "石見神楽 長澤社中 公式Instagram「11月・12月の公演情報」(2026-11-20)",
+    "checked": "2026-11-24",
+    "status": "published",
+    "lat": 34.973766,
+    "lng": 132.170029,
+    "socialEvidence": {
+      "postUrl": "https://www.instagram.com/p/Df_ro6vzWyG/",
+      "organizer": "石見神楽 長澤社中",
+      "authorityUrl": "https://iwamikagura.jp/info/5395/",
+      "authorityNote": "浜田市観光協会の石見神楽公式サイトの「手道具作り体験」のページが、石見神楽長澤社中の問い合わせ先としてこの Instagram アカウントを載せている。告知画像に公演名・日時・場所(敬川八幡宮)が書かれ、同じ画像の「一般非公開」の公演とは別に案内されている",
+      "checked": "2026-11-24",
+      "publicAccess": true,
+      "facts": {
+        "name": "妙見神社大祭の奉納神楽(長澤社中)",
+        "kagura": "石見神楽",
+        "prefecture": "島根県",
+        "city": "江津市",
+        "venue": "敬川八幡宮",
+        "address": "敬川町1768-1",
+        "start": "2026-12-05T19:00",
+        "end": "2026-12-06T01:30",
+        "timeUnknown": false,
+        "fee": ""
+      }
+    }
   }
 ]
