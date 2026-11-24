@@ -63,6 +63,15 @@ export function sourcesTests({ ok, section }) {
   ok(ui[3].start === "2027-01-10T11:00" && ui[3].venue === "はなもも体育館(久野多目的施設)" && !ui[3].address, "12月分のページの1月は翌年。地名でないかっこは会場名に残す", JSON.stringify(ui[3]));
   let threw = false; try { parseUnnan(unHtml.replace("（2026年12月分）", ""), un, un.url); } catch { threw = true; }
   ok(threw, "見出しに年月がなければ、年を推測せずに失敗にする");
+  // 2026-11-16 から、2か月分をまとめた見出し「(2026年11月・12月分)」と、本文の「【2026年12月】」の形になった
+  const un2 = `<html><head><title>x</title></head><body><h1>【お知らせ】雲南市内神楽団体　神楽公演スケジュール（2026年11月・12月分）</h1><p>【2026年11月】</p>`
+    + para("出雲神楽の夕べ", "11月28日（土）", "古代鉄歌謡館（大東町中湯）", "薦沢神楽社中（大東町薦沢）", "19：00～", "<br />&lt;入場料金&gt;　高校生以上1,000円（税込）　中学生以下無料")
+    + `<p>【2027年1月】</p>` + para("新春神楽", "1月3日（日）", "古代鉄歌謡館（大東町中湯）", "深野神楽保存会（吉田町深野）", "13:00～")
+    + "</body></html>";
+  const ui2 = parseUnnan(un2, un, un.url);
+  ok(ui2.length === 2 && ui2[0].start === "2026-11-28T19:00" && ui2[0].fee === "高校生以上1,000円(税込) 中学生以下無料", "2か月分の見出し(2026年11月・12月分)も読む", JSON.stringify(ui2[0]));
+  ok(ui2[1].start === "2027-01-03T13:00", "本文の月の見出し【2027年1月】があれば、その年で読む", JSON.stringify(ui2[1]));
+  for (const t of ["（2026年12月・2027年1月分）", "（2026年11月分）"]) ok(parseUnnan(unHtml.replace("（2026年12月分）", t), un, un.url).length === 4, `見出し ${t} を読む`);
 
   section("岩手県 花北・遠野応援隊: 神楽公演情報の表");
   const iw = allSources.find((s) => s.id === "iwate-hanakitatoono");

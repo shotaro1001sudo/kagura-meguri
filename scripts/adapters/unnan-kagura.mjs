@@ -3,7 +3,7 @@
 //   <イベント名> 出雲神楽の夕べ / <日　　時> 11月7日(土) / <会　　場> 古代鉄歌謡館(大東町中湯)
 //   <出演団体> 中野神楽保存会(三刀屋町中野) / <時　　間> 19:00〜 / <料金> … / <詳細はこちら>(リンク)
 // 方針(分からないものは推測しない):
-//  - 年はページの見出し「(YYYY年M月分)」からだけ取る。見出しがなければ、全体を失敗にする
+//  - 年はページの見出し「(YYYY年M月分)」「(YYYY年M月・M月分)」と、本文の「【YYYY年M月】」からだけ取る。見出しがなければ、全体を失敗にする
 //  - 「15:00頃〜」のような目安の時刻は、時刻未定として扱う
 //  - 会場のかっこの地名が雲南市以外(奥出雲町・安来市など)なら、その市町村で登録する。分からない地名は雲南市内とする
 //  - 一般公開でないもの(非公開・関係者のみ)と、中止・延期は除く
@@ -21,12 +21,16 @@ const norm = (s) => String(s ?? "").normalize("NFKC").replace(/[　\s]+/g, " ").
 export function parse(html, source, pageUrl = source.url) {
   const $ = cheerio.load(html);
   const title = norm($("h1").first().text() + " " + $("title").text());
-  const ym = title.match(/(\d{4})年(\d{1,2})月分/);
+  // 「(2026年12月分)」のほか、2か月分をまとめた「(2026年11月・12月分)」「(2026年12月・2027年1月分)」も読む(年は最初の月のもの)
+  const ym = title.match(/(\d{4})年(\d{1,2})月(?:[・、～〜-](?:\d{4}年)?\d{1,2}月)*分/);
   if (!ym) throw new Error("見出しに「YYYY年M月分」がありません(年を推測しないため、読みません)");
-  const year = +ym[1], month = +ym[2];
+  let year = +ym[1], month = +ym[2];
   const out = [];
-  $("p").each((_, el) => {
+  $("p, h2, h3, h4").each((_, el) => {
     const $p = $(el);
+    // 本文の月の見出し「【2026年12月】」があれば、そこから下はその年月で読む
+    const sec = norm($p.text()).match(/^【(\d{4})年(\d{1,2})月】$/);
+    if (sec) { year = +sec[1]; month = +sec[2]; return; }
     const lines = ($p.html() ?? "").split(/<br\s*\/?>/i).map((x) => norm(cheerio.load(`<i>${x}</i>`)("i").text()));
     const field = (key) => {
       const re = new RegExp(`^<\\s*${key.split("").join("\\s*")}\\s*>\\s*(.*)$`);
