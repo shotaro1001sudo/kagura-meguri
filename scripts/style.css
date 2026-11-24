@@ -1245,3 +1245,19 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 .kfold>summary:hover h2{color:var(--ac)}
 .kfold-body{padding:0 4px 20px}.kfold-body.detail{margin:0}.kfold-body>:first-child{margin-top:0}
 .kfold-body .no-info{margin:0}
+/* 英語のページ(/en/): 種類ごとのページの演目・定期公演の一覧。日本語の種類のページの、英語版への案内 */
+.prose.en dl.en-plays dt{font-family:var(--serif);font-weight:500;font-size:var(--fs-m);margin:20px 0 4px}
+.prose.en dl.en-plays dt small{color:var(--mut);font-size:var(--fs-s);margin-left:6px}
+.prose.en dl.en-plays dd{margin:0 0 8px}
+.prose.en .en-show{margin-top:var(--sp-3)}
+.prose.en .en-show+.en-show{border-top:1px solid var(--line);padding-top:8px}
+.prose.en table.en-info th{width:7.5em;letter-spacing:0}
+.prose.en .en-steps li b{display:block}
+.prose.en .en-months{margin:16px 0 4px}
+.tbl.styles th[scope=row]{white-space:normal;width:auto;min-width:9em}
+.kagura-summary .en-link{margin:12px 0 0;font-size:var(--fs-s)}
+.prose.en .en-jump{margin:14px 0 4px}
+/* 英語の日程の表は件数が多いので、スマホでは1件を詰めて見せる(見出しの日付の下に「Time 19:00」のように横に並べる) */
+@media(max-width:560px){.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td{padding:3px 12px;border-top:0}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td:before{display:inline;margin-right:8px}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td:last-child{padding-bottom:10px}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) th[scope=row]{border-bottom:1px solid var(--line)}}
+.tbl.cmp.en-reg th[scope=row]{white-space:normal;width:auto;min-width:10em}
+@media(max-width:560px){.prose.en table.en-info th,.prose.en table.en-info td{display:block;width:auto}.prose.en table.en-info th{padding-bottom:0;border-bottom:0}.prose.en table.en-info td{padding-top:4px}.tbl.cmp.styles td{padding:3px 12px;border-top:0}.tbl.cmp.styles td:last-child{padding-bottom:10px}}

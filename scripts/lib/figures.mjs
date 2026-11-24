@@ -41,13 +41,18 @@ const ICONS = {
 export const icon = (name) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name]}</svg>`;
 
 /** 神楽殿の見方(一例): 上から、神前・舞台・囃子方・客席 */
-export const stageDiagram = () => `<svg class="dg" viewBox="0 0 360 270" role="img" aria-label="神楽の舞台の見方(一例)。上に神前、その手前に舞台(舞い手)、舞台の脇に囃子方(太鼓・笛・鉦)、いちばん手前に客席が並ぶ図。">
-<rect class="dg-box" x="10" y="8" width="340" height="44" rx="6"/><text class="dg-t" x="180" y="36" text-anchor="middle" font-size="16">神前(神様をお迎えする場所)</text>
+// 舞台の見方の図の文字(日本語のガイドと、英語のガイドで使う)
+const STAGE_TEXT = {
+  ja: {"aria":"神楽の舞台の見方(一例)。上に神前、その手前に舞台(舞い手)、舞台の脇に囃子方(太鼓・笛・鉦)、いちばん手前に客席が並ぶ図。","a":"神前(神様をお迎えする場所)","b":"舞台(神楽殿・舞庭)","c":"舞い手(面・衣装)","d":"囃子方","e":"大太鼓・小太鼓","f":"手打鉦・笛","g":"客席(あなたの場所)","h":"舞い手の動きと、囃子の呼吸をあわせて見る"},
+  en: {"aria":"How to read a kagura stage (an example). At the top is the altar, where the gods are welcomed. In front of it is the stage with the dancer, the musicians (drums, gong and flute) sit at the side, and the audience is at the front.","a":"Altar (where the gods are welcomed)","b":"Stage (kagura hall or dance floor)","c":"Dancer (mask, costume)","d":"Musicians","e":"Large and small drums","f":"Hand gong, flute","g":"Audience (your seat)","h":"Watch how the dancers move with the music"},
+};
+export const stageDiagram = (lang = "ja") => { const L = STAGE_TEXT[lang] ?? STAGE_TEXT.ja; return `<svg class="dg" viewBox="0 0 360 270" role="img" aria-label="${L.aria}">
+<rect class="dg-box" x="10" y="8" width="340" height="44" rx="6"/><text class="dg-t" x="180" y="36" text-anchor="middle" font-size="16">${L.a}</text>
 <rect class="dg-stage" x="10" y="64" width="340" height="124" rx="6"/>
-<text class="dg-m" x="22" y="86" font-size="13">舞台(神楽殿・舞庭)</text>
-<circle class="dg-ac" cx="120" cy="112" r="12"/><path class="dg-aclin" d="M120 124v24M106 134l14-6 14 6M120 148l-9 14M120 148l9 14"/><text class="dg-t" x="120" y="180" text-anchor="middle" font-size="13">舞い手(面・衣装)</text>
-<rect class="dg-box" x="228" y="98" width="112" height="76" rx="6"/><text class="dg-t" x="284" y="120" text-anchor="middle" font-size="15">囃子方</text><text class="dg-m" x="284" y="142" text-anchor="middle" font-size="12">大太鼓・小太鼓</text><text class="dg-m" x="284" y="158" text-anchor="middle" font-size="12">手打鉦・笛</text>
-<rect class="dg-box dg-seat" x="10" y="204" width="340" height="56" rx="6"/><text class="dg-t" x="180" y="228" text-anchor="middle" font-size="16">客席(あなたの場所)</text><text class="dg-m" x="180" y="248" text-anchor="middle" font-size="12">舞い手の動きと、囃子の呼吸をあわせて見る</text></svg>`;
+<text class="dg-m" x="22" y="86" font-size="13">${L.b}</text>
+<circle class="dg-ac" cx="120" cy="112" r="12"/><path class="dg-aclin" d="M120 124v24M106 134l14-6 14 6M120 148l-9 14M120 148l9 14"/><text class="dg-t" x="120" y="180" text-anchor="middle" font-size="13">${L.c}</text>
+<rect class="dg-box" x="228" y="98" width="112" height="76" rx="6"/><text class="dg-t" x="284" y="120" text-anchor="middle" font-size="15">${L.d}</text><text class="dg-m" x="284" y="142" text-anchor="middle" font-size="12">${L.e}</text><text class="dg-m" x="284" y="158" text-anchor="middle" font-size="12">${L.f}</text>
+<rect class="dg-box dg-seat" x="10" y="204" width="340" height="56" rx="6"/><text class="dg-t" x="180" y="228" text-anchor="middle" font-size="16">${L.g}</text><text class="dg-m" x="180" y="248" text-anchor="middle" font-size="12">${L.h}</text></svg>`; };
 
 /** 湯立のしくみ(一例): 釜の湯を、巫女が笹で振りかける */
 export const yudateDiagram = () => `<svg class="dg" viewBox="0 0 360 300" role="img" aria-label="湯立のしくみ。神前の釜で湯を沸かし、神がかりした巫女が笹を湯に浸して、自分や参詣者に振りかける様子を示した図。">

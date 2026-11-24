@@ -50,13 +50,15 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     if (!idx) { ok(/noindex,follow/.test($('meta[name="robots"]').attr("content")), `${p}: noindex でもリンクはたどらせる(follow)`); continue; }
     ok(/index,follow/.test($('meta[name="robots"]').attr("content") ?? ""), `${p}: index,follow と明示`);
     const title = $("title").text(), desc = $('meta[name="description"]').attr("content") ?? "";
+    // 英語のページは、1文字の幅が狭く、検索結果に出る長さが違う(説明はおよそ160字、題はおよそ60字まで)
+    const en = p.startsWith("/en/");
     const key = p.startsWith("/events/") || p.startsWith("/regular/") ? "detail" : /^\/(kagura|pref|month)\//.test(p) || ["/index.html", "/map.html", "/calendar.html"].includes(p) ? "list" : "static";
     if (key !== "static") {
       if (!(strictText && noInfoKagura(p))) ok(desc.length >= 80 && desc.length <= 125, `${p}: 説明文が、検索結果で中身の伝わる長さ(80〜125字)`, `${desc.length}字`);
       ok(!descs.has(desc), `${p}: 説明文が他ページと重複しない`, desc);
       descs.set(desc, p);
-    } else ok(desc.length >= 80 && desc.length <= 125, `${p}: 説明文が、中身の分かる長さ(80〜125字)`, `${desc.length}字`);
-    ok(title.length <= (key === "detail" ? 75 : 55), `${p}: タイトルが長すぎない`, `${title.length}字: ${title}`);
+    } else ok(desc.length >= 80 && desc.length <= (en ? 160 : 125), `${p}: 説明文が、中身の分かる長さ(80〜${en ? 160 : 125}字)`, `${desc.length}字`);
+    ok(title.length <= (en ? 60 : key === "detail" ? 75 : 55), `${p}: タイトルが長すぎない`, `${title.length}字: ${title}`);
     ok(title.endsWith(base.includes("example") ? "" : $('meta[property="og:site_name"]').attr("content")), `${p}: タイトルの末尾にサイト名`);
     if (/^\/pref\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに都道府県名`);
     if (/^\/kagura\/./.test(p) && p !== "/kagura/index.html") ok(title.includes($("h1").text()), `${p}: タイトルに神楽の種類名`);

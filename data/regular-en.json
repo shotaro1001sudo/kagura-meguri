@@ -1,0 +1,121 @@
+{
+  "takachiho-jinja-kagura": {
+    "checked": "2026-11-24",
+    "basis": "27e3c60e90be",
+    "name": "Takachiho Kagura at Takachiho Shrine",
+    "venue": "Kagura hall, Takachiho Shrine",
+    "place": "Takachiho, Miyazaki",
+    "schedule": "Every night, 20:00-21:00",
+    "closed": "No performance on 31 December and 1 January, or on 22 and 23 November every year (because of the Takachiho night kagura festival, 'Shinwa no Takachiho Yokagura Matsuri').",
+    "fee": "Adults 1,000 yen. Free for children up to primary school age. Groups of 20 or more: 900 yen per person.",
+    "booking": "There is online booking (about 230 seats; from 10:00 thirty days before the show until 17:00 on the day; credit card only) and same-day tickets at the reception from 19:30 (about 50-60 seats). Telephone bookings are not accepted.",
+    "description": "Every night, four representative pieces of kagura are performed at the kagura hall of Takachiho Shrine, in about an hour.",
+    "steps": [
+      {
+        "t": "Book (optional)",
+        "d": "Online booking (230 seats) opens at about 10:00 thirty days before the show and closes at 17:00 on the day. Payment is by credit card only, and you can book for up to 10 people at a time. Telephone bookings are not possible. Cancellation fees apply from the moment you book (10% up to 2 days before, 50% the day before, 100% on the day)."
+      },
+      {
+        "t": "19:00 Check-in for bookings",
+        "d": "At the reception of the kagura hall, show the QR code on the ticket attached to your booking email."
+      },
+      {
+        "t": "19:30 Same-day tickets",
+        "d": "Pay the admission fee at the kagura hall reception window, then go in. It costs 1,000 yen per person, and children up to primary school age are free. Groups of 20 or more pay 900 yen per person (there is no group discount for online bookings). Seats are taken in order of arrival."
+      },
+      {
+        "t": "20:00-21:00 Performance",
+        "d": "Four representative pieces are performed from the 33 pieces of this kagura: Tajikarao no mai, Uzume no mai, Totori no mai and Goshintai no mai. The hall is a large tatami room. Chairs and cushions are not lent out (you may bring your own)."
+      }
+    ],
+    "stepsLead": "You can watch without booking by buying a same-day ticket. However, there are only about 50-60 same-day tickets, and you may not get in once the hall is full (about 300 people). The official guide therefore recommends booking in advance or arriving early."
+  },
+  "hiroshima-kagura-teiki-2026": {
+    "checked": "2026-11-24",
+    "basis": "fc522bc43cd4",
+    "name": "Hiroshima Kagura regular performances 2026",
+    "venue": "Hiroshima Kenmin Bunka Center",
+    "place": "Naka Ward, Hiroshima City, Hiroshima",
+    "schedule": "Every Wednesday, starts at 19:00 (doors open 18:00; ends at about 19:45)",
+    "season": "April to December 2026",
+    "fee": "Check the official website for prices and how to buy tickets.",
+    "description": "A regular performance where you can enjoy Hiroshima kagura every Wednesday evening. The performing troupes and plays are announced on the official website."
+  },
+  "masuda-iwami-yokagura": {
+    "checked": "2026-11-24",
+    "basis": "25c2719b8110",
+    "name": "Iwami Night Kagura, Masuda performances",
+    "venue": "Main hall, 3rd floor, EAGA building in front of Masuda Station",
+    "place": "Masuda, Shimane",
+    "schedule": "Every Saturday, starts at 19:30 (planned to end at about 21:00). In December, only the special performance on the 26th.",
+    "season": "April to August and January to March (no shows from September to November because of the autumn festivals in each area; in December, only a special performance)",
+    "fee": "Junior high school students and older 1,200 yen, primary school children 500 yen, preschool children free. Masuda residents of junior high school age and older pay 1,000 yen. Primary school children are free on the second Saturday of every month.",
+    "booking": "Pay at the reception on the day. All seats are unreserved (there is no advance booking).",
+    "description": "Iwami Kagura is performed on Saturday evenings in the main hall on the 3rd floor of the EAGA building in front of Masuda Station (in the 2026 fiscal year, from April to August and from January to March). After the show there is a photo session, and on the last show day of each month there is a prize draw. The performing troupes and plays are published in Masuda City's annual schedule."
+  },
+  "hamada-yokagura-shusai": {
+    "checked": "2026-11-24",
+    "basis": "cf53af2c02c4",
+    "name": "Hamada Night Kagura weekend performances (Sannomiya Shrine)",
+    "venue": "Sannomiya Shrine",
+    "place": "Hamada, Shimane",
+    "schedule": "Every Saturday, 20:00-21:00 (reception 19:00-20:30). Also on 3-5 May and on Fridays from September to November.",
+    "season": "All year (April 2026 to March 2027)",
+    "fee": "Adults 1,500 yen (pay at the venue on the day). Free for children of primary school age and under (minors must be accompanied by a parent or guardian).",
+    "booking": "Booking is optional (capacity 100). Book by phone with the Hamada City Tourism Association, or on the official night kagura booking website.",
+    "description": "Iwami Kagura is performed indoors every Saturday evening at Sannomiya Shrine in Hamada. After the show there is a prize draw and a photo session. The performing troupes and plays may change without notice."
+  },
+  "gotsu-arifuku-kagura": {
+    "checked": "2026-11-24",
+    "basis": "20684d350223",
+    "name": "Regular performances at the Yunomachi Kagura Hall, Arifuku Onsen",
+    "venue": "Yunomachi Kagura Hall, Arifuku Onsen",
+    "place": "Gotsu, Shimane",
+    "schedule": "Mainly every Saturday, 20:30-22:00 (also on Sunday 3 May and Sunday 20 September)",
+    "season": "All year (April 2026 to March 2027)",
+    "fee": "Junior high school students and older 1,500 yen, primary school children 500 yen, preschool children free.",
+    "booking": "Enquiries: Gotsu City Tourist Information Center.",
+    "description": "Iwami Kagura is performed mainly on Saturday evenings at the kagura hall of Arifuku Onsen. On 22 August, it is performed on the stage of the Arifuku Onsen summer festival."
+  },
+  "yunotsu-yokagura": {
+    "checked": "2026-11-24",
+    "basis": "982fc9214130",
+    "name": "Yunotsu Onsen Night Kagura (Tatsunogozen Shrine)",
+    "venue": "Tatsunogozen Shrine",
+    "place": "Oda, Shimane",
+    "schedule": "Every Saturday, 20:00-21:30",
+    "season": "All year (April 2026 to March 2027)",
+    "fee": "2,000 yen (children also pay for a seat).",
+    "booking": "Booking required (55 seats). If there are free seats on the day, you may be able to watch. Book through the Yunotsu Onsen Ryokan Association.",
+    "description": "Iwami Kagura is performed every Saturday evening at Tatsunogozen Shrine in Yunotsu Onsen, a hot spring town that is part of a World Heritage Site. Booking is required."
+  },
+  "tojimura-kagura": {
+    "checked": "2026-11-24",
+    "basis": "bfc9f82ed236",
+    "name": "Kagura at Kagura Monzen Tojimura (Kagura Dome and Kamukura-za)",
+    "venue": "Kagura Monzen Tojimura (Kagura Dome and Kamukura-za)",
+    "place": "Akitakata, Hiroshima",
+    "schedule": "Weekend evenings from 20:30, and Sunday and public holiday afternoons at 12:30 and 14:30 (dates, halls and troupes follow the official schedule; in November, Friday evenings too)",
+    "season": "2026 fiscal year (April 2026 to March 2027)",
+    "fee": "Kagura Dome, afternoon (no change of audience, unreserved seats): adults 1,200 yen, children 500 yen (800 yen and 300 yen if you go in after the first show has ended). Kamukura-za, afternoon (audience changes between shows, all seats reserved): ticket for both shows, adults 1,200 yen and children 500 yen; one show, 800 yen and 300 yen. Kamukura-za, evening: adults 800 yen, children 300 yen. 'Adults' means high school students and older; 'children' means primary and junior high school students.",
+    "booking": "Tickets go on sale when the gates open (11:00 for afternoon shows, 19:30 for evening shows). The official schedule does not say whether advance tickets or booking are needed.",
+    "description": "At Kagura Monzen Tojimura in Midori, Akitakata, local kagura troupes take turns to perform. In the afternoon, one troupe performs two plays (from 12:30 and from 14:30); in the evening, there is one play (from 20:30). On Sunday and public holiday afternoons in November the venue is Kagura Dome; at other times it is Kamukura-za. Each play lasts about 30 to 90 minutes, depending on the piece.",
+    "halls": {
+      "神楽ドーム": "Kagura Dome",
+      "かむくら座": "Kamukura-za"
+    },
+    "programNote": "This is the plan as of March 2026. Dates and troupes may change, and the plays are announced about one week before. 21 November (Hongo Kagura Festival) and 27 March 2027 (Tojimura spring festival), both at Kagura Dome, are not included in this table. The whole village is closed on its regular closing days, 18 and 19 November."
+  },
+  "hamada-yuhipark-teiki": {
+    "checked": "2026-11-24",
+    "basis": "dda3c3700856",
+    "name": "Iwami Kagura regular performances at Michi-no-Eki Yuhi Park Hamada",
+    "venue": "Michi-no-Eki (roadside station) Yuhi Park Hamada",
+    "place": "Hamada, Shimane",
+    "schedule": "Second Sunday of every month, 13:00-15:00",
+    "season": "All year",
+    "fee": "Free.",
+    "booking": "No booking needed.",
+    "description": "On the afternoon of the second Sunday of every month, kagura troupes from Hamada take turns to perform Iwami Kagura at the roadside station Yuhi Park Hamada. Admission is free. Performances may be cancelled because of the weather or other reasons, and the troupe changes every month."
+  }
+}

@@ -21,7 +21,7 @@ const dayNum = (ymd) => Math.floor(Date.parse(`${ymd}T00:00:00Z`) / 86400e3);
 const addDays = (ymd, n) => new Date((dayNum(ymd) + n) * 86400e3).toISOString().slice(0, 10);
 
 /** 今週の数字。入力はすべてリポジトリのデータ(公開情報だけ) */
-export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "", performance = null, quiz = null, mediaStats = null, note = null, perDay = null, eventsPerDay = null }) {
+export function reviewMetrics({ events = [], summary = {}, posted = [], info = {}, sources = [], todayJst, baseUrl = "", performance = null, quiz = null, english = null, mediaStats = null, note = null, perDay = null, eventsPerDay = null }) {
   const live = events.filter((e) => e.status === "published");
   const within = (e, from, to) => { const d = e.start.slice(0, 10); return d >= from && d <= to; };
   const up = (n) => live.filter((e) => within(e, todayJst, addDays(todayJst, n)));
@@ -91,6 +91,8 @@ export function reviewMetrics({ events = [], summary = {}, posted = [], info = {
     },
     // 好み診断の点検(scripts/lib/quiz-health.mjs)。なければ null
     quiz,
+    // 英語ページの訳の点検(scripts/lib/english-data.mjs)。なければ null
+    english,
   };
 }
 
@@ -139,6 +141,14 @@ export function decideActions(m, prev) {
     const gaps = (q.pageGaps ?? []).filter((g) => !q.uncovered.some((u) => u.kind === g.kind)); // 解説がまったくない神楽は quiz-uncovered が受け持つ
     if (gaps.length) add("kagura-page-gaps", "Claude", `種類のページに「情報がありません。」の欄がある神楽が ${gaps.length} 種類: ${gaps.slice(0, 5).map((g) => `${g.kind}(${g.fields.join("・")})`).join("、")}${gaps.length > 5 ? ` ほか ${gaps.length - 5} 種類` : ""}。公式の情報で出典つきに調べ、data/kagura-info.json に足す(紹介文の文を変えたら scripts/lib/quiz.mjs の intro~N も見直す。docs/quiz.md)`);
     if (q.checkedDaysAgo > QUIZ_STALE_DAYS) add("quiz-stale", "Claude", `好み診断の全体の見直しから ${q.checkedDaysAgo} 日(目安 ${QUIZ_STALE_DAYS} 日)。質問の分かりやすさ、完了率・シェア(PCの分析で GA4 の quiz_start→quiz_complete)、対象の広げ方を見直し、QUIZ_CHECKED を更新する`);
+  }
+  // 英語ページの訳: 日本語の本文(種類の解説・定期公演)が書き換わった・新しく加わったのに、英訳が追いついていない
+  const en = m.english;
+  if (en) {
+    const few = (xs) => xs.slice(0, 5).join("、") + (xs.length > 5 ? ` ほか ${xs.length - 5} 件` : "");
+    const kinds = [...en.stale, ...en.missing], regs = [...en.regularStale, ...en.regularMissing];
+    if (kinds.length) add("en-translation", "Claude", `英語ページの神楽の解説が、日本語の今の本文に追いついていません(${few(kinds)})。日本語の本文どおりに data/kagura-info-en.json を訳し直し(事実を足さない・読みが確かでない固有名は [[日本語]])、basis と checked を更新する`);
+    if (regs.length) add("en-regular", "Claude", `英語ページの定期公演の訳が、日本語の今の内容に追いついていません(${few(regs)})。料金・時間・予約の決まりを日本語どおりに data/regular-en.json へ訳し直し、basis と checked を更新する(古い訳は英語ページに出しません)`);
   }
   if (prev && prev.listing && m.listing.upcoming30 < prev.listing.upcoming30 * 0.7) add("listing-drop", "Claude", `今後30日の掲載が先週の ${prev.listing.upcoming30} 件から ${m.listing.upcoming30} 件へ大きく減少。収集元の取りこぼしを確認する`);
   return a;
