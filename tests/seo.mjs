@@ -9,6 +9,7 @@ import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs
 import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import * as cheerio from "cheerio";
+import vm from "node:vm";
 
 const walk = (d) => readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 const read = (p) => readFileSync(p, "utf8");
@@ -232,6 +233,15 @@ export function seoTests({ ok, section, OUT, build }) {
     const pub = lds.flat().find((x) => x["@type"] === "WebSite")?.publisher;
     ok(Array.isArray(pub?.sameAs) && pub.sameAs.some((u) => /^https:\/\/note\.com\/[a-z0-9_]+$/.test(u)) && pub.sameAs.some((u) => /^https:\/\/x\.com\/[A-Za-z0-9_]+$/.test(u)), "トップの運営者に sameAs(X と note のアカウント)", JSON.stringify(pub));
     ok(/^@[A-Za-z0-9_]+$/.test($h('meta[name="twitter:site"]').attr("content") ?? ""), "X のカードにサイトのアカウント(twitter:site)"); }
+  section("404: URL の後ろにくっついた「)にまとめています」などを外して、もとのページへ");
+  { const $n = cheerio.load(read("dist-test-seo/404.html"));
+    const code = $n("main script, body script").map((_, s) => $n(s).html()).get().find((s) => s.includes("location.replace")) ?? "";
+    const go = (path) => { let to = null; const loc = { pathname: encodeURI(path), search: "", hash: "", replace: (u) => { to = u; } }; vm.runInNewContext(code, { location: loc, decodeURIComponent, encodeURI }); return to; };
+    ok(code.length > 0, "404 のページに、移す処理がある");
+    ok(go("/sponsor.html)にまとめています。") === "/sponsor.html", "「/sponsor.html)にまとめています。」→ /sponsor.html");
+    ok(go("/kagura/花祭.html）") === encodeURI("/kagura/花祭.html") && go("/)を運営している") === "/" && go("/events/a.html、") === "/events/a.html", "全角のかっこ・読点、トップの「/)」も");
+    ok(go("/nothing-here.html") === null && go("/old/page") === null && go("/sponsor.htmlx") === null, "後ろにくっついた文字がないときは移さない(ふつうの 404)");
+    ok(go("//evil.test/a.html)") === null, "「//」で始まる別のサイトへは移さない"); }
   section("宿の枠: 県・種類のページから、泊まりがけになる開催のページへ(ADV-20261124-1)");
   { const pages = [...walk("dist-test-seo/pref"), ...walk("dist-test-seo/kagura")].filter((f) => !/index\.html$/.test(f));
     const withList = pages.map((f) => ({ f, $: cheerio.load(read(f)) })).filter(({ $ }) => $('aside[data-aff-box="travel_block"] .stay-events').length);

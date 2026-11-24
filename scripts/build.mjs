@@ -1569,10 +1569,15 @@ for (const f of ["symbol.png", "symbol-96.png", "favicon-48.png", "apple-touch-i
 // 検索エンジンや古いブラウザは、/favicon.ico を直接見に行く。シンボルの画像から作って置く
 writeFileSync(`${OUT}/favicon.ico`, pngToIco(readFileSync("assets/favicon-48.png")));
 
+// 404: メールやSNSで URL の直後に「)にまとめています」などが続き、メールの画面がそこまでリンクにしたとき、もとのページへ移す。
+// 11/08 の営業メールの「(https://kagurameguri.jp/sponsor.html)にまとめています」で起きた。「.html」や「/」の直後が閉じかっこ・句読点のときだけ。
+// 移す先は、このサイトのパスだけ(「//」で始まる別のサイトへは移さない)。移した先が無ければ、ふつうの 404 のまま
+const fixTrailingJunk = `(function(){try{var p=decodeURIComponent(location.pathname),c=")）]」』、。,";var i=p.indexOf(".html"),to="",at=function(k){var ch=p.charAt(k);return ch!==""&&c.indexOf(ch)>=0};if(i>0&&at(i+5))to=p.slice(0,i+5);else if(at(1))to="/";if(!to||to.charAt(1)==="/")return;location.replace(encodeURI(to)+location.search+location.hash)}catch(e){}})();`;
 write("dist/404.html", layout({
   title: `ページが見つかりません | ${cfg.siteName}`, desc: "お探しのページは見つかりませんでした", path: "/404.html", noindex: true,
   body: `${hero("ページが見つかりません", "URLが変わったか、掲載がすでに終了している可能性があります。")}
-<p><a class="btn" href="/">開催予定を見る</a> <a class="btn ghost" href="/calendar.html">日付・会場・キーワードから探す</a></p>`,
+<p><a class="btn" href="/">開催予定を見る</a> <a class="btn ghost" href="/calendar.html">日付・会場・キーワードから探す</a></p>
+<script>${fixTrailingJunk}</script>`,
 }));
 
 if (cfg.domain) write("dist/CNAME", cfg.domain + "\n");
