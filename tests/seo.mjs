@@ -230,6 +230,7 @@ export function seoTests({ ok, section, OUT, build }) {
     // 運営者の構造化データ: 同じ名前で発信しているアカウント(sameAs)
     const $h = cheerio.load(read("dist-test-seo/index.html")), lds = $h('script[type="application/ld+json"]').map((_, s) => JSON.parse($h(s).html())).get();
     const pub = lds.flat().find((x) => x["@type"] === "WebSite")?.publisher;
-    ok(Array.isArray(pub?.sameAs) && pub.sameAs.every((u) => /^https:\/\/note\.com\/[a-z0-9_]+$/.test(u)), "トップの運営者に sameAs(note のアカウント)", JSON.stringify(pub)); }
+    ok(Array.isArray(pub?.sameAs) && pub.sameAs.some((u) => /^https:\/\/note\.com\/[a-z0-9_]+$/.test(u)) && pub.sameAs.some((u) => /^https:\/\/x\.com\/[A-Za-z0-9_]+$/.test(u)), "トップの運営者に sameAs(X と note のアカウント)", JSON.stringify(pub));
+    ok(/^@[A-Za-z0-9_]+$/.test($h('meta[name="twitter:site"]').attr("content") ?? ""), "X のカードにサイトのアカウント(twitter:site)"); }
   rmSync("dist-test-seo", { recursive: true, force: true });
 }

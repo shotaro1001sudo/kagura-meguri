@@ -328,8 +328,8 @@ const op = cfg.operator;
 // 運営者のメールアドレスは、ページに載せない(分割して埋め込んでも、ページを実行する収集ボットには読まれる)。
 // 連絡は、お問い合わせフォームに一本化する。フォームの送信先が未設定の間だけ、フォームが、メール作成の予備に使う(form.mjs)
 // 運営者(構造化データ): シンボルを、ロゴとして示す
-// sameAs: 運営者が同じ名前で発信している公式のアカウント(いまは note。config.json の note.urlname)。検索エンジンが「神楽めぐり」をひとつの運営者として結びつけやすくする(SEO-20261124-5)
-const ORG_LD = { "@type": "Organization", name: op.name, url: `${cfg.baseUrl}/about.html`, logo: { "@type": "ImageObject", url: `${cfg.baseUrl}/symbol.png`, width: 330, height: 330 }, ...(cfg.note?.urlname ? { sameAs: [`https://note.com/${cfg.note.urlname}`] } : {}) };
+// sameAs: 運営者が同じ名前で発信している公式のアカウント(X と note。config.json の x.handle・note.urlname)。検索エンジンが「神楽めぐり」をひとつの運営者として結びつけやすくする(SEO-20261124-5)
+const ORG_LD = { "@type": "Organization", name: op.name, url: `${cfg.baseUrl}/about.html`, logo: { "@type": "ImageObject", url: `${cfg.baseUrl}/symbol.png`, width: 330, height: 330 }, sameAs: [cfg.x?.handle && `https://x.com/${cfg.x.handle}`, cfg.note?.urlname && `https://note.com/${cfg.note.urlname}`].filter(Boolean) };
 const mailLink = () => `<a href="/contact.html">お問い合わせフォーム</a>`;
 
 // ---------- 共通レイアウト ----------
@@ -489,7 +489,7 @@ const layout = ({ title, desc, path, body, ld, head = "", splash = "", active = 
 <meta name="referrer" content="strict-origin-when-cross-origin">${noindex ? '<meta name="robots" content="noindex,follow">' : '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">'}
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${cfg.baseUrl}${path}">${alternates}${SEO.googleVerification ? `<meta name="google-site-verification" content="${esc(SEO.googleVerification)}">` : ""}${SEO.bingVerification ? `<meta name="msvalidate.01" content="${esc(SEO.bingVerification)}">` : ""}
 <link rel="alternate" type="application/atom+xml" title="${esc(cfg.siteName)} 新着の開催情報" href="/feed.xml">
-<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${en ? "Kagura Meguri" : esc(cfg.siteName)}"><meta property="og:locale" content="${en ? "en_US" : "ja_JP"}"><meta property="og:image" content="${ogUrl(en)}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogUrl(en)}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${ogType}"><meta property="og:url" content="${cfg.baseUrl}${path}"><meta property="og:site_name" content="${en ? "Kagura Meguri" : esc(cfg.siteName)}"><meta property="og:locale" content="${en ? "en_US" : "ja_JP"}"><meta property="og:image" content="${ogUrl(en)}"><meta property="og:image:width" content="${OG_SIZE.width}"><meta property="og:image:height" content="${OG_SIZE.height}"><meta name="twitter:card" content="summary_large_image">${cfg.x?.handle ? `<meta name="twitter:site" content="@${esc(cfg.x.handle)}">` : ""}<meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogUrl(en)}">
 <meta name="theme-color" content="#f3eee4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48"><link rel="icon" href="/symbol-96.png" type="image/png" sizes="96x96"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
