@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { reviewMetrics, decideActions, ageActions, carryOver, renderReview, nextState } from "./lib/weekly-review.mjs";
 import { quizHealth } from "./lib/quiz-health.mjs";
 import { englishHealth } from "./lib/english-data.mjs";
-import { MAX_PER_RUN } from "./lib/x-post.mjs";
+import { MAX_PER_RUN, DEFAULT_EVENT_SLOTS } from "./lib/x-post.mjs";
 
 const readJson = (p, fallback) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8").replace(/^﻿/, "")) : fallback);
 const today = process.env.REVIEW_NOW || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
@@ -36,7 +36,7 @@ const metrics = reviewMetrics({
   mediaStats: readJson(process.env.MEDIA_STATS_FILE ?? "data/media-stats.json", null),
   note: process.env.NOTE_PULSE_FILE ? readJson(process.env.NOTE_PULSE_FILE, null) : null,
   perDay: cfg.social?.perDay ?? null,
-  eventsPerDay: Math.min(MAX_PER_RUN, (cfg.social?.eventSlots ?? [0, 3]).length),
+  eventsPerDay: Math.min(MAX_PER_RUN, (cfg.social?.eventSlots ?? DEFAULT_EVENT_SLOTS).length),
 });
 const state = readJson(stateFile, null);
 const prev = state?.history?.length ? state.metrics?.date !== today ? state.metrics : null : null;

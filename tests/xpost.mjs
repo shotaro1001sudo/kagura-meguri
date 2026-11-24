@@ -51,6 +51,13 @@ export function xpostTests({ ok, section }) {
   ok(late.length === 4 && late.every((p) => Date.parse(p.dueAt) > Date.parse("2026-11-08T12:00:00+09:00")), "過ぎた枠には入れない", String(late.length));
   const night = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T21:00:00+09:00") });
   ok(night.length === 2 && night.every((p) => p.type === "reading"), "7時・19時が過ぎてから動いたときは、開催のお知らせを夜中に入れず、翌日に回す", night.map((p) => p.type).join());
+  // 2026-11-24 運営者の判断: 開催のお知らせの枠を 7時・11時・19時 の3本に(config.json の social.eventSlots)
+  { const three = { eventSlots: [0, 1, 3] }, d = daySlots("2026-11-01"), at = Date.parse("2026-11-01T00:00:00+09:00");
+    const p3 = planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: at, social: three });
+    ok(p3.length === 6 && p3.filter((p) => p.type === "event").map((p) => p.dueAt).join() === [d[0], d[1], d[3]].join(), "枠を3本にすると、開催のお知らせは7時・11時・19時(1日の投稿は6本のまま)", p3.map((p) => `${p.type}@${p.dueAt}`).join());
+    const p1 = planDay({ events: events.filter((e) => e.id === "a"), info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: at, social: three });
+    ok(p1.length === 6 && p1.filter((p) => p.type === "event").map((p) => p.dueAt).join() === d[0] && p1.find((p) => p.dueAt === d[1])?.type === "reading", "紹介する開催が少ない日は、空いた11時の枠に読み物が入る", p1.map((p) => `${p.type}@${p.dueAt}`).join());
+    ok(planDay({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: at, social: { eventSlots: [0, 1, 2, 3, 4] } }).filter((p) => p.type === "event").length === 3, "枠をいくつ指定しても、開催のお知らせは1日3件まで(連投を避ける)"); }
 
   // 前の晩(21:15)に、今日の残りと翌日の枠をまとめて決める
   const eve = planDays({ events, info, posted: [], todayJst: "2026-11-01", baseUrl: base, now: Date.parse("2026-11-01T21:15:00+09:00") });

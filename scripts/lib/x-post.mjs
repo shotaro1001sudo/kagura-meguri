@@ -3,7 +3,11 @@
 
 export const WINDOW_MIN = 3;   // 開催の3日前までに
 export const WINDOW_MAX = 14;  // 開催の2週間前から、紹介する(SEO.md の方針)
-export const MAX_PER_RUN = 2;  // 1日に紹介する開催の最大件数(連投を避ける)
+// 1日に紹介する開催の件数の上限(連投を避ける)。実際の件数は config.json の social.eventSlots の枠の数まで。
+// 2026-11-24 運営者の判断で、枠を 7時・19時 の2本から 7時・11時・19時 の3本に(秋の山場で、紹介しきれない開催が週に10件前後出ていたため)。
+// 紹介する開催が無い日は、その枠に読み物が入る
+export const MAX_PER_RUN = 3;
+export const DEFAULT_EVENT_SLOTS = [0, 3]; // eventSlots が無いとき(7時・19時)
 export const RERUN_GAP_DAYS = 30; // 読み物を出し切ったあと、同じものを再投稿するまでの最短の日数
 export const LIMIT = 280;      // Xの上限(全角2・半角1・URL23で数える)。Premium のときは、タイムラインに見える部分
 export const LONG_LIMIT = 25000; // X Premium の長い投稿の上限(Buffer の無料プランも対応)
@@ -32,7 +36,7 @@ const weekday = (ymd) => new Date(`${ymd}T00:00:00Z`).getUTCDay();
 const tag = (s) => `#${String(s).replace(/[\s・()()]/g, "")}`;
 
 /** 投稿する開催を選ぶ: 掲載中・未投稿・開催まで 3〜14日。開催が近い順 */
-export function pickEvents(events, posted, todayJst, max = MAX_PER_RUN) {
+export function pickEvents(events, posted, todayJst, max = DEFAULT_EVENT_SLOTS.length) {
   const done = new Set(posted.map((p) => p.id));
   return events
     .filter((e) => e.status === "published" && !done.has(e.id))
@@ -256,13 +260,13 @@ export function justOverKagura(events, untilMs) {
   return new Set([...over].filter((k) => !ahead.has(k)));
 }
 
-/** 枠に投稿を割り当てる。開催のお知らせは eventSlots の枠(朝・夕方)へ、残りは読み物 */
+/** 枠に投稿を割り当てる。開催のお知らせは eventSlots の枠(朝・昼前・夕方)へ、残りは読み物 */
 export function planDay({ events, info, posted, todayJst, baseUrl, social = {}, now = Date.now(), weights = {}, hooks = {} }) {
   const slots = daySlots(todayJst, social);
   const taken = new Set(posted.map((p) => p.dueAt).filter(Boolean));
   const open = slots.filter((s) => !taken.has(s) && Date.parse(s) > now + 10 * 60e3); // 予約済み・過ぎた枠は使わない
   // 開催のお知らせは、決めた枠(朝・夕方)だけに入れる。その枠が過ぎていたら、翌日に回す(夜中に出さない)
-  const prefer = (social.eventSlots ?? [0, 3]).map((i) => slots[i]).filter((s) => open.includes(s));
+  const prefer = (social.eventSlots ?? DEFAULT_EVENT_SLOTS).map((i) => slots[i]).filter((s) => open.includes(s));
   const evs = pickEvents(events, posted, todayJst, Math.min(MAX_PER_RUN, prefer.length));
   const evSlots = prefer.slice(0, evs.length);
   const readSlots = open.filter((s) => !evSlots.includes(s));
