@@ -199,7 +199,7 @@ export async function uxTests({ ok, section, OUT }) {
       // 2026-11-15 監査: 話題の行を歴史の年表と同じ .tl にしていたため、年表の横スクロール・余白が公演の本文にかかっていた
       ok(paras.every((x) => x.find(".tl").length === 0), "公演の本文の話題の行は、歴史の年表(.tl)と別の名前(.tline)。年表の横スクロールや余白が本文にかからない");
       const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
-      ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && ["<p>${topicLines(String(s).trim())}</p>", "<li>${topicLines(t)}</li>", '<span class="line">${cl(t)}</span>'].every((x) => built.includes(x)), "公演の説明・この開催のポイントは話題ごとの行に、要点の表は文ごとの行に分け、どれも言葉の途中では折り返さない"); }
+      ok(/^\.bw\{display:contents;overflow-wrap:anywhere\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && ["<p>${topicLines(String(s).trim())}</p>", "<li>${topicLines(t)}</li>", '<span class="line">${cl(t)}</span>'].every((x) => built.includes(x)), "公演の説明・この開催のポイントは話題ごとの段落に、要点の表は文ごとの行に分ける(本文は字で詰める)"); }
     ok(pages.every((p) => { const t = p(".page-notes").text(); return !/リアルタイム表示ではありません|会場の公式アクセスと公共交通を先に|泊・大人2名で検索します|掲載情報確認:/.test(t) && (t.match(/アフィリエイトリンク/g) || []).length <= 1; }), "ページ下の注記は、ほかで伝わる注意をくり返さず、広告の注記は1行にまとめる"); }
   ok(full(".actions .btn:not(.ghost)").length <= 1 && full(".keyinfo tr").first().find("a.tocal[href*='calendar.google.com']").length === 1 && full(".actions a[href*='calendar.google.com']").length === 0 && full(".stay .btn").toArray().every((b) => full(b).hasClass("stay-btn") && !full(b).hasClass("ghost")) && full(".dpage .d-side .stay").length === 0 && full(".d-lead .actions").length === 1, "主役のボタンは「公式情報を見る」だけ(カレンダーは控えめ)。未設定の宿枠は省略する");
   const sh = full(".share");

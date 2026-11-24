@@ -134,7 +134,7 @@ export async function policyTests({ ok, section, OUT, build }) {
         ok(p(".vc-disclosure").length === 0 && !/[(（]広告[)）]/.test(p("main").clone().find(".page-notes").remove().end().text()), `本番: ${name}ページに、上の「広告」の1行・「(広告)」の文字を出さない`);
         ok(boxes.length > 0 && boxes.toArray().every((x) => p(x).find(".pr").length === 1 && p(x).find(".pr").is(".pr-foot") && p(x).find(".pr").text() === "PR" && p(x).find(".pr").nextAll().not("script,template").length === 0),
           `本番: ${name}ページの右の列の広告の枠は、どれも枠の下に「PR」が1つだけ`);
-        ok(p(".page-notes").text().includes("じゃらんの広告表示時には外部への通信が発生します。") && p(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), `本番: ${name}ページのじゃらんの外部通信は、ページ下の広告の注記で伝える`);
+        ok(p(".page-notes").text().includes("じゃらんの広告表示時には外部への通信が発生します。") && p(".page-notes").text().includes("広告(アフィリエイト)を含み"), `本番: ${name}ページのじゃらんの外部通信は、ページ下の広告の注記で伝える`);
       }
     }
     ok(p.includes("アフィリエイトプログラムについて"), "本番: ポリシーに、アフィリエイトの項目がある");
@@ -155,7 +155,7 @@ export async function policyTests({ ok, section, OUT, build }) {
     const bn = $(".d-side .stay .stay-banner");
     const labels = bn.map((_, x) => $(x).attr("data-goatcounter-click")).get();
     ok($(".stay-cond").length === 0 && JSON.stringify(labels) === JSON.stringify(["banner-rakuten/t-full", "banner-jalan/t-full"]), "宿の枠に検索の条件は出さず(運営者の判断)、バナーの押された数を、開催ごとに数えられる", labels.join());
-    ok(bn.length === 2 && /sponsored/.test(bn.first().attr("rel")) && $(".stay .pr").text() === "PR" && $(".page-notes").text().includes("広告(アフィリエイトリンク)を含みます"), "宿の ID を設定すると、宿のバナーに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
+    ok(bn.length === 2 && /sponsored/.test(bn.first().attr("rel")) && $(".stay .pr").text() === "PR" && $(".page-notes").text().includes("広告(アフィリエイト)を含み"), "宿の ID を設定すると、宿のバナーに sponsored と「PR」の表示が付く(ステルスマーケティング規制への対応)");
     { // IDが未設定のとき: 宿の枠を出さない(報酬なしの、ふつうのリンクで代わりに案内しない)
       const q = cheerio.load(read(join(sub("plainstay", {}), "events/t-full.html")));
       ok(q(".stay,.staylinks,.stay-banner").length===0,"未設定の宿は通常リンクで代替しない");

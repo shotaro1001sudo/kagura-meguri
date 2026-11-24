@@ -737,6 +737,9 @@ footer p{margin:0}footer .flinks{display:flex;flex-wrap:wrap;justify-content:cen
   .steps b{padding-top:0}
   .steps li:not(:last-child):after{content:"›";position:absolute;right:-20px;top:50%;transform:translateY(-50%);color:var(--ac);font-size:var(--fs-xl);line-height:1}
 }
+/* 運営者情報の「掲載情報について」: 項目の名前を見出しに、説明をその下に(「名前: 説明」と1行につなげない。2026-11-24) */
+.about-points{margin:14px 0 18px;border-bottom:1px solid var(--line)}.about-points>div{padding:12px 0;border-top:1px solid var(--line)}
+.about-points dt{font-family:var(--serif);font-weight:500;font-size:var(--fs-m)}.about-points dd{margin:4px 0 0;font-size:var(--fs-s);line-height:var(--lh-sub)}
 .prose .rules{list-style:none;padding:0}
 .rules li{position:relative;margin:10px 0!important;padding-left:30px}
 .rules li:before{content:"";position:absolute;left:6px;top:.5em;width:12px;height:7px;border-left:2px solid var(--ac);border-bottom:2px solid var(--ac);transform:rotate(-45deg)}
@@ -947,20 +950,24 @@ ol.sources .back{text-decoration:none;color:var(--mut);margin-left:4px}
 }
 /* 言葉のまとまりの途中で改行しない(見出しなど。狭い画面では、まとまりの境目で折り返す) */
 .ph{display:inline-block}
-/* 本文の改行(2026-11-15 運営者の依頼。同日に言い直し): 行の右端で折り返すとき、言葉の途中では切らず、その手前の句読点か「てにをは」の切れ目で折り返す。
-   句読点のたびに改行はしない(行は、入るところまで詰める)。.bw の中は、字と字のあいだでは折り返さず(keep-all)、ビルドのときに入れた <wbr>(文節の切れ目)と句読点のあとでだけ折り返す。
-   1行に入らないほど長い言葉(URL など)だけは、途中で折り返す(anywhere)。iPhone の Safari でも同じ(auto-phrase とちがい、ブラウザの対応に頼らない) */
-.bw{word-break:keep-all;overflow-wrap:anywhere}
+/* 改行の決まり(2026-11-24 に運営者の依頼「改行が不自然」で見直した)
+   1. 何行にもわたる本文(公演の説明・この開催のポイント・解説・ガイド・歴史・案内のページ)は、字で詰める。行頭・行末の禁則は strict。
+      文節で折ると、スマホでは行の右が大きく空いて行の長さがばらばらになり、かえって読みにくかった(2026-11-15〜11-23 の形)。
+   2. 見出しと、1〜2行の短い文(冒頭のひとこと・見出しの下の一文)だけ、言葉の途中で切らず、文節の切れ目で折り返す。
+      ビルドのときに入れた <wbr>(文節の切れ目)を使うので、iPhone の Safari でも同じ(.bw の中を keep-all にする)。
+   3. .bw は箱を作らない(display:contents)。手順(.steps)や数字のタイル(.sp-tiles)のように、見出しと説明を縦に並べる枠の中で
+      .bw に包まれても、枠の並べ方(grid・flex)がそのまま効き、見出しと説明が1行につながらない。
+   1行に入らないほど長い言葉(URL など)だけは、途中で折り返す(anywhere) */
+.bw{display:contents;overflow-wrap:anywhere}
+:is(h1,h2,h3,h4,.kagura-lead,.sp-open,.sp-sub,.hero p,.tagline,.discovery-title,.planning-eyebrow) .bw{word-break:keep-all}
 /* 出典の印([1] など)は、前の言葉から離さない(印だけが次の行に落ちないように) */
 .nb{white-space:nowrap}
-/* 話題が変わるところで分けた行(公演の説明・この開催のポイント) */
-.tline{display:block}.tline+.tline{margin-top:.4em}
+/* 公演の説明・この開催のポイントの段落(話題が変わるところで分ける。1文だけの短い段落は作らない) */
+.tline{display:block}.tline+.tline{margin-top:.7em}
 /* 改行の位置: 行頭に「ゃ」「ー」などを置かない(strict)。最後の行に1〜2字だけ残さない(pretty)。
-   見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase)。
-   本文(公演の説明・この開催のポイント・要点の表の値・都道府県と種類の解説・ガイド・歴史)は、文節の切れ目で折り返す(.bw。どのブラウザでも)。
-   それ以外の文(注釈・規約など)は、字単位で行を詰める */
+   見出し・公演の名前・ボタン・短いラベルは、Chrome・Edge では文節の境目で折り返す(auto-phrase) */
 body{line-break:strict;text-wrap:pretty}
-:is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.event-facts,.info .vn,.info .when,.info .sched-main,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs,.pr-strip-h){word-break:auto-phrase}
+:is(h1,h2,h3,h4,button,label,summary,th,dt,.btn,.tag,.chip,.tagline,.hero p,.quick b,.planning-links b,.info .vn,.info .when,.info .sched-main,.monthlist a,.venuelist b,.vjump,.vitems a,.crumbs,.pr-strip-h){word-break:auto-phrase}
 :is(h1,h2,h3,h4,summary,.tagline,.hero p,.pr-strip-h){text-wrap:balance}
 /* 出典の名前(「〇〇観光協会」など)は、語の途中で切らず、ひとかたまりで次の行へ送る */
 /* 和文と数字・英字の間に、少しだけ空きを入れる(「2026年10月」「JR線」など)。幅の決まった日付の欄では入れない。

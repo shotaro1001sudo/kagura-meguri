@@ -296,8 +296,8 @@ function stayBlock(e) {
   const links = stayBanners(e.id), night = overnightKagura(e);
   // data-aff-box: 表示・クリックの置き場所の名前(GA4 の affiliate_placement。MEAS-20261117-2)
   return `<aside class="stay" data-aff-box="event_stay" aria-labelledby="stay-h"><h2 id="stay-h">${night ? "泊まりで観る・会場周辺の宿" : "会場周辺の宿"}</h2>
-${night ? `<p class="stay-lead">${cl(`${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。帰りの交通が限られるため、会場の近くに泊まる予定で計画すると安心です。`)}</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
-<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿泊日(${esc(jpDate(day))})・人数・地域は、リンク先で指定してください。${esc(place)}周辺で、会場からの距離、最終チェックイン、空室・料金を宿の案内で確認してください。</p></details>
+${night ? `<p class="stay-lead">${cl(`${night === "yokagura" ? "夜神楽" : "この神楽"}は、終わりが深夜や翌朝になることがあります。会場の近くに泊まる予定にしておくと安心です。`)}</p>\n` : ""}${night && nearbyHotels ? hotelCardsHtml(nearbyHotels.byEvent[e.id], { eventId: e.id, fetchedAt: nearbyHotels.fetchedAt, esc, attrs: (n) => affAttrs(true, n) }) : ""}${links}
+<details class="stay-note"><summary>ご注意</summary><p class="meta annotation">宿泊日(${esc(jpDate(day))})・人数・地域は、リンク先で選んでください。${esc(place)}周辺で探すときは、会場からの距離と最終チェックインの時刻もご確認ください。</p></details>
 ${prNote(on)}</aside>`;
 }
 
@@ -459,7 +459,8 @@ const descParas = (s = "") => (String(s).trim() ? `<p>${topicLines(String(s).tri
 // 広告の注記は、ページごとに1行へまとめる(各広告の枠の「PR」はそのまま残る)
 const NOTE_DROP = [/^営業状況・空き・価格はリアルタイム表示ではありません/, /^会場の公式アクセスと公共交通を先に確認し/, /泊・大人2名で検索します。/, /^掲載情報確認: /, /^県内全域の一覧です。/];
 const NOTE_AD = [/^PR: 宿の案内は広告/, /^<span class="pr">広告<\/span>\s*外部サービスの広告です/, /^<span class="pr">PR<\/span>\s*紹介している商品・返礼品のリンクは広告/];
-const AD_NOTE = '<span class="pr">PR</span> 宿・交通・体験・商品などのリンクは広告(アフィリエイトリンク)を含みます。予約・購入・寄付で当サイトに報酬が入ることがあります。';
+// 2026-11-24 運営者の依頼(注意書きが長い): 2文を1文に。広告であること(アフィリエイト)と、報酬が入ることは、どちらも残す
+const AD_NOTE = '<span class="pr">PR</span> 宿・交通・体験・商品のリンクには広告(アフィリエイト)を含み、予約や購入で当サイトに報酬が入ることがあります。';
 const tidyNotes = (notes, vc = false) => {
   const plain = (n) => n.replace(/<[^>]+>/g, "");
   let ad = vc;
@@ -788,13 +789,13 @@ write('dist/quiz.html',layout({
   desc:padDesc(`${questions.length}問に答えると、舞のテンポ・面や衣装・物語・祭りの空気などの好みから、${traditions.length}種類の神楽のうち好みに近いものを、出典つきの理由と一緒にご案内します。地域と日程を選べば、観に行ける公演も探せます。登録不要で、回答はブラウザ内だけで計算します。`),
   path:'/quiz.html',active:'/quiz.html',ld:crumbsLd([['ホーム','/'],['神楽の好み診断']]),
   body:`${crumbNav([['ホーム','/'],['神楽の好み診断']])}${hero('あなたに近い神楽はどれ？',`${questions.length}問・1分ほどで、${traditions.length}種類の神楽から好みに近いものを探します。`)}
-<p class="lead">好み${questions.filter(q=>q.type==='preference').length}問と、観に行く地域・日程${questions.filter(q=>q.type!=='preference').length}問です。分からない項目は「まだ分からない」で大丈夫です。登録は不要で、回答は保存も外部への送信もしません。</p>
+<p class="lead">好み${questions.filter(q=>q.type==='preference').length}問と、観に行く地域・日程${questions.filter(q=>q.type!=='preference').length}問です。分からない問いは「まだ分からない」で進めます。登録は不要です。回答は保存も送信もしません。</p>
 <section id="quiz" aria-label="${questions.length}問の神楽好み診断"><button type="button" class="btn" id="quiz-start" hidden>${questions.length}問の診断をはじめる</button>
 <noscript><p>診断にはJavaScriptが必要です。<a href="/calendar.html">公演を探す</a>・<a href="/guide.html">はじめての神楽ガイド</a>もご利用ください。</p></noscript>
 <form id="quiz-form" hidden><p id="quiz-progress" aria-live="polite"></p><fieldset id="quiz-field"></fieldset><p id="quiz-error" role="alert"></p><div class="quiz-actions"><button type="button" class="btn ghost" id="quiz-back">前へ戻る</button><button type="submit" class="btn" id="quiz-next">次へ</button></div></form>
 <section id="quiz-result" aria-label="おすすめの結果" hidden></section></section>
 <section class="quiz-about" aria-labelledby="quiz-about-title"><h2 id="quiz-about-title">診断のしくみ</h2>
-<p>結果には、好みと重なった特徴と、その根拠になった解説の本文を示します。点数や一致率は出しません。地域と日程は、好みの順位を変えずに、観に行ける公演を探すためだけに使います。</p>
+<p>結果には、好みと重なった特徴と、そのもとになった解説の文を出します。点数や一致率は出しません。地域と日程は、観に行ける公演を探すためだけに使います。</p>
 <h3>診断の対象(${traditions.length}種類)</h3><div class="taglist">${traditions.map(t=>kaguras.includes(t.kind)?`<a class="tag" href="${kaguraHref(t.kind)}">${esc(t.kind)}</a>`:`<span class="tag">${esc(t.kind)}</span>`).join('')}</div>
 <p class="meta">解説のない神楽は、まだ診断の対象に入っていません。すべての神楽の公演は<a href="/calendar.html">公演カレンダー</a>から探せます。</p></section>
 <script id="quiz-data" type="application/json">${quizData}</script><script defer src="/quiz-app.js?v=${quizJsVersion}"></script>`
@@ -876,7 +877,7 @@ write("dist/calendar.html", layout({
 </form>
 <p class="count" id="count" aria-live="polite"></p>
 <div class="results" id="results" aria-label="当てはまる開催"></div>
-<div id="weekend-empty" hidden><p><a class="btn" href="/weekend.html">今週末の定期公演の案内も見る</a></p><p class="meta">定期公演は別の一覧で案内しています。地域・日程と主催者の最新案内を確認してください。</p></div>
+<div id="weekend-empty" hidden><p><a class="btn" href="/weekend.html">今週末の定期公演の案内も見る</a></p><p class="meta">定期公演は、別の一覧にまとめています。公演日は、主催者の最新案内でご確認ください。</p></div>
 <p class="meta">毎晩・毎週の定期公演は、<a href="/weekend.html">今週末の神楽</a>・<a href="/this-month.html">今月の神楽</a>のページにまとめています。</p>
 ${adSlot(cfg.adsense.slotList)}
 ${prStripFor("/calendar.html")}${months.length ? `<h2>月ごとの一覧</h2>${monthLinks()}` : ""}
@@ -1411,7 +1412,7 @@ write('dist/experiences.html',layout({
   title:`神楽の前後に楽しむ体験を全国47都道府県から探す | ${cfg.siteName}`,
   desc:padDesc('神楽の公演前後に楽しむ体験を、全国47都道府県から探せます。開催地域に合わせて陶芸やものづくり、自然体験、日帰り温泉などを検討し、リンク先で日付・所要時間・会場からの距離を確認して旅の予定を組みましょう。'),
   path:'/experiences.html',ld:[crumbsLd([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']]),{'@context':'https://schema.org','@type':'Article',headline:'神楽の前後に楽しむ周辺体験',inLanguage:'ja',datePublished:PLANNING_CHECKED,dateModified:PLANNING_CHECKED,author:ORG_LD,publisher:ORG_LD,mainEntityOfPage:`${cfg.baseUrl}/experiences.html`,image:ogUrl(false)}],
-  body:`${crumbNav([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']])}${hero('神楽の前後も、土地を楽しむ','全国47都道府県から、もうひとつの寄り道を。')}${phrasesHtml(`<p>公演を観る日も、旅先を先に選ぶ日も。訪問する都道府県から、ものづくり・自然体験・日帰り温泉などを探してみませんか。日付・所要時間・移動の余裕を確かめて予定を組みましょう。</p>${experienceDirectory(experienceAff,{rakuten:rakutenOn})}${offerCards(visitorPlanning,'experiences',{guide:true},today,'experience_guide')}<h2>神楽の予定から旅を組み立てる</h2><p><a class="btn" href="/calendar.html">公演の日付・地域を探す</a> <a class="btn ghost" href="/guide.html#transport">行き帰りの交通を確認</a> <a class="btn ghost" href="/guide.html#packing">持ち物を選ぶ</a></p>`)}`
+  body:`${crumbNav([['ホーム','/'],['はじめての神楽ガイド','/guide.html'],['公演前後の周辺体験']])}${hero('神楽の前後も、土地を楽しむ','全国47都道府県から、もうひとつの寄り道を。')}${phrasesHtml(`<p>神楽を観に行く土地で、ものづくりや自然体験、日帰り温泉も楽しめます。行き先の都道府県から探せます。</p>${experienceDirectory(experienceAff,{rakuten:rakutenOn})}${offerCards(visitorPlanning,'experiences',{guide:true},today,'experience_guide')}<h2>神楽の予定から旅を組み立てる</h2><p><a class="btn" href="/calendar.html">公演の日付・地域を探す</a> <a class="btn ghost" href="/guide.html#transport">行き帰りの交通を確認</a> <a class="btn ghost" href="/guide.html#packing">持ち物を選ぶ</a></p>`)}`
 }));
 
 // ---------- 神楽の歴史(総論と年表、古代・中世・近世・近代の4ページ) ----------
@@ -1498,13 +1499,13 @@ doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です�
 <table class="info"><tr><th>サイト名</th><td>${esc(cfg.siteName)}</td></tr><tr><th>運営者</th><td>${esc(op.name)}</td></tr>
 <tr><th>連絡先</th><td><a class="textlink" href="/contact.html">お問い合わせフォーム</a></td></tr><tr><th>開設</th><td>${esc(op.established)}</td></tr></table>
 <h2>このサイトについて</h2>
-<p>${esc(cfg.siteName)}は、全国の神楽の開催情報を、探しやすくまとめたサイトです。神楽は、地域の神社や保存会が長く受け継いできた大切な文化です。このサイトが、そんな神楽に出会うきっかけになればと考えています。</p>
+<p>${esc(cfg.siteName)}は、全国の神楽の開催情報を、探しやすくまとめたサイトです。地域の神社や保存会が受け継いできた神楽に出会うきっかけになれば、と考えています。</p>
 <h2>掲載情報について</h2>
-<p>開催情報は、主催者からの投稿と、公開されている情報をもとに掲載しています。日時・会場・料金が変わったり、開催が中止になったりすることもあるので、出かける前に必ず主催者の公式情報をご確認ください。</p>
-<ul><li><strong>出典と確認日</strong>: 主催者や自治体、観光協会などの公式情報を出典にしています。各ページの下のほうに、出典の名前と確認した日を載せています。</li>
-<li><strong>更新</strong>: 公開されている情報は、プログラムで定期的に確かめています。取得元のページから開催情報が消えたときは、日程の変更や中止も考えられるため、掲載を取り下げます。終わった開催は、一覧や検索結果から外します。</li>
-<li><strong>訂正・削除</strong>: <a href="/contact.html">お問い合わせ</a>からご連絡ください。主催者の方からのご依頼は、確認したうえで速やかに反映します。</li>
-<li><strong>解説の文章</strong>: 神楽の種類や地域の解説は、文化庁の「文化遺産オンライン」や自治体、観光協会などの公開情報をもとに書いており、参考にした資料へのリンクも載せています。</li></ul>
+<p>開催情報は、主催者からの投稿と、公開されている情報をもとに掲載しています。日時・会場・料金の変更や、中止もあります。出かける前に、主催者の公式情報をご確認ください。</p>
+<dl class="about-points"><div><dt>出典と確認日</dt><dd>主催者・自治体・観光協会などの公式情報を出典にしています。各ページの下に、出典の名前と確認した日を載せています。</dd></div>
+<div><dt>更新</dt><dd>公開されている情報は、プログラムで定期的に確かめています。取得元のページから開催情報が消えたときは、掲載を取り下げます。終わった開催は、一覧と検索結果から外します。</dd></div>
+<div><dt>訂正・削除</dt><dd><a href="/contact.html">お問い合わせ</a>からご連絡ください。主催者の方からのご依頼は、確認のうえ速やかに反映します。</dd></div>
+<div><dt>解説の文章</dt><dd>神楽の種類や地域の解説は、文化庁の「文化遺産オンライン」や自治体、観光協会などの公開情報をもとに書き、参考にした資料へのリンクを載せています。</dd></div></dl>
 <p>最終更新: ${esc(op.updated)}</p>
 <h2>収益について</h2>
 <p>${cfg.adsense.client || hasAffiliate ? `当サイトは、${[cfg.adsense.client ? "広告" : "", hasAffiliate ? "アフィリエイトプログラム" : ""].filter(Boolean).join("および")}による収益で運営しています。` : "現在、当サイトは広告やアフィリエイトによる収益を得ていません。今後導入する場合は、始める前にこの記載とプライバシーポリシーを更新します。"}</p>

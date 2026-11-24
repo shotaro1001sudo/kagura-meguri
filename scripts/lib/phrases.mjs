@@ -84,22 +84,36 @@ export const topicOf = (sentence) => (TOPICS.find(([, re]) => re.test(sentence))
 const SHIFT = /^(また、|なお、|ただし、|一方、|そのほか|このほか|ちなみに)/;
 /** まとまりが長いとき(4文以上)は、2文ずつに分ける(スマホで、ひとかたまりの長い文にしない) */
 const CHUNK = 2;
-/** 話題ごとのまとまり(それぞれ、文をつないだもの)に分ける。つなぐと、元の文になる */
+// 2026-11-24 運営者の依頼(改行が不自然): 短い文が1文ずつ別の行に並ぶと、箇条書きのように途切れて見える。
+// 全体が短いとき(ONE_PARA 字まで)は分けず、分けるときも、短い段落(MIN_PARA 字未満)は作らない(となりの段落につなぐ)
+const ONE_PARA = 110, MIN_PARA = 45;
+const len = (t) => [...t].length;
+/** 話題ごとの段落(それぞれ、文をつないだもの)に分ける。つなぐと、元の文になる */
 export const topicGroups = (s) => {
+  const sents = sentenceParts(s);
+  if (len(String(s ?? "")) <= ONE_PARA) return sents.length ? [sents.join("")] : [];
   const groups = [];
   let last = null;
-  for (const sent of sentenceParts(s)) {
+  for (const sent of sents) {
     const topic = topicOf(sent);
     if (groups.length && topic === last && !SHIFT.test(sent.trim())) groups[groups.length - 1].push(sent);
     else groups.push([sent]);
     last = topic;
   }
-  return groups.flatMap((g) => {
+  const paras = groups.flatMap((g) => {
     if (g.length <= 3) return [g.join("")];
     const out = [];
     for (let i = 0; i < g.length; i += CHUNK) out.push(g.slice(i, i + CHUNK).join(""));
     return out;
   });
+  // 段落が MIN_PARA 字になるまで、次のまとまりをつなぐ。最後に短い段落が残ったら、前の段落につなぐ
+  const out = [];
+  for (const p of paras) {
+    if (out.length && len(out[out.length - 1].trim()) < MIN_PARA) out[out.length - 1] += p;
+    else out.push(p);
+  }
+  if (out.length > 1 && len(out[out.length - 1].trim()) < MIN_PARA) out.splice(-2, 2, out[out.length - 2] + out[out.length - 1]);
+  return out;
 };
 
 // ---- タグの入った文(ガイド・歴史のページ)向け ----

@@ -102,11 +102,18 @@ export function guideTests({ ok, section, OUT, build }) {
     ok(parts.every((p, i) => p.join("") === samples[i]) && parts[0].length >= 3 && parts[1].length >= 5, "文を文節に分ける。つなぐと、元の文になる(1字も変えない)", parts.map((p) => p.join("|")).join(" / "));
     ok(parts.flat().every((p) => [...p].length >= 2 && !/[(（「『][^)）」』]{0,2}$/.test(p) && !/^[)）」』、。！？・ー〜]/.test(p)) && !parts.flat().some((p, i, all) => i > 0 && ((/[A-Za-z0-9]$/.test(all[i - 1]) && /^[A-Za-z0-9]/.test(p)) || (/&[A-Za-z0-9#]*$/.test(all[i - 1]) && /^[A-Za-z0-9#]*;/.test(p)) || (/と$/.test(all[i - 1]) && /^(して|いう)/.test(p)))) && parts[2].some((p) => p.includes("0536-76-0509")), "読みにくい切れ目は作らない(1字だけ・開きかっこの直後・行頭に置けない字の前・英数字や電話番号の途中・「として」「という」の途中)", parts.map((p) => p.join("|")).join(" / "));
     ok(sentenceParts("料金は無料(奉納金を持参すると、お返しがあります。目安です)。会場は会所です。").length === 2 && sentenceParts("一文だけ").join("") === "一文だけ", "文に分けるとき、かっこの中の「。」では分けない(補足を途中で切らない)");
-    // 話題が変わるところで行を分ける(日時・料金・行き方・予約と問い合わせ・気をつけること・公演の中身)
-    const g1 = topicGroups("飾りの多い花祭です。見どころは早朝です。13時開始。観覧は無料です。駐車場があります。車なら鳳来峡ICから約40分です。");
-    ok(g1.join("|") === "飾りの多い花祭です。見どころは早朝です。|13時開始。|観覧は無料です。|駐車場があります。車なら鳳来峡ICから約40分です。", "話題が変わるところで分ける(同じ話題の文は、続けて1つの行に)", g1.join("|"));
-    const g2 = topicGroups("神楽は七座です。また、獅子舞もあります。"), g3 = topicGroups("一つめの話です。二つめの話です。三つめの話です。四つめの話です。五つめの話です。");
-    ok(g2.length === 2 && g3.join("|") === "一つめの話です。二つめの話です。|三つめの話です。四つめの話です。|五つめの話です。" && [g1, g2, g3].every((g) => g.every((x) => x.length > 0)) && topicGroups("一文だけです。").length === 1 && topicGroups("").length === 0, "「また、」などで話が変わるときも分ける。同じ話題が4文以上続くときは、2文ずつに分ける", g2.join("|") + " / " + g3.join("|"));
+    // 話題が変わるところで段落を分ける(日時・料金・行き方・予約と問い合わせ・気をつけること・公演の中身)。
+    // 2026-11-24 運営者の依頼(改行が不自然): 短い文を1文ずつ別の行にしない。全体が短ければ分けず、分けるときも、1文だけの短い段落は作らない
+    const short = "飾りの多い花祭です。見どころは早朝です。13時開始。観覧は無料です。駐車場があります。車なら鳳来峡ICから約40分です。";
+    const g1 = topicGroups(short);
+    ok(g1.length === 1 && g1[0] === short && topicGroups("神楽は七座です。また、獅子舞もあります。").length === 1, "短い説明は、話題が変わっても分けない(1文ずつの行にしない)", g1.join("|"));
+    const about = "毎年12月に、町内の8つの神社で日をずらして行われる湯立の神楽です。釜で湯を沸かして神々を迎え、面をつけた神々が煮え湯をはねる場面が夜を徹して続きます。";
+    const fee = "観覧は無料です。";
+    const access = "駐車場は神社の下に20台分あります。車なら最寄りのICから約40分、電車なら最寄りの駅からバスで約30分です。";
+    const g2 = topicGroups(about + fee + access);
+    ok(g2.length === 2 && g2[0] === about && g2[1] === fee + access, "長い説明は、話題が変わるところで段落に分ける。1文だけの短い段落(料金の話など)は作らず、となりの段落につなぐ", g2.join("|"));
+    const many = "一つめの話です。二つめの話です。三つめの話です。四つめの話です。五つめの話です。".repeat(4), g3 = topicGroups(many);
+    ok(g3.length >= 2 && g3.every((x) => [...x].length >= 45) && g3.join("") === many && topicGroups("一文だけです。").length === 1 && topicGroups("").length === 0, "同じ話題が長く続くときも段落に分ける。どの段落も短すぎず、つなぐと元の文になる", g3.map((x) => [...x].length).join(","));
 
     const cite = '<sup class="cite"><a href="#src-1" id="ref-1" aria-label="出典1">[1]</a></sup>';
     const a = "<p>神楽は、神様を迎えるために神前で奉納される歌と舞です。" + cite + "古くは「神遊び」とも呼ばれました。</p>";
@@ -131,7 +138,9 @@ export function guideTests({ ok, section, OUT, build }) {
       ok(pages.every(([f]) => { const m = main(read(join(D, f))); const back = unphrase(m); return !back.includes('class="bw"') && !back.includes("<wbr>") && cheerio.load(m)("body").text() === cheerio.load(back)("body").text(); }), "ガイド・歴史のページ: 印を取り除いても、文は1字も変わらない");
     }
     const sheet = read("scripts/style.css"), built = read("scripts/build.mjs");
-    ok(/^\.bw\{word-break:keep-all;overflow-wrap:anywhere\}/m.test(sheet) && /^\.nb\{white-space:nowrap\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && !/^\.cl\{/m.test(sheet) && built.includes('<div class="prose guide">${phrasesHtml(guideHtml({') && built.includes('<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>'), ".bw の中は、字と字のあいだでは折り返さず、印と句読点のあとでだけ折り返す(どのブラウザでも)。ガイド・歴史の本文を、その仕組みに通している");
+    // 2026-11-24 運営者の依頼(改行が不自然): 何行にもわたる本文は字で詰め、文節で折り返すのは見出しと短い文だけ(.bw の中を keep-all にするのは、見出しなどの中だけ)。
+    // .bw は箱を作らない(display:contents。手順や数字のタイルの中で、見出しと説明が1行につながらない)
+    ok(/^\.bw\{display:contents;overflow-wrap:anywhere\}/m.test(sheet) && /^:is\(h1,h2,h3,h4,[^)]*\) \.bw\{word-break:keep-all\}/m.test(sheet) && !/^\.bw\{[^}]*keep-all/m.test(sheet) && /^\.nb\{white-space:nowrap\}/m.test(sheet) && /^\.tline\{display:block\}/m.test(sheet) && !/^\.cl\{/m.test(sheet) && built.includes('<div class="prose guide">${phrasesHtml(guideHtml({') && built.includes('<div class="prose history">${phrasesHtml(historyReader(key, pg.body()))}</div>'), "本文は字で詰め、文節の切れ目で折り返すのは見出しと短い文だけ(.bw は箱を作らない)。ガイド・歴史の本文には、文節の印を入れてある");
   }
   rmSync(D, { recursive: true, force: true });
 }
