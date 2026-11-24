@@ -126,7 +126,7 @@ export function eventSeoTests({ ok, section, build }) {
       rmSync(out4, { recursive: true, force: true });
     }
   }
-  section("定期公演の「次の公演」(SEO-20261123-1)・種類のページの「次に観られる公演」(SEO-20261123-2)と月ごとの表(SEO-20261123-3)");
+  section("定期公演の「次の公演」(SEO-20261123-1)・種類のページの「次に観られる公演」(SEO-20261123-2)・月ごとの表(SEO-20261123-3)・定期公演と予約の枠(SEO-20261124-3)・県へのリンク(SEO-20261124-2)");
   {
     const out5 = "dist-test-next-shows", dir5 = mkdtempSync(join(tmpdir(), "next-shows-"));
     try {
@@ -143,13 +143,13 @@ export function eventSeoTests({ ok, section, build }) {
       ];
       const reg = JSON.parse(read("tests/fixtures/regular.test.json").replace(/^﻿/, ""));
       const r0 = reg[0];
-      const progReg = { ...r0, id: "t-prog", name: "テスト湯治村の神楽公演", kagura: "テスト夜神楽", city: "テスト郡テスト町", seoTitle: "テスト湯治村の神楽スケジュール2026〜2027｜次の公演と料金", seoDesc: "{next}料金はおとな800〜1,200円。テスト湯治村で、地域の神楽団が週末に日替わりで上演します。", program: [{ date: "2026-11-15", time: "昼 12:30〜", troupe: "過去神楽団", hall: "ドーム" }, { date: "2026-11-21", time: "夜 20:30〜", troupe: "テスト神楽団", hall: "かむくら座" }, { date: "2026-12-05", time: "昼 12:30〜・14:30〜", troupe: "次神楽団", hall: "かむくら座" }] };
+      const progReg = { ...r0, id: "t-prog", name: "テスト湯治村の神楽公演", kagura: "テスト夜神楽", city: "テスト郡テスト町", seoTitle: "テスト湯治村の神楽スケジュール2026〜2027｜次の公演と料金", seoDesc: "{next}料金はおとな800〜1,200円。テスト湯治村で、地域の神楽団が週末に日替わりで上演します。", program: [{ date: "2026-11-15", time: "昼 12:30〜", troupe: "過去神楽団", hall: "ドーム" }, { date: "2026-11-21", time: "夜 20:30〜", troupe: "テスト神楽団", hall: "かむくら座" }, { date: "2026-12-05", time: "昼 12:30〜・14:30〜", troupe: "次神楽団", hall: "かむくら座" }], badge: "週末", bookingFlow: { lead: "予約しなくても観られます。", steps: [{ t: "予約", d: "電話で予約できます。" }, { t: "当日", d: "受付で料金を払います。" }] } };
       const evFile = join(dir5, "events.json"), regFile = join(dir5, "regular.json"), infoFile = join(dir5, "kagura-info.json");
       writeFileSync(evFile, JSON.stringify(evs));
       writeFileSync(regFile, JSON.stringify([...reg, progReg]));
       const info = {
         "テスト里神楽": { tagline: "テスト県 ・ 面をつけて演じる神楽", intro: "テスト県に伝わる里神楽で、面をつけて神話を演じます。神社への奉納のほか、ホールでの公演もあります。", source: "テスト市", seo: { title: "テスト里神楽とは｜次に観られる公演と見どころ(テスト県)", desc: "テスト県に伝わる、面をつけて神話を演じる里神楽。{upcoming}見どころと、公演の日時・会場・料金をまとめています。", nextBox: true } },
-        "テスト夜神楽": { tagline: "テスト県 ・ 夜通しの神楽", intro: "テスト県の西部に伝わる神楽で、秋祭りの夜にあちこちの神社で舞われます。囃子にのって、豪華な衣装で舞います。", source: "テスト市", seo: { title: "テスト夜神楽スケジュール{years}｜開催日程と定期公演", desc: "テスト夜神楽スケジュール{years}。これからの{counts}を、月ごとの表にまとめています。日時・会場・料金は公式で確かめた分を掲載。", monthTable: true } },
+        "テスト夜神楽": { tagline: "テスト県 ・ 夜通しの神楽", intro: "テスト県の西部に伝わる神楽で、秋祭りの夜にあちこちの神社で舞われます。囃子にのって、豪華な衣装で舞います。", source: "テスト市", seo: { title: "テスト夜神楽スケジュール{years}｜開催日程と定期公演", desc: "テスト夜神楽スケジュール{years}。これからの{counts}を、月ごとの表にまとめています。日時・会場・料金は公式で確かめた分を掲載。", monthTable: true, regularBox: true } },
       };
       writeFileSync(infoFile, JSON.stringify({ ...JSON.parse(read("data/kagura-info.json").replace(/^﻿/, "")), ...info }));
       const r = build(evFile, out5, { REGULAR_FILE: regFile, KAGURA_INFO_FILE: infoFile, BUILD_NOW: "2026-11-20T12:00" });
@@ -181,6 +181,16 @@ export function eventSeoTests({ ok, section, build }) {
       ok(ms.length === 1 && ms.find("h3").first().text() === "テスト夜神楽スケジュール(2026年12月〜2027年1月)" && mrows.length === 2 && mrows.map((_, tr) => $m(tr).find("th").text()).get().join() === "2026年12月,2027年1月", "月ごとに1行(開催のある月だけ)");
       ok(mrows.eq(0).find("a").attr("href") === "/events/t-ms-a.html" && mrows.eq(0).find(".ms-day").text() === "5日(土) 19:30〜" && mrows.eq(0).find(".ms-where").text() === "テスト町", "各行に日・開始時刻・開催ページへのリンク・町");
       ok(ms.find(`.ms-reg a[href="/regular/t-prog.html"]`).length === 1 && ms.find(".ms-reg td").text().includes(progReg.schedule), "定期公演は、名前(定期公演のページへ)と曜日・時刻の表");
+      // 種類のページ: 定期公演と予約の枠(seo.regularBox)。予約の流れがある定期公演は、その段へ近道(SEO-20261124-3)
+      const rb = $m("main .kagura-summary .reg-box");
+      ok(rb.length === 1 && rb.find("h3").text() === "週末の公演と予約" && rb.find('a[href="/regular/t-prog.html"]').length === 1 && rb.find("li b").text() === progReg.schedule, "「〇〇の公演と予約」の枠に、定期公演の名前(ページへ)と曜日・時刻", rb.text());
+      ok(rb.find('a[href="/regular/t-prog.html#booking-flow-h"]').length === 1 && cheerio.load(read(join(out5, "regular", "t-prog.html")))("#booking-flow-h").length === 1, "予約の流れへの近道があり、リンク先の段がある");
+      ok($k(".reg-box").length === 0, "seo.regularBox のない神楽には、枠を出さない");
+      // 種類のページ → その神楽を観られる県のページ(ほかの探し方の先頭)。リンク先の県のページがある(SEO-20261124-2)
+      const prefTags = $m("main .taglist a.tag").filter((_, a) => ($m(a).attr("href") ?? "").startsWith("/pref/"));
+      const wantPrefs = [...new Set(evs.filter((e) => e.kagura === "テスト夜神楽").map((e) => e.prefecture))];
+      ok(prefTags.length >= wantPrefs.length && wantPrefs.every((p) => prefTags.filter((_, a) => decodeURIComponent($m(a).attr("href")) === `/pref/${p}.html` && $m(a).text() === `${p}の神楽`).length === 1), "開催のある県のページへ「〇〇の神楽」のリンク", prefTags.text());
+      ok(prefTags.get().every((a) => existsSync(join(out5, decodeURIComponent($m(a).attr("href"))))), "リンク先の県のページは、すべてある");
     } finally {
       rmSync(dir5, { recursive: true, force: true });
       rmSync(out5, { recursive: true, force: true });

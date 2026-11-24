@@ -212,5 +212,24 @@ export function seoTests({ ok, section, OUT, build }) {
     ok($("title").text().startsWith("神楽門前湯治村") && $("title").text().includes("スケジュール") && $("title").text().includes("神楽ドーム"), "湯治村: 検索語(湯治村・スケジュール・神楽ドーム)をタイトルに", $("title").text());
     const future = reg.program.filter((p) => p.date >= "2026-10-09").length;
     ok($(".program-table tbody tr").length === future && $(".program h2").text().includes("公演日程"), "湯治村: ページに、今日以降の公演日程を表で出す", String($(".program-table tbody tr").length)); }
+  section("SEO: サイト全体の見直し(SEO-20261124-2〜5)");
+  { // 種類の一覧: 説明文の先頭で「一覧」と種類の数を答え、例は掲載の多い神楽から(北の端の神楽ではなく)
+    const $ = cheerio.load(read("dist-test-seo/kagura/index.html")), d = $('meta[name="description"]').attr("content");
+    const n = $("main .card h3 a").length;
+    ok(d.startsWith("神楽の種類一覧。") && d.includes(`など${n}種類の`), "種類の一覧: 説明文の先頭に「神楽の種類一覧」と種類の数", d);
+    // 種類のページ → 県のページ: どの種類のページも、少なくとも1つの県のページへつながり、リンク先がある
+    const kfiles = walk("dist-test-seo/kagura").filter((f) => !/index\.html$/.test(f));
+    const prefLinks = (f) => { const $k = cheerio.load(read(f)); return $k("main .taglist a.tag").map((_, a) => $k(a).attr("href")).get().filter((h) => h.startsWith("/pref/")); };
+    const missing = kfiles.filter((f) => !prefLinks(f).length);
+    ok(!missing.length, "どの種類のページにも、県のページへのリンクがある", missing.join(" "));
+    ok(kfiles.flatMap(prefLinks).every((h) => existsSync(join("dist-test-seo", decodeURIComponent(h)))), "種類のページから県のページへのリンク先は、すべてある");
+    // 高千穂神楽: 「予約」で来た人を、予約の答えのある定期公演のページへ(題・説明の役は「日程」。予約は定期公演のページが受け持つ)
+    const $t = kpage("高千穂神楽"), rb = $t("main .kagura-summary .reg-box");
+    ok(rb.find('a[href="/regular/takachiho-jinja-kagura.html#booking-flow-h"]').length === 1, "高千穂神楽: 冒頭の段に、高千穂神社の神楽の予約の流れへの近道");
+    ok($t("title").text().startsWith("高千穂神楽の日程20") && $t("title").text().includes("夜神楽"), "高千穂神楽: 題は「日程」と「夜神楽」", $t("title").text());
+    // 運営者の構造化データ: 同じ名前で発信しているアカウント(sameAs)
+    const $h = cheerio.load(read("dist-test-seo/index.html")), lds = $h('script[type="application/ld+json"]').map((_, s) => JSON.parse($h(s).html())).get();
+    const pub = lds.flat().find((x) => x["@type"] === "WebSite")?.publisher;
+    ok(Array.isArray(pub?.sameAs) && pub.sameAs.every((u) => /^https:\/\/note\.com\/[a-z0-9_]+$/.test(u)), "トップの運営者に sameAs(note のアカウント)", JSON.stringify(pub)); }
   rmSync("dist-test-seo", { recursive: true, force: true });
 }
