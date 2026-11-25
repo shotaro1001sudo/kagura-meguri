@@ -87,6 +87,7 @@ jobs:
       #    送り先のアドレスも Secrets に置く(公開リポジトリに書くと、迷惑メールの標的になるため)
       - name: notify-mail
         if: ${{ always() }}
+        id: notify
         env:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
@@ -99,3 +100,9 @@ jobs:
           DEPLOY_RESULT: ${{ steps.deploy.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: node scripts/notify-mail.mjs
+      # 8. メールが送れなかったときは、Issue で知らせる(2026-11-16 の回は、メールの認証エラーで届かず、気づく手立てがなかった)
+      #    メールの失敗では、収集・公開は止まっていない。Gmail のアプリパスワード(Secrets の MAIL_PASSWORD)の期限・取り消しを確かめる
+      - if: ${{ always() && steps.notify.outcome == 'failure' && !inputs.dry_run }}
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh issue create --title "週次の自動収集の通知メールが、送れませんでした($(date -u +%F))" --body "収集と公開は、メールとは別に済んでいます(結果は週次の振り返りと確認依頼の Issue を見てください)。メールの送信だけが失敗しました。ログの notify-mail の行で原因を確かめてください(EAUTH なら、Gmail のアプリパスワードを作り直して Secrets の MAIL_PASSWORD を入れ直す)。ログ: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
