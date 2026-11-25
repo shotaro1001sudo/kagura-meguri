@@ -56,7 +56,10 @@ export function buildMessage({ summary, jobStatus = "success", dryRun = false, c
     // 前回までの保留のうち、まだ確認していないもの(新しい保留だけを知らせると、翌週から見落とされるため)
     list("前回から続く保留(まだ確認していません)", it.stillPending, s.stillPending ?? 0, true);
     if (!s.published && !s.withdrawn && !s.held && !s.stillPending) L.push("", "新規掲載・取り下げ・保留は、ありませんでした");
-    if (s.errors) L.push("", `⚠ 取得できなかった収集元が ${s.errors} つあります`);
+    if (s.errors) {
+      L.push("", `⚠ 取得できなかった収集元が ${s.errors} つあります(今回は、その収集元の掲載を変えていません)`);
+      for (const x of (s.errorSources ?? []).slice(0, MAX_ITEMS)) L.push(`・${x.name ? `${x.name}(${x.id})` : x.id}${x.reason ? `: ${x.reason}` : ""}`);
+    }
     if (s.inactive) L.push("", `ℹ 規約の確認待ちで、止まっている収集元が ${s.inactive} つあります(data/sources.json の termsChecked)`);
     if ((s.held || s.stillPending) && !dryRun) L.push("", "保留の確認方法は、GitHub の Issue を見てください");
     if (s.autoPublish === false) L.push("", "自動掲載: オフ(すべて保留にしています)");

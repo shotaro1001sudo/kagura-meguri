@@ -45,6 +45,7 @@ const rejectedIds = new Set(readJson(REJECTED_FILE, []).map((e) => e.id));
 
 const lines = [], published = [], held = [], withdrawn = [];
 let errors = 0, notes = 0, inactive = 0;
+const errorSources = []; // 取得できなかった収集元(メールで名前を知らせる。どこが壊れたか、ログを開かなくても分かるように)
 
 for (const s of sources) {
   if (only && s.id !== only) continue;
@@ -55,7 +56,7 @@ for (const s of sources) {
     const checkRobots = s.nationalExpansion ? strictRobotsAllows : robotsAllows;
     const delay = Math.max(DELAY_MS, s.requestDelayMs ?? 0);
     const robots = await checkRobots(s.url, UA);
-    if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; continue; }
+    if (!robots.ok) { lines.push(`- ⛔ ${s.id}: ${robots.reason}。取得しません`); errors++; errorSources.push({ id: s.id, name: s.name ?? "", reason: String(robots.reason ?? "") }); continue; }
     const adapter = await import(pathToFileURL(`${process.cwd()}/scripts/adapters/${s.adapter}.mjs`).href);
     // 読むページ: アダプタが月ごとなどの複数のページを示せば、それをすべて(間隔をあけて)読む。1つでも失敗したら、この収集元は変更しない
     const pages = adapter.urls ? adapter.urls(s, now) : [s.url];
@@ -110,7 +111,7 @@ for (const s of sources) {
     const x = r.summary;
     lines.push(`- ✅ ${s.id}(${s.name}): 取得 ${x.fetched} 件 → 新規掲載 ${x.published.length} / 保留 ${x.held.length} / 取り下げ ${x.withdrawn.length} / 変更なし ${x.unchanged} / 重複 ${x.duplicates} / 過去 ${x.past} / 却下済み ${x.rejected}${items.skippedPeriod ? ` / 期間指定で除外 ${items.skippedPeriod}` : ""}${x.fetched === 0 ? " ← 0件。ページ構造が変わった可能性" : ""}`);
     for (const n of x.notes) lines.push(`    - ⚠ ${n}`);
-  } catch (err) { lines.push(`- ❌ ${s.id}: ${err.message}(この収集元は、今回、変更していません)`); errors++; }
+  } catch (err) { lines.push(`- ❌ ${s.id}: ${err.message}(この収集元は、今回、変更していません)`); errors++; errorSources.push({ id: s.id, name: s.name ?? "", reason: String(err.message ?? "").slice(0, 200) }); }
   await sleep(DELAY_MS);
 }
 
@@ -152,7 +153,7 @@ writeFileSync(REPORT_FILE, text);
 // 通知(LINE)用の明細。公開してよい事実(名称・日付・場所・URL・理由)だけ
 const pick = (e, reason) => ({ name: e.name, start: e.start, prefecture: e.prefecture, city: e.city ?? "", url: e.url, ...(e.note ? { note: e.note } : {}), ...(reason ? { reason } : {}) });
 writeFileSync(SUMMARY_FILE, JSON.stringify({
-  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, stillPending: stillPending.length, withdrawn: withdrawn.length, errors, inactive, needsAttention: attention, sourceReviews: reviewSources,
+  date: today(now), autoPublish: ccfg.autoPublish, published: published.length, held: held.length, stillPending: stillPending.length, withdrawn: withdrawn.length, errors, errorSources, inactive, needsAttention: attention, sourceReviews: reviewSources,
   affiliate: { missingIds: cov.missingIds, expiring: cov.expiring.slice(0,50), counts: cov.counts, unlinkedTotal: cov.rows.filter(r=>r.missing.length).length, unlinked: cov.rows.filter((r) => r.missing.length).slice(0,50).map((r) => ({ id: r.id, missing: r.missing })) },
   items: { published: published.map((e) => pick(e)), held: held.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), stillPending: stillPending.map((e) => pick(e, (e.holdReasons ?? []).join(" / "))), withdrawn: withdrawn.map((e) => pick(e, e.withdrawnReason)) },
 }, null, 2));
