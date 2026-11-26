@@ -120,83 +120,95 @@
       "Check the dates on the event information page before you go."
     ]
   },
-  "安芸高田神楽": {
-    "checked": "2026-11-24",
-    "basis": "585d42184543",
-    "area": "Akitakata, Hiroshima",
-    "tagline": "Slow 'kyumai' (old-style dances) and showy 'shinmai' (new-style dances)",
-    "intro": "This kagura is handed down in Akitakata, Hiroshima Prefecture. For example, the kagura of Takamiya is known for its fast eight-beat tempo, and all the kagura troupes in the town are designated Intangible Folk Cultural Properties of Hiroshima Prefecture. In the city there are places to watch kagura, such as the Kagura Dome at Kagura Monzen Tojimura.",
+  "芸北神楽": {
+    "checked": "2026-11-26",
+    "basis": "08217e2b2f24",
+    "area": "North-western Hiroshima Prefecture (Geihoku area)",
+    "tagline": "Old-style and new-style dances that grew out of Iwami's kagura",
+    "naming": "'Geihoku Kagura' is a name for the kagura handed down in the north-west of Hiroshima Prefecture (the Geihoku area). The Hiroshima Prefecture Tourism Federation uses it as one of five groups when it introduces kagura in the prefecture.",
+    "intro": "According to the Hiroshima Prefecture Tourism Federation, kagura that arrived from the Iwami area of Shimane Prefecture around the end of the Edo period grew into a distinctive form in the Geihoku area. It has 'kyumai' (old-style dances), handed down from long ago, and 'shinmai' (new-style dances), created after the Second World War. Kagura contests and regular performances are held in Kitahiroshima and Akitakata.",
     "history": [
-      "Kagura in Akitakata is thought to be Izumo-style kagura that reached this area via Iwami Kagura in the Edo period. Along the way, it is said, it was also influenced by Hachiman-lineage kagura from Kyushu, Takachiho Kagura, Bitchu Kagura and the old farmers' beliefs of the Chugoku Mountains, and so took its present form.",
-      "The Kajiya Kagura Troupe is said to have begun in the mid-Edo period, when it learned kagura from Shinto priests of Asuna and [[上田村]] in Iwami (today's Onan, Shimane). It is called the founder of kagura culture in the city. The Yamane Kagura Troupe also says it began in 1790 (Kansei 2), when four people from the village learned kagura from a Shinto priest of Asuna and brought it home.",
-      "'Kyumai' refers to the dances and music of the 'Asuna-te' and 'Kajiya-te' styles, which already existed at the end of the Second World War and have been handed down to today. 'Shinmai', on the other hand, is kagura newly created after the war. Today it has spread widely, not only in Akitakata but throughout the Geihoku area.",
-      "In 1954 (Showa 29), four dances were designated Intangible Folk Cultural Properties of Hiroshima Prefecture: 'Kamimukae' of the Ao Kagura Troupe, 'Kamioroshi' of the Kuwada Tenshi Kagura Troupe, 'Shoki' of the Kajiya Kagura Troupe and the sword dance ([[剣舞]]) of the Yamane Kagura Troupe. Shortly after the war, in 1949-52 (Showa 24-27), the [[神幸]] Kagura Troupe won more than 20 times at competitions in various places. This helped to spread the name of Midori kagura."
+      "The Hiroshima Prefecture Tourism Federation explains that kagura brought from the Iwami area of Shimane Prefecture around the end of the Edo period developed in its own way in the Geihoku area. It is regarded as the newest of the kagura in the prefecture.",
+      "Researchers divide Geihoku Kagura further. A paper by Mimura Yasuomi (in the research bulletin of Hiroshima Institute of Technology) lists three: 'Takata Kagura' in the east, 'Yamagata Kagura' in the west, and the 'new Takata dances' born just after the war. It says the first two are sometimes called 'kyumai' and the last 'shinmai'. It adds that Takata Kagura (in the former towns of Takamiya and Midori) is also called 'hacchoshi' because its tempo is fast, and 'Asuna style' because it came from the Asuna area of Shimane Prefecture.",
+      "The same paper says that shinmai was born in Midori around 1947-48. After the war the occupation forces placed restrictions on kagura, and [[佐々木順三]] of Midori revised the plays so that they would not break those restrictions and added theatrical elements to create a new kind of kagura.",
+      "In 1954 Hiroshima Prefecture designated the following as prefectural intangible folk cultural properties: 'Kagura: Kamioroshi, Yamata-no-Orochi, Ama-no-Iwato' in Kitahiroshima, 'Kagura: Kamioroshi' and 'Kagura: Kamimukae' in Midori, Akitakata, and 'Kagura: Kenmai' and 'Kagura: Shoki' in Takamiya, Akitakata."
     ],
     "features": [
-      "Akitakata is said to be the birthplace of shinmai. Shinmai shows off quick changes of costume and mask, fast fighting scenes, and flashy effects using dry ice and spider threads. Kyumai, based on the Kojiki and the Nihon Shoki, demands great skill to express the story through slow movements.",
-      "There are 22 kagura troupes active in the city. In this area, each local shrine has its own kagura troupe, and the local parishioners themselves dance, not Shinto priests. Members carry on kagura alongside their work or studies.",
-      "The music is played on a large drum, a small drum, hand cymbals and a flute. The large drum leads the rhythm of the whole ensemble, and this part is often taken by the troupe leader.",
-      "The demon role is said to be the hardest to dance. Another highlight is the 'ureshi-mai' (dance of joy), danced by a god after winning a fight. In some plays, a role called 'chari' also appears: a performer who stands on stage alone and makes the audience laugh."
+      "The Hiroshima Prefecture Tourism Federation names gorgeous costumes and large masks as features of Geihoku Kagura.",
+      "According to the federation's guide, kyumai has slow music and dancing, while shinmai is fast and takes in elements of kabuki and other theatre. It notes that there are various views on how the plays are divided.",
+      "Shinmai uses quick changes of costume and mask, fast fight scenes and effects such as dry ice (Akitakata city newsletter).",
+      "The music is played on a large drum, a small drum, hand cymbals and a flute. The large drum leads the rhythm of the whole performance and is often played by the head of the troupe (same source).",
+      "The demon is said to be the hardest role to dance. There is also 'ureshi-mai', danced by the god who has won the fight, and the 'chari', a comic role who stands alone on stage and makes the audience laugh (same source)."
     ],
     "programs": [
       {
         "name": "Takiyasha-hime (Princess Takiyasha)",
-        "text": "Princess Satsuki, daughter of Taira no Masakado, receives magic powers from the god of Kibune to avenge her father's bitter death. She renames herself Takiyasha-hime and plots a rebellion. The highlight is the battle of yin-yang magic against her sorcery, fought by the onmyoji (yin-yang master) Oya no Chujo Mitsukuni and others."
+        "text": "Satsuki-hime, daughter of Taira no Masakado, is given sorcery by the god of Kifune, changes her name to Takiyasha-hime and plots a rebellion. The yin-yang master Oya-no-Chujo Mitsukuni and his men set out to subdue her."
       },
       {
-        "name": "Momijigari (the autumn-leaf outing)",
-        "text": "Taira no Koremochi and his party lose their way on Mount Togakushi in Shinshu. They are invited to a banquet of beautiful women and fall under the spell of a demon woman. Hachiman Daibosatsu appears in Koremochi's dream and gives him a divine sword, and with it he defeats the demon woman."
+        "name": "Momijigari (Maple Viewing)",
+        "text": "At Mount Togakushi in Shinshu, Taira no Koremochi and his men are invited to a maple-viewing banquet by a group of women and fall under the spell of demon women. Koremochi receives a sacred sword from the bodhisattva Hachiman in a dream and slays them."
       },
       {
-        "name": "Tsuchigumo (the earth spider)",
-        "text": "The spirit of an earth spider living on Mount Katsuragi in Yamato Province disguises itself as a maid of Minamoto no Raiko and poisons him. Raiko's four great retainers suffer from the spider's magic of spitting threads, but they defeat it with the sword 'Kumokirimaru'."
+        "name": "Tsuchigumo (The Earth Spider)",
+        "text": "The spirit of the earth spider of Mount Katsuragi takes the form of the maid Kocho and poisons Minamoto no Raiko. Raiko's four retainers, given the sword 'Kumokiri-maru', slay the spider at Mount Katsuragi."
       },
       {
         "name": "Yamata-no-Orochi (the eight-headed serpent)",
-        "text": "In Izumo, an old couple has lost one daughter after another to the serpent. Susanoo appears, makes the serpent drunk with poisoned sake and slays it. A sword comes out of the serpent's belly. It is named Ame-no-Murakumo-no-Tsurugi and offered to Amaterasu."
-      },
-      {
-        "name": "Iwato-mai (the Rock Cave dance)",
-        "text": "In the Haji kagura handed down by the Yachiyo Kagura Troupe, the final duet of Iwato-mai is a dance with a shimenawa (sacred straw rope), and the dancers then hang the rope over the entrance of the Rock Cave. This follows the old story that the cave was closed so that Amaterasu would never go back inside."
+        "text": "Susanoo-no-Mikoto meets an old couple whose daughters have been taken by the serpent, and slays it using poisoned sake. The sword Ame-no-Murakumo-no-Tsurugi, found in the serpent's body, is presented to Amaterasu."
       }
     ],
     "viewing": [
-      "There are two kinds of kagura: 'hono kagura', performed as an offering at shrine festivals, and 'hall kagura', which you pay to watch. At hall kagura, an MC often introduces the story, or sheets with the plot are handed out, so first-timers can easily follow the story.",
-      "At Kagura Monzen Tojimura, regular performances are held at the Kagura Dome and at Kamukura-za. The plays are announced about one week in advance. One play lasts about 40 minutes on average (about 30 minutes for short ones, about 90 minutes for long ones).",
-      "Every year on a Saturday in late September, the 'Midori Kagura Showcase' is held, with all 13 kagura troupes of Midori town performing. There is also the 'Takamiya Kagura Festival' of Takamiya kagura, which is known for its fast eight-beat tempo.",
-      "Kagura audiences are relaxed. You may eat and drink while watching, or call out to the performers. However, please avoid anything that bothers the people around you."
+      "According to the Akitakata city newsletter, there are two kinds of kagura: 'hono kagura', offered at local shrines, and 'hall kagura', which you pay to watch. At hall performances an MC often introduces the story, or a printed synopsis is handed out, so first-timers can follow the plot.",
+      "In the Geihoku area there are regular performances at Kagura Monzen Tojimura (Akitakata) and on 'Kagura Day' at the roadside station Mai Road IC Chiyoda (Kitahiroshima).",
+      "At the Hiroshima Prefectural Culture Center in Hiroshima City, the 'Hiroshima Kagura Regular Performance' is held every Wednesday from April to December, with troupes from Kitahiroshima, Akitakata and elsewhere."
+    ],
+    "sections": [
+      {
+        "id": "akitakata",
+        "title": "Kagura in Akitakata",
+        "paras": [
+          "The Akitakata Tourism Association calls the kagura of the city 'Hiroshima Akitakata Kagura'. It is the part of Geihoku Kagura that is handed down in Akitakata.",
+          "According to the association, the kagura of Akitakata is thought to be Izumo-style kagura that reached the area in the Edo period by way of Iwami Kagura. It explains that on the way it is also said to have been influenced by the Hachiman-style kagura of Kyushu, Takachiho Kagura, Bitchu Kagura and the farmers' beliefs of the Chugoku Mountains.",
+          "The association describes 'kyumai' as the dances and music of the 'Asuna style' and 'Kajiya style' that already existed at the end of the war and are still handed down, and 'shinmai' as new kagura created after the war. It says shinmai has now spread widely across the Geihoku area and that Akitakata is its birthplace.",
+          "Twenty-two kagura troupes are active in the city (same source). Each troupe is formed around a local shrine, the dancers are parishioners rather than priests, and no member performs kagura as a profession.",
+          "In the association's introductions, the Kajiya Kagura Troupe is said to have begun in the mid-Edo period, when it learned kagura from priests of Asuna and [[上田村]] in Iwami, and is regarded as the origin of kagura culture in the city. The Yamane Kagura Troupe says it began in Kansei 2, when four people from the hamlet went to learn. The kagura of Takamiya is described as fast, with an eight-beat rhythm.",
+          "The prefecture has designated the following as intangible folk cultural properties: in Midori, 'Kagura: Kamioroshi', 'Kagura: Kamimukae', Kawasumiyama Hachiman Kagura, Nishioyama Hachiman Kagura and Tsuma Hachiman Kagura; in Takamiya, 'Kagura: Kenmai', 'Kagura: Shoki', Sasabe Kagura, Hasatake Kagura, Harada Kagura and Kurumegi Kagura (Hiroshima Prefecture's notes).",
+          "Kagura Monzen Tojimura in Midori has two venues, the Kagura Dome and Kamukura-za, with performances mainly at weekends. On a Saturday in late September each year, the 13 troupes of Midori appear at the Midori Kagura Presentation, and Takamiya holds the Takamiya Kagura Festival (same source)."
+        ]
+      }
     ]
   },
-  "広島神楽": {
-    "checked": "2026-11-24",
-    "basis": "5bb46ada9945",
-    "area": "Hiroshima Prefecture",
-    "tagline": "'Hayagawari', where costumes change in an instant",
-    "intro": "Kagura in Hiroshima Prefecture falls broadly into these lineages: Geihoku Kagura, Aki Juni Jingi, the kagura of the Geiyo Islands, Hiba Kojin Kagura and Bingo Kagura. In the prefecture there are regular performances every Wednesday, and kagura festivals and kagura competitions are held in many places.",
+  "十二神祇神楽": {
+    "checked": "2026-11-26",
+    "basis": "ffe7834a9895",
+    "area": "Seto Inland Sea coast of Hiroshima Prefecture",
+    "tagline": "Kagura offered on the eve of the autumn festival",
+    "naming": "'Juni Jingi Kagura' is the name used by local troupes for the kagura handed down mainly in the cities of Hiroshima, Hatsukaichi and Otake. The Hiroshima Prefecture Tourism Federation writes 'Aki Juni Jingi', and the prefecture's notes on cultural properties write 'Aki Juni Jingi Kagura'.",
+    "intro": "This kagura is performed along the coast of the Seto Inland Sea, in Hiroshima, Hatsukaichi, Otake and other cities (Hiroshima Prefecture Tourism Federation). It is offered on the eve of the autumn festival, and some communities hand down the 'Arahira' and 'shogun' dances. According to the Kunimitsu Kagura Troupe, about 30 groups carry it on today.",
     "history": [
-      "Kagura in Hiroshima Prefecture differs greatly in character depending on the lineage. 'Geihoku Kagura', handed down in the Geihoku area in the west of the prefecture, such as Kitahiroshima and Akitakata, is said to have its source in Iwami Kagura of Shimane Prefecture.",
-      "Geihoku Kagura has 'kyumai' (old-style dances), handed down from before the Second World War, and 'shinmai' (new-style dances), born after the war. Shinmai is said to have been created while kagura was restricted after the war, with less Shinto character and more entertainment.",
-      "On the other hand, 'Juni Jingi Kagura' is handed down along the coast of the Seto Inland Sea (in Hiroshima, Hatsukaichi, Otake and other cities). It has a strong ritual character, and its dances are basically slow and calm."
+      "The Hiroshima Prefecture Tourism Federation explains that an old form of kagura from the Geihoku area reached this region between the end of the Edo period and the Meiji era, and spread.",
+      "There are two explanations of the name. The federation says it is called Juni Jingi because twelve (juni) dances are offered on the eve of the autumn festival. The Kunimitsu Kagura Troupe explains that 'jingi' means the gods of heaven and earth, that the name is thought to come from 'twelve' as the seven generations of heavenly gods plus the five generations of earthly gods, and that linking it to the number of plays is a view that spread only in modern times.",
+      "Prefectural intangible folk cultural properties include 'Kagura' in Asaminami Ward, Hiroshima (offered to Ato Myojin; designated in 1965), Tsuta Kagura (2008) and Hara Kagura (2012), both in Hatsukaichi."
     ],
     "features": [
-      "Kyumai is also called 'hacchoshi' (fast eight-beat rhythm). It is danced with showy movements to fast music.",
-      "Shinmai developed by taking in new storylines and unique staging. It has highlights such as 'hayagawari' (quick change), where a costume changes in an instant.",
-      "Juni Jingi Kagura has slow, calm dances and keeps a strong ritual character."
+      "The Kunimitsu Kagura Troupe explains that there are ritual dances centred on purification, the dances of the princes based on the yin-yang and five-elements philosophy, and comic dances that developed as entertainment for ordinary people.",
+      "The 'Arahira' dances ([[世鬼の舞]], [[関の舞]], [[鬼神]], [[柴鬼神]]) are characteristic, and in some communities the 'shogun-mai', a play of divine possession and oracle, survives (Kunimitsu Kagura Troupe). According to the prefecture's notes, 'Tendai Shogun' of Hara Kagura, which involves possession, is one of only two examples left in the prefecture.",
+      "In some communities, handmade fireworks ([[吹火]], [[傘火]], [[綱火]]) are offered between the dances. This is said to have become less common because of fire regulations (Kunimitsu Kagura Troupe)."
     ],
     "programs": [
       {
-        "name": "Orochi (the eight-headed serpent)",
-        "text": "Susanoo slays Yamata-no-Orochi. This is a standard kagura play."
+        "name": "Arahira",
+        "text": "The dance that characterises Juni Jingi Kagura. It is also danced under names such as [[世鬼の舞]], [[関の舞]], [[鬼神]] and [[柴鬼神]] (Kunimitsu Kagura Troupe)."
       },
       {
-        "name": "Takiyasha-hime (Princess Takiyasha)",
-        "text": "A play with a strong story. The quick costume changes are among its highlights."
+        "name": "Shogun-mai",
+        "text": "A play of divine possession and oracle. Only a limited number of communities hand it down (Kunimitsu Kagura Troupe)."
       }
     ],
     "viewing": [
-      "There are everyday chances to watch kagura, such as the regular performance every Wednesday.",
-      "If you compare kyumai (slow and old-fashioned) with shinmai (showy, with a focus on staging), you can see the differences clearly.",
-      "At kagura festivals and competitions, you can enjoy the dances of many kagura troupes in one day."
+      "It is offered at local shrines on the eve of the autumn festival (Hiroshima Prefecture Tourism Federation).",
+      "In Hiroshima City, the Kunimitsu Kagura Troupe gives regular performances at Waseda Shrine (Higashi Ward) and other places."
     ]
   },
   "庄内神楽": {

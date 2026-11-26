@@ -184,7 +184,7 @@ export function sourcesTests({ ok, section }) {
   ok(geiseki?.url === "https://npo-kagura.jp/x", "公式情報は、本文の中の主催者などのリンク(画像は除く)");
   const mito = items.find((x) => /美都町/.test(x.name)), asa = items.find((x) => /あさきた/.test(x.name));
   ok(mito?.prefecture === "島根県" && mito.kagura === "石見神楽" && mito.city === "益田市" && mito.timeUnknown, "島根県の開催は、石見神楽として扱い、町名から市を推定する(時刻がなければ時間未定)");
-  ok(asa?.url.endsWith("sche14.cgi?year=2026&mon=10#501") && asa.kagura === "広島神楽", "公式のリンクがなければ、日程表のその行へのリンク");
+  ok(asa?.url.endsWith("sche14.cgi?year=2026&mon=10#501") && asa.kagura === "広島県の神楽", "公式のリンクがなければ、日程表のその行へのリンク(広島市の開催は、系統を決めずに「広島県の神楽」)");
   const u = urls({ ...cfg, months: 3 }, new Date("2026-11-20T03:00:00Z"));
   ok(u.length === 3 && u[0].endsWith("?year=2026&mon=11") && u[2].endsWith("?year=2027&mon=1"), "今月から3か月分のページを読む(年をまたぐ)", u.join(" "));
   ok(decode(Uint8Array.of(0x90, 0x5f, 0x8a, 0x79)) === "神楽", "ページの文字(Shift_JIS)を読む");
@@ -193,7 +193,7 @@ export function sourcesTests({ ok, section }) {
   const now = new Date("2026-10-01T00:00:00Z");
   const r = reconcile({ events: [], candidates: items.filter((x) => x.city), source: cfg, now });
   const g = r.events.find((e) => e.name === "第78回 芸石神楽競演大会");
-  ok(g?.fee === "前売2,000円 当日2,500円" && g.kagura === "広島神楽", "取得した料金と、神楽の種類が、データに入る");
+  ok(g?.fee === "前売2,000円 当日2,500円" && g.kagura === "芸北神楽", "取得した料金と、神楽の種類(北広島町の開催は芸北神楽)が、データに入る");
   const many = Array.from({ length: 20 }, (_, i) => ({ name: `テスト神楽${i}`, prefecture: "広島県", city: "呉市", venue: "神社", start: `2026-10-${String(10 + i).padStart(2, "0")}T18:00`, url: "https://example.jp/" }));
   ok(reconcile({ events: [], candidates: many, source: cfg, now }).summary.held.length === 0 && reconcile({ events: [], candidates: many, source: { ...cfg, maxNewPerSource: undefined }, now }).summary.held.length === 20, "件数の多い収集元は、上限を個別に広げられる(既定の15件を超えると、全部保留)");
   const base = { prefecture: "広島県", start: "2026-11-15T16:00" };

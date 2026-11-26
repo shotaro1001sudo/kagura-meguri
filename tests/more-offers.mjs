@@ -19,7 +19,7 @@ export function moreOffersTests({ ok, section }) {
   ok(!validMoreOffer({ ...book, approved: false }, today) && !validMoreOffer({ ...book, expiresAt: "2026-10-24" }, today) && !validMoreOffer({ ...book, verifiedAt: "2026-07-01", expiresAt: "2026-12-31" }, today), "未承認・期限切れ・確認から90日超は出さない");
   ok(!validMoreOffer({ ...book, url: book.url.replace("books.rakuten.co.jp", "example.com") }, today) && !validMoreOffer({ ...book, url: "https://example.com/hgc/x/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2F" }, today) && !validMoreOffer({ ...book, url: "http://hb.afl.rakuten.co.jp/hgc/x/?pc=https%3A%2F%2Fbooks.rakuten.co.jp%2F" }, today), "楽天の発行形式以外・行き先の不一致・HTTPのリンクは出さない");
   ok(!validMoreOffer({ ...book, provider: "rakuten-furusato" }, today) && !validMoreOffer({ ...furusato, city: "" }, today) && !validMoreOffer({ ...book, kagura: "" }, today), "提供元とカテゴリの取り違え・地域や種類の抜けは出さない");
-  ok(moreOffersFor(settings, "learn", { kagura: "石見神楽" }, today).map((o) => o.id).join() === "iwami-book,kagura-dvd" && moreOffersFor(settings, "learn", { kagura: "広島神楽" }, today).map((o) => o.id).join() === "kagura-dvd", "種類に合うものを先に、全般向け(*)を後に出す");
+  ok(moreOffersFor(settings, "learn", { kagura: "石見神楽" }, today).map((o) => o.id).join() === "iwami-book,kagura-dvd" && moreOffersFor(settings, "learn", { kagura: "芸北神楽" }, today).map((o) => o.id).join() === "kagura-dvd", "種類に合うものを先に、全般向け(*)を後に出す");
   ok(moreOffersFor(settings, "furusato", { prefecture: "広島県" }, today).length === 1 && moreOffersFor(settings, "furusato", { prefecture: "島根県" }, today).length === 0, "ふるさと納税は、その県のページだけ");
   ok(moreOffersFor(settings, "furusato", { prefecture: "広島県", city: "安芸高田市" }, today).length === 0, "同じ県でも別の開催市町村の返礼品は出さない");
   ok(moreOffersFor(settings, "furusato", { prefecture: "広島県", city: "北広島町" }, today).length === 1, "郡名の有無を正規化して開催市町村を照合する");
@@ -48,7 +48,7 @@ export function moreOffersTests({ ok, section }) {
   // 本番データは、いちばん新しい確認日の時点で確かめる(テストの today より後に確かめた広告もある)
   const dataToday = data.offers.map((o) => o.verifiedAt).filter(Boolean).sort().at(-1);
   ok(data.offers.every((o) => validMoreOffer(o, dataToday) || o.enabled !== true), "本番データ: 有効にしたものは、検査に通る");
-  for (const kagura of ["高千穂神楽", "広島神楽", "*", ""]) {
+  for (const kagura of ["高千穂神楽", "芸北神楽", "*", ""]) {
     ok(!moreOffersFor(data, "learn", { kagura }, today).some(o => o.id === "sanin-kagura-photobook"), `山陰写真集を対象外の種類に出さない: ${kagura}`);
   }
   // 本・DVD(learn)は運営者の判断で止めている(2026-10-30)。照合の決まりは、カテゴリを有効にした写しで確かめる

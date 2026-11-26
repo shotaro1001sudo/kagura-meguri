@@ -237,15 +237,15 @@ export async function uxTests({ ok, section, OUT }) {
   ok(org(".opoints li").length === 3 && org(".ocards li").length === 5 && org(".oways .oway").length === 3 && org("ol.steps li").length === 3 && org(".faq details summary").length === 3, "主催者の方へ: 要点のカード3つ・載る場所5つ・送り方3つ・番号つきの手順・開閉式のよくあるご質問");
   // 種類のページ(2026-11-15 運営者の依頼): 「〇〇とは」の概要の下に、歴史・特徴・主な演目・観賞のコツ・開催予定の折り畳み。
   // 開催予定だけ開いておく。どの種類も同じ並び。データのない欄は「情報がありません。」
-  { const kinds = readdirSync(join(OUT, "kagura")).filter((f) => f.endsWith(".html") && f !== "index.html");
+  { const kinds = readdirSync(join(OUT, "kagura")).filter((f) => f.endsWith(".html") && f !== "index.html" && !read(join(OUT, "kagura", f)).includes('http-equiv="refresh"')); // やめた種類の、案内だけのページは除く
     const bad = { order: [], open: [], empty: [], first: [], ad: [] };
     for (const f of kinds) {
       const $k = page(`kagura/${f}`), name = f.replace(/\.html$/, ""), html = $k("main").html();
       const folds = $k("main .kagura-folds > details.kfold");
-      if (folds.map((_, d) => `${$k(d).attr("id")}:${$k(d).find("> summary h2").text()}`).get().join() !== "k-history:歴史,k-features:特徴,k-programs:主な演目,k-viewing:観賞のコツ,k-schedule:開催予定") bad.order.push(name);
+      if (folds.map((_, d) => `${$k(d).attr("id")}:${$k(d).find("> summary h2").text()}`).get().join().replace(/(観賞のコツ,)(?:k-[a-z-]+:[^,]+,)+(k-schedule)/, "$1$2") !== "k-history:歴史,k-features:特徴,k-programs:主な演目,k-viewing:観賞のコツ,k-schedule:開催予定") bad.order.push(name); // 追加の欄(安芸高田市の神楽など)は、観賞のコツと開催予定の間だけ
       if (folds.filter((_, d) => $k(d).attr("open") !== undefined).map((_, d) => $k(d).attr("id")).get().join() !== "k-schedule") bad.open.push(name);
       if (folds.filter((_, d) => !$k(d).find("> .kfold-body").text().trim()).length) bad.empty.push(name);
-      if ($k("main h2").first().text() !== `${name}とは` || !$k("main .kagura-summary > p").first().text().trim() || html.indexOf("kagura-summary") > html.indexOf("kagura-folds")) bad.first.push(name);
+      if ($k("main h2").first().text() !== `${name}とは` || !$k("main .kagura-summary > p:not(.naming)").first().text().trim() || html.indexOf("kagura-summary") > html.indexOf("kagura-folds")) bad.first.push(name);
       if (['class="adwrap"', 'class="aff'].some((m) => html.includes(m) && html.indexOf(m) < html.indexOf('id="k-schedule"'))) bad.ad.push(name);
     }
     ok(kinds.length > 0 && !bad.order.length, "種類のページ: どの種類も、歴史・特徴・主な演目・観賞のコツ・開催予定の折り畳みが、この順に並ぶ", bad.order.join(" "));

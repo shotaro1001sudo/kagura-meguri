@@ -10,7 +10,9 @@ export const REGULAR_FIELDS = ["name", "venue", "schedule", "closed", "season", 
 
 const hash = (s) => createHash("sha256").update(String(s)).digest("hex").slice(0, 12);
 /** 訳したときの日本語の本文の指紋 */
-export const basisOf = (ja, fields) => hash(JSON.stringify(fields.map((f) => ja?.[f] ?? null)));
+// あとから足した欄(naming: 呼び名の説明、sections: 追加の欄)は、日本語にあるときだけ指紋に入れる(欄を足しても、これまでの訳の指紋は変わらない)
+export const INFO_EXTRA_FIELDS = ["naming", "sections"];
+export const basisOf = (ja, fields) => hash(JSON.stringify([...fields.map((f) => ja?.[f] ?? null), ...(fields === INFO_FIELDS ? INFO_EXTRA_FIELDS.filter((f) => ja?.[f] != null).map((f) => [f, ja[f]]) : [])]));
 
 /** 訳が今の日本語に合っているか(basis が一致するか) */
 export const infoFresh = (ja, en) => !!en && en.basis === basisOf(ja, INFO_FIELDS);

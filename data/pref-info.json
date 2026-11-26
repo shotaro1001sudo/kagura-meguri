@@ -15,21 +15,83 @@
     ]
   },
   "広島県": {
-    "paras": [
-      "広島県の神楽は、地域によって性格が大きく違います。県西部・北部の山あいには「芸北神楽」(旧舞・新舞)、瀬戸内の沿岸部には「十二神祇神楽」が伝わり、ほかにも比婆荒神神楽や備後神楽があります。",
-      "芸北神楽は島根県の石見神楽を源流とし、速い調子の囃子が特徴です。戦後に生まれた新舞は、凝った演出や衣装の早変わりなど、娯楽性の高さが魅力です。いっぽう十二神祇神楽は儀式色が強く、ゆったりと舞います。",
-      "安芸高田市の神楽門前湯治村にある神楽ドームなど、神楽を観られる場所もあります。県内では毎週水曜日の定期公演に加え、各地で神楽まつりや共演大会が開かれています。"
+    "checked": "2026-11-26",
+    "groupsTitle": "広島県の神楽の分け方",
+    "groupsLead": "広島県観光連盟の「ひろしま神楽 特設ページ」は、県内の神楽を、地域の特色ごとに次の5つに分けています(参考文献に、三村泰臣『広島の神楽探訪』を挙げています)。呼び方や分け方には、ほかの見方もあります。",
+    "groups": [
+      {
+        "name": "芸北神楽",
+        "area": "県北西部(芸北地方)",
+        "text": "江戸時代の終わりごろに伝わった島根県石見地方の神楽が、芸北地方で独特の神楽として発展したもの。旧舞と新舞があります。",
+        "kind": "芸北神楽"
+      },
+      {
+        "name": "十二神祇神楽",
+        "alias": "同連盟の表記は「安芸十二神祇」",
+        "area": "広島市・廿日市市・大竹市など、瀬戸内海の沿岸部",
+        "text": "秋祭りの前夜祭に奉納されます。将軍舞や荒平舞を伝えています。",
+        "kind": "十二神祇神楽"
+      },
+      {
+        "name": "芸予諸島の神楽",
+        "area": "しまなみ海道の周辺から呉市にかけての、島々と沿岸部",
+        "text": "県の無形民俗文化財に指定されている神楽もあります。"
+      },
+      {
+        "name": "比婆荒神神楽",
+        "area": "旧比婆郡とその周辺",
+        "text": "国の重要無形民俗文化財です。岡山県の備中神楽の影響を受けつつ、神がかりの古い形を伝えています。"
+      },
+      {
+        "name": "備後神楽",
+        "area": "比婆荒神神楽の地域を除く備後地方と、安芸の一部",
+        "text": "五行祭と呼ばれる、歌や語りを楽しむ神楽や、古い形の能舞を残しています。"
+      }
     ],
-    "kinds": [
-      "広島神楽",
-      "安芸高田神楽"
-    ],
+    "groupsNote": "「ひろしま神楽」「広島神楽」は、県内の神楽をまとめて呼ぶ言い方で、一つの系統の名前ではありません。このサイトでは、系統を確かめられた開催だけを系統の名前で分け、それ以外は「広島県の神楽(系統は未確認)」としています。",
     "refs": [
       {
-        "name": "広島市「ひろしま市民と市政」",
-        "url": "https://www.city.hiroshima.lg.jp/asakitaku/machi/1027757/1007622.html"
+        "name": "広島県観光連盟「ひろしま神楽 特設ページ」",
+        "url": "https://www.hiroshima-kagura.jp/top.html"
+      },
+      {
+        "name": "広島県「県指定の無形民俗文化財の解説」(PDF)",
+        "url": "https://www.pref.hiroshima.lg.jp/uploaded/attachment/621680.pdf"
       }
-    ]
+    ],
+    "en": {
+      "title": "Kagura in Hiroshima Prefecture",
+      "lead": "The Hiroshima Prefecture Tourism Federation's 'Hiroshima Kagura' special site divides the kagura of the prefecture into the following five groups by regional character (it cites Mimura Yasuomi's book on kagura in Hiroshima as its reference). There are other ways of naming and dividing them.",
+      "groups": [
+        {
+          "name": "Geihoku Kagura",
+          "area": "North-west of the prefecture (Geihoku area)",
+          "text": "Kagura from the Iwami area of Shimane, which arrived around the end of the Edo period and developed into a distinctive form here. It has old-style (kyumai) and new-style (shinmai) dances."
+        },
+        {
+          "name": "Juni Jingi Kagura",
+          "alias": "The federation writes 'Aki Juni Jingi'",
+          "area": "Seto Inland Sea coast: Hiroshima, Hatsukaichi, Otake and other cities",
+          "text": "Offered on the eve of the autumn festival. It hands down the shogun and Arahira dances."
+        },
+        {
+          "name": "Kagura of the Geiyo Islands",
+          "area": "Islands and coast from around the Shimanami Kaido to Kure",
+          "text": "Some are designated as prefectural intangible folk cultural properties."
+        },
+        {
+          "name": "Hiba Kojin Kagura",
+          "area": "The former Hiba District and its surroundings",
+          "text": "A nationally designated Important Intangible Folk Cultural Property. Influenced by Bitchu Kagura of Okayama, it preserves an old form involving divine possession."
+        },
+        {
+          "name": "Bingo Kagura",
+          "area": "The Bingo region outside the Hiba Kojin Kagura area, and part of Aki",
+          "text": "It keeps the 'gogyosai', kagura enjoyed for its songs and narration, and old forms of noh-style dances."
+        }
+      ],
+      "note": "'Hiroshima Kagura' is a general name for the kagura of the prefecture, not the name of a single tradition. On this site, only performances whose tradition we could confirm are listed under the name of that tradition."
+    }
   },
   "岡山県": {
     "paras": [

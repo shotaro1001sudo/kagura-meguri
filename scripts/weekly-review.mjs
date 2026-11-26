@@ -29,7 +29,7 @@ const metrics = reviewMetrics({
   baseUrl: cfg.baseUrl,
   performance: readJson(process.env.PERFORMANCE_FILE ?? "data/social-performance.json", null),
   // 好み診断の点検(根拠の本文の変更・対象外の神楽・見直しの間隔)
-  quiz: quizHealth({ info, events, regular: readJson("data/regular.json", []), todayJst: today, baseline: readJson("data/quiz-review.json", null) }),
+  quiz: quizHealth({ info, events, regular: readJson("data/regular.json", []), todayJst: today, baseline: readJson("data/quiz-review.json", null), skip: Object.keys(readJson("data/kagura-names.json", {}).prefOnly ?? {}) }),
   // 英語ページの訳の点検(日本語の本文が書き換わった種類・定期公演)。種類は、掲載のある種類だけを見る
   english: englishHealth({ info, infoEn: readJson("data/kagura-info-en.json", {}), regular: readJson("data/regular.json", []), regularEn: readJson("data/regular-en.json", {}), kinds: [...new Set([...events.filter((e) => e.status === "published"), ...readJson("data/regular.json", [])].map((e) => e.kagura).filter(Boolean))], todayJst: today }),
   // このPCで動く仕組みの脈: 週次の分析が毎週公開する概数の日付と、note の公開 RSS の最後の投稿日(scripts/note-pulse.mjs)

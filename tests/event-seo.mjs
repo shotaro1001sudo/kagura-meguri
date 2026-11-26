@@ -16,7 +16,7 @@ export function eventSeoTests({ ok, section, build }) {
   const dir = mkdtempSync(join(tmpdir(), "event-seo-")), out = "dist-test-event-seo";
   try {
     const base = JSON.parse(read("tests/fixtures/events.test.json").replace(/^﻿/, ""));
-    const ev = { id: "t-seo", name: "テスト神楽公演 テスト神楽団", titleName: "テスト神楽団 第1回テスト神楽公演", seoDesc: "テスト神楽団が出演する第1回テスト神楽公演。開演14:00、会場はテストホール。", kagura: "広島神楽", prefecture: "広島県", city: "広島市", venue: "テストホール", start: "2026-11-15T14:00", url: "https://example.com/", description: "テスト用", lat: 34.4, lng: 132.4, status: "published", checked: "2026-10-28" };
+    const ev = { id: "t-seo", name: "テスト神楽公演 テスト神楽団", titleName: "テスト神楽団 第1回テスト神楽公演", seoDesc: "テスト神楽団が出演する第1回テスト神楽公演。開演14:00、会場はテストホール。", kagura: "芸北神楽", prefecture: "広島県", city: "広島市", venue: "テストホール", start: "2026-11-15T14:00", url: "https://example.com/", description: "テスト用", lat: 34.4, lng: 132.4, status: "published", checked: "2026-10-28" };
     const evFile = join(dir, "events.json");
     const hana = { id: "t-hana", name: "花祭(テスト)", kagura: "花祭", prefecture: "愛知県", city: "北設楽郡東栄町", venue: "会所", start: "2026-12-13T08:00", end: "2026-12-13T23:00", url: "https://www.toeinavi.jp/spots/hanamatsuri/", description: "テスト用", lat: 35.07, lng: 137.69, status: "published", checked: "2026-10-06" };
     writeFileSync(evFile, JSON.stringify([...base, ev, hana]));
@@ -78,7 +78,7 @@ export function eventSeoTests({ ok, section, build }) {
       const pg = (id) => cheerio.load(read(join(out3, "regular", `${id}.html`)));
       const $ = pg("t-reg-flow"), p = pg("t-reg-plain");
       ok($("title").text() === `${flowed.seoTitle} | 神楽めぐり` && $('meta[name="description"]').attr("content") === flowed.seoDesc, "seoTitle・seoDesc があれば、タイトル・説明文をそれにする", $('meta[name="description"]').attr("content"));
-      ok(p('meta[name="description"]').attr("content").startsWith("広島県広島市中区のテスト文化センターで観られる、広島神楽の定期公演です。"), "seoDesc のない定期公演は、これまでどおりの説明文");
+      ok(p('meta[name="description"]').attr("content").startsWith("広島県広島市中区のテスト文化センターで観られる、芸北神楽の定期公演です。"), "seoDesc のない定期公演は、これまでどおりの説明文");
       const sec = $(".booking-flow");
       ok(sec.length === 1 && $(".d-top").children().first().is(".booking-flow") && sec.next().is(".keyinfo") && $(".d-lead .booking-flow").length === 0, "「予約と当日の流れ」は、説明と公式のボタンのすぐ下・要点の表の上(左の列の先頭)に置く");
       ok(sec.find("h2").text() === "予約と当日の流れ" && sec.find(".bf-lead").text() === flowed.bookingFlow.lead && sec.find("ol.flow > li").length === 3 && sec.find("ol.flow > li").first().find("b").text() === "予約(しなくても観られます)" && sec.find("ol.flow > li").last().find(".d").length === 0, "見出し・答えの一文・手順を、データのとおりに出す(説明のない手順は見出しだけ)");

@@ -23,7 +23,10 @@ export function evidenceHashes(info) {
  * @param regular   data/regular.json
  * @param baseline  data/quiz-review.json({ reviewed, evidence })。なければ、変更は数えない
  */
-export function quizHealth({ info = {}, events = [], regular = [], todayJst, baseline = null, checked = QUIZ_CHECKED }) {
+// skip: 種類として数えない呼び名(系統を確かめられていない開催の「広島県の神楽」など。data/kagura-names.json の prefOnly)。種類のページを作らないので、解説がないことを知らせない
+export function quizHealth({ info = {}, events: allEvents = [], regular: allRegular = [], todayJst, baseline = null, checked = QUIZ_CHECKED, skip = [] }) {
+  const skipped = new Set(skip);
+  const events = allEvents.filter((e) => !skipped.has(e.kagura)), regular = allRegular.filter((r) => !skipped.has(r.kagura));
   const inQuiz = new Set(traditions.map((t) => t.kind));
   const missing = [];
   for (const t of traditions) for (const [, path] of t.evidence) if (!evidenceText(info[t.kind] ?? {}, path)) missing.push(`${t.kind}/${path}`);

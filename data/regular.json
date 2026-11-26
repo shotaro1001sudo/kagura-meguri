@@ -64,7 +64,8 @@
   {
     "id": "hiroshima-kagura-teiki-2026",
     "name": "ひろしま神楽定期公演2026",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
+    "kaguraNote": "複数の系統の団体が出演",
     "badge": "毎水",
     "prefecture": "広島県",
     "city": "広島市中区",
@@ -295,7 +296,7 @@
     "id": "tojimura-kagura",
     "name": "神楽門前湯治村の神楽公演(神楽ドーム・かむくら座)",
     "seoTitle": "神楽門前湯治村(神楽ドーム・かむくら座)の神楽スケジュール2026〜2027｜次の公演と料金",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "badge": "週末",
     "prefecture": "広島県",
     "city": "安芸高田市",

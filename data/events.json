@@ -2,7 +2,7 @@
   {
     "id": "takamiya-kagura-matsuri-2026",
     "name": "第54回 高宮神楽まつり",
-    "kagura": "安芸高田神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "高宮ハーモニー広場",
@@ -21,7 +21,7 @@
   {
     "id": "mitori-komemai-2026",
     "name": "第14回 美土里米舞まつり",
-    "kagura": "安芸高田神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "神楽門前湯治村 神楽ドーム",
@@ -40,7 +40,7 @@
   {
     "id": "heiwa-no-mai-2026",
     "name": "第四回 平和の舞〈神楽の学校2026 inアステールプラザ〉",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "JMSアステールプラザ 中ホール",
@@ -58,7 +58,7 @@
   {
     "id": "hiroshima-shinrin-kagura-2026-11",
     "name": "広島市森林公園 神楽鑑賞(綾西神楽團)",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市",
     "venue": "ひろしま遊学の森 広島市森林公園 芝生広場休憩所",
@@ -224,7 +224,7 @@
   {
     "id": "hiroshimane-kagura-day-2026-11",
     "name": "ひろしまね神楽デー",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "神楽門前湯治村 神楽ドーム",
@@ -263,7 +263,7 @@
   {
     "id": "oasa-kagura-kyoen-2026",
     "name": "第61回 大朝神楽競演大会",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "大朝体育館(大朝中学校隣)",
@@ -283,7 +283,7 @@
   {
     "id": "geihoku-kagura-kenkyu-2026",
     "name": "芸北神楽研究発表大会",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "芸北文化ホール・加計高校芸北分校格技場",
@@ -303,7 +303,7 @@
   {
     "id": "michinoeki-chiyoda-kagura-2026-11",
     "name": "道の駅舞ロードIC千代田「神楽の日」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "道の駅舞ロードIC千代田",
@@ -341,7 +341,7 @@
   {
     "id": "hongo-kagura-matsuri-2026",
     "name": "本郷神楽祭り",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "神楽門前湯治村 神楽ドーム",
@@ -360,7 +360,7 @@
   {
     "id": "hachioji-yomigaeri-kagura-2026",
     "name": "八王子よみがえりフェスタ神楽",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "本地小学校体育館",
@@ -378,7 +378,7 @@
   {
     "id": "yae-higashi-kagura-2026",
     "name": "八重東地区神楽発表会",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "八重東小学校 体育館",
@@ -396,7 +396,7 @@
   {
     "id": "michinoeki-chiyoda-kagura-2026-12",
     "name": "道の駅舞ロードIC千代田「神楽の日」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "道の駅舞ロードIC千代田",
@@ -434,7 +434,7 @@
   {
     "id": "michinoeki-chiyoda-kagura-2027-01",
     "name": "道の駅舞ロードIC千代田「神楽の日」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "道の駅舞ロードIC千代田",
@@ -452,7 +452,7 @@
   {
     "id": "michinoeki-chiyoda-kagura-2027-02",
     "name": "道の駅舞ロードIC千代田「神楽の日」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "道の駅舞ロードIC千代田",
@@ -470,7 +470,7 @@
   {
     "id": "npo-hiroshima-51e5dcb797",
     "name": "呉の神楽 大歳神楽",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "呉市",
     "venue": "大歳神社(呉市仁方大歳町20-37)",
@@ -494,7 +494,7 @@
   {
     "id": "npo-hiroshima-fdd3c0a6da",
     "name": "道の駅舞ロードIC千代田 秋の大感謝祭(1日目)",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "北広島町",
     "venue": "道の駅舞ロードIC千代田 特設会場",
@@ -518,7 +518,7 @@
   {
     "id": "npo-hiroshima-30eb24b0c4",
     "name": "道の駅舞ロードIC千代田 秋の大感謝祭(2日目)",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "北広島町",
     "venue": "道の駅舞ロードIC千代田 特設会場",
@@ -542,7 +542,7 @@
   {
     "id": "npo-hiroshima-3ef6da4c56",
     "name": "呉の神楽 戸田神楽",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "呉市",
     "venue": "磯神社(呉市仁方町戸田4417)",
@@ -566,7 +566,7 @@
   {
     "id": "npo-hiroshima-474b6fadef",
     "name": "呉の神楽 小坪神楽",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "呉市",
     "venue": "小坪八幡神社(呉市広小坪1-5-13)",
@@ -615,7 +615,7 @@
     "name": "あさきた神楽公演 あさひが丘神楽団",
     "titleName": "あさひが丘神楽団 第5回あさきた神楽公演",
     "seoDesc": "あさひが丘神楽団が出演する第5回あさきた神楽公演。2026年11月15日(日)開場13:00・開演14:00、会場は安佐北区民文化センター ホール(広島県広島市)。チケット・入場整理券は、公式情報でご確認ください。",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市",
     "venue": "安佐北区民文化センター ホール",
@@ -839,7 +839,7 @@
   {
     "id": "npo-hiroshima-fb468a4d28",
     "name": "神楽門前湯治村「第14回米舞まつり」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "",
@@ -863,7 +863,7 @@
   {
     "id": "npo-hiroshima-c63449d5cb",
     "name": "第20回千代田まつり",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "北広島町まちづくりセンター広場",
@@ -888,7 +888,7 @@
   {
     "id": "npo-hiroshima-cad7f465c0",
     "name": "第21回あさきた神楽発表会",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐北区",
     "venue": "フジグラン高陽 特設ステージ",
@@ -1711,7 +1711,7 @@
   {
     "id": "akitakata-5f97589558",
     "name": "神楽門前湯治村キャンドルナイト 秋の灯火 ～音楽と灯りに包まれて～",
-    "kagura": "安芸高田神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "神楽門前湯治村・神楽ドーム前",
@@ -1836,7 +1836,7 @@
   {
     "id": "saeki-kagurasai-34-2026",
     "name": "第34回 神楽祭（佐伯区）",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "佐伯区民文化センターホール",
@@ -2288,7 +2288,7 @@
   {
     "id": "npo-hiroshima-71199c5a25",
     "name": "「神謝歳」あさ神楽会",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐北区",
     "venue": "安佐北区民文化センター ホール",
@@ -2312,7 +2312,7 @@
   {
     "id": "npo-hiroshima-b9782fa4ee",
     "name": "あさきた神楽公演 宮崎神楽団",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐北区",
     "venue": "安佐北区民文化センター ホール",
@@ -2336,7 +2336,7 @@
   {
     "id": "michinoeki-chiyoda-kagura-2027-03",
     "name": "道の駅舞ロードIC千代田「神楽の日」",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "道の駅舞ロードIC千代田",
@@ -2551,7 +2551,7 @@
   {
     "id": "yuki-lodge-kagura-2026-11-08",
     "name": "広島市内神楽団 定期公演(湯来ロッジ)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "広島市国民宿舎 湯来ロッジ 2階ホール",
@@ -2574,7 +2574,7 @@
   {
     "id": "yuki-lodge-kagura-2026-11-22",
     "name": "広島市内神楽団 定期公演(湯来ロッジ)",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "広島市国民宿舎 湯来ロッジ 2階ホール",
@@ -2597,7 +2597,7 @@
   {
     "id": "yuki-lodge-kagura-2026-12-13",
     "name": "広島市内神楽団 定期公演(湯来ロッジ)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "広島市国民宿舎 湯来ロッジ 2階ホール",
@@ -2620,7 +2620,7 @@
   {
     "id": "yuki-lodge-kagura-2026-12-27",
     "name": "広島市内神楽団 定期公演(湯来ロッジ)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "広島市国民宿舎 湯来ロッジ 2階ホール",
@@ -3893,7 +3893,7 @@
   {
     "id": "akitakata-f870bfc54f",
     "name": "2027元就の里神楽共演大会",
-    "kagura": "安芸高田神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "安芸高田市",
     "venue": "民文化センタークリスタルアージョ大ホール",
@@ -4039,7 +4039,7 @@
   {
     "id": "hiroshima-shinshun-yokagura-2027-01-08",
     "name": "ひろしま宵めぐり「新春夜神楽」(諸木郷土芸能保存会)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "旧日本銀行広島支店 1階ロビー",
@@ -4058,7 +4058,7 @@
   {
     "id": "hiroshima-shinshun-yokagura-2027-01-09",
     "name": "ひろしま宵めぐり「新春夜神楽」(宮乃木神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "旧日本銀行広島支店 1階ロビー",
@@ -4077,7 +4077,7 @@
   {
     "id": "hiroshima-shinshun-yokagura-2027-01-10",
     "name": "ひろしま宵めぐり「新春夜神楽」(飯室神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "旧日本銀行広島支店 1階ロビー",
@@ -4096,7 +4096,7 @@
   {
     "id": "hiroshima-shinshun-yokagura-2027-01-11",
     "name": "ひろしま宵めぐり「新春夜神楽」(綾西神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "旧日本銀行広島支店 1階ロビー",
@@ -4115,7 +4115,7 @@
   {
     "id": "takazaru-kagura-onomichi-2027-01-10",
     "name": "高猿神楽団公演会2027 尾道公演",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "尾道市",
     "venue": "しまなみ交流館",
@@ -4134,7 +4134,7 @@
   {
     "id": "hiroshima-sakana-kagura-2027-01-24",
     "name": "広島酒菜神楽 定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "広島酒菜神楽 3階 大広間",
@@ -4152,7 +4152,7 @@
   {
     "id": "aozora-fureaiichi-kagura-2027-02-07",
     "name": "あおぞらふれあい市 十二神祇神楽定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市東区",
     "venue": "早稲田神社",
@@ -4174,7 +4174,7 @@
   {
     "id": "asakita-kagura-2027-02-14",
     "name": "あさきた神楽公演 亀山神楽団",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐北区",
     "venue": "安佐北区民文化センター ホール",
@@ -4192,7 +4192,7 @@
   {
     "id": "hiroshima-sakana-kagura-2027-02-14",
     "name": "広島酒菜神楽 定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "広島酒菜神楽 3階 大広間",
@@ -4210,7 +4210,7 @@
   {
     "id": "rcc-soshun-kagura-2027-02-28",
     "name": "2027年RCC早春神楽共演大会",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "広島文化学園HBGホール",
@@ -4228,7 +4228,7 @@
   {
     "id": "fukuyama-geino-taizen-2027-02-28",
     "name": "第22回 芸能大全 〜まつりの世界〜(羽佐竹神楽団ほか)",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "福山市",
     "venue": "ふくやま芸術文化ホール リーデンローズ 大ホール",
@@ -4246,7 +4246,7 @@
   {
     "id": "aozora-fureaiichi-kagura-2027-03-07",
     "name": "あおぞらふれあい市 十二神祇神楽定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市東区",
     "venue": "早稲田神社",
@@ -4268,7 +4268,7 @@
   {
     "id": "murasakinosato-koryu-kagura-2027-03-07",
     "name": "紫の里交流神楽",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "山県郡北広島町",
     "venue": "交流センター紫の里",
@@ -4287,7 +4287,7 @@
   {
     "id": "asakita-kagura-2027-03-21",
     "name": "あさきた神楽公演 特別公演 鈴張神楽団・宮乃木神楽団",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐北区",
     "venue": "安佐北区民文化センター ホール",
@@ -4305,7 +4305,7 @@
   {
     "id": "takazaru-kagura-mihara-2027-03-28",
     "name": "高猿神楽団公演会2027 三原公演",
-    "kagura": "広島神楽",
+    "kagura": "芸北神楽",
     "prefecture": "広島県",
     "city": "三原市",
     "venue": "三原リージョンプラザ",
@@ -4324,7 +4324,7 @@
   {
     "id": "shinpu-keikon-ishiuchi-2026-11-23",
     "name": "新風継魂in石内(十二神祇神楽の特別公演)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市佐伯区",
     "venue": "広島市石内福祉センター",
@@ -4342,7 +4342,7 @@
   {
     "id": "irodori-garden-kagura-2026-11-29",
     "name": "彩りガーデン創業祭の神楽(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市安佐南区",
     "venue": "彩りガーデン",
@@ -4364,7 +4364,7 @@
   {
     "id": "aozora-fureaiichi-kagura-2026-12-06",
     "name": "あおぞらふれあい市 十二神祇神楽定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市東区",
     "venue": "早稲田神社",
@@ -4386,7 +4386,7 @@
   {
     "id": "asaminami-dento-kagura-2026-12-13",
     "name": "安佐南区文化の祭典「あさみなみ伝統神楽祭」",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市安佐南区",
     "venue": "マエダハウジング安佐南区民文化センター ホール",
@@ -4405,7 +4405,7 @@
   {
     "id": "hiroshima-sakana-kagura-2026-12-20",
     "name": "広島酒菜神楽 定期公演(國光神楽団)",
-    "kagura": "広島神楽",
+    "kagura": "十二神祇神楽",
     "prefecture": "広島県",
     "city": "広島市中区",
     "venue": "広島酒菜神楽 3階 大広間",
@@ -4423,7 +4423,8 @@
   {
     "id": "npo-hiroshima-5c40debbf8",
     "name": "ハレ舞台 -広島広域都市圏-",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
+    "kaguraNote": "複数の系統の団体が出演",
     "prefecture": "広島県",
     "city": "広島市南区",
     "venue": "広島駅南口地下広場",
@@ -4448,7 +4449,7 @@
   {
     "id": "npo-hiroshima-d8c03a9c52",
     "name": "エールエールHIROSHIMA神楽の祭典 宮乃木神楽団",
-    "kagura": "広島神楽",
+    "kagura": "広島県の神楽",
     "prefecture": "広島県",
     "city": "広島市南区",
     "venue": "広島駅南口地下広場",

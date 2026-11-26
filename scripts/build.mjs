@@ -186,6 +186,14 @@ const KAGURA_INFO_EN_FILE = process.env.KAGURA_INFO_EN_FILE ?? "data/kagura-info
 const kaguraInfoEn = existsSync(KAGURA_INFO_EN_FILE) ? readJson(KAGURA_INFO_EN_FILE) : {};
 const regularEn = existsSync("data/regular-en.json") ? readJson("data/regular-en.json") : {};
 const prefInfo = existsSync("data/pref-info.json") ? readJson("data/pref-info.json") : {};
+// 神楽の呼び名の扱い(data/kagura-names.json。2026-11-26 神楽の関係者からの指摘を受けて):
+//  prefOnly … 系統を確かめられていない開催につける、県単位の呼び名(「広島県の神楽」)。種類のページは作らず、リンクは県のページへ
+//  moved    … やめた種類のページ(「広島神楽」「安芸高田神楽」)。古い URL に、新しいページへ案内する転送のページを置く
+const KAGURA_NAMES_FILE = process.env.KAGURA_NAMES_FILE ?? "data/kagura-names.json"; // テストで差し替えられる
+const kaguraNames = existsSync(KAGURA_NAMES_FILE) ? readJson(KAGURA_NAMES_FILE) : {};
+const prefOnly = kaguraNames.prefOnly ?? {};
+// 開催・定期公演のページの種類の札: 系統を確かめられていないものは「広島県の神楽(系統は未確認)」と書く(複数の系統が出る公演は kaguraNote で言い換える)
+const kindLabel = (x) => (prefOnly[x.kagura] ? `${x.kagura}(${x.kaguraNote ?? prefOnly[x.kagura].note})` : x.kagura);
 // 出典リンクの一覧(外部リンクは、新しいタブで開き、推薦しない旨の rel を付ける)
 // 4件以上あるときは、たたんで1件ずつの行にする(「A / B / C / …」と1段落に10件も並ぶと、どこまでが1件か分かりにくい。2026-11-24)
 const refLink = (r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`;
@@ -203,7 +211,11 @@ const kaguraBody = (f, info) => {
   return `<ul>${v.map((t) => `<li>${cl(t)}</li>`).join("")}</ul>`;
 };
 const kfold = (f, label, body, open = false) => `<details class="kfold" id="k-${f}"${open ? " open" : ""}><summary><h2>${esc(label)}</h2></summary><div class="kfold-body${open ? "" : " detail"}">${body}</div></details>`;
-const kaguraFolds = (k, info, schedule) => `<section class="kagura-folds" aria-label="${esc(k)}のくわしい情報">${KAGURA_SECTIONS.map(([f, t]) => kfold(f, t, kaguraBody(f, info))).join("")}${kfold("schedule", "開催予定", schedule || NO_INFO, true)}</section>${refList(info?.refs)}`;
+// 追加の欄(info.sections。例: 芸北神楽のページの「安芸高田市の神楽」): 「観賞のコツ」の後、開催予定の前に、同じ折り畳みで並べる
+const extraFolds = (info) => (info?.sections ?? []).map((x) => kfold(x.id, x.title, (x.paras ?? []).map((t) => `<p>${cl(t)}</p>`).join(""))).join("");
+// 解説の確認日と、誤りの指摘の窓口(解説のある種類だけ。2026-11-26 神楽の関係者からの指摘を受けて)
+const infoNote = (info) => (info?.intro ? `<p class="meta info-note">${info.checked ? `解説の確認日: ${esc(jpDate(info.checked))}。` : ""}資料の選び方は<a href="/editorial-policy.html">解説の編集方針</a>に書いています。誤りにお気づきの方は、<a href="/contact.html">お問い合わせフォーム</a>からお知らせください。</p>` : "");
+const kaguraFolds = (k, info, schedule) => `<section class="kagura-folds" aria-label="${esc(k)}のくわしい情報">${KAGURA_SECTIONS.map(([f, t]) => kfold(f, t, kaguraBody(f, info))).join("")}${extraFolds(info)}${kfold("schedule", "開催予定", schedule || NO_INFO, true)}</section>${refList(info?.refs)}${infoNote(info)}`;
 // 開催ごとの編集部の解説(data/event-notes.json)。公式情報から調べた事実だけを、出典つきで載せる
 const eventNotes = existsSync("data/event-notes.json") ? readJson("data/event-notes.json") : [];
 const noteBlock = (e) => {
@@ -519,10 +531,10 @@ ${body.includes('class="stay-banner') ? clientJs("ad-fallback") : ""}${body.incl
 
 // 県・神楽の種類のページの URL(リンクは、すべてこの2つで作る)
 const prefHref = (p) => `/pref/${encodeURIComponent(p)}.html`;
-const kaguraHref = (k) => `/kagura/${encodeURIComponent(k)}.html`;
+const kaguraHref = (k) => (prefOnly[k] ? prefHref(prefOnly[k].prefecture) : `/kagura/${encodeURIComponent(k)}.html`);
 // 件数の要約(「開催予定 3件 ・ 定期公演 1件」。0件の項目は出さない)
 const countLine = (n, m) => [n ? `開催予定 ${n}件` : "", m ? `定期公演 ${m}件` : ""].filter(Boolean).join(" ・ ") || "開催予定はありません";
-const kaguraTag = (k, cls = "tag gold") => (k ? `<a class="${cls}" href="${kaguraHref(k)}">${esc(k)}</a>` : "");
+const kaguraTag = (k, cls = "tag gold", label = k) => (k ? `<a class="${cls}" href="${kaguraHref(k)}">${esc(label)}</a>` : "");
 // 同じ公演のくり返し(名称と会場が同じ開催)。2回以上あれば「定例開催」の印を付け、開催ページに、ほかの日程を出す
 const seriesKey = (e) => `${e.name}|${e.venue ?? ""}`;
 const sameSeries = (e) => events.filter((x) => x.id !== e.id && seriesKey(x) === seriesKey(e));
@@ -608,6 +620,14 @@ const prefLead = (p, kinds) => {
   const text = ks.length ? esc(l.text).replace(new RegExp(ks.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g"), (m) => (used.has(m) ? m : (used.add(m), `<a href="${kaguraHref(kinds.find((k) => esc(k) === m))}">${m}</a>`))) : esc(l.text);
   return `${phrasesHtml(`<p class="lead">${text}</p>`)}${l.refs?.length ? `<p class="meta annotation">${esc(p)}の神楽の概要の参考: ${l.refs.map((r) => `<a href="${esc(r.url)}" rel="noopener noreferrer" target="_blank">${esc(r.name)}</a>`).join(" / ")}</p>` : ""}`;
 };
+// 県内の神楽の分け方(data/pref-info.json の groups。いまは広島県だけ): 誰の分け方かを先に書き、名前を上、地域と説明を下に並べる。
+// 種類のページがあるものは、名前をそのページへのリンクにする。一覧の下に置き、冒頭の説明から「分け方を見る」でたどれる
+const prefGroups = (p) => {
+  const g = prefInfo[p];
+  if (!g?.groups?.length) return "";
+  const item = (x) => `<div><dt>${x.kind && kaguras.includes(x.kind) ? `<a href="${kaguraHref(x.kind)}">${esc(x.name)}</a>` : esc(x.name)}${x.alias ? `<small class="alias">${esc(x.alias)}</small>` : ""}</dt><dd><span class="area">${esc(x.area)}</span>${cl(x.text)}</dd></div>`;
+  return `<section class="pref-groups" id="pref-groups" aria-labelledby="pref-groups-h"><h2 id="pref-groups-h">${esc(g.groupsTitle)}</h2><p>${cl(g.groupsLead)}</p><dl class="about-points">${g.groups.map(item).join("")}</dl>${g.groupsNote ? `<p>${cl(g.groupsNote)}</p>` : ""}${refList(g.refs)}${g.checked ? `<p class="meta info-note">確認日: ${esc(jpDate(g.checked))}。資料の選び方は<a href="/editorial-policy.html">解説の編集方針</a>に書いています。誤りにお気づきの方は、<a href="/contact.html">お問い合わせフォーム</a>からお知らせください。</p>` : ""}</section>`;
+};
 // 会場の欄: 会場名の下に、所在地(都道府県・市区町村・番地)と地図への案内をまとめる(「所在地」の行と「会場の場所」の見出しを統合)
 // Google マップで、会場の場所と経路を探す(公演ページには地図を置かず、ここへ案内する)
 const mapsUrl = (x) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${x.venue ?? ""} ${x.prefecture}${x.city ?? ""}`.trim())}`;
@@ -679,7 +699,7 @@ const fudaLinks = [
   ["/calendar.html", "日付・会場・<br>キーワードから探す", ""],
   ["/map.html", "地図で探す", "近くの会場"],
   // 種類の札は PC だけ(2026-11-16 運営者の依頼)。スマホは4枚で幅がいっぱいなので出さない(.pc-only)
-  ["/kagura/", "種類で探す", "流派・系統", "pc-only"],
+  ["/kagura/", "種類で探す", "地域・行事", "pc-only"],
 ].map(([href, label, note, cls]) => `<a href="${href}"${cls ? ` class="${cls}"` : ""}><b>${label}</b>${note ? `<small>${note}</small>` : ""}</a>`).join("");
 
 rmSync(OUT, { recursive: true, force: true });
@@ -698,7 +718,7 @@ const kaguraPref = (k) => [...events, ...regular].find((e) => e.kagura === k)?.p
 // 東京での公演だけが載っている東北の神楽(南部神楽・番楽)を、関東の神楽として並べないために使う(種類の並び順と、種類の一覧の地方分け)
 const kaguraHome = (k) => { const area = (kaguraInfo[k]?.tagline ?? "").split(" ・ ")[0]; return PREF_ORDER.find((p) => area.includes(p)) ?? kaguraPref(k); };
 const kaguraCount = (k) => [...upcoming, ...regular].filter((e) => e.kagura === k).length;
-const kaguras = [...new Set([...events, ...regular].map((e) => e.kagura).filter(Boolean))]
+const kaguras = [...new Set([...events, ...regular].map((e) => e.kagura).filter((k) => k && !prefOnly[k]))]
   .sort((a, b) => byPref(kaguraHome(a), kaguraHome(b)) || kaguraCount(b) - kaguraCount(a) || a.localeCompare(b, "ja"));
 
 // ---------- トップ ----------
@@ -735,7 +755,7 @@ const HERO_H1 = [["神話を受け継ぐ", "舞を、"], ["この目で。"]].ma
 write("dist/index.html", layout({
   // 検索結果で選ばれやすく: 「神楽 日程」「神楽 今週末」で探す人に、何ができるかが一目で分かる題と説明にする
   title: `全国の神楽の日程・今週末の公演 | ${cfg.siteName}`,
-  desc: clip(`今週末、どこで神楽が観られる？${[...new Set([...["石見神楽", "高千穂神楽", "広島神楽", "備中神楽"].filter((k) => kaguras.includes(k)), ...kaguras])].slice(0, 3).join("・")}など、全国の神楽の日程と会場を、日付・会場・キーワードや地図で探せます。掲載しているのは、公式情報で確かめた開催だけです。`),
+  desc: clip(`今週末、どこで神楽が観られる？${[...new Set([...["石見神楽", "高千穂神楽", "芸北神楽", "備中神楽"].filter((k) => kaguras.includes(k)), ...kaguras])].slice(0, 3).join("・")}など、全国の神楽の日程と会場を、日付・会場・キーワードや地図で探せます。掲載しているのは、公式情報で確かめた開催だけです。`),
   path: "/", active: "/", alts: [["en", "/en/"]],
   // サイト名: 検索結果に、ドメイン名ではなく「神楽めぐり」と出すための情報(トップページの WebSite)
   ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: cfg.siteName, alternateName: ["かぐらめぐり", "Kagura Meguri"], url: `${cfg.baseUrl}/`, inLanguage: "ja", description: cfg.description, publisher: ORG_LD },
@@ -979,14 +999,16 @@ fetch('/events.json').then(function(r){if(!r.ok)throw 0;return r.json()}).then(f
 }));
 
 // ---------- 神楽の種類 一覧 + 個別 ----------
+// 一覧の冒頭の断り: 並んでいる名前の性格はそろっていない(地域の呼び名・祭りの名前・舞の形式の名前)。「流派・系統」とは呼ばない(2026-11-26)
+const KIND_INDEX_NOTE = `<p class="lead kind-index-note">地域の呼び名、祭りの名前、舞の形式の名前が並んでいます。何を指す名前かは、各ページの冒頭に書いています。</p>`;
 write("dist/kagura/index.html", layout({
-  title: `神楽の種類一覧 | 流派・系統ごとに探す | ${cfg.siteName}`,
+  title: `神楽の種類一覧 | 地域・行事から探す | ${cfg.siteName}`,
   // 説明文: 「神楽 種類」「神楽 種類 一覧」で探す人に、先に「一覧」と数を答える。例に挙げるのは、これからの開催・定期公演の多い神楽(以前は並びの先頭=北の神楽で、知られた名前が出なかった。SEO-20261124-4)
   desc: fillDesc(`神楽の種類一覧。${[...kaguras].sort((a, b) => [...upcoming, ...regular].filter((x) => x.kagura === b).length - [...upcoming, ...regular].filter((x) => x.kagura === a).length).slice(0, 4).join("・")}など${kaguras.length}種類の特徴と、開催日程・定期公演を探せます。`, ["地方ごとに、北から南へ並べています。", "公式情報をもとに、出典と確認日をつけて掲載しています。"]),
   path: "/kagura/", active: "/kagura/", alts: [["en", "/en/kagura.html"]],
   ld: crumbsLd([["ホーム", "/"], ["種類で探す"]]),
   // 地方ごとの見出しで区切る(北から南へ。並び順はこれまでと同じ)。「どこの神楽か」を見出しで拾えるようにし、先頭に地方への近道を置く
-  body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "流派や系統ごとに、開催情報を探せます。")}${(() => {
+  body: `${crumbNav([["ホーム", "/"], ["種類で探す"]])}${hero("種類で探す", "地域や行事ごとの神楽から、開催情報を探せます。")}${KIND_INDEX_NOTE}${(() => {
     const kcard = (k) => `<div class="card"><div><h3><a href="${kaguraHref(k)}">${esc(k)}</a></h3>${kaguraInfo[k]?.tagline ? `<p class="tagline">${esc(kaguraInfo[k].tagline)}</p>` : ""}<div class="meta">${countLine(upcoming.filter((e) => e.kagura === k).length, regular.filter((r) => r.kagura === k).length)}</div></div></div>`;
     const groups = [...REGIONS.map(([r]) => [r, kaguras.filter((k) => regionOf(kaguraHome(k)) === r)]), ["そのほか", kaguras.filter((k) => !REGIONS.some(([r]) => regionOf(kaguraHome(k)) === r))]].filter(([, ks]) => ks.length);
     if (!groups.length) return empty("掲載中の神楽の種類は、まだありません。");
@@ -1091,13 +1113,13 @@ for (const k of kaguras) {
   const listHtml = grouped
     ? townGroups.map(([t, xs]) => `<section class="town-group" aria-labelledby="town-${esc(t)}"><h3 id="town-${esc(t)}">${esc(t)}の${esc(k)}</h3>${xs.map((e) => card(e, "h4", true, false) + kAt(kOrder.indexOf(e))).join("")}</section>`).join("")
     : list.length ? cardsByMonth(list, false, kAt) : "";
-  // 日程の一覧は県のページが受け持つ神楽(広島神楽): 開催予定の欄の先頭に、県のスケジュールへの入口
-  const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub.replace(/県$/, ""))}神楽スケジュールを見る</a></section>` : "";
+  // 日程の一覧は県のページが受け持つ神楽(seo.scheduleHub): 開催予定の欄の先頭に、県のスケジュールへの入口
+  const hubHtml = hub ? `<section class="schedule-hub" aria-label="公演スケジュール"><p>${esc(hub)}の神楽の公演は、月別のスケジュールで探せます。会場・料金・予約の要否もまとめています。</p><a class="btn" href="${prefHref(hub)}">${esc(hub)}の神楽スケジュールを見る</a></section>` : "";
   // 冒頭の要約: 「〇〇とは」と概要(3行ほど)。その下に折り畳みの5つの欄(kaguraFolds)
   // 英語版のページ(訳があるとき)。日本語のページと hreflang で対にし、冒頭の要約の下に小さく案内する
   const enPath = kaguraInfoEn[k] ? enStylePath(k) : null;
   const enLink = enPath ? `<p class="en-link"><a href="${enPath}" hreflang="en" lang="en">In English: ${esc(KAGURA_EN.find((x) => x.key === k).name)}</a></p>` : "";
-  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}${fixedDaysHtml(info, list)}${seo.nextBox ? nextShowsHtml(list) : ""}${seo.regularBox ? regularBoxHtml(reg) : ""}${seo.monthTable ? monthTableHtml(k, list, reg) : ""}${enLink}</section>`;
+  const summaryHtml = `<section class="about kagura-summary" aria-labelledby="k-about"><h2 id="k-about">${esc(k)}とは</h2>${info?.naming ? `<p class="naming">${cl(info.naming)}</p>` : ""}${info?.intro ? `<p>${cl(info.intro)}</p>${info.source ? `<p class="meta">出典: ${esc(info.source)}</p>` : ""}` : NO_INFO}${fixedDaysHtml(info, list)}${seo.nextBox ? nextShowsHtml(list) : ""}${seo.regularBox ? regularBoxHtml(reg) : ""}${seo.monthTable ? monthTableHtml(k, list, reg) : ""}${enLink}</section>`;
   const scheduleHtml = `${hubHtml}${k === "庄内神楽" && !none ? upcomingSummary(list, { formatWhen: whenOf, level: "h3" }) : ""}${listHtml}${reg.length ? `${list.length ? `<p class="mhead">毎週・毎晩の定期公演</p>` : ""}${reg.map((r, j) => regCard(r, { withTag: false }) + kAt(kOrder.length + j)).join("")}` : ""}${none ? pendingBlock({ label: k, past, near: nearbyUpcoming([...new Set(past.map((e) => e.prefecture).concat(first.prefecture))]), pastId: "k-past", withKagura: false, h: "h3" }) : pastMore(past, { withKagura: false })}`;
   write(`dist/kagura/${k}.html`, layout({
     title: `${title} | ${cfg.siteName}`,
@@ -1114,10 +1136,27 @@ ${otherWays("", { lead: kindPrefs.map((p) => [prefHref(p), `${esc(p)}の神楽`]
   }));
 }
 
+// やめた種類のページ(data/kagura-names.json の moved): 古い URL に、新しいページへすぐ移る案内のページを置く(検索には載せない)。
+// GitHub Pages ではサーバーの転送を設定できないため、meta refresh と本文のリンクで案内する
+// 移り先のページがまだ無いとき(その種類・県の掲載が1件もない)は、種類の一覧へ
+const movedOk = (m) => (m.to.kagura ? kaguras.includes(m.to.kagura) : prefPageSet.has(m.to.prefecture));
+const movedTarget = (m) => (!movedOk(m) ? "/kagura/" : (m.to.kagura ? kaguraHref(m.to.kagura) : prefHref(m.to.prefecture)) + (m.to.hash ? `#${m.to.hash}` : ""));
+const movedName = (m) => (!movedOk(m) ? "種類で探す" : m.to.kagura ?? `${m.to.prefecture}の神楽`);
+for (const m of kaguraNames.moved ?? []) {
+  if (kaguras.includes(m.from)) continue; // まだその名前の開催が載っているなら、種類のページを消さない
+  const to = movedTarget(m);
+  write(`dist/kagura/${m.from}.html`, layout({
+    title: `${m.from}のページは移しました | ${cfg.siteName}`, desc: `「${m.from}」のページは、「${movedName(m)}」のページにまとめました。`,
+    path: `/kagura/${encodeURIComponent(m.from)}.html`, active: "/kagura/", noindex: true,
+    head: `<meta http-equiv="refresh" content="0;url=${esc(to)}">`,
+    body: `${crumbNav([["ホーム", "/"], ["種類で探す", "/kagura/"], [m.from]])}${hero(`${esc(m.from)}のページは移しました`, "")}<p class="lead">「${esc(m.from)}」のページは、「${esc(movedName(m))}」のページにまとめました。</p><p><a class="btn" href="${esc(to)}">${esc(movedName(m))}のページへ</a></p>`,
+  }));
+}
+
 // ---------- 都道府県ページ ----------
 for (const p of prefPageSet) {
   const list = events.filter((e) => e.prefecture === p && isUpcoming(e)), reg = regular.filter((r) => r.prefecture === p);
-  const kinds = [...new Set([...list, ...reg].map((x) => x.kagura).filter(Boolean))];
+  const kinds = [...new Set([...list, ...reg].map((x) => x.kagura).filter((k) => k && !prefOnly[k]))];
   const none = list.length + reg.length === 0;
   const past = pastRecords(events.filter((e) => e.prefecture === p));
   // 広島県: 開催月へのリンクと月別見出しで公演を探しやすくする。
@@ -1140,18 +1179,19 @@ for (const p of prefPageSet) {
   const stayHtml = isHiroshima
     ? `<div id="hiroshima-stay" class="pref-stay">${affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }, { overnight: list })}</div>${expBlock(p)}`
     : affiliateBlock({ prefecture: p, city: "", kagura: "神楽" }, { overnight: list }) + expBlock(p);
-  // 広島県の説明文の先頭: 今月・来月の開催の件数と、無料の公演の件数(「広島神楽スケジュール」「神楽 広島 無料」で探す人に、最初に答える)
+  // 広島県の説明文の先頭: 今月・来月の開催の件数と、無料の公演の件数(「広島 神楽 スケジュール」「神楽 広島 無料」で探す人に、最初に答える)。
+  // 「広島神楽」は系統の名前ではないので、題は「広島県の神楽」と書く(2026-11-26。県や観光連盟の総称「ひろしま神楽」は、説明文にかっこで添える)
   const thisKey = nowJst.slice(0, 7), nextKey = new Date(Date.UTC(+thisKey.slice(0, 4), +thisKey.slice(5, 7), 1)).toISOString().slice(0, 7);
   const monthCount = (key) => `${+key.slice(5, 7)}月${list.filter((e) => e.start.startsWith(key)).length}件`;
   const freeCount = list.filter((e) => /無料/.test(e.fee ?? "")).length;
   write(`dist/pref/${p}.html`, layout({
-    title: isHiroshima ? `広島神楽スケジュール${yearsOf(list).replace(/年$/, "")}｜${p}の神楽 日程・会場一覧 | ${cfg.siteName}` : `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
-    desc: isHiroshima && list.length ? clip(`広島神楽スケジュール。${monthCount(thisKey).replace("月", "月の開催")}・${monthCount(nextKey)}など、月別スケジュールで掲載${freeCount || reg.length ? `(${[freeCount ? `無料の公演${freeCount}件` : "", reg.length ? `定期公演${reg.length}件` : ""].filter(Boolean).join("、")})` : ""}。会場・料金・予約要否は確認できた情報を掲載。県内すべての公演ではありません。公式情報をご確認ください。`) : none ? clip(`${p}の神楽の日程と会場をまとめています。現在の開催予定はありません。${past.length ? `これまでの開催(${[...new Set(past.map((e) => e.kagura).filter(Boolean))].slice(0, 3).join("、") || past[0].name}など${past.length}件)も載せています。` : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`) : fillDesc(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`, [placesOf([...list, ...reg]) && `主な開催地は${placesOf([...list, ...reg])}です。`, prefLeads[p] && `${p}の神楽の特徴も紹介しています。`, "開催月ごとに、日時・会場・料金を確かめられます。"]),
+    title: isHiroshima ? `広島県の神楽スケジュール${yearsOf(list).replace(/年$/, "")}｜日程・会場一覧 | ${cfg.siteName}` : `${p}の神楽 日程【${yearsOf(list)}】開催・会場一覧 | ${cfg.siteName}`,
+    desc: isHiroshima && list.length ? clip(`広島県の神楽(ひろしま神楽)のスケジュール。${monthCount(thisKey).replace("月", "月の開催")}・${monthCount(nextKey)}など、月別スケジュールで掲載${freeCount || reg.length ? `(${[freeCount ? `無料の公演${freeCount}件` : "", reg.length ? `定期公演${reg.length}件` : ""].filter(Boolean).join("、")})` : ""}。会場・料金・予約要否は確認できた情報を掲載。県内すべての公演ではありません。公式情報をご確認ください。`) : none ? clip(`${p}の神楽の日程と会場をまとめています。現在の開催予定はありません。${past.length ? `これまでの開催(${[...new Set(past.map((e) => e.kagura).filter(Boolean))].slice(0, 3).join("、") || past[0].name}など${past.length}件)も載せています。` : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`) : fillDesc(`${p}で開催される神楽の日程と会場をまとめています。${list.length ? "開催予定" + list.length + "件" : ""}${reg.length ? (list.length ? "、" : "") + "定期公演" + reg.length + "件" : ""}。${kinds.length ? kinds.join("、") + "などを紹介します。" : ""}公式情報をもとに、出典と確認日をつけて掲載しています。`, [placesOf([...list, ...reg]) && `主な開催地は${placesOf([...list, ...reg])}です。`, prefLeads[p] && `${p}の神楽の特徴も紹介しています。`, "開催月ごとに、日時・会場・料金を確かめられます。"]),
     path: prefHref(p), noindex: !prefIndexed(p),
     ld: [crumbsLd([["ホーム", "/"], [`${p}の神楽`]]), itemListLd(`${p}の神楽`, [...list.map((e) => ({ href: `/events/${e.id}.html`, name: e.name })), ...reg.map((r) => ({ href: `/regular/${r.id}.html`, name: r.name }))])].filter(Boolean),
     body: `${crumbNav([["ホーム", "/"], [`${p}の神楽`]])}${hero(`${esc(p)}の神楽`, countLine(list.length, reg.length))}
-${prefLead(p, kinds)}${sponsorFor("pref", { prefecture: p })}
-${upcomingIntro}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map((r, j) => regCard(r) + after(list.length + j)).join("")}` : ""}${none ? pendingBlock({ label: p, past, near: nearbyUpcoming([p]), pastId: "pref-past" }) : pastMore(past)}${prStripFor("/pref/", { skip: ["experiences"] })}
+${prefLead(p, kinds)}${prefGroups(p) ? `<p class="meta"><a class="textlink" href="#pref-groups">${esc(prefInfo[p].groupsTitle)}を見る</a></p>` : ""}${sponsorFor("pref", { prefecture: p })}
+${upcomingIntro}${stayHtml}${adSlot(cfg.adsense.slotList)}${scheduleHtml}${reg.length ? `<h2${isHiroshima ? ' id="hiroshima-regular"' : ''}>毎週・毎晩の定期公演</h2>${reg.map((r, j) => regCard(r) + after(list.length + j)).join("")}` : ""}${none ? pendingBlock({ label: p, past, near: nearbyUpcoming([p]), pastId: "pref-past" }) : pastMore(past)}${prefGroups(p)}${prStripFor("/pref/", { skip: ["experiences"] })}
 ${otherWays()}`,
   }));
 }
@@ -1211,7 +1251,7 @@ const endedNote = (e) => {
       ? `<p class="ended-next">次の回は <strong>${nobr(esc(dayLabel(n.start.slice(0, 10))))}</strong> です。</p><p class="actions"><a class="btn" href="/events/${n.id}.html" data-goatcounter-click="ended-next">次の回のページを見る</a></p>`
       : `<p class="ended-next">その後の回(${nobr(esc(dayLabel(n.start.slice(0, 10))))})も終了しました。<a href="/events/${n.id}.html">いちばん新しい回のページ</a>に、確かめた情報をまとめています。</p>`)
     : "";
-  const links = [e.kagura ? `<a href="${kaguraHref(e.kagura)}">${esc(e.kagura)}の日程</a>` : "", `<a href="${prefHref(e.prefecture)}">${esc(e.prefecture)}の神楽の日程</a>`].filter(Boolean);
+  const links = [e.kagura && !prefOnly[e.kagura] ? `<a href="${kaguraHref(e.kagura)}">${esc(e.kagura)}の日程</a>` : "", `<a href="${prefHref(e.prefecture)}">${esc(e.prefecture)}の神楽の日程</a>`].filter(Boolean);
   // 文(2026-11-18 運営者の依頼で直した): 「終了しました」「開かれました」の重なりをまとめ、要点が当時の情報だと具体的に書く。一文ずつ段落を分ける。
   // 次の回がまだ載っていないときは、載るかどうか分からないので、次の回のことは書かない
   return `<section class="ended-note" aria-label="開催の終了"><p><strong>${nobr(esc(held))}に開かれ、終了しました。</strong></p><p>下記の日時や料金などは、そのときの情報です。</p>${nextHtml}<p class="meta">ほかの開催は、${links.join("や")}から探せます。</p></section>`;
@@ -1245,7 +1285,7 @@ ${e.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(e.ur
       : `${e.titleName ? e.titleName : e.name.length > 36 ? e.name.slice(0, 35) + "…" : e.name}(${jpDate(e.start.slice(0, 10))}) | ${e.prefecture} | ${cfg.siteName}`,
     desc: e.seoDesc ? clip(e.seoDesc, 150) : isKaguraKaikanMonthly(e) ? clip(kaguraKaikanDesc(e), 125) : padDesc(clip(`${fmt(e.start).replace(e.timeUnknown ? / \d\d:\d\d$/ : /$^/, "")}、${e.venue ? e.venue + "(" + e.prefecture + (e.city ?? "") + ")" : e.prefecture + (e.city ?? "")}で開催${isUpcoming(e) ? "される" : "された"}${e.kagura || "神楽"}。${e.fee ? "料金: " + e.fee + "。" : ""}${e.description ?? ""}`), [`${e.prefecture}で開かれるほかの神楽の日程も、あわせて探せます。`, "日時・会場・料金を、公式情報をもとにまとめています。"]),
     path: `/events/${e.id}.html`, noindex: !isUpcoming(e) && !pastOf.get(e.id)?.indexed, ogType: "article", wide: true, ld: [ld, crumbsLd([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])],
-    body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura)}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
+    body: `${crumbNav([["ホーム", "/"], [e.prefecture, prefHref(e.prefecture)], [e.name]])}${hero(esc(e.name),`${kaguraTag(e.kagura, undefined, kindLabel(e))}<a class="tag" href="${prefHref(e.prefecture)}">${esc(e.prefecture)}</a>${isUpcoming(e) ? untilBadge(e) : '<span class="tag">終了しました</span>'}`)}
 <div class="dpage">${isUpcoming(e) ? `<div class="d-lead">${lead}</div>` : ""}<div class="d-top">${isUpcoming(e) ? "" : endedNote(e) + lead}<div class="keyinfo" id="performance-info" tabindex="-1"><table class="info"><tr><th>日時</th><td><span class="when">${nobr(when)}</span>${isUpcoming(e) ? `<a class="tocal" href="${esc(gcalEvent(e))}" target="_blank" rel="noopener">Googleカレンダーに${!e.timeUnknown && !e.end ? "仮登録(終了未確認)" : "追加"}</a>` : ""}</td></tr><tr><th>会場</th><td>${venueCell(e)}</td></tr>
 <tr><th>料金</th><td>${e.fee ? cellLines(e.fee) : "未確認"}</td></tr><tr><th>予約要否</th><td>${esc(unknownAs(reservationLabel(e)))}</td></tr></table>${unknownNote(e.timeUnknown || !e.venue || !e.fee || reservationLabel(e) === "要確認")}${glossHtml(e, { esc })}</div>
 ${noteBlock(e)}
@@ -1297,7 +1337,7 @@ for (const r of regular) {
     // seoDesc の {next}: 次の公演の日・開演時刻・出演(日程表 program から。なければ消す)。文の切れ目で切り、短ければ補う
     desc: r.seoDesc?.includes("{next}") ? padDesc(r.seoDesc.replace("{next}", nextProgramText(r))) : r.seoDesc ? clip(r.seoDesc, 150) : padDesc(clip(`${r.prefecture}${r.city ?? ""}${r.venue ? "の" + r.venue : ""}で観られる、${r.kagura || "神楽"}の定期公演です。公演日時: ${r.schedule.replace(/。$/, "")}。${r.fee ? "料金: " + r.fee.replace(/。$/, "") + "。" : ""}${r.description ?? ""}`)),
     path: `/regular/${r.id}.html`, wide: true, ld: crumbsLd([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]]),
-    body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura)}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
+    body: `${crumbNav([["ホーム", "/"], [r.prefecture, prefHref(r.prefecture)], [r.name]])}${hero(esc(r.name),`<span class="tag">定期公演</span>${kaguraTag(r.kagura, undefined, kindLabel(r))}<a class="tag" href="${prefHref(r.prefecture)}">${esc(r.prefecture)}</a>`)}
 <div class="dpage"><div class="d-lead">${nextProgramHtml(r)}<div class="desc-lead">${descParas(shownDesc(r, !r.fee || !r.venue || reservationLabel(r) === "要確認"))}</div>
 ${r.url ? `<p class="actions"><a class="btn" data-official-link href="${esc(r.url)}" rel="noopener" target="_blank">公式情報を見る</a></p>` : ""}</div><div class="d-top">${bookingFlowHtml(r)}<div class="keyinfo" id="performance-info" tabindex="-1"><table class="info">${r.schedule ? `<tr><th>公演日時</th><td>${scheduleCell(r.schedule)}</td></tr>` : ""}${row("期間", r.season)}${row("休演日", r.closed)}<tr><th>会場</th><td>${venueCell(r, "")}</td></tr>${row("料金", r.fee || "未確認")}${row("予約要否", unknownAs(reservationLabel(r)))}${row("予約・受付方法", r.booking)}</table>${unknownNote(!r.fee || !r.venue || reservationLabel(r) === "要確認")}${glossHtml(r, { esc })}</div>
 ${programTable(r)}
@@ -1315,7 +1355,7 @@ ${adSlot(cfg.adsense.slotDetail)}</div></div>`,
 // ---------- 月別ページ(「11月 神楽 開催」のような、日付の検索に当てる。日付・場所の検索はJSで結果を出すため、検索エンジンには中身が見えない) ----------
 months.forEach((k) => {
   const list = monthMap.get(k), label = monthLabel(k);
-  const prefsIn = [...new Set(list.map((e) => e.prefecture))], kindsIn = [...new Set(list.map((e) => e.kagura).filter(Boolean))];
+  const prefsIn = [...new Set(list.map((e) => e.prefecture))], kindsIn = [...new Set(list.map((e) => e.kagura).filter((k) => k && !prefOnly[k]))];
   write(`dist/month/${k}.html`, layout({
     title: `${label}の神楽 開催日程(${list.length}件) | ${cfg.siteName}`,
     desc: fillDesc(`${label}に開催される神楽の日程一覧です。${prefsIn.join("・")}の${list.length}件${kindsIn.length ? "(" + kindsIn.join("、") + ")" : ""}を日付順に掲載しています。会場や料金、公式情報へのリンクつき。`, ["公式情報をもとに、出典と確認日をつけて掲載しています。", "週末や旅の予定に合わせて、観に行ける神楽を探せます。"]),
@@ -1442,7 +1482,7 @@ const enPages = (() => {
     const ps = [...new Set([...upcoming, ...regular].filter((x) => x.kagura === k).map((x) => x.prefecture))];
     return { key: k, prefs: ps.length ? ps : [kaguraHome(k)].filter(Boolean), indexed: kaguraIndexed(k) };
   });
-  return englishPages({ esc, upcoming, regular, styles, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null), infoJa: kaguraInfo, infoEn: kaguraInfoEn, regularEn, today });
+  return englishPages({ esc, upcoming, regular, styles, kaguraHref: (k) => (kaguras.includes(k) ? kaguraHref(k) : null), infoJa: kaguraInfo, infoEn: kaguraInfoEn, regularEn, prefInfo, today });
 })();
 {
   // 英語のトップ: 日本語のトップと同じ絵。見出しは横書きで、フレーズごとに順に現れる(題は「Kagura: …」を、コロンで分ける)
@@ -1460,6 +1500,18 @@ const enPages = (() => {
       body: `${top ? "" : `<nav class="crumbs" aria-label="Breadcrumb"><ol>${crumbs.map(([t, h]) => (h ? `<li><a href="${h}">${esc(t)}</a></li>` : `<li aria-current="page">${esc(t)}</li>`)).join("")}</ol></nav>`}${top ? heroEn(pg.h1, pg.sub) : hero(esc(pg.h1), esc(pg.sub))}<div class="prose en">${pg.body()}</div>`,
     }));
   }
+}
+
+// 英語版の、やめた種類のページ(同じく、新しいページへ案内する)
+for (const m of kaguraNames.moved ?? []) {
+  if (!m.en?.slug || enPages.some((p) => p.path === `/en/kagura/${m.en.slug}.html`)) continue;
+  const enTo = enPages.some((p) => p.path === m.en.to.split("#")[0]) ? m.en.to : "/en/kagura.html";
+  write(`dist/en/kagura/${m.en.slug}.html`, layout({
+    lang: "en", title: `${m.en.name}: this page has moved | Kagura Meguri`, desc: `Our page on ${m.en.name} has moved to a new address.`,
+    path: `/en/kagura/${m.en.slug}.html`, noindex: true,
+    head: `<meta http-equiv="refresh" content="0;url=${esc(enTo)}">`,
+    body: `<section class="hero"><h1>This page has moved</h1></section><p class="lead">We reorganised our pages on kagura in Hiroshima Prefecture.</p><p><a class="btn" href="${esc(enTo)}">Go to the new page</a></p>`,
+  }));
 }
 
 // ---------- 固定ページ ----------
@@ -1507,7 +1559,7 @@ doc("/about.html", "運営者情報", `${cfg.siteName}の運営者情報です�
 <dl class="about-points"><div><dt>出典と確認日</dt><dd>主催者・自治体・観光協会などの公式情報を出典にしています。各ページの下に、出典の名前と確認した日を載せています。</dd></div>
 <div><dt>更新</dt><dd>公開されている情報は、プログラムで定期的に確かめています。取得元のページから開催情報が消えたときは、掲載を取り下げます。終わった開催は、一覧と検索結果から外します。</dd></div>
 <div><dt>訂正・削除</dt><dd><a href="/contact.html">お問い合わせ</a>からご連絡ください。主催者の方からのご依頼は、確認のうえ速やかに反映します。</dd></div>
-<div><dt>解説の文章</dt><dd>神楽の種類や地域の解説は、文化庁の「文化遺産オンライン」や自治体、観光協会などの公開情報をもとに書き、参考にした資料へのリンクを載せています。</dd></div></dl>
+<div><dt>解説の文章</dt><dd>神楽の種類や地域の解説は、文化庁の「文化遺産オンライン」や自治体、観光協会などの公開情報をもとに書き、参考にした資料へのリンクを載せています。資料の選び方と訂正の受け付けは、<a href="/editorial-policy.html">解説の編集方針</a>に書いています。</dd></div></dl>
 <p>最終更新: ${esc(op.updated)}</p>
 <h2>収益について</h2>
 <p>${cfg.adsense.client || hasAffiliate ? `当サイトは、${[cfg.adsense.client ? "広告" : "", hasAffiliate ? "アフィリエイトプログラム" : ""].filter(Boolean).join("および")}による収益で運営しています。` : "現在、当サイトは広告やアフィリエイトによる収益を得ていません。今後導入する場合は、始める前にこの記載とプライバシーポリシーを更新します。"}</p>
@@ -1529,6 +1581,19 @@ const policyCtx = {
   form: { ready: formReady(cfg), providerName: cfg.form?.providerName },
 };
 doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプライバシーポリシーです。取得する情報と利用目的、外部サービスへの情報の送信、Cookie、個人情報の開示・訂正・削除のご請求について定めています。`, privacyHtml(policyCtx));
+// 解説の編集方針(2026-11-26 神楽の関係者からの指摘を受けて作った): 資料の基準、呼び名の書き方、確認日、訂正の受け付けと記録。
+// 訂正の記録は data/corrections.json(新しい順に出す)。協力・監修の名前は、本人の承諾を得た場合だけ載せる
+const corrections = existsSync("data/corrections.json") ? readJson("data/corrections.json") : [];
+doc("/editorial-policy.html", "解説の編集方針", `${cfg.siteName}の、神楽の種類・地域・歴史の解説の書き方です。使う資料の基準、呼び名の書き方、起源の説の扱い、確認日、誤りのご指摘の受け付けかたと、これまでの訂正の記録を載せています。`, `
+<p>神楽の種類、都道府県ごとの概要、神楽の歴史の解説は、編集部が公開されている資料を読んでまとめています。研究者や保存団体による監修は受けていません。</p>
+<dl class="about-points"><div><dt>使う資料</dt><dd>文化庁や自治体の文化財の解説、調査報告書、研究論文、保存会・神社・神楽団の公式の案内を優先します。観光協会や広報の説明を使うときは、「〇〇によると」と出どころを書きます。個人のサイトや、まとめサイトは使いません。</dd></div>
+<div><dt>呼び名</dt><dd>神楽の呼び名は、地域や立場によって違います。種類のページの冒頭に、その名前が何を指し、誰が使っている呼び名かを書きます。「種類で探す」に並ぶ名前には、地域の呼び名、祭りの名前、舞の形式の名前が混じっていて、どれも同じ意味の「流派」ではありません。</dd></div>
+<div><dt>起源や成り立ち</dt><dd>説が分かれるものは、断定しません。誰の説明かを書き、複数の説明があるときは並べて書きます。</dd></div>
+<div><dt>確認日</dt><dd>解説ごとに、資料を確かめた日を載せます。</dd></div>
+<div><dt>誤りのご指摘</dt><dd><a href="/contact.html">お問い合わせフォーム</a>で受け付けています。資料で確かめたうえで直し、下の「訂正の記録」に残します。地域の方、保存団体の方、研究者の方からの情報をお待ちしています。</dd></div>
+<div><dt>協力・監修</dt><dd>ご協力いただいた方のお名前は、ご本人の承諾を得た場合だけ載せます。</dd></div></dl>
+<h2 id="corrections">訂正の記録</h2>
+${corrections.length ? `<dl class="about-points corrections">${[...corrections].sort((a, b) => b.date.localeCompare(a.date)).map((c) => `<div><dt>${esc(jpDate(c.date))}</dt><dd>${esc(c.text)}</dd></div>`).join("")}</dl>` : `<p>まだありません。</p>`}`);
 doc("/terms.html", "利用規約", `${cfg.siteName}の利用規約です。サイトの利用条件、開催情報の投稿の扱い、禁止事項、免責、規約の変更、準拠法と管轄裁判所について定めています。サイトをご利用の前にお読みください。`, termsHtml(policyCtx));
 doc("/disclaimer.html", "免責事項・情報の取り扱い", `${cfg.siteName}の免責事項です。開催情報の集め方と自動処理、掲載の停止、外部サイトへのリンク、損害についての責任の範囲を説明しています。お出かけの前には、主催者の公式情報をご確認ください。`, disclaimerHtml(policyCtx));
 // ---------- sitemap / robots / ads.txt / security.txt / 404 ----------
@@ -1543,7 +1608,7 @@ const sm = [
   ["/weekend.html", maxDay(daysBetween(addDays(today, -6), today).find((d) => weekendRange(d).end === wk.end), [...wkEvents, ...wkRegs.map((x) => x.r), ...wkDaily.map((x) => x.r)].map((x) => x.checked))],
   ["/this-month.html", maxDay(`${mk}-01`, [...tmEvents, ...tmRegs.map((x) => x.r), ...tmDaily.map((x) => x.r)].map((x) => x.checked), events.filter((e) => e.start.slice(0, 7) === mk && !isUpcoming(e)).map((e) => addDays((e.end || e.start).slice(0, 10), 1)).filter((d) => d <= today))],
   ["/guide.html", GUIDE_CHECKED], ["/history/", HISTORY_CHECKED], ...HISTORY_ERAS.map((e) => [`/history/${e.slug}.html`, HISTORY_CHECKED]), ["/organizers.html", staticDay], ["/sponsor.html", staticDay],
-  ["/about.html", staticDay], ["/contact.html", staticDay], ["/privacy.html", (() => { const m = privacyUpdated(cfg).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
+  ["/about.html", staticDay], ["/contact.html", staticDay], ["/editorial-policy.html", maxDay(staticDay, corrections.map((c) => c.date))], ["/privacy.html", (() => { const m = privacyUpdated(cfg).match(/(\d{4})年(\d{1,2})月(\d{1,2})日/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : staticDay; })()], ["/terms.html", staticDay], ["/disclaimer.html", staticDay],
   // 検索に載せないページ(noindex)は、サイトマップにも入れない
   // 開催予定がなくても、これまでの開催と解説で検索に残す種類・県のページ(kaguraIndexed / prefIndexed)も入れる
   ...kaguras.filter(kaguraIndexed).map((k) => [kaguraHref(k), lastmodOf([...upcoming, ...regular].filter((x) => x.kagura === k).concat(upcoming.some((e) => e.kagura === k) || regular.some((r) => r.kagura === k) ? [] : pastRecords(events.filter((e) => e.kagura === k))))]),

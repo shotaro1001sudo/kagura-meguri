@@ -71,7 +71,6 @@ export const questions = [
 // 重みは機械的に決める: 根拠が tagline / intro(紹介の中心)なら 2、features / programs / viewing / history なら 1。
 export const traditions = [
   { kind: '石見神楽', evidence: [['dynamic', 'tagline'], ['spectacle', 'tagline'], ['drama', 'intro~1'], ['music', 'intro~1'], ['monster', 'programs.1.text'], ['together', 'programs.3.text'], ['easy', 'viewing.0']] },
-  { kind: '広島神楽', evidence: [['spectacle', 'tagline'], ['easy', 'intro~1'], ['dynamic', 'features.0'], ['classic', 'features.2'], ['drama', 'programs.1.text'], ['monster', 'programs.0.text']] },
   { kind: '高千穂神楽', evidence: [['allnight', 'tagline'], ['easy', 'intro~1'], ['rite', 'features.3'], ['classic', 'programs.2.text'], ['together', 'viewing.2']] },
   { kind: '備中神楽', evidence: [['drama', 'tagline'], ['dynamic', 'intro~1'], ['rite', 'intro~1'], ['laugh', 'features.1'], ['classic', 'programs.0.text'], ['easy', 'features.2']] },
   { kind: '庄内神楽', evidence: [['dynamic', 'intro~1'], ['music', 'intro~1'], ['easy', 'intro~2'], ['monster', 'features.2']] },
@@ -108,7 +107,9 @@ export const traditions = [
 ];
 // 解説はあるが、診断の対象にしない神楽と、その理由(週次の点検が「対象外」として扱う)
 export const QUIZ_EXCLUDED = {
-  '安芸高田神楽': '広島神楽(芸北神楽)と重なり、解説が紹介文だけのため',
+  // 2026-11-26: 広島県の神楽は、呼び方と分け方を関係者に確かめている途中。確かめ終わるまで、診断の結果には出さない(以前は「広島神楽」として対象にしていた)
+  '芸北神楽': '広島県の神楽の呼び方と分け方を確かめている途中のため',
+  '十二神祇神楽': '広島県の神楽の呼び方と分け方を確かめている途中のため',
   '岩手の神楽': '岩手県内の系統の違う神楽(山伏神楽・大乗神楽・南部神楽など)をまとめた地域の呼び名で、一つの種類として好みを当てはめられないため',
   '青森の神楽': '青森県内の系統の違う神楽(山伏系の神楽・能舞・津軽神楽)をまとめた地域の呼び名で、一つの種類として好みを当てはめられないため',
 };

@@ -44,7 +44,7 @@
       "id": "hiroshima-kagura-dvd",
       "category": "learn",
       "provider": "rakuten-ichiba",
-      "kagura": "広島神楽",
+      "kagura": "広島県の神楽",
       "enabled": true,
       "approved": true,
       "verifiedAt": "2026-10-25",
@@ -53,7 +53,7 @@
       "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce930b.9ff2191b.58ce930c.1d647f3f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fcloverplain%2Fhk-101%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
       "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce930b.9ff2191b.58ce930c.1d647f3f/?me_id=1254968&item_id=10006395&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Fcloverplain%2Fcabinet%2Fcd_dvd%2Fhk-101-item01.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
       "title": "DVD 広島神楽",
-      "note": "広島神楽の映像作品"
+      "note": "広島県の神楽の映像作品"
     },
     {
       "id": "misato-iwami-mask",
@@ -101,7 +101,7 @@
       "url": "https://hb.afl.rakuten.co.jp/ichiba/58ce9478.3bf97a73.58ce9479.d258958d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Ff343692-kitahiroshima%2Fsu089_002%2F&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIyNDB4MjQwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D",
       "imageUrl": "https://hbb.afl.rakuten.co.jp/hgb/58ce9478.3bf97a73.58ce9479.d258958d/?me_id=1371375&item_id=10000830&pc=https%3A%2F%2Fthumbnail.image.rakuten.co.jp%2F%400_mall%2Ff343692-kitahiroshima%2Fcabinet%2Fprodacts_all%2Fc_su089_002_1.jpg%3F_ex%3D240x240&s=240x240&t=picttext",
       "title": "広島神楽面《般若(中)》 神楽面師・管沢良典作",
-      "note": "神楽面師が手がける広島神楽の面"
+      "note": "神楽面師が手がける神楽面"
     },
     {
       "id": "takachiho-kagura-mask",

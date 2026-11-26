@@ -32,8 +32,8 @@ export const PREF_EN = {
 export const KAGURA_EN = [
   { key: "石見神楽", name: "Iwami Kagura", slug: "iwami-kagura" },
   { key: "高千穂神楽", name: "Takachiho Kagura", slug: "takachiho-kagura" },
-  { key: "広島神楽", name: "Hiroshima Kagura", slug: "hiroshima-kagura" },
-  { key: "安芸高田神楽", name: "Akitakata Kagura", slug: "akitakata-kagura" },
+  { key: "芸北神楽", name: "Geihoku Kagura", slug: "geihoku-kagura" },
+  { key: "十二神祇神楽", name: "Juni Jingi Kagura", slug: "juni-jingi-kagura" },
   { key: "備中神楽", name: "Bitchu Kagura", slug: "bitchu-kagura" },
   { key: "花祭", name: "Hanamatsuri", slug: "hanamatsuri" },
   { key: "遠山の霜月祭", name: "Tohyama Shimotsuki Festival", slug: "tohyama-shimotsuki-festival" },
@@ -141,7 +141,7 @@ const fmtMonthShort = (ym) => utc(`${ym}-01`).toLocaleDateString("en-US", { mont
  * @param {string} x.today 日本時間の今日(YYYY-MM-DD)
  * 返り値: ページの一覧 [{ key, path, ja, crumbs, title, h1, sub, desc, body, modified, noindex, type }]
  */
-export function englishPages({ esc, upcoming, regular = [], kaguraHref, styles: styleList = [], infoJa = {}, infoEn = {}, regularEn = {}, today }) {
+export function englishPages({ esc, upcoming, regular = [], kaguraHref, styles: styleList = [], infoJa = {}, infoEn = {}, regularEn = {}, prefInfo = {}, today }) {
   // 英語のページがある種類: サイトに種類のページがあり、訳がある種類
   const styles = styleList.map((x) => ({ ...x, en: kName(x.key), href: kaguraHref(x.key), tr: infoEn[x.key], path: infoEn[x.key] && enStylePath(x.key) })).filter((x) => x.href);
   const pageOf = (k) => styles.find((s) => s.key === k && s.path);
@@ -257,6 +257,17 @@ ${sourcesHtml()}`,
     });
   }
 
+  // 広島県の神楽の分け方(data/pref-info.json の 広島県.en)。以前の「Hiroshima Kagura」のページの代わりに、種類の一覧の中で、誰の分け方かを書いて紹介する(2026-11-26)
+  const hiroshimaGroups = () => {
+    const g = prefInfo["広島県"], t = g?.en;
+    if (!t?.groups?.length) return "";
+    const refs = (g.refs ?? []).filter((r) => r?.url);
+    return `<h2 id="hiroshima">${esc(t.title)}</h2><p>${esc(t.lead)}</p>${table(["Group", "Area", "In brief"], t.groups.map((x, i) => {
+      const kind = g.groups?.[i]?.kind, pg = kind && pageOf(kind);
+      return [(pg ? `<a href="${pg.path}">${esc(x.name)}</a>` : esc(x.name)) + (x.alias ? ` <small>${esc(x.alias)}</small>` : ""), esc(x.area), esc(x.text)];
+    }), "Kagura in Hiroshima Prefecture", "chk")}<p>${esc(t.note)}</p>${refs.length ? `<p class="meta">Sources (Japanese): ${refs.map((r) => `<a href="${esc(r.url)}" rel="noopener" target="_blank" lang="ja" translate="no">${esc(r.name)}</a>`).join(" / ")}. Checked: ${esc(g.checked ?? "")}.</p>` : ""}`;
+  };
+
   // ---------- Kagura styles ----------
   // 特定の神楽を取り上げないよう、サイトに載っているすべての種類を、日本語の「種類で探す」と同じ順番・同じ扱い(名前・一言・県・リンク)で並べる
   {
@@ -265,7 +276,7 @@ ${sourcesHtml()}`,
       key: "kagura", path: "/en/kagura.html", ja: "/kagura/",
       title: `Kagura Styles in Japan: Every Regional Style | ${SITE_EN}`,
       h1: "Kagura styles",
-      sub: "Every style featured on this site, listed equally",
+      sub: "Every kagura featured on this site, listed equally",
       desc: "The main lineages of kagura, plus every kagura style featured on this site, with English guides to upcoming dates, history, main plays and viewing tips.",
       modified: UPDATED,
       body: () => `
@@ -280,13 +291,14 @@ ${table(["Lineage", "Characteristics"], [
 ], "The main lineages of kagura", "chk")}
 
 <h2>All styles on this site</h2>
-<p class="meta">Listed in the same order as the Japanese "browse by style" page, from north to south. Each name opens an English guide with upcoming dates, history and main plays. The Japanese page has the full listings.</p>
+<p class="meta">Listed in the same order as the Japanese "browse by style" page, from north to south. The names are of different kinds: some are regional names, some are the names of festivals, and some are forms of dance. Each page begins by saying what its name refers to. Each name opens an English guide with upcoming dates, history and main plays. The Japanese page has the full listings.</p>
 ${table(["Style", "In a word", "Prefecture", "Japanese page"], styles.map((k) => [
   (k.path ? `<a href="${k.path}">${esc(k.en)}</a>` : k.en ? esc(k.en) : ja(k.key, esc)) + (k.en ? ` <small lang="ja" translate="no">${esc(k.key)}</small>` : ""),
   k.tr ? esc(k.tr.tagline) : "",
   esc(k.prefs.map((x) => PREF_EN[x] || x).join(", ")),
   `<a href="${k.href}" hreflang="ja">Dates (Japanese)</a>`,
 ]), "All kagura styles on this site", "styles")}
+${hiroshimaGroups()}
 <p><a class="btn" href="/en/calendar.html">Performance calendar</a> <a class="btn ghost" href="/en/guide.html">First-timer's guide</a> <a class="btn ghost" href="/kagura/" hreflang="ja">Browse by style (Japanese)</a></p>
 ${sourcesHtml()}`,
     });
@@ -434,11 +446,12 @@ ${regs.length ? `<h3>Regular shows</h3><ul class="en-reglist">${regs.map((r) => 
 <p class="meta">Japanese name: ${ja(k, esc)} · Area: ${esc(t.area)}</p>
 <nav class="chiprow en-jump" aria-label="On this page">${sections.map(([id, label]) => `<a class="chip" href="#${id}">${esc(label)}</a>`).join("")}</nav>
 ${datesHtml}
-${t.intro ? `${h2("about")}<p>${enText(t.intro, esc)}</p>` : ""}
+${t.intro ? `${h2("about")}${t.naming ? `<p>${enText(t.naming, esc)}</p>` : ""}<p>${enText(t.intro, esc)}</p>` : ""}
 ${t.history?.length ? `${h2("history")}${ul(t.history)}` : ""}
 ${t.features?.length ? `${h2("features")}${ul(t.features)}` : ""}
 ${t.programs?.length ? `${h2("plays")}<dl class="en-plays">${plays}</dl>` : ""}
 ${t.viewing?.length ? `${h2("tips")}${ul(t.viewing)}` : ""}
+${(t.sections ?? []).map((x) => `<h2 id="${esc(x.id)}">${esc(x.title)}</h2>${(x.paras ?? []).map((p) => `<p>${enText(p, esc)}</p>`).join("")}`).join("")}
 ${h2("sources")}<p>This page is an English translation of our <a href="${s.href}" hreflang="ja">Japanese page about ${esc(name)}</a>. It is based on the sources below (in Japanese).</p>
 <ul class="sources">${jaInfo.source ? `<li>${ja(jaInfo.source, esc)}</li>` : ""}${refs.map((r) => `<li><a href="${esc(r.url)}" rel="noopener" target="_blank" lang="ja" translate="no">${esc(r.name)}</a></li>`).join("")}</ul>
 <p class="meta">Translation checked: ${esc(t.checked)}.${fresh ? "" : " The Japanese page has been updated since then; it has the latest information."} Dates, venues and prices can change, so always check the official information before you go.</p>

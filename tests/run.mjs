@@ -39,6 +39,7 @@ import { englishTests } from "./english.mjs";
 import { organizersTests } from "./organizers.mjs";
 import { sponsorTests } from "./sponsor.mjs";
 import { eventSeoTests } from "./event-seo.mjs";
+import { kaguraNamesTests } from "./kagura-names.mjs";
 import { identityTests } from "./identity.mjs";
 import { adminTests } from "./admin.mjs";
 import { homeTests } from "./home.mjs";
@@ -375,6 +376,7 @@ const TESTS = [
   ["organizers", async () => { await organizersTests({ ok, section, OUT, build }); }],
   ["sponsor", async () => { sponsorTests({ ok, section, OUT }); }],
   ["eventSeo", async () => { eventSeoTests({ ok, section, build }); }],
+  ["kaguraNames", async () => { kaguraNamesTests({ ok, section, build }); }],
   ["pastEvents", async () => { await pastEventsTests({ ok, section, build }); }],
   ["identity", async () => { identityTests({ ok, section, OUT, build }); }],
   ["home", async () => { await homeTests({ ok, section, OUT, build }); }],

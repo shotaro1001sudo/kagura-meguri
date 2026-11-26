@@ -13,7 +13,7 @@ if (process.argv.includes("--accept")) {
   writeFileSync(file, JSON.stringify(acceptBaseline(info, today), null, 2) + "\n");
   console.log(`${file}: 根拠の本文を ${today} 時点で確認済みにしました`);
 } else {
-  const h = quizHealth({ info, events: readJson("data/events.json", []), regular: readJson("data/regular.json", []), todayJst: today, baseline: readJson(file, null) });
+  const h = quizHealth({ info, events: readJson("data/events.json", []), regular: readJson("data/regular.json", []), todayJst: today, baseline: readJson(file, null), skip: Object.keys(readJson("data/kagura-names.json", {}).prefOnly ?? {}) });
   console.log(`好み診断: 対象 ${h.kinds} 種類 / 全体の見直し ${h.checked}(${h.checkedDaysAgo} 日前)/ 根拠の確認 ${h.reviewed || "未"}`);
   const list = (label, xs) => console.log(`${label}: ${xs.length ? xs.join("、") : "なし"}`);
   list("根拠が見つからない", h.missing);

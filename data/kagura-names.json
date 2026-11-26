@@ -1,0 +1,9 @@
+{
+  "prefOnly": {
+    "広島県の神楽": { "prefecture": "広島県", "note": "系統は未確認" }
+  },
+  "moved": [
+    { "from": "広島神楽", "to": { "prefecture": "広島県", "hash": "pref-groups" }, "en": { "slug": "hiroshima-kagura", "name": "Hiroshima Kagura", "to": "/en/kagura.html#hiroshima" } },
+    { "from": "安芸高田神楽", "to": { "kagura": "芸北神楽", "hash": "k-akitakata" }, "en": { "slug": "akitakata-kagura", "name": "Akitakata Kagura", "to": "/en/kagura/geihoku-kagura.html#akitakata" } }
+  ]
+}

@@ -3,7 +3,7 @@ import { reconcile } from "../scripts/lib/collect-core.mjs";
 
 export function collectionIdentityTests({ ok, section }, reconcileImpl = reconcile) {
   section("自動収集: 意味上の同一公演と生存確認の整合");
-  const source = { id: "identity-test", name: "公式テスト協会", url: "https://example.com/events", kagura: "安芸高田神楽", prefecture: "広島県" };
+  const source = { id: "identity-test", name: "公式テスト協会", url: "https://example.com/events", kagura: "芸北神楽", prefecture: "広島県" };
   const now = new Date("2026-10-12T00:00:00Z");
   const later = (n) => new Date(now.getTime() + n * 7 * 864e5);
   const candidate = { name: "第10回 高宮神楽まつり", start: "2026-11-23T00:00", timeUnknown: true, prefecture: "広島県", city: "安芸高田市", venue: "広場", url: "https://example.com/events/1" };

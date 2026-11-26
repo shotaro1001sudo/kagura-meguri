@@ -44,7 +44,7 @@ export async function collectTests({ ok, section }) {
 
   // ---------- 1. 検査 ----------
   section("自動収集: 1件ずつの検査(guardEvent)");
-  const base = { name: "高宮神楽まつり", kagura: "安芸高田神楽", prefecture: "広島県", city: "安芸高田市", venue: "広場", start: "2026-11-23T19:00", url: "https://example.com/a" };
+  const base = { name: "高宮神楽まつり", kagura: "芸北神楽", prefecture: "広島県", city: "安芸高田市", venue: "広場", start: "2026-11-23T19:00", url: "https://example.com/a" };
   const g = (o) => guardEvent({ ...base, ...o }, { now: NOW });
   ok(g({}).length === 0, "正しい候補は、合格する");
   ok(g({ start: "2026-10-11T19:00" }).includes("すでに終わった日付"), "昨日の日付は、不合格(すでに終わった)");
@@ -61,7 +61,7 @@ export async function collectTests({ ok, section }) {
 
   // ---------- 2. 掲載・保留・取り下げの判断 ----------
   section("自動収集: 掲載・保留・取り下げの判断(reconcile)");
-  const src = { id: "t", name: "テスト協会", kagura: "安芸高田神楽", prefecture: "広島県", url: "https://example.com/list" };
+  const src = { id: "t", name: "テスト協会", kagura: "芸北神楽", prefecture: "広島県", url: "https://example.com/list" };
   const cand = (name, start, extra = {}) => ({ name, start, prefecture: "広島県", city: "安芸高田市", venue: "広場", url: "https://example.com/" + encodeURIComponent(name), ...extra });
   const manual = { id: "manual-1", name: "手で登録した神楽", kagura: "石見神楽", prefecture: "島根県", city: "益田市", venue: "会場", start: "2026-11-23T19:00", url: "https://example.com/m", status: "published", source: "公式", checked: "2026-10-09" };
   let r = reconcile({ events: [manual], candidates: [cand("神楽A", "2026-11-23T19:00"), cand("神楽B", "2026-11-29T18:00"), cand("神楽C", "2026-12-05T18:00")], source: src, now: NOW });
@@ -151,7 +151,7 @@ export async function collectTests({ ok, section }) {
   });
   await new Promise((r) => server.listen(0, r));
   const port = server.address().port;
-  const source = { id: "t", name: "テスト観光協会", adapter: "selectors", url: `http://localhost:${port}/list`, kagura: "安芸高田神楽", prefecture: "広島県", termsChecked: "2026-10-09", selectors: { item: ".ev li", name: "a", date: ".d", place: ".p", link: "a" } };
+  const source = { id: "t", name: "テスト観光協会", adapter: "selectors", url: `http://localhost:${port}/list`, kagura: "芸北神楽", prefecture: "広島県", termsChecked: "2026-10-09", selectors: { item: ".ev li", name: "a", date: ".d", place: ".p", link: "a" } };
   const files = { EVENTS_FILE: `${T}/events.json`, SOURCES_FILE: `${T}/sources.json`, REJECTED_FILE: `${T}/rejected.json`, REPORT_FILE: `${T}/report.md`, SUMMARY_FILE: `${T}/summary.json` };
   const put = (f, v) => writeFileSync(f, JSON.stringify(v, null, 2));
   const manualEv = { ...manual };

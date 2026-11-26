@@ -2,7 +2,9 @@
 // 1件ごとに「<a name="番号"></a><table> 見出し(日付・【県】名称) / 本文(■会場/開演/入場料/公式リンク)」の形。
 // 設定(data/sources.json): "months"(今月から何か月分を読むか)、"exclude"(除く名称の正規表現。定期公演など)、
 //                         "cityHints"(会場名などに含まれる語 → 市区町村。例 {"湯治村": "安芸高田市"})、
-//                         "kaguraByPrefecture"(県ごとの神楽の種類。例 {"島根県": "石見神楽"}。なければ source.kagura)
+//                         "kaguraByPrefecture"(県ごとの神楽の種類。例 {"島根県": "石見神楽"})、
+//                         "kaguraByCity"(市町ごとの神楽の種類。例 {"北広島町": "芸北神楽"}。県内の系統を、開催地で分けられるときだけ)。
+//                         どちらにも当てはまらなければ source.kagura(広島県は「広島県の神楽」= 系統は未確認。2026-11-26 に「広島神楽」をやめた)
 import * as cheerio from "cheerio";
 import { clean, findPrefecture } from "../lib/util.mjs";
 
@@ -58,7 +60,7 @@ export function parse(html, source, pageUrl = source.url) {
     const day = `${d[1]}-${pad(d[2])}-${pad(d[3])}`;
     out.push({
       name, prefecture, city, venue, ...(address ? { address } : {}),
-      kagura: source.kaguraByPrefecture?.[prefecture] || source.kagura || "",
+      kagura: source.kaguraByPrefecture?.[prefecture] || source.kaguraByCity?.[city] || source.kagura || "",
       start: `${day}T${t ? `${pad(t[1])}:${pad(t[2] ?? t[3] ?? 0)}` : "00:00"}`,
       timeUnknown: t ? undefined : true,
       fee,

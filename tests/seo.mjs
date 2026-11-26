@@ -65,12 +65,12 @@ function checkSite({ ok, section, dir, label, base, strictText }) {
     if (/^\/kagura\/./.test(p) && p !== "/kagura/index.html") ok(title.includes($("h1").text()), `${p}: タイトルに神楽の種類名`);
     if (/^\/month\//.test(p)) ok(title.includes($("h1").text().replace("の神楽", "")), `${p}: タイトルに年月`);
     if (p === "/pref/広島県.html") {
-      ok(/^広島神楽スケジュール\d{4}(〜\d{4})?｜広島県の神楽 日程・会場一覧 \| /.test(title), "広島県: 検索語どおり「広島神楽スケジュール」と掲載年を、タイトルの先頭に(SEO-20261107-1)", title);
+      ok(/^広島県の神楽スケジュール\d{4}(〜\d{4})?｜日程・会場一覧 \| /.test(title) && !title.includes("広島神楽"), "広島県: 「広島県の神楽スケジュール」と掲載年を、タイトルの先頭に(SEO-20261107-1。「広島神楽」は系統の名前ではないので、2026-11-26 に題から外した)", title);
       const years = [...new Set($(".pref-month h2").map((_, e) => $(e).text().slice(0, 4)).get())].sort();
       if (years.length) {
         ok(title.includes(years.length > 1 ? `${years[0]}〜${years.at(-1)}｜` : `${years[0]}｜`), "広島県: タイトルの年が月別一覧の範囲と一致");
         ok(desc.includes("月別スケジュール") && desc.includes("県内すべての公演ではありません") && desc.includes("確認できた情報"), "広島県: 既存の月別一覧と掲載範囲を説明");
-        ok(/^広島神楽スケジュール。\d{1,2}月の開催\d+件・\d{1,2}月\d+件/.test(desc), "広島県: 説明文の先頭に、今月・来月の開催件数", desc);
+        ok(/^広島県の神楽\(ひろしま神楽\)のスケジュール。\d{1,2}月の開催\d+件・\d{1,2}月\d+件/.test(desc), "広島県: 説明文の先頭に、今月・来月の開催件数", desc);
       }
     } else if (/^\/pref\//.test(p)) {
       ok(title.startsWith(`${$("h1").text()} 日程【`), `${p}: 他県のタイトル形式は維持`);
@@ -183,7 +183,7 @@ export function seoTests({ ok, section, OUT, build }) {
   for (const [k, v] of Object.entries(info)) {
     ok(v.intro.length >= 60 && !!v.source, `紹介文 ${k}: 60字以上で、出典がある`);
     const f = `dist-test-seo/kagura/${k}.html`;
-    if (existsSync(f)) { const $ = cheerio.load(read(f)); ok($(".about p").first().text() === v.intro && $(".about h2").text() === `${k}とは`, `神楽ページ ${k}: 「とは」の紹介文が出る`); }
+    if (existsSync(f)) { const $ = cheerio.load(read(f)); ok($(".about p:not(.naming)").first().text() === v.intro && $(".about h2").text() === `${k}とは`, `神楽ページ ${k}: 「とは」の紹介文が出る`); }
   }
 
   section("SEO: 検索語に合わせた神楽ページ(SEO-20261107-1〜3)");
@@ -195,9 +195,6 @@ export function seoTests({ ok, section, OUT, build }) {
     ok($(".town-group .card h4").length > 0 && `開催予定 ${$(".town-group .card").length}件` === $(".hero p").text().split(" ・ ")[0], "花祭: 開催予定を町ごとの見出しに分ける");
     ok(new RegExp(`^花祭\\(花祭り\\)の日程。${towns[0]}: \\d{1,2}/\\d{1,2} `).test($('meta[name="description"]').attr("content")), "花祭: 説明文の先頭に、町ごとの地区と日付", $('meta[name="description"]').attr("content")); }
   ok(kpage("遠山の霜月祭")("title").text().startsWith("遠山の霜月祭(霜月祭り)20") && kpage("遠山の霜月祭")("title").text().includes("の日程｜12月の各神社の開催一覧"), "遠山の霜月祭: 「霜月祭り」と年をタイトルに");
-  { const $ = kpage("広島神楽"), html = $("main").html();
-    ok($("title").text().startsWith("広島神楽とは｜系統・見どころ") && !$("title").text().includes("スケジュール"), "広島神楽: 種類のページは「系統・見どころ」の役(県のページと同じ語で競らない)", $("title").text());
-    ok($(`#k-schedule[open] > .kfold-body > .schedule-hub:first-child a.btn[href="/pref/${encodeURIComponent("広島県")}.html"]`).length === 1 && html.indexOf("広島神楽とは") < html.indexOf(">開催予定</h2>"), "広島神楽: 説明を開催一覧より前に、開いた「開催予定」の欄の先頭に県のスケジュールへの入口"); }
   { const $i = kpage("石見神楽"), heads = $i("main h2").filter((_, h) => !$i(h).closest("aside").length).map((_, h) => $i(h).text()).get();
     ok(!$i(".schedule-hub").length && heads.slice(0, 6).join() === "石見神楽とは,歴史,特徴,主な演目,観賞のコツ,開催予定", "スケジュールの入口のない神楽ページも、冒頭に要約(〇〇とは)、その下に歴史〜開催予定の折り畳み(2026-11-15 運営者の依頼で、開催予定は最後)");
     // 同日「各神楽のページも、県のページと同じ並びに」: 概要 → 宿 → 体験 → 一覧(くわしい情報の折り畳み)
@@ -219,7 +216,7 @@ export function seoTests({ ok, section, OUT, build }) {
     const n = $("main .card h3 a").length;
     ok(d.startsWith("神楽の種類一覧。") && d.includes(`など${n}種類の`), "種類の一覧: 説明文の先頭に「神楽の種類一覧」と種類の数", d);
     // 種類のページ → 県のページ: どの種類のページも、少なくとも1つの県のページへつながり、リンク先がある
-    const kfiles = walk("dist-test-seo/kagura").filter((f) => !/index\.html$/.test(f));
+    const kfiles = walk("dist-test-seo/kagura").filter((f) => !/index\.html$/.test(f) && !read(f).includes('http-equiv="refresh"')); // やめた種類の、案内だけのページは除く
     const prefLinks = (f) => { const $k = cheerio.load(read(f)); return $k("main .taglist a.tag").map((_, a) => $k(a).attr("href")).get().filter((h) => h.startsWith("/pref/")); };
     const missing = kfiles.filter((f) => !prefLinks(f).length);
     ok(!missing.length, "どの種類のページにも、県のページへのリンクがある", missing.join(" "));

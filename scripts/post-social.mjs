@@ -139,7 +139,9 @@ async function main() {
   const cfg = readJson("config.json", {});
   const social = cfg.social ?? {};
   const postedFile = process.env.POSTED_FILE ?? "data/social-posted.json";
-  const events = readJson(process.env.EVENTS_FILE ?? "data/events.json", []);
+  // 系統を確かめられていない開催の、県単位の呼び名(「広島県の神楽」。data/kagura-names.json の prefOnly)は、投稿の種類の欄やタグに出さない(場所に県名がある)
+  const prefOnly = readJson("data/kagura-names.json", {}).prefOnly ?? {};
+  const events = readJson(process.env.EVENTS_FILE ?? "data/events.json", []).map((e) => (prefOnly[e.kagura] ? { ...e, kagura: "" } : e));
   // 止めている神楽の種類(social.pauseKinds)は、読み物にも開催のお知らせの紹介文にも使わない
   const info = postableInfo(readJson("data/kagura-info.json", {}), social);
   if (social.pauseKinds?.length) console.log(`投稿を止めている神楽の紹介文: ${social.pauseKinds.join("、")}`);

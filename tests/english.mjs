@@ -17,7 +17,7 @@ export function englishTests({ ok, section, OUT }) {
   const load = (path) => cheerio.load(read(toFile(OUT, path)));
   const base = "https://kagurameguri.jp";
   const alt = ($) => Object.fromEntries($('link[rel="alternate"][hreflang]').get().map((l) => [$(l).attr("hreflang"), $(l).attr("href")]));
-  const styleFiles = existsSync(join(OUT, "en/kagura")) ? readdirSync(join(OUT, "en/kagura")).filter((f) => f.endsWith(".html")).map((f) => `/en/kagura/${f}`) : [];
+  const styleFiles = existsSync(join(OUT, "en/kagura")) ? readdirSync(join(OUT, "en/kagura")).filter((f) => f.endsWith(".html") && !readFileSync(join(OUT, "en/kagura", f), "utf8").includes('http-equiv="refresh"')).map((f) => `/en/kagura/${f}`) : []; // やめた種類の、案内だけのページは除く
   ok(styleFiles.length > 0, "種類ごとの英語のページがある", `${styleFiles.length}件`);
   // 日本語のページと対になる英語のページ(種類ごとのページは、そのページの hreflang の日本語版と対にする)
   const PAIRS = [["/en/", "/"], ["/en/guide.html", "/guide.html"], ["/en/kagura.html", "/kagura/"], ["/en/history.html", "/history/"], ["/en/calendar.html", "/calendar.html"],
@@ -68,7 +68,7 @@ export function englishTests({ ok, section, OUT }) {
   ok(kag("section.gcard").length === 0 && rowsK.length > 0 && JSON.stringify(enKinds) === JSON.stringify(jaKinds), "神楽の種類のページ: 紹介カードなしで、日本語の「種類で探す」と同じ順番に、すべての種類を並べる", `${rowsK.length}件`);
   ok(rowsK.get().every((r) => kag(r).find("th").text().trim().length > 0 && kag(r).find("a[hreflang='ja']").length === 1), "神楽の種類のページ: 各行に、名前と日本語ページへのリンクがある");
   const kindsWithPage = rowsK.get().filter((r) => kag(r).find("th a[href^='/en/kagura/']").length === 1);
-  ok(kindsWithPage.length === styleFiles.length && styleFiles.every((p) => kag(`th a[href="${p}"]`).length === 1), "神楽の種類のページ: 種類ごとの英語ページへ、すべてリンクする(孤立したページがない)", `${kindsWithPage.length}/${styleFiles.length}`);
+  ok(kindsWithPage.length === styleFiles.length && styleFiles.every((p) => kag(`table.styles th a[href="${p}"]`).length === 1), "神楽の種類のページ: 種類ごとの英語ページへ、すべてリンクする(孤立したページがない)", `${kindsWithPage.length}/${styleFiles.length}`);
   ok(kindsWithPage.every((r) => kag(r).find("td").first().text().trim().length > 0), "神楽の種類のページ: 英語ページのある種類は、どれも同じく一言の紹介を添える");
 
   // 日程: これからの開催を月ごとに。明日以降に始まる開催は、すべて載る

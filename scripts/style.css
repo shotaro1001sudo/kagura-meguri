@@ -1273,3 +1273,11 @@ a.stay-btn{display:block;padding:12px 16px;border:1px solid var(--line);border-r
 @media(max-width:560px){.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td{padding:3px 12px;border-top:0}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td:before{display:inline;margin-right:8px}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) td:last-child{padding-bottom:10px}.tbl.cmp:is(.en-cal,.en-reg,.en-prog) th[scope=row]{border-bottom:1px solid var(--line)}}
 .tbl.cmp.en-reg th[scope=row]{white-space:normal;width:auto;min-width:10em}
 @media(max-width:560px){.prose.en table.en-info th,.prose.en table.en-info td{display:block;width:auto}.prose.en table.en-info th{padding-bottom:0;border-bottom:0}.prose.en table.en-info td{padding-top:4px}.tbl.cmp.styles td{padding:3px 12px;border-top:0}.tbl.cmp.styles td:last-child{padding-bottom:10px}}
+/* 神楽の呼び名の説明(種類のページの冒頭)と、県内の神楽の分け方(県のページ)。2026-11-26 */
+.kagura-summary .naming{margin:0 0 10px;padding-left:12px;border-left:2px solid var(--line);font-size:var(--fs-s);line-height:var(--lh-sub);color:var(--mut)}
+.info-note{max-width:42em;margin:14px 0}
+.kind-index-note{font-size:var(--fs-s);color:var(--mut)}
+.pref-groups{margin:40px 0 8px}.pref-groups>p{max-width:42em}
+.pref-groups dt .alias{display:block;margin-top:2px;font-family:var(--sans);font-size:var(--fs-xs);font-weight:400;color:var(--mut)}
+.pref-groups dd .area{display:block;margin-bottom:2px;font-size:var(--fs-xs);color:var(--mut);letter-spacing:.02em}
+.corrections dt{font-family:var(--sans);font-size:var(--fs-s)}

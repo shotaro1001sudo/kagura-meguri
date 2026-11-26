@@ -40,7 +40,7 @@ export function monetizationUxTests({ ok, section, OUT, build }) {
     "置かなくなった入口(.home-find・.home-search-link・.discovery-prefs・広島県の「開催月から探す」「観覧前に確認」)の CSS を残さない");
 
   const h = cheerio.load(read(join(OUT, "pref/広島県.html")));
-  ok(h("title").text().startsWith("広島神楽スケジュール") &&
+  ok(h("title").text().startsWith("広島県の神楽スケジュール") &&
     h("h1").text().trim() === "広島県の神楽" &&
     (h('meta[name="description"]').attr("content") || "").includes("公式情報をご確認ください"),
     "広島のスケジュールを示すmetadataと既存H1・公式情報への案内");

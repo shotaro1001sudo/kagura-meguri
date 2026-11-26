@@ -4,7 +4,7 @@
         "name": "安芸高田市観光ナビ(安芸高田市観光協会)",
         "adapter": "selectors",
         "url": "https://akitakata-kankou.jp/event/",
-        "kagura": "安芸高田神楽",
+        "kagura": "芸北神楽",
         "prefecture": "広島県",
         "city": "安芸高田市",
         "filter": "神楽",
@@ -56,7 +56,7 @@
             }
         ],
         "url": "https://www.npo-hiroshima.jp/cgi-bin/schedule2/sche14.cgi",
-        "kagura": "広島神楽",
+        "kagura": "広島県の神楽",
         "prefecture": "広島県",
         "months": 3,
         "maxNewPerSource": 45,
@@ -110,6 +110,10 @@
         "kaguraByPrefecture": {
             "島根県": "石見神楽",
             "岡山県": "備中神楽"
+        },
+        "kaguraByCity": {
+            "安芸高田市": "芸北神楽",
+            "北広島町": "芸北神楽"
         }
     },
     {
