@@ -111,6 +111,18 @@ export function composeReading({ label, title, body, url, tags, hook, extra = nu
 }
 
 // テーマ: 曜日ごとに、その日いちばん先に出すものを決める(残りの枠は、ほかのテーマから順に)
+/**
+ * 投稿に使う紹介文(data/kagura-info.json)から、止めている神楽の種類を外す。
+ * config.json の social.pauseKinds に入れた種類は、読み物(紹介・演目・歴史・見どころ・見学のコツ)を出さず、
+ * 開催のお知らせにも「▼〇〇とは」の紹介文を付けない(開催の日時・場所・公式の説明は、そのまま出す)。
+ * 解説を見直している間に、直す前の文が出ないようにするため(2026-11-26 運営者の判断: 広島神楽・安芸高田神楽)
+ */
+export function postableInfo(info, social = {}) {
+  const paused = new Set(social?.pauseKinds ?? []);
+  if (!paused.size) return info;
+  return Object.fromEntries(Object.entries(info ?? {}).filter(([k]) => !paused.has(k)));
+}
+
 export const THEMES = {
   program: "神楽の演目",
   kind: "神楽を知る",

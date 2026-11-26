@@ -9,7 +9,7 @@
 // 予約は前の晩なので、書き出しは明日以降の投稿から効く。
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { readingCandidates, planDays, validHook, addDaysJst, HOOK_MAX } from "./lib/x-post.mjs";
+import { readingCandidates, planDays, validHook, addDaysJst, HOOK_MAX, postableInfo } from "./lib/x-post.mjs";
 import { themeWeights } from "./lib/social-performance.mjs";
 
 export const MAX_SET = 15;
@@ -34,7 +34,7 @@ function main() {
   const [cmd, arg] = process.argv.slice(2);
   const file = process.env.HOOKS_FILE ?? "data/social-hooks.json";
   const cfg = readJson("config.json", {});
-  const info = readJson("data/kagura-info.json", {});
+  const info = postableInfo(readJson("data/kagura-info.json", {}), cfg.social);
   const hooks = readJson(file, {});
   const today = process.env.POST_NOW || jstToday();
   const cands = readingCandidates(info, cfg.baseUrl, today, hooks);

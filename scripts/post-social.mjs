@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { planDays, composeById } from "./lib/x-post.mjs";
+import { planDays, composeById, postableInfo } from "./lib/x-post.mjs";
 import { themeWeights } from "./lib/social-performance.mjs";
 
 const API = "https://api.buffer.com";
@@ -139,7 +139,9 @@ async function main() {
   const social = cfg.social ?? {};
   const postedFile = process.env.POSTED_FILE ?? "data/social-posted.json";
   const events = readJson(process.env.EVENTS_FILE ?? "data/events.json", []);
-  const info = readJson("data/kagura-info.json", {});
+  // 止めている神楽の種類(social.pauseKinds)は、読み物にも開催のお知らせの紹介文にも使わない
+  const info = postableInfo(readJson("data/kagura-info.json", {}), social);
+  if (social.pauseKinds?.length) console.log(`投稿を止めている神楽の紹介文: ${social.pauseKinds.join("、")}`);
   const posted = readJson(postedFile, []);
   const today = process.env.POST_NOW || jstToday();
   const key = (process.env.BUFFER_API_KEY ?? "").trim();
