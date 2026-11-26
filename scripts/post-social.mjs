@@ -99,7 +99,8 @@ export const channelSubscriptionQuery = (channelId) => `query {
 /** Buffer が X の有料プランを認識していないと分かる値か(空・none・free)。分からない値なら、長い投稿を試す */
 export const notPremium = (type) => !type || /^(none|free)$/i.test(String(type).trim());
 
-export const REFRESH_MARGIN_MIN = 30; // これより先に出る予約だけを書き換える(送信の直前に変えない)
+// これより先に出る予約だけを書き換える(送信の直前に変えない)。手動実行で急ぐときだけ、環境変数 REFRESH_MARGIN_MIN で縮められる(5分より短くはしない)
+export const REFRESH_MARGIN_MIN = Math.max(5, Number(process.env.REFRESH_MARGIN_MIN) || 30);
 
 /**
  * 予約済みの見直しで、書き換えるものを決める(外部へは送らない部分)。

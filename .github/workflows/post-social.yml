@@ -14,6 +14,10 @@ on:
         description: "Buffer に入れず、文面だけ出す(試運転)"
         type: boolean
         default: true
+      refresh_margin_min:
+        description: "予約済みの投稿を書き換えるのは、この分数より先に出るものだけ(急ぐときだけ縮める。5分より短くはしない)"
+        type: string
+        default: "30"
 permissions:
   contents: write   # data/social-posted.json(予約済みの記録)を、mainにコミットする
   issues: write     # 失敗したとき、Issueで知らせる
@@ -34,6 +38,7 @@ jobs:
           # 朝の起動は今日の空き枠だけ(翌日分まで入れると、Buffer の無料プランの予約10件を超える)
           POST_DAYS: ${{ github.event.schedule == '15 20 * * *' && '1' || '2' }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          REFRESH_MARGIN_MIN: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_margin_min || '30' }}
       - if: ${{ always() }}
         run: |
           git config user.name "github-actions[bot]"
