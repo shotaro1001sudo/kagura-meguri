@@ -18,6 +18,9 @@ export function kaguraNamesTests({ ok, section, build }) {
   const names = json("data/kagura-names.json"), info = json("data/kagura-info.json"), infoEn = json("data/kagura-info-en.json"), prefInfo = json("data/pref-info.json");
   const all = [...json("data/events.json"), ...json("data/regular.json")];
   const gone = names.moved.map((m) => m.from);
+  // 引用元は、記述を確かめられる公的な資料・関係者の個別のページだけ(2026-11-27 運営者の方針)。Wikipedia は解説のどこにも使わない
+  const wikiIn = (x) => /wikipedia\.org/i.test(JSON.stringify(x));
+  ok(![info, infoEn, prefInfo, json("data/regular.json"), HISTORY_SOURCES, GUIDE_SOURCES].some(wikiIn), "解説・県の分け方・歴史・ガイドの出典に Wikipedia を使わない");
   ok(gone.length >= 2 && gone.every((k) => !(k in info) && !(k in infoEn) && !all.some((x) => x.kagura === k)), "やめた種類の名前(moved)は、解説にも開催にも残っていない", gone.filter((k) => k in info || all.some((x) => x.kagura === k)).join());
   ok(Object.entries(names.prefOnly).every(([k, v]) => !(k in info) && /[都道府県]$/.test(v.prefecture) && v.note && all.filter((x) => x.kagura === k).every((x) => x.prefecture === v.prefecture)), "県単位の呼び名(prefOnly)は、解説を持たず、その県の開催にだけ使う");
   ok(json("data/sources.json").every((s) => !gone.includes(s.kagura)) && !(json("config.json").social?.pauseKinds ?? []).some((k) => gone.includes(k)), "収集元の既定の種類と、X の一時停止の設定にも、やめた名前を残さない");
