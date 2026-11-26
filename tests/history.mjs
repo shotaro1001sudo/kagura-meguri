@@ -95,7 +95,7 @@ export function historyTests({ ok, section, OUT }) {
   ok(all.every(([, $]) => $("figure.fig").get().every((f) => $(f).find("figcaption").text().trim().length >= 20)), "図には、文章の説明(figcaption)が付く");
   ok(all.every(([, $]) => $("ol.flow").get().every((o) => !!$(o).attr("aria-label") && $(o).find("li").length >= 3)) && all.every(([, $]) => $(".tblwrap").get().every((w) => $(w).attr("tabindex") === "0" && $(w).attr("role") === "region" && !!$(w).attr("aria-label"))), "流れ図と表には名前があり、表は、キーボードで横にスクロールできる");
   ok(guide("figure.fig").length >= 2 && guide(".checklist input[type=checkbox]").length === 7 && guide("ol.flow.h li").length === 5, "ガイド: 舞台の見方の図・観に行くまでの流れ(5段階)・持ち物チェックリストがある", `${guide("figure.fig").length}`);
-  ok(pages["history/index.html"](".tree .tr-l2 > li").length === 4 && pages["history/kodai.html"]("ol.flow.v li").length === 6 && pages["history/chusei.html"]("svg.dg").length === 1 && pages["history/kindai.html"]("ol.flow.h li").length === 4, "歴史: 分類のツリー(里神楽の4系統)・天岩戸の流れ(6段階)・湯立の図・担い手の変化の流れ図がある");
+  ok(pages["history/index.html"](".tree .tr-l2 > li").length === 4 && pages["history/kodai.html"]("ol.flow.v li").length === 6 && pages["history/chusei.html"]("svg.dg").length === 1 && pages["history/kindai.html"]("ol.flow.h li").length === 3, "歴史: 分類のツリー(里神楽の4系統)・天岩戸の流れ(6段階)・湯立の図・担い手の変化の流れ図(出典で確かめられた3段階。2026-11-26)がある");
   // 公正さのため、個別の神楽は取り上げない(分類・転換点の説明に欠かせない佐太神社=出雲流の典型だけは残す)
   const hb = files.map((f) => { const $h = pages[f]; $h("ol.sources").remove(); return $h("main .prose").text(); }).join("");
   const named = hb.match(/.{0,10}(石見|高千穂|備中|遠山|花祭|庄内|広島|伊勢大神楽|銀鏡|土佐|御嶽|安芸高田).{0,10}/g) ?? [];

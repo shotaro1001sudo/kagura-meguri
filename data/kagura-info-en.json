@@ -1,37 +1,38 @@
 {
   "石見神楽": {
-    "checked": "2026-11-24",
-    "basis": "9c5e0566f261",
+    "checked": "2026-11-26",
+    "basis": "d9aa4054a7b9",
     "area": "Western Shimane (Iwami region)",
     "tagline": "Fast 'hacchoshi' rhythm and gorgeous costumes woven with gold and silver thread",
+    "naming": "'Iwami Kagura' is a name for the kagura handed down in the Iwami region of western Shimane Prefecture. It is used by the Hamada City Tourism Association, in Shimane Prefecture's tourist information, and on the Agency for Cultural Affairs' Japan Heritage page.",
     "intro": "This is the traditional performing art that represents the Iwami region in western Shimane Prefecture. Its stories come from the myths of the Kojiki and the Nihon Shoki (ancient Japanese chronicles). Dancers in gorgeous costumes decorated with gold and silver thread perform to music (hayashi) played on a large drum, a small drum, hand cymbals and a flute. On autumn festival nights, you can hear kagura music from shrines all around.",
     "history": [
-      "There are several theories about its origin, but it is said to have been performed already by the late Muromachi period. Its source is 'Omoto Kagura', which comes from the tradition of dengaku (field music and dance). It is thought that it took on its present, strongly theatrical form under the influence of Izumo-style kagura (Sada Shinno) and of Noh, Kyogen and Kabuki.",
-      "The big turning point came in the early Meiji era. Scholars of kokugaku (Japanese classical studies) revised kagura, and an order banned Shinto priests from dancing kagura. Because of this, local parishioners (people of the area) took over as dancers. This is called 'shinzoku kotai' (the handover from priests to lay people). Around the same time, many areas adopted the fast 'hacchoshi' (eight-beat) rhythm, and kagura is said to have become even more entertaining.",
-      "In 2019, Iwami Kagura and 15 component cultural properties were recognised as Japan Heritage. However, the Important Intangible Folk Cultural Property of Japan designation belongs to its source, 'Omoto Kagura' (designated in 1979). Iwami Kagura as a whole has not been designated by the national government, and many individual kagura are cultural properties of the prefecture or of cities, towns and villages."
+      "According to the official Iwami Kagura website of the Hamada City Tourism Association, the origin of Iwami Kagura is unclear and is thought to date from before the early modern period. The Agency for Cultural Affairs' Japan Heritage Portal Site describes 'Omoto Kagura', which Shinto priests from the surrounding area gather to perform once every few years, as the root of Iwami Kagura. The Hamada City Tourism Association explains that Sada Shinno of Izumo, which turned noh chants ('yokyoku') into god noh, is said to have reached the Iwami region and been made into theatre as entertainment for ordinary people.",
+      "The big turning point came in the early Meiji era. The Meiji government banned Shinto priests from performing the dances, and kagura passed from the priests into the hands of local parishioners (people of the area). The fast 'hacchoshi' (eight-beat) rhythm is said to have been created in the early Meiji era, when [[藤井宗雄]] and [[牛尾弘篤]], kokugaku (Japanese classical studies) scholars of Hamada, greatly revised the kagura of the time ('rokuchoshi', the six-beat rhythm) (Hamada City Tourism Association).",
+      "In May 2019, the story 'A Mythical World Where Gods and Demons Come Alive - Kagura Handed Down in the Iwami Region', which takes the kagura of the Iwami region as its theme, was recognised as Japan Heritage. It is made up of 52 cultural properties, including Iwami Kagura and Omoto Kagura. However, the Important Intangible Folk Cultural Property of Japan designation belongs to its source, 'Omoto Kagura' (designated in 1979). Iwami Kagura itself is not designated as a cultural property, although some kagura, such as Ino Kagura and Arifuku Kagura, are designated Intangible Folk Cultural Properties of Shimane Prefecture."
     ],
     "features": [
       "By tempo, it falls into two main types: 'rokuchoshi' (six-beat rhythm) and 'hacchoshi'. Today the main style is hacchoshi, with its fast and intense beat.",
-      "The music uses a large drum, a small drum ('shime-daiko'), hand cymbals and a transverse flute. There is no written score. The large-drum player watches the dancers' movements and leads the whole ensemble.",
+      "The music is played on a large drum, a small drum, hand cymbals ('tebyoshi') and a flute.",
       "The costumes are gorgeous, with plenty of gold and silver thread. The masks are papier-mache masks made from Sekishu washi, a Japanese paper that is a local speciality.",
-      "The serpent's body is light and folds like a bellows. It is made of Sekishu washi and bamboo. Originally the serpent was basically danced as a single serpent, but after the Second World War, performances with many serpents on stage became more common."
+      "The serpent's body is light and folds like a bellows. It is made of Sekishu washi and bamboo. According to the Agency for Cultural Affairs' Japan Heritage Portal Site, it used to be usual for one or two serpents to appear, but after eight or more were put on stage for the first time at the 1970 Osaka Expo, many serpents came to appear."
     ],
     "programs": [
       {
         "name": "Shiobarai (purification)",
-        "text": "A ritual dance that purifies and cleanses the kagura hall before the gods are welcomed. It is the most basic play."
+        "text": "A ritual dance that purifies the four directions, east, west, south and north, and prepares to welcome the gods. It includes the basic movements of Iwami Kagura."
       },
       {
         "name": "Orochi (the eight-headed serpent)",
-        "text": "Susanoo slays Yamata-no-Orochi, the eight-headed serpent. This is the star of Iwami Kagura, and it closes many performances."
+        "text": "Susanoo slays Yamata-no-Orochi, the eight-headed serpent. This is the star of Iwami Kagura."
       },
       {
         "name": "Iwato (the Heavenly Rock Cave)",
-        "text": "A play based on the myth of the Heavenly Rock Cave. After the cave is opened, the dancers take off their masks and perform a dance of joy."
+        "text": "A play based on the myth in which the gods confer and bring out Amaterasu, who has hidden in the Heavenly Rock Cave."
       },
       {
         "name": "Ebisu",
-        "text": "A dance in which the god Ebisu fishes for a sea bream. In one scene, rice cakes and sweets are thrown to the audience, so it is popular with children."
+        "text": "A festive play in which the god Ebisu lands a sea bream. Before he fishes, there is a scene in which he throws sweets as bait, so it is popular with children."
       },
       {
         "name": "Kashima",
@@ -40,83 +41,84 @@
     ],
     "viewing": [
       "Many performances are offerings at shrines or regular shows, and quite a few of them are free to watch.",
-      "If it is your first time, we recommend choosing a day when 'Orochi' is performed. You can enjoy a powerful stage.",
-      "The music is fast, so watch the large drum and the dancers' movements together to enjoy it even more."
+      "If it is your first time, we recommend choosing a day when 'Orochi' is performed. You can enjoy a powerful stage."
     ]
   },
   "高千穂神楽": {
-    "checked": "2026-11-24",
-    "basis": "6f33bbf07d03",
+    "checked": "2026-11-26",
+    "basis": "31439de5cd22",
     "area": "Takachiho, Miyazaki",
     "tagline": "Night kagura of 33 pieces, danced over a whole night",
-    "intro": "This kagura is handed down in the town of Takachiho, Miyazaki Prefecture. At the kagura hall of Takachiho Shrine, four representative pieces out of the 33 are performed every night in about one hour. Every year from around November to February, all-night 'yokagura' (night kagura) is performed as an offering in about 20 communities in the town.",
+    "naming": "'Takachiho Kagura' is a name for the kagura handed down in the town of Takachiho, Miyazaki Prefecture, and is used by the town and its tourism association. On the Agency for Cultural Affairs' Cultural Heritage Online, it is listed under the name 'Takachiho no Yokagura' (the night kagura of Takachiho).",
+    "intro": "This kagura is handed down in the town of Takachiho, Miyazaki Prefecture. At the kagura hall of Takachiho Shrine, four representative pieces out of the 33 are shown to the public every night for one hour from 20:00 (no performances on 31 December, 1 January, or 22 and 23 November). Every year from around November to February, all-night 'yokagura' (night kagura) is performed as an offering in about 20 communities in the town.",
     "history": [
-      "Takachiho Kagura is said to have its origin in the myth of Ame-no-Uzume-no-Mikoto dancing in front of the Heavenly Rock Cave. In written records, the phrase 'gojinraku for seven days and seven nights' in a document from 1189 is regarded as the first appearance of a word for kagura. The word 'yokagura' appears in a document from 1754.",
-      "It is thought that until around the end of the Edo period, Shinto priests and shrine attendants performed it as an offering in shrine buildings and kagura halls.",
+      "Takachiho Kagura is said to have its origin in the myth of Ame-no-Uzume-no-Mikoto dancing in front of the Heavenly Rock Cave. According to the Takachiho Town Tourism Association, it is said to have taken shape between the late Heian period and the Kamakura period.",
+      "According to the Takachiho Town Tourism Association, it is thought that until around the end of the Edo period it was handed down and performed as an offering mainly by the Shinto priests of Takachiho Shrine. After that it was arranged into 33 pieces and came to be passed on in each community.",
       "In 1978 (Showa 53), it was designated an Important Intangible Folk Cultural Property of Japan."
     ],
     "features": [
       "Every year from mid-November to early February, yokagura is held in about 20 communities in the town.",
-      "The venue is a 'kagura lodge' (kagura-yado), a private house in the community. Today, more and more communities use a community hall instead.",
-      "In principle there are 33 pieces. Their content differs from community to community, and they can be divided into five lineages.",
-      "On the afternoon of the first day, kagura is performed as an offering at the shrine of the local guardian god. Then the dancers enter the kagura lodge dancing, together with a portable shrine carrying the god's sacred object. This is called 'maikomi' (dancing in). After dancing through the night, the kagura ends with the sending-off of the gods the next morning."
+      "The venue is a private house or community hall called a 'kagura lodge' (kagura-yado), and it changes every year.",
+      "There are 33 pieces. The order of the dances and their titles differ from community to community.",
+      "In the early afternoon of the annual festival day, a rite to welcome the gods is held at the shrine of the local guardian god. Then a procession with a portable shrine makes its way to the kagura lodge, dancing 'michi-kagura' (kagura on the road). This is called 'maikomi' (dancing in). The dancing goes on through the night and ends in the morning with the dance that sends off the gods."
     ],
     "programs": [
       {
         "name": "Goshintai",
-        "text": "A lively play in which Izanagi and Izanami dance the making of sake."
+        "text": "A dance in which the two gods Izanagi and Izanami make sake and happily drink it together. It is also called the 'Kuniumi no Mai' (dance of the birth of the land) and the 'Sakekoshi no Mai' (dance of straining sake)."
       },
       {
         "name": "Tajikarao",
-        "text": "A dance in which Tajikarao-no-Mikoto searches for and finds the rock door. In the next piece, 'Totori', he lifts the rock door and throws it away."
+        "text": "A dance in which Tajikarao-no-Mikoto searches for and finds the Heavenly Rock Cave where Amaterasu has hidden. In the next piece, 'Totori', he removes the rock door and brings Amaterasu out."
       },
       {
         "name": "Uzume",
-        "text": "A feminine dance representing Ame-no-Uzume-no-Mikoto. The dancer turns slowly with small steps."
+        "text": "The dance that Ame-no-Uzume-no-Mikoto danced in front of the rock door to lure Amaterasu out of the cave."
       },
       {
         "name": "Maibiraki",
-        "text": "The dancer dances holding, in both hands, the mirror that was inside the rock cave."
+        "text": "A dance of joy and celebration, performed holding a mirror in both hands, because the Heavenly Rock Cave has opened and Amaterasu has come out."
       }
     ],
     "viewing": [
       "Night kagura in the communities goes on all night. Bring plenty of warm clothing.",
-      "The performance at the kagura hall of Takachiho Shrine, held every night (about 1 hour, 4 pieces), is easy to watch even for first-timers.",
-      "Spectators sometimes liven things up with 'kagura-seri' (lively calls from the audience). Please follow good manners so that you do not trouble the local people."
+      "At the kagura hall of Takachiho Shrine, you can watch four representative pieces every night for one hour from 20:00 (viewing fee 1,000 yen per person; book online or sign up at the reception on the day).",
+      "Late at night there is 'kagura-seri', performed by young people who sing kagura-seri songs. When you watch, please follow the customs of the community."
     ]
   },
   "備中神楽": {
-    "checked": "2026-11-24",
-    "basis": "1192fdc75cb0",
+    "checked": "2026-11-26",
+    "basis": "a89bb0c11a7d",
     "area": "Okayama Prefecture",
     "tagline": "Myth plays performed in the 'kodono' (sacred hall)",
+    "naming": "'Bitchu Kagura' is the name of the kagura handed down in Okayama Prefecture, and it is also the name of the Important Intangible Folk Cultural Property of Japan.",
     "intro": "Bitchu Kagura, handed down in Okayama Prefecture, is designated an Important Intangible Folk Cultural Property of Japan. Old Japanese tales are staged as plays and danced powerfully. It is a Shinto ritual that prays for a rich harvest of the five grains.",
     "history": [
-      "In the Bitchu region of western Okayama Prefecture, 'Kojin Kagura', performed as an offering to the god Kojin, has been held since long ago. It centred on the dance of Sarutahiko and the sword dance, and only Shinto priests danced it.",
-      "In the Bunka and Bunsei eras of the Edo period (the early 1800s), [[西林国橋]], a Shinto priest and kokugaku (Japanese classical studies) scholar from Takahashi, is said to have added kagura of the Age of the Gods, based on myths, and completed its present form. It took in elements of Noh, Kyogen and Kabuki and became more entertaining as theatre. As a result, kagura performers (kagura-dayu) who were not Shinto priests also began to perform it as an offering.",
+      "In the Bitchu region of western Okayama Prefecture, 'Kojin Kagura', performed as an offering to the god Kojin, has been held since long ago. According to Okayama Prefecture, it was originally a kagura centred on Shinto rites, and only Shinto priests performed it.",
+      "According to Okayama Prefecture, in the late Edo period Nishibayashi Kokkyo (1764-1828), a Shinto priest and kokugaku (Japanese classical studies) scholar, added 'Opening the Heavenly Rock Cave', 'The Handing Over of the Land' and 'Slaying the Serpent', based on the myths of the Kojiki and the Nihon Shoki, and created a kagura of the Age of the Gods with strong elements of performing art. This is said to have become popular and spread widely. According to Takahashi City, this highly theatrical kagura won popularity and came to take the central place in Bitchu Kagura, and it developed as entertainment for farming villages.",
       "In 1979 (Showa 54), it was designated an Important Intangible Folk Cultural Property of Japan."
     ],
     "features": [
       "It combines the character of a Shinto ritual with the fun of theatre as a local folk performing art.",
-      "Matsuo Daimyojin plays the clown role called 'chari' (comic role). His banter with the drummer is unique and popular with audiences.",
-      "Today, kagura troupes in each district carry on the dances at local festivals and regular performances."
+      "Matsuo Myojin, a clown role, appears in 'Orochi Taiji' (slaying the serpent). He talks non-stop and ad-libs a lot.",
+      "Many groups still carry it on today, dancing it as an offering at shrine festivals and at events held for audiences."
     ],
     "programs": [
       {
         "name": "Sarutahiko no Mai (the dance of Sarutahiko)",
-        "text": "The dance of Sarutahiko, who guides the way at the descent of the Heavenly Grandson. It preserves an old form of Kojin Kagura."
+        "text": "One of the dances with roots in Kojin Kagura. The dancer wears the mask of Sarutahiko and dances bravely with a sword and a fan. It is regarded as a dance that clears the way by driving away evil spirits."
       },
       {
         "name": "Sword dance",
-        "text": "A brave dance performed with a sword in hand."
+        "text": "A dance that drives away evil spirits."
       },
       {
-        "name": "Matsuo Daimyojin (Chari, the clown)",
-        "text": "A scene in which the clown banters with the drummer and makes the audience laugh."
+        "name": "Matsuo Myojin",
+        "text": "The clown (a comic role) who appears in 'Orochi Taiji'."
       }
     ],
     "viewing": [
-      "Even if you do not know the story of the myths, the fun of the banter alone is enough to enjoy it.",
+      "Every April, the kagura event [[國橋まつり大神楽]] (Kokkyo Matsuri) is held in Nariwa, Takahashi. You can also see Bitchu Kagura at events held for audiences, such as the 'Bitchu Kagura Kurashiki Performance' (Kurashiki City Geibunkan), which usually takes place around May.",
       "Check the dates on the event information page before you go."
     ]
   },
@@ -212,25 +214,26 @@
     ]
   },
   "庄内神楽": {
-    "checked": "2026-11-24",
-    "basis": "a2599e6d7689",
+    "checked": "2026-11-26",
+    "basis": "2702eea7a8cf",
     "area": "Yufu, Oita",
     "tagline": "Kagura with a record of an offering performance in 1778",
+    "naming": "'Shonai Kagura' is a name for the kagura handed down in Shonai, Yufu City, Oita Prefecture, and is used by Yufu City and the local kagura troupes ('kagura-za').",
     "intro": "This kagura is handed down in Shonai, Yufu City, Oita Prefecture. It is danced bravely and colourfully to lively drums and flutes at a fast tempo. From May to October there are regular performances at the kagura hall of Shonai General Sports Park, and the Shonai Kagura Festival is held in autumn.",
     "history": [
-      "There is a record that shrine families performed kagura as an offering in 1778 (An'ei 7). It is said to have taken its present form in the early Meiji era.",
-      "The Shonai-district lineage began in the early Meiji era, when Sato Kikutaro of [[高津]] was taught Inuyama Kagura and set up a kagura troupe ('kagura-za'). The Asono-district lineage has its origin in [[深山流]] kagura of Asaji town.",
-      "In 2007 (Heisei 19), it was designated an Intangible Folk Cultural Property of Yufu City, and in 2008 it was also recognised as an 'Oita Heritage'."
+      "There is a record that shrine families performed kagura as an offering in 1778 (An'ei 7). 'Oita Heritage' (Oita Godo Shimbun) says that it began between the end of the Edo period and the early Meiji era, when farmers offered it at shrines to pray for a rich harvest of the five grains and to give thanks for good crops.",
+      "According to a collection of materials compiled by Yufu City, the Shonai-district lineage is said to go back to around 1879 (Meiji 12), when Sato Kikutaro of [[高津]] in Shonai was taught Inuyama Kagura of [[上津八幡]] in Ono, Bungo-Ono City. The Asono-district lineage has its origin in [[深山流]] kagura of Asaji town.",
+      "In 2007 (Heisei 19), it was designated an Intangible Folk Cultural Property of Yufu City, and it has also been chosen for the Oita Godo Shimbun's 'Oita Heritage' (120 items)."
     ],
     "features": [
-      "The instruments are a large drum, a small drum, a transverse flute and small cymbals ('dobyoshi'). It is danced bravely and colourfully to lively music.",
-      "Thirteen groups are active: 12 kagura troupes plus a volunteers' group.",
+      "It is danced bravely and colourfully to the lively music of drums and flutes.",
+      "The Shonai Kagura website introduces 12 kagura troupes and the Shonai Kagura Yushikai, a volunteers' group of young dancers.",
       "In 'Orochi Taiji' by the Onoya Kagura-za, four serpents appear, the largest number in Shonai Kagura."
     ],
     "programs": [
       {
         "name": "Goho Reishi (greeting the five directions)",
-        "text": "The first dance, which welcomes the gods of the five directions and purifies the place."
+        "text": "A dance that purifies the five directions (east, south, centre, west and north) before the kagura is offered."
       },
       {
         "name": "Orochi Taiji (slaying the serpent)",
@@ -238,23 +241,24 @@
       },
       {
         "name": "Tobiraki (opening the rock door)",
-        "text": "A play based on the myth of opening the Heavenly Rock Cave."
+        "text": "A dance based on 'Ama-no-Iwato' (the Heavenly Rock Cave) in the Kojiki and 'Iwato' in the Nihon Shoki."
       }
     ],
     "viewing": [
-      "From May to October, on the third Saturday of the month, the kagura troupes take turns giving regular performances at the kagura hall of Shonai General Sports Park.",
+      "From May to October, on the third Saturday of the month (the second Saturday in August only), from 6 pm, the kagura troupes take turns giving regular performances at the kagura hall of Shonai General Sports Park.",
       "At the 'Shonai Kagura Festival' in autumn, you can see the dances of several kagura troupes."
     ]
   },
   "御嶽神楽": {
-    "checked": "2026-11-24",
-    "basis": "50ce76537457",
+    "checked": "2026-11-26",
+    "basis": "bd1882f75dbd",
     "area": "Southern Oita",
     "tagline": "Brave, powerful dances with vigorous movements",
+    "naming": "'Ontake Kagura' is the name of the kagura handed down at Ontake Shrine in Kiyokawa, Bungo-Ono City, Oita Prefecture, and it is also the name of the Important Intangible Folk Cultural Property of Japan.",
     "intro": "This kagura is handed down in southern Oita Prefecture and is an Important Intangible Folk Cultural Property of Japan (designated in 2007). It preserves 33 plays based on myths and is known for brave dances with vigorous movements. The first play, [[五方礼始]], purifies the place, and the last one is always [[大神]], which celebrates peace throughout the land. There is also a scene in which the dancers and the audience pull against each other on a branch of sakaki (a sacred evergreen tree).",
     "history": [
-      "This kagura is handed down in Kiyokawa, Bungo-ono City, Oita Prefecture, and is said to be the origin of Ontake-ryu kagura. According to tradition, it began in 1449 (Hotoku 1), when kagura was performed as an offering to celebrate the founding of Ontake Shrine.",
-      "In the mid-Edo period, [[加藤長古]] is said to have taken in the forms of Izumo Kagura and completed its present form. After the Second World War, there was a time when depopulation put its survival at risk, but the whole village worked to preserve it, and it became active again.",
+      "This kagura is handed down in Kiyokawa, Bungo-Ono City, Oita Prefecture. Bungo-Ono City explains that it is thought to have been the original form of 'Ono-kei Iwato Kagura' (Iwato kagura of the Ono line). According to the city, the kagura is said to have begun in 1449 (Hotoku 1), when the deity of Ontake Shrine was invited to the area ('kanjo').",
+      "According to Bungo-Ono City, in the late Edo period Kato Nagafuru, the chief priest of Ontake Shrine, is said to have completed the kagura in almost its present form. After the Second World War, there was a time when depopulation put its survival at risk, but the whole village worked to preserve it, and it became active again.",
       "In 2007, it was designated an Important Intangible Folk Cultural Property of Japan."
     ],
     "features": [
@@ -265,7 +269,7 @@
     "programs": [
       {
         "name": "Goho Reishi (greeting the five directions)",
-        "text": "The first dance, in which the gods of the five directions purify the place."
+        "text": "At the autumn festival of Ontake Shrine, this is always danced first. It is a dance by five dancers that is meant to purify the place."
       },
       {
         "name": "Ame-no-Nuboko (the heavenly spear)",
@@ -273,7 +277,7 @@
       },
       {
         "name": "Tenson Korin (the descent of the Heavenly Grandson)",
-        "text": "It shows the scene in which Ninigi-no-Mikoto descends to earth."
+        "text": "A play that shows the gods coming down to earth."
       },
       {
         "name": "Iwato-biraki (opening the Rock Cave)",
@@ -281,14 +285,15 @@
       }
     ],
     "viewing": [
-      "Every year on the first Sunday of April, the 'Ontake-ryu Kagura Taikai' (kagura gathering) is held at the park [[能場公園]] in Kiyokawa. You can see Ontake-ryu kagura from inside and outside the prefecture."
+      "At Kagura no Sato [[能場公園]] (a park) in Kiyokawa, the 'Ontake-ryu Kagura Taikai' (kagura gathering) is held in autumn (in 2026, the 39th, on 25 October). Besides Ontake Kagura, you can see the dances of kagura troupes from inside and outside the prefecture."
     ]
   },
   "銀鏡神楽": {
-    "checked": "2026-11-24",
-    "basis": "1d96c69cc9e9",
+    "checked": "2026-11-26",
+    "basis": "dcdab240a70b",
     "area": "Saito, Miyazaki",
     "tagline": "Danced through the night at the grand festival of Shiromi Shrine",
+    "naming": "'Shiromi Kagura' is a name for the kagura handed down at Shiromi Shrine in Saito City, Miyazaki Prefecture, and is used by the Saito City Tourism Association.",
     "intro": "This kagura is handed down at Shiromi Shrine in Saito City, Miyazaki Prefecture. Every year the grand festival runs from 12 to 16 December. During it, from the night of the 14th into the next day, the kagura pieces from 'Shiki 1' to 'Shiki 33' are performed all night as an offering. The kagura ends with 'Shishitogiri' and 'Kami-okuri' (sending off the gods), danced on the afternoon of the 15th.",
     "history": [
       "This kagura is performed as an offering every December at the grand festival of Shiromi Shrine in Saito City, Miyazaki Prefecture. The official name used by the Agency for Cultural Affairs is 'Mera no Kagura', which groups together the kagura of Saito City, Kijo town and Nishimera village. It was designated an Important Intangible Folk Cultural Property of Japan in 1977 (Showa 52) under the name 'Mera Kagura', and the name was changed to the present one in 2023.",
@@ -315,10 +320,11 @@
     ]
   },
   "土佐の神楽": {
-    "checked": "2026-11-24",
-    "basis": "d87d5cdbea88",
+    "checked": "2026-11-26",
+    "basis": "def3b76678b7",
     "area": "Mountain areas of Kochi",
     "tagline": "Kagura carried on at shrines' autumn festivals",
+    "naming": "'Tosa Kagura' ('Tosa no Kagura') is a collective name for the kagura handed down in the mountain areas of Kochi Prefecture, and it is the name listed in the Agency for Cultural Affairs' national database of designated cultural properties.",
     "intro": "This kagura is performed as an offering at the autumn festivals of shrines in the mountain areas of Kochi Prefecture. Ikegawa Kagura, Nanokawa Iwato Kagura and Nagafuchi Kagura (Iwahara and Nagafuchi Kagura) were designated Important Intangible Folk Cultural Properties of Japan in 1980. Tsunoyama Koshiki Kagura is also designated as part of 'Tosa no Kagura' (the kagura of Tosa).",
     "history": [
       "'Tosa no Kagura' is a collective name for the kagura handed down along the Shikoku Mountains in Kochi Prefecture. It consists of dances performed holding bells or sakaki branches, and theatrical dances based on the myths of the Kojiki and the Nihon Shoki. By lineage, it is classed as Izumo Kagura.",
@@ -350,25 +356,26 @@
     ]
   },
   "伊勢大神楽": {
-    "checked": "2026-11-24",
-    "basis": "4a51256dc742",
+    "checked": "2026-11-26",
+    "basis": "6122c6deb045",
     "area": "Kuwana, Mie Prefecture",
     "tagline": "Lion dances and 'hokagei' acrobatics",
+    "naming": "'Ise Daikagura' is a name for the lion dances and 'hokagei' acrobatics of performers who are based in Kuwana, Mie Prefecture, and travel from place to place. It is used by Kuwana City and the Ise Daikagura Kosha (association). As a national cultural property, its name is written with a different character: [[伊勢太神楽]].",
     "intro": "A traditional performing art handed down in Tayu, Kuwana, Mie Prefecture. Since the Edo period, its performers are said to have travelled from place to place, handing out charms from Ise Grand Shrine. It has two parts: lion dances that drive away misfortune, and 'hokagei' (acrobatic feats), which preserves the street performance of the early modern era. In 1981 it was designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
-      "Ise Daikagura is the art of kagura performers who travel from place to place performing lion dances. There are several theories about its origin, but it is said to have a history of 450-600 years. Its home base is Masuda Shrine in Tayu, Kuwana, Mie Prefecture.",
-      "In the Edo period, the shogunate and Ise Grand Shrine recognised the performers as having the status of Shinto priests. They travelled the provinces and also had ties with feudal lords in many regions. At its peak there were 12 head families (shrine families), but only 5 head families are active today.",
+      "Ise Daikagura is the art of kagura performers who travel from place to place performing lion dances. According to the Mie Prefectural Board of Education, its origin is unclear, but it is thought that the kagura of Tachisaka Shrine, a 'shikinaisha' (a shrine listed in the Engishiki), became independent, developed and turned into a profession. The Ise Daikagura Kosha (association) explains that for more than 450 years the performers have purified the kitchen hearths of homes and visited Ise Grand Shrine on behalf of others. Its home base is Masuda Shrine in Tayu, Kuwana, Mie Prefecture.",
+      "According to the Ise Daikagura Kosha, until the Edo period the daikagura performers had the status of Shinto priests (shrine attendants of Masuda Shrine), and they travelled the provinces with strong ties to feudal lords in many regions. A Shinto licence from the Edo shogunate and a written order from the 'saishu' (chief ritualist) of Ise Grand Shrine have also been handed down. At its peak there were 12 head families (shrine families), but only 5 head families are active today.",
       "It became a cultural property of Mie Prefecture in 1954. In 1981 (Showa 56) it was designated an Important Intangible Folk Cultural Property of Japan."
     ],
     "features": [
       "The performers visit homes and dance the lion dance as a prayer, for example to purify the kitchen hearth. In the past they visited Ise Grand Shrine on behalf of others, and they still hand out Ise Daikagura charms today.",
-      "In certain villages, they perform the highly entertaining 'somai' (full performance) at shrines and other places.",
-      "Plays with 'kyoku' in their names are hokagei (acrobatics). Between them comes 'manzai', a comic performance by a clown and an acrobat."
+      "On their travels too, they perform the 'somai' (full performance) as an offering at shrines and other places.",
+      "Plays with 'kyoku' in their names are hokagei (acrobatics). Besides hokagei, the performers also hand down 'manzai' (a comic performance)."
     ],
     "programs": [
       {
         "name": "Suzu no Mai, Shiho no Mai, Tobi no Mai (bell, four-directions and leaping dances)",
-        "text": "Lion dance plays. The dancer performs holding the lion head."
+        "text": "Lion dance plays."
       },
       {
         "name": "Ayatori no Kyoku, Mizu no Kyoku, Sara no Kyoku (acrobatic feats)",
@@ -376,19 +383,20 @@
       },
       {
         "name": "Kasa no Kyoku, Temari no Kyoku (umbrella and ball feats)",
-        "text": "Superb acrobatic feats using props."
+        "text": "Hokagei (acrobatics) plays."
       }
     ],
     "viewing": [
       "At Masuda Shrine, the home base, all the head families gather every year on 24 December to perform the somai as an offering.",
-      "You can also see it at local events, such as the festival at Daifukudenji Temple on 2 April and the somai at Kuwana Sosha Shrine."
+      "According to Kuwana City, it is also performed as an offering at Daifukudenji Temple (2 April) and Kodatsu Shrine (13 October)."
     ]
   },
   "花祭": {
-    "checked": "2026-11-24",
-    "basis": "c76526bd1eee",
+    "checked": "2026-11-26",
+    "basis": "af19a89a525e",
     "area": "Toei and Toyone, Aichi Prefecture",
     "tagline": "A festival of demons and hot-water rites, danced through the night",
+    "naming": "'Hanamatsuri' is the name of a festival held in Okumikawa (Toei, Toyone and other areas) in Aichi Prefecture. It is also listed under this name in the Agency for Cultural Affairs' national database of designated cultural properties.",
     "intro": "A traditional performing art of Okumikawa (Toei, Toyone and other areas) in Aichi Prefecture, said to have continued for over 700 years. It is designated an Important Intangible Folk Cultural Property of Japan. From November to January, each village holds it through the night, with dances of gods and demons and 'yudate' (hot-water rites).",
     "history": [
       "Hana Matsuri is a winter festival of yudate rites and dances, held in the villages of Okumikawa. It is said to be a traditional performing art that has continued for over 700 years, and it is designated an Important Intangible Folk Cultural Property of Japan.",
@@ -420,24 +428,25 @@
     ]
   },
   "保呂羽山の霜月神楽": {
-    "checked": "2026-11-24",
-    "basis": "e31b25e6b6c6",
+    "checked": "2026-11-26",
+    "basis": "6da79c2d473d",
     "area": "Yokote, Akita Prefecture",
     "tagline": "A hot-water kagura of 33 rites, performed through the night",
+    "naming": "'Horowasan Shimotsuki Kagura' is the name of the kagura held in November at Haushiwake Shrine in Yokote, Akita Prefecture, and it is also the name of the national cultural property.",
     "intro": "A nationally designated 'yudate kagura' (hot-water kagura). It is performed as an offering through the night from 7 to 8 November every year at the 'satomiya' (village shrine) of Haushiwake Shrine in Omori, Yokote, Akita Prefecture. Shrine maidens dance, and the climax comes when hot water from the cauldron before the altar is sprinkled over worshippers with bamboo grass.",
     "history": [
-      "It is regarded as a kagura of the Ise lineage that keeps the form of 'yoriai kagura', in which Shinto priests from nearby villages gather to perform. It is also said to pass down the original form of the shrine maiden to the present day.",
+      "Shinto priests from nearby villages gather in the shrine hall of the presiding priest and perform this kagura through the night (Yokote City). According to the 'Akita Folk Performing Arts Archives' of Akita International University, it has also been called an Ise-style kagura with a hot-water rite, but elements of Shugendo (mountain asceticism) beliefs can also be seen in it. It is also said to pass down the original form of the shrine maiden to the present day.",
       "It is designated an Important Intangible Folk Cultural Property of Japan."
     ],
     "features": [
       "Thirty-three rites are performed through the night.",
-      "Shrine maidens dance the 'Tendo-mai' and the 'Horowasan-mai'. Partway through there is a scene in which an oracle (the words of the gods) is delivered. In the middle of the night, the 'Yama-no-Kami-mai' and the [[神入舞]] are danced.",
+      "'Miko' (shrine maidens) dance the 'Tendo-mai' and the 'Horowasan-mai'. In the Horowasan-mai, there is a scene partway through the dance in which an oracle (the words of the gods) is delivered. In the middle of the night, the 'Yama-no-Kami-mai' and the [[神入舞]] are danced.",
       "The climax is when hot water from the cauldron before the altar is sprinkled over worshippers with bamboo grass."
     ],
     "programs": [
       {
         "name": "Tendo-mai, Horowasan-mai (the shrine maidens' dances)",
-        "text": "The basic dances, performed by shrine maidens."
+        "text": "Dances performed by the miko (shrine maidens). In the Horowasan-mai, there is a scene partway through the dance in which an oracle is delivered."
       },
       {
         "name": "Yama-no-Kami-mai and the god-entry dance",
@@ -446,14 +455,15 @@
     ],
     "viewing": [
       "Watching is free, but it is usual to give an offering of money ('hatsuhoryo') wrapped in paper.",
-      "There is parking for 30 cars. It is about 35 minutes by car from JR Omagari Station. Nights get very cold, so come prepared with warm clothing."
+      "There is parking space for 30 cars. There is no public transport. It is about 30 minutes by car from JR Omagari Station, and about 50 minutes by car from JR Yokote Station. Nights get very cold, so come prepared with warm clothing."
     ]
   },
   "春日若宮おん祭": {
-    "checked": "2026-11-24",
-    "basis": "2030373b5d6d",
+    "checked": "2026-11-26",
+    "basis": "701567a738ad",
     "area": "Nara City, Nara Prefecture",
     "tagline": "Performing arts offered into the night at Kasuga Taisha Shrine in December",
+    "naming": "'Kasuga Wakamiya On-matsuri' is the name of the festival of Wakamiya, a subsidiary shrine of Kasuga Taisha Shrine in Nara City. It is not the name of a kind of kagura; kagura and other performing arts are offered during the festival.",
     "intro": "The festival of Wakamiya, a subsidiary shrine of Kasuga Taisha Shrine in Nara City, held every December. In the 'Owatari-shiki' on 17 December, groups of performers walk in procession to worship. At the 'Otabisho-sai', kagura by shrine maidens, 'dengaku' (field music and dance), 'bugaku' (court dance) and more are performed as offerings into the night.",
     "history": [
       "The Owatari-shiki is a Shinto rite in which performing groups and others taking part in the festival form a procession and go to the 'otabisho' (the temporary shrine) of the Wakamiya deity."
@@ -489,15 +499,16 @@
       }
     ],
     "viewing": [
-      "There are 'sajiki' (reserved seats) where you can watch the Owatari-shiki sitting down. Bookings are taken from 20 October to 14 December through 'NARA Time', Nara City's booking site for sightseeing experiences, or by phone.",
-      "If the Owatari-shiki is cancelled because of the weather, some of the reserved seats are cancelled too. There are no refunds."
+      "There are 'sajiki' (reserved seats) where you can watch the Owatari-shiki sitting down. For 2026, bookings are taken from 20 October to 14 December through 'NARA Time', the Nara City Tourism Association's booking site for sightseeing experiences.",
+      "If the Owatari-shiki is cancelled because of the weather, the reserved seats at Noborioji Enchi (park) and for the Matsu-no-shita-shiki are not set up (the seats in front of the Otabisho are set up if there is only light rain). A cancellation is announced at around 9 am on the day, on the Nara City Tourism Association's official website and elsewhere. You pay at the reception on the day."
     ]
   },
   "遠山の霜月祭": {
-    "checked": "2026-11-24",
-    "basis": "07b9eb9c9807",
+    "checked": "2026-11-26",
+    "basis": "74e9947f844f",
     "area": "Tohyama-go, Iida, Nagano Prefecture",
     "tagline": "A kagura of masks and hot-water rites, with boiling water splashed about",
+    "naming": "'Tohyama Shimotsuki Festival' ('Tohyama no Shimotsuki Matsuri') is the name of the festival held in December in Tohyama-go, Iida, Nagano Prefecture. It is also listed under this name in the Agency for Cultural Affairs' national database of designated cultural properties.",
     "intro": "A 'yudate kagura' (hot-water kagura) held every December in Tohyama-go (Kamimura and Minami-Shinano) in Iida, Nagano Prefecture. Each shrine holds it on a different day. Water is boiled in a cauldron to welcome the gods, and masked gods dance. It goes on through the night, and it is designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "The leading theory on its origin is that it was a ritual of the estates, brought in during the Kamakura period when the Toyama valley was an estate of Tsurugaoka Hachimangu Shrine. The procession of the masks is thought to have been added in the Edo period.",
@@ -525,10 +536,11 @@
     ]
   },
   "秩父神楽": {
-    "checked": "2026-11-24",
-    "basis": "1489075dadb8",
+    "checked": "2026-11-26",
+    "basis": "8b02b5c95130",
     "area": "Chichibu, Saitama Prefecture",
     "tagline": "The kagura of Chichibu Shrine, based on classical myths",
+    "naming": "'Chichibu Kagura' is a name for the kagura handed down at Chichibu Shrine in Chichibu, Saitama Prefecture. Chichibu Shrine itself writes 'Chichibu Jinja Kagura' (Chichibu Shrine kagura).",
     "intro": "A kagura handed down at Chichibu Shrine in Chichibu, Saitama Prefecture. It is also called 'Jindai Kagura' (kagura of the age of the gods). Its special feature is that its stories come from classical myths, such as the myths of Takamagahara (the plain of heaven) and of Izumo. It is designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "Until the early Meiji era, it was 'shake kagura', handed down by the families of the priests who served Chichibu Shrine. There were originally 75 pieces, but today they have been brought together into 35 plays. It nearly died out several times along the way, but it has been passed down to the present."
@@ -557,10 +569,11 @@
     ]
   },
   "鷲宮催馬楽神楽": {
-    "checked": "2026-11-24",
-    "basis": "351bdccc8afd",
+    "checked": "2026-11-26",
+    "basis": "eefec1b2dceb",
     "area": "Kuki, Saitama Prefecture",
     "tagline": "Kagura regarded as the source of Edo kagura in the Kanto region",
+    "naming": "'Washinomiya Saibara Kagura' is the name of the kagura handed down at Washinomiya Shrine in Kuki, Saitama Prefecture, and it is used in the cultural property guides of Kuki City and Saitama Prefecture.",
     "intro": "A kagura handed down at Washinomiya Shrine in Kuki, Saitama Prefecture. It is regarded as the source of Edo kagura in the Kanto region. Its special feature is that its kagura songs take in 'saibara', songs of gagaku (court music). It is designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "It was designated an Important Intangible Folk Cultural Property of Japan on 4 May 1976 (Showa 51). The kagura hall of Washinomiya Shrine, the stage where it is performed, was built in 1821 (Bunsei 4)."
@@ -602,10 +615,11 @@
     ]
   },
   "相模里神楽": {
-    "checked": "2026-11-24",
-    "basis": "91d93162108b",
+    "checked": "2026-11-26",
+    "basis": "c9cb30498e66",
     "area": "Atsugi and other areas, Kanagawa Prefecture",
     "tagline": "A silent kagura that acts out myths in masks",
+    "naming": "'Sagami Sato Kagura' is a name for the 'sato kagura' (village kagura) handed down in Kanagawa Prefecture. It is used in Atsugi City's cultural property guide and by local troupes.",
     "intro": "A 'sato kagura' (village kagura) handed down in Kanagawa Prefecture. It is a silent drama, performed in masks, based on myths from the 'Kojiki', the 'Nihon Shoki' and other sources. It is also called 'Jindai Kagura'. Besides offerings at shrines, it is also staged at community centres and halls.",
     "history": [
       "The origins of Jindai Kagura are not clear. It is said that in the mid-Edo period the Mibu Kyogen of Kyoto was performed in Edo, developed there, and then spread to the Sagami region.",
@@ -643,10 +657,11 @@
     ]
   },
   "鎌倉神楽": {
-    "checked": "2026-11-24",
-    "basis": "b11dc5f79b7a",
+    "checked": "2026-11-26",
+    "basis": "f444a8dde45b",
     "area": "Kamakura, Fujisawa and other areas, Kanagawa Prefecture",
     "tagline": "A hot-water kagura danced by Shinto priests",
+    "naming": "'Kamakura Kagura' is a name for the hot-water kagura handed down at shrines in Kamakura, Fujisawa and other cities. Some shrines call it 'Yudate Kagura' or 'Yudate (Yubana) Kagura'.",
     "intro": "A kagura with 'yudate' (hot-water rites), handed down at shrines in Kamakura and Fujisawa, Kanagawa Prefecture. It is also called 'Yubana Kagura' and is performed as an offering by Shinto priests alone. They stir the hot water in a large cauldron, and sprinkle hot water from dipped bamboo grass over the people attending.",
     "history": [
       "Kamakura Kagura is a type of yudate kagura. It is said to have come about 800 years ago from Iwashimizu Hachimangu Shrine in Kyoto to Tsurugaoka Hachimangu Shrine in Kamakura. Kotai Jingu Shrine in Fujisawa describes it as a kagura passed down since the beginning of the Kamakura period by the 'kagura-o' (kagura men) of Tsurugaoka Hachimangu Shrine.",
@@ -690,10 +705,11 @@
     ]
   },
   "海南神社面神楽": {
-    "checked": "2026-11-24",
-    "basis": "da379aa0cc1c",
+    "checked": "2026-11-26",
+    "basis": "758cdd3c5dfd",
     "area": "Misaki, Miura, Kanagawa Prefecture",
     "tagline": "Kainan Shrine's kagura, danced in masks",
+    "naming": "'Kainan Shrine Mask Kagura' ('Kainan Jinja Men Kagura') is the name of the kagura handed down at Kainan Shrine in Misaki, Miura, Kanagawa Prefecture, and it is used in Miura City's cultural property guide.",
     "intro": "This kagura is handed down at Kainan Shrine in Misaki, Miura, Kanagawa Prefecture. It is also called 'Jindai Kagura' (kagura of the age of the gods) or 'Sato Kagura' (village kagura). In Misaki itself, it is called 'Men Kagura' (mask kagura) because it is danced in masks. It is performed as an offering in the kagura hall every November.",
     "history": [
       "The Men Kagura of Kainan Shrine was designated an Important Intangible Folk Cultural Property of Miura City on 21 January 1971 (Showa 46). Today it is carried on by the Kainan Shrine Men Kagura performers' association.",
@@ -735,10 +751,11 @@
     ]
   },
   "鶴岡八幡宮の御神楽": {
-    "checked": "2026-11-24",
-    "basis": "c68a498c7563",
+    "checked": "2026-11-26",
+    "basis": "d5231fbd906f",
     "area": "Kamakura, Kanagawa Prefecture",
     "tagline": "Mikagura performed with the restored 'Miyabito' melody",
+    "naming": "'Mikagura of Tsurugaoka Hachimangu' is the name this site uses for the mikagura performed at Tsurugaoka Hachimangu Shrine in Kamakura on 16 December, during the Gochinza Kinensai.",
     "intro": "This is the 'mikagura' (court-style kagura) performed every year on 16 December at Tsurugaoka Hachimangu Shrine in Kamakura, Kanagawa Prefecture, during the Gochinza Kinensai, the festival commemorating the enshrinement of the deity. The restored 'Miyabito' melody is performed as kagura handed down from around the time the shrine was founded, and the bugaku court dance 'Ninjo no Mai' is also offered.",
     "history": [
       "The Gochinza Kinensai commemorates 1191 (Kenkyu 2), the year Tsurugaoka Hachimangu Shrine was laid out in its present form. The date recorded in the chronicle 'Azuma Kagami', 21 November, has been converted to today's calendar, so the festival is held on 16 December."
@@ -763,10 +780,11 @@
     ]
   },
   "早池峰神楽": {
-    "checked": "2026-11-24",
-    "basis": "674fd1b069dd",
+    "checked": "2026-11-26",
+    "basis": "836092e2fc2c",
     "area": "Hanamaki, Iwate Prefecture",
     "tagline": "'Yamabushi' kagura handed down by two kagura troupes, Take and Otsugunai",
+    "naming": "'Hayachine Kagura' is the collective name for Take Kagura and Otsugunai Kagura in Ohasama, Hanamaki, Iwate Prefecture.",
     "intro": "Hayachine Kagura is the collective name for Take Kagura and Otsugunai Kagura in Ohasama, Hanamaki, Iwate Prefecture. It is said to have been handed down by the 'yamabushi' (mountain ascetics) of Mount Hayachine. The dancing always ends with the 'Gongen-mai' (dance of the sacred lion head). It is an Important Intangible Folk Cultural Property of Japan and is also inscribed as UNESCO Intangible Cultural Heritage.",
     "history": [
       "No written records survive. However, Hayachine Shrine in Take holds a lion head inscribed with the year 1595 (Bunroku 4), and Otsugunai holds a document dated 1488 (Chokyo 2) on the handing down of the kagura. From these, the kagura is thought to go back to the Nanbokucho period (the period of the Northern and Southern Courts), and it is said to have a history of more than 500 years. Faith in Mount Hayachine is old, and it is also said that the kagura grew out of prayer dances performed by yamabushi of the Shugendo tradition.",
@@ -811,10 +829,11 @@
     ]
   },
   "南部神楽": {
-    "checked": "2026-11-24",
-    "basis": "c3e473880aed",
+    "checked": "2026-11-26",
+    "basis": "1633c1ea444c",
     "area": "Southern Iwate and northern Miyagi",
     "tagline": "Theatrical kagura in which the dancers speak lines",
+    "naming": "'Nanbu Kagura' is a name for the kagura handed down from southern Iwate Prefecture to northern Miyagi Prefecture. It is used in exhibitions at the Iwate Prefectural Library and elsewhere.",
     "intro": "This kagura is found from southern Iwate Prefecture to northern Miyagi Prefecture (the northern part of the Sendai domain in the Edo period). It comes from the tradition of 'yamabushi' kagura (kagura of the mountain ascetics), but its special feature is its drama dances, in which the dancers proclaim their lines in loud voices. For this reason it is also called 'Serifu Kagura' (kagura with spoken lines). It was carried on by local people who loved kagura.",
     "history": [
       "It is said to have been created when local farmers and others added comic, kyogen-like drama dances to the older 'hoin' kagura and yamabushi kagura. They took these from 'oku-joruri' (a form of chanted storytelling), legends and other sources. In the Edo period, people other than religious figures were forbidden to perform kagura. Partly for this reason, it is thought to have grown out of kagura lovers enjoying it among friends. At the end of the Edo period the restrictions were relaxed. When Shugendo was abolished at the start of the Meiji era, the yamabushi (hoin) lost their power, and farmers freely formed kagura groups and created their own kagura.",
@@ -851,10 +870,11 @@
     ]
   },
   "岩手の神楽": {
-    "checked": "2026-11-24",
-    "basis": "9d2b1c8c9f6e",
+    "checked": "2026-11-26",
+    "basis": "c95b5b51a3ce",
     "area": "Iwate Prefecture",
     "tagline": "Many kinds of kagura by area, from yamabushi kagura to Nanbu Kagura",
+    "naming": "'Kagura of Iwate' is the name this site uses for the kagura of Iwate Prefecture taken together. It includes kagura with different origins, such as yamabushi kagura and Nanbu Kagura.",
     "intro": "These are the kagura rooted in many parts of Iwate Prefecture. Each area hands down kagura with its own features: 'yamabushi' kagura brought by the yamabushi (mountain ascetics), 'miyaburi' kagura performed by Shinto priests, and Nanbu Kagura, in which the dancers speak lines. Among the prefecture's folk performing arts, kagura is the third most common, after 'shishi-odori' (deer dances) and 'kenbai' (sword dances).",
     "history": [
       "Iwate has sacred mountains such as Mount Hayachine, Mount Iwate and Mount Himekami, and many yamabushi were active there. The prefecture's yamabushi kagura is said to have been brought around the medieval period by yamabushi who travelled from place to place for their training. In the Edo period, Nanbu Toshitaka, the 10th lord of the Morioka domain and a devout believer in Shinto, named the kagura performed by families of Shinto priests 'miyaburi kagura'. He also sent Shinto priests to Edo to learn the kagura of Edo.",
@@ -896,10 +916,11 @@
     ]
   },
   "青森の神楽": {
-    "checked": "2026-11-24",
-    "basis": "2e647e011372",
+    "checked": "2026-11-26",
+    "basis": "255be51941da",
     "area": "Aomori Prefecture",
     "tagline": "Yamabushi kagura with the gongen-mai, the nomai of Shimokita, and Tsugaru Kagura danced by Shinto priests",
+    "naming": "'Kagura of Aomori' is the name this site uses for the kagura of Aomori Prefecture taken together. It includes kagura with different origins, such as yamabushi kagura, the nomai of Shimokita and Tsugaru Kagura.",
     "intro": "Aomori Prefecture has kagura with different origins depending on the area. A key feature is that the traditions are divided. In the Nanbu area in the south of the prefecture, there is 'yamabushi' kagura (kagura of the mountain ascetics) in which a lion head is worshipped as 'Gongen-sama'. On the Shimokita Peninsula, there is 'nomai' (literally 'noh dance'), brought by yamabushi of the Shugendo tradition. In the Tsugaru area, there is 'Tsugaru Kagura', danced only by Shinto priests.",
     "history": [
       "The Nanbu area has kagura said to have been brought by yamabushi of the Shugendo tradition. Nanbu Kirita Kagura in Towada is said to have been handed down by yamabushi who served Kirita Hachimangu Shrine, a shrine linked to the Nanbu family. It was once called the core of yamabushi kagura in the Nanbu area of the prefecture. It declined for a time, but is said to have been revived in the late Edo period by learning kagura from a 'maidayu' (dance master) of Kozuya in Iwate. Okamisawa Kagura in Misawa is also thought to be yamabushi-type kagura brought by Shugendo practitioners, judging from contents such as its gongen-mai.",
@@ -939,14 +960,15 @@
     ]
   },
   "出雲神楽": {
-    "checked": "2026-11-24",
-    "basis": "c1ac5fad4788",
+    "checked": "2026-11-26",
+    "basis": "25444897e33c",
     "area": "Eastern Shimane",
     "tagline": "The kagura of the Izumo region, danced in three parts: Shichiza, Shikisanba and Shinno",
+    "naming": "'Izumo Kagura' is a name for the kagura handed down in the Izumo region of eastern Shimane Prefecture. It is used in Unnan City's kagura guide and elsewhere.",
     "intro": "This kagura was born in the Izumo region, the setting of many myths, and has been danced mainly in eastern Shimane Prefecture. It is made up of three kinds of dance: the unmasked 'Shichiza' (seven ritual dances), the celebratory 'Shikisanba', and the masked mythological dramas called 'Shinno' (god noh). In Unnan there are performances all year round.",
     "history": [
       "This form of Izumo kagura is thought to have been shaped between the Sengoku (Warring States) period and the early Edo period, mainly by the Shinto priests of Sada Shrine (Kashima, Matsue), who also took in elements of noh and kyogen. It then spread throughout the Izumo region. 'Sada Shinno', handed down at Sada Shrine and nearby shrines, is said to have taken its present form in the Keicho era (late 16th to early 17th century): the priests learned the movements of noh in Kyoto and modelled the kagura on them. It is designated an Important Intangible Folk Cultural Property of Japan.",
-      "Unnan now has 16 kagura troupes. Tsukinoya Kagura in the Tsukiya area of Kisuki is said to have learned and handed down the kagura of Izumo District in the mid-Edo period. It was designated an Intangible Cultural Property of Shimane Prefecture in 1962 (Showa 37). In addition, six Izumo kagura troupes designated as Intangible Folk Cultural Properties by Shimane Prefecture or Unnan City are component cultural properties of the Japan Heritage 'Izumo-no-kuni Tatara Fudoki - The Story Born from a Thousand Years of Ironmaking'."
+      "Unnan now has 16 kagura troupes. According to the Agency for Cultural Affairs' Cultural Heritage Online, Tsukinoya Kagura in the Tsukiya area of Kisuki is said to be the Shinto priests' kagura of the former Izumo District, which was passed on to the area around 1801. It was designated by Shimane Prefecture in 1962 (Showa 37) and is now a prefecturally designated Intangible Folk Cultural Property. In addition, six Izumo kagura troupes designated as Intangible Folk Cultural Properties by Shimane Prefecture or Unnan City are component cultural properties of the Japan Heritage 'Izumo-no-kuni Tatara Fudoki - The Story Born from a Thousand Years of Ironmaking'."
     ],
     "features": [
       "Some Shinno plays are based on myths recorded in the 'Kojiki' and the 'Nihon Shoki', and many include stories linked to the basin of the Hii River, which flows through Unnan.",
@@ -961,11 +983,11 @@
       },
       {
         "name": "Shikisanba (celebratory ritual dances)",
-        "text": "Ceremonial dances for celebration. In Sada Shinno, 'Okina' and 'Sanbaso', taken from noh and kyogen, are danced."
+        "text": "Ceremonial dances for celebration. According to Sada Shrine, the Shikisanba of Sada Shinno is danced in turn by three performers: 'Okina', 'Senzai' and 'Sanbaso'."
       },
       {
         "name": "Shinno (god noh)",
-        "text": "Dramatic dances performed in masks, based on myths and legends. In Sada Shinno they have a dignified style modelled on noh, with a chorus. Eleven pieces are handed down, including 'Taisha' and 'Yaegaki'."
+        "text": "Dramatic dances performed in masks, based on myths and legends. In Sada Shinno they have a dignified style modelled on noh, with a chorus. According to Sada Shrine, there are twelve pieces, including 'Taisha' and 'Yaegaki'."
       }
     ],
     "viewing": [
@@ -974,14 +996,15 @@
     ]
   },
   "飯南神楽": {
-    "checked": "2026-11-24",
-    "basis": "b5ca4112cc0e",
+    "checked": "2026-11-26",
+    "basis": "73b0dd2b13e0",
     "area": "Iinan, Shimane Prefecture",
-    "tagline": "The kagura of the Iinan Kagura Troupe, which carries on Hiroshima kagura, rare in the Unnan area",
-    "intro": "This kagura is danced by the Iinan Kagura Troupe, based in the Tani district of Iinan, Shimane Prefecture. Unusually for the Unnan area, the troupe carries on Hiroshima kagura. It describes its own style as 'Asuna-kei hacchoshi' (the Asuna line of 'hacchoshi', a fast eight-beat rhythm). The troupe says its kagura tells stories, and its staging and costumes are showy and easy to follow, so even first-time viewers can enjoy it.",
+    "tagline": "The kagura that the Iinan Kagura Troupe introduces as 'Asuna-kei hacchoshi'",
+    "naming": "'Iinan Kagura' is the name this site uses for the kagura of the Iinan Kagura Troupe in Iinan, Shimane Prefecture. It is not the name of a kind of kagura or of a region.",
+    "intro": "This kagura is danced by the Iinan Kagura Troupe, based in the Tani district of Iinan, Shimane Prefecture. The troupe says that, unusually for the Unnan area, it carries on Hiroshima kagura, and it introduces its kagura as 'Asuna-kei hacchoshi' (the Asuna line of 'hacchoshi', a fast eight-beat rhythm). The Shimane Prefecture Tourism Federation's page introduces it as 'the Iinan Kagura Troupe, which carries on Iwami Kagura'. The troupe says its kagura tells stories, and its staging and costumes are showy and easy to follow, so even first-time viewers can enjoy it.",
     "history": [
       "Iinan also has 'Okuiishi Shinshoku Kagura' (the Shinto priests' kagura of Okuiishi), a kagura of the Izumo line. It was designated by Shimane Prefecture in 1961 (Showa 36), and it is performed as an offering at Akana Hachimangu Shrine and other places.",
-      "The Iinan Kagura Troupe was formed by kagura lovers from inside and outside the town, centred on former members of the 'Tani Kodomo Kagura' (Tani children's kagura). That children's group was formed in the Showa 50s to carry on traditional performing arts. The troupe received costumes and props from the [[森島]] Kagura Troupe, a troupe in the town that had stopped its activities, and it was founded in 2005 (Heisei 17) as the 'Iinan Kagura Club'. In December 2016 (Heisei 28), on its 10th anniversary, it changed its name to the Iinan Kagura Troupe. In 2018 (Heisei 30) it presented [[程原入道]], a newly created play that turns a legend of its home district of Tani into kagura. At its 15th anniversary performance in December 2021 (Reiwa 3), it showed the new plays 'Amano Iwato' (the Heavenly Rock Cave) and 'Hachiman'. In 2026 (Reiwa 8) the troupe marks 20 years since its founding."
+      "The Iinan Kagura Troupe was formed by kagura lovers from inside and outside the town, centred on former members of the 'Tani Kodomo Kagura' (Tani children's kagura). That children's group was formed in the Showa 50s to carry on traditional performing arts. The troupe received costumes and props from the [[森島]] Kagura Troupe, a troupe in the town that had stopped its activities, and it was founded in 2005 (Heisei 17) as the 'Iinan Kagura Club'. According to the troupe, it held a commemorative event in December 2016 (Heisei 28) and changed its name to the Iinan Kagura Troupe. In 2018 (Heisei 30) it presented [[程原入道]], a newly created play that turns a legend of its home district of Tani into kagura. At its 15th anniversary performance in December 2021 (Reiwa 3), it showed the new plays 'Amano Iwato' (the Heavenly Rock Cave) and 'Hachiman'. In 2026 (Reiwa 8) the troupe marks 20 years since its founding."
     ],
     "features": [
       "The troupe has 18 plays, including ritual dances and newly created plays. It gives about 30 performances a year, as offering kagura at annual grand festivals and similar occasions, and at events inside and outside the prefecture.",
@@ -1012,10 +1035,11 @@
     ]
   },
   "豊前神楽": {
-    "checked": "2026-11-24",
-    "basis": "214b18587a8e",
+    "checked": "2026-11-26",
+    "basis": "c262a4390a7e",
     "area": "The Keichiku area of Fukuoka Prefecture and other areas",
     "tagline": "Kagura of the former Buzen Province, where the demon 'Misaki' plays a leading part",
+    "naming": "'Buzen Kagura' is the name of the kagura handed down in the former Buzen Province (the Keichiku area of Fukuoka Prefecture and other areas), and it is also the name of the Important Intangible Folk Cultural Property of Japan.",
     "intro": "This kagura has been performed as an offering at shrines of the former Buzen Province, centred on the Keichiku area in north-eastern Fukuoka Prefecture. One of its features is that many plays include the demon role called 'Misaki'. In 2016 (Heisei 28) it was designated an Important Intangible Folk Cultural Property of Japan under the name 'Buzen Kagura'. Thirty kagura groups are still active in the Keichiku area today.",
     "history": [
       "Its origins are unclear, but it appears in records by the early Edo period. Until the Edo period it was handed down by Shinto priests. From the Meiji era on, private kagura associations ('kagura-ko' or 'kagura kosha') have carried it on and performed it as an offering at shrines in many places. The Keichiku area has many mountains of 'shugen' (mountain asceticism), Mount Kubote among them, and their influence can be seen in plays such as the yudate kagura (hot-water rite). Influence from 'Matsue', a festival of Buzen shugendo, is also recognised. Mountain ascetics are thought to have been deeply involved in how this kagura took shape.",
@@ -1061,11 +1085,12 @@
     ]
   },
   "豊後神楽": {
-    "checked": "2026-11-24",
-    "basis": "b9161cf6c4d7",
+    "checked": "2026-11-26",
+    "basis": "36af608528b9",
     "area": "Bungo-Ono, Oita Prefecture, and other areas",
     "tagline": "'Ono-kei Iwato Kagura', with Ontake Kagura as its original form",
-    "intro": "This kagura has been handed down mainly in Bungo-Ono, Oita Prefecture, and is also called 'Ono-kei Iwato Kagura' (Iwato kagura of the Ono line). Its plays are based on myths from the Kojiki (Records of Ancient Matters), centred on the opening of the Heavenly Rock Cave. Ontake Kagura in Kiyokawa, regarded as its original form, is an Important Intangible Folk Cultural Property of Japan.",
+    "naming": "'Bungo Kagura' is the name this site uses for the kagura handed down mainly in Bungo-Ono, Oita Prefecture. Bungo-Ono City calls it 'Ono-kei Iwato Kagura' (Iwato kagura of the Ono line).",
+    "intro": "This kagura has been handed down mainly in Bungo-Ono, Oita Prefecture, and is called 'Ono-kei Iwato Kagura' (Iwato kagura of the Ono line). Its plays are based on myths from the Kojiki (Records of Ancient Matters), centred on the opening of the Heavenly Rock Cave. Ontake Kagura in Kiyokawa, regarded as its original form, is an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "Some say there was kagura in Bungo-Ono as early as the Kamakura period. However, it can only be confirmed as actually performed from the Edo period, and it is thought to have arisen under the influence of Izumo kagura. Ontake Kagura is said to have begun in 1449 (Hotoku 1), when Otomo Chikataka, the 'shugo' (military governor) of Bungo Province, invited the deity of Ontake Shrine to the area ('kanjo'). In 1778 (An'ei 7), 'kagura odori' was abolished by order of the Oka domain. [[加藤長古]], the chief priest of Ontake Shrine, then created a new kagura with a greatly changed structure. From the end of the Edo period this kagura spread to other shrines, and schools such as the Ontake, Asakusa and [[深山流]] schools arose.",
       "When kagura by Shinto priests was banned after the Meiji Restoration, the local parishioners in the villages took it over, and kagura troupes ('kagura-za') were formed in many places. As village kagura ('sato kagura') it spread from southern to central Oita Prefecture and even to the Aso area of Kumamoto Prefecture. Ontake Kagura was designated an Important Intangible Folk Cultural Property of Japan in 2007 (Heisei 19)."
@@ -1087,7 +1112,7 @@
       },
       {
         "name": "Tsunakiri (cutting the rope)",
-        "text": "A play about Susanoo slaying Yamata-no-Orochi, the eight-headed serpent."
+        "text": "A play about the slaying of Yamata-no-Orochi, the eight-headed serpent."
       },
       {
         "name": "Iwato-biraki (opening the Heavenly Rock Cave)",
@@ -1105,14 +1130,15 @@
     "viewing": [
       "At the Kagura Kaikan (kagura hall) in Kiyokawa, Bungo-Ono, regular performances are held about once a month. Tickets can be booked at the Kagura Kaikan. Tickets bought on the day may cost more than advance tickets (500 yen more for the December 2026 performance).",
       "In Yufuin Onsen, 'Yufuin Onsen Kagura: the monthly offering' is held once a month. The venue, Otomaru Community Centre, is a 3-minute walk from JR Yufuin Station. Admission is free and no booking is needed. If you come by car, use a paid car park nearby.",
-      "Every autumn, the Ontake-ryu Kagura Festival (a festival of the Ontake school of kagura) is held at the park [[能場公園]] in Kiyokawa, the birthplace of Ontake Kagura. In 2026 it is the 39th festival."
+      "In autumn, the Ontake-ryu Kagura Festival (a festival of the Ontake school of kagura) is held at Kagura no Sato [[能場公園]] (a park) in Kiyokawa (in 2026, the 39th festival, on 25 October)."
     ]
   },
   "江戸里神楽": {
-    "checked": "2026-11-24",
-    "basis": "6fc0e66947ed",
+    "checked": "2026-11-26",
+    "basis": "bb2ad61a7734",
     "area": "Tokyo",
     "tagline": "Village kagura with roots in Edo, acting out myths as masked plays without words",
+    "naming": "'Edo Sato Kagura' is a name for the 'sato kagura' (village kagura) that professional kagura performers have performed at shrine festivals in Edo and the surrounding area. On the Agency for Cultural Affairs' Cultural Heritage Online, it is listed under the name 'Edo no Sato Kagura'.",
     "intro": "This 'sato kagura' (village kagura) has been performed since the Edo period by professional kagura performers at shrine festivals in Edo (the old name of Tokyo) and the surrounding area. Its main feature is wordless mime: the performers wear masks and act out stories from myths without speaking. Today four troupes carry it on, the Wakayama, Mamiya, Matsumoto and Yamamoto troupes, and it is designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "It is said to have started with the 'Haji Ichiryu Saibara Kagura' of Washinomiya Shrine (Saitama Prefecture), which was brought to Edo in the early Edo period. It flourished most in the Bunka and Bunsei eras (1804-30). After the Meiji Restoration many of its performers scattered, but it is said that 37 families still remained in Edo in the early Meiji era.",
@@ -1157,10 +1183,11 @@
     ]
   },
   "都々古別神社の御神楽": {
-    "checked": "2026-11-24",
-    "basis": "534f44fb9c02",
+    "checked": "2026-11-26",
+    "basis": "07c765a87dbf",
     "area": "Tanagura, Fukushima Prefecture",
     "tagline": "The 'Shichiza no Kagura' (seven-piece kagura) and 'Daidai Kagura', danced in the worship hall at the Shimotsuki Grand Festival",
+    "naming": "'Mikagura of Tsutsukowake Shrine' is the name this site uses for the kagura performed as an offering at the Shimotsuki Grand Festival of Yatsuki Tsutsukowake Shrine in Tanagura, Fukushima Prefecture.",
     "intro": "This sacred kagura is performed as an offering in the worship hall of Yatsuki Tsutsukowake Shrine in Tanagura, Fukushima Prefecture. It is held every year at the Shimotsuki Grand Festival ('shimotsuki' means the eleventh month) on the second Saturday and Sunday of December. To pray for a rich harvest of the five grains and other blessings, the 'Shichiza no Kagura' (seven-piece kagura) and the 'Daidai Kagura' are danced. It is designated an Important Intangible Folk Cultural Property of Fukushima Prefecture.",
     "history": [
       "Around the Edo period, Yatsuki Tsutsukowake Shrine, Baba Tsutsukowake Shrine and Shimomiya Chikatsu Shrine were together called the 'Chikatsu Sansha' (the three Chikatsu shrines). Yatsuki Tsutsukowake Shrine is the middle shrine of the three. Its former name was Chikatsu Daimyojin, and it was given its present name in Meiji 18 (the 18th year of the Meiji era). Many kinds of rituals and performing arts have been handed down at the shrine since long ago.",
@@ -1197,10 +1224,11 @@
     ]
   },
   "湯立神楽": {
-    "checked": "2026-11-24",
-    "basis": "9ab908957b9b",
+    "checked": "2026-11-26",
+    "basis": "2ec1325eabb6",
     "area": "Hamamatsu, Shizuoka Prefecture, and other areas",
     "tagline": "Kagura that offers hot water from a cauldron to the gods and sprinkles it on people to purify them",
+    "naming": "'Yudate Kagura' is a collective name for kagura in which hot water boiled in a cauldron is offered to the gods. It is not the name of the kagura of one region.",
     "intro": "In this kagura, water is brought to a rolling boil in a cauldron and offered to the gods. The hot water is then also sprinkled on people to purify them. In the mountains from southern Nagano Prefecture to the borders with Aichi and Shizuoka, many 'shimotsuki kagura' (kagura of the eleventh month) centred on yudate (the hot-water rite) are handed down. 'Kawai Hana-no-Mai', handed down at Yasaka Shrine in Tenryu Ward, Hamamatsu, Shizuoka Prefecture, is one of the yudate kagura of this San'en-Nanshin area.",
     "history": [
       "The Agency for Cultural Affairs describes yudate kagura as follows. At the end of the year (shimotsuki, the eleventh month), a hearth is built and water is boiled and offered to the gods. The water is then sprinkled on people to purify their souls, and sacred songs are sung and danced as well. In some cases, the yudate and dances are repeated in turn, and then dances follow in which performers wear masks of demons and other figures.",
@@ -1233,10 +1261,11 @@
     ]
   },
   "番楽": {
-    "checked": "2026-11-24",
-    "basis": "74926967399d",
+    "checked": "2026-11-26",
+    "basis": "2ac052fbd932",
     "area": "Akita and Yamagata Prefectures",
     "tagline": "Shugendo kagura handed down by mountain ascetics, danced by entering and leaving through a curtain",
+    "naming": "'Bangaku' is a name for the kagura of the Shugendo tradition handed down in Akita Prefecture and northern Yamagata Prefecture.",
     "intro": "This is a kagura of the Shugendo (mountain asceticism) tradition, handed down in Akita Prefecture and the northern part of Yamagata Prefecture. It is said to have been brought by 'yamabushi' (mountain ascetics). It belongs to the same group as the yamabushi kagura of Iwate Prefecture and the 'nomai' of Aomori Prefecture. The dancers enter and leave through a curtain hung in front of the deity, and perform a wide range of plays, such as ritual dances, warrior dances and women's dances.",
     "history": [
       "Yamabushi kagura was handed down by yamabushi (Shugendo practitioners) who were based on the sacred mountains of the Tohoku region. They revered a lion head ('shishigashira') as a 'gongen', a manifestation of the deity. In the past the name was also written with other characters, but today it is almost always written in the same way. Set plays are danced first, and then other plays are performed in turn ('ban') to suit the occasion. It is thought that this is why it came to be called bangaku.",
@@ -1262,10 +1291,11 @@
     ]
   },
   "椎葉神楽": {
-    "checked": "2026-11-24",
-    "basis": "f4633d7e7c6c",
+    "checked": "2026-11-26",
+    "basis": "78634536dc37",
     "area": "Shiiba Village, Miyazaki Prefecture",
     "tagline": "Danced through the winter night in each mountain hamlet",
+    "naming": "'Shiiba Kagura' is a collective name for the kagura handed down in the districts of Shiiba Village, Miyazaki Prefecture. It is also listed under this name on the Agency for Cultural Affairs' Cultural Heritage Online.",
     "intro": "This kagura is handed down in the districts of Shiiba, a mountain village in north-western Miyazaki Prefecture that borders Kumamoto Prefecture. Even today, it is performed as an offering at about 26 places in the village every year from November to December, at the grand festivals of the district shrines. Most performances go on all night. It was designated an Important Intangible Folk Cultural Property of Japan in 1991 (Heisei 3).",
     "history": [
       "No reliable records of its origin have been found. However, the Tsugao district has a story that, around the Tensho era, the district's Shinto priest learned kagura from Aso Shrine in Higo and brought it back. The same district also still has a kagura mask with ink writing dated Kan'ei 9 (1632).",
@@ -1299,10 +1329,11 @@
     ]
   },
   "巫女神楽": {
-    "checked": "2026-11-24",
-    "basis": "cc37324e2c83",
+    "checked": "2026-11-26",
+    "basis": "5d7edc3f2bb5",
     "area": "Kyoto and other places",
     "tagline": "Shrine maidens dance with bells or flowering branches in hand and purify people",
+    "naming": "'Miko Kagura' is a collective name for kagura danced by 'miko' (shrine maidens) at shrines. It is not the name of the kagura of one region.",
     "intro": "This is kagura danced by 'miko' (shrine maidens) at shrines. At Jonangu Shrine in Fushimi Ward, Kyoto, miko dance kagura on the front stage of the kagura hall and in the worship hall, holding seasonal flowers such as plum blossoms, wisteria and chrysanthemums. During the first three days of the New Year, they dance 'harai kagura' (purification kagura) to the sound of bells and purify the people making their first shrine visit of the year.",
     "history": [
       "Jonangu's 'Nagoshi no Kagura' (summer purification kagura) began in Reiwa 2 (2020), when an infectious disease was spreading. A miko holds a halberd ('hoko') and performs the 'Hoko-barai no Gi' (halberd purification rite) to purify heaven and earth, and then dances the harai kagura."
@@ -1329,10 +1360,11 @@
     ]
   },
   "平戸神楽": {
-    "checked": "2026-11-24",
-    "basis": "6de37e4589d7",
+    "checked": "2026-11-26",
+    "basis": "d62a0337413b",
     "area": "Northern Nagasaki Prefecture (former Hirado domain)",
     "tagline": "24 plays handed down by Shinto priests, and 'Niken', danced with three real swords",
+    "naming": "'Hirado Kagura' is the name of the kagura handed down at shrines in the lands of the former Hirado domain in northern Nagasaki Prefecture, and it is also the name of the Important Intangible Folk Cultural Property of Japan.",
     "intro": "This kagura is danced at shrine festivals in northern Nagasaki Prefecture, in the lands of the former Hirado domain, excluding Iki. Shinto priests dance to gagaku (court-style music) played on flute and drum, holding paper wands, bows, swords and other objects. There are 24 plays in all, and the number danced changes with the rank of the festival. It is designated an Important Intangible Folk Cultural Property of Japan.",
     "history": [
       "It is said to have begun in the Genki era (1570-1573). When Iki became a territory of the Matsura clan of Hirado, the Shinto priests of Iki visited the Matsura clan's castle in Hirado and danced the kagura of Iki's 'Kamado Matsuri' (hearth festival). It is said that the Hirado priests later joined this festival too, and that the two sides passed their skills on to each other.",

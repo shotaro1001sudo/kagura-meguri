@@ -92,7 +92,7 @@ export const traditions = [
   { kind: '早池峰神楽', evidence: [['dynamic', 'features.3'], ['classic', 'features.3'], ['rite', 'history.1'], ['easy', 'viewing.0']] },
   { kind: '南部神楽', evidence: [['drama', 'tagline'], ['spectacle', 'features.2'], ['music', 'features.2']] },
   { kind: '出雲神楽', evidence: [['drama', 'intro~1'], ['monster', 'features.1'], ['music', 'features.2'], ['classic', 'programs.1.text'], ['easy', 'viewing.0']] },
-  { kind: '飯南神楽', evidence: [['drama', 'intro~2'], ['spectacle', 'intro~2'], ['easy', 'intro~2'], ['monster', 'programs.1.text']] },
+  { kind: '飯南神楽', evidence: [['drama', 'intro~3'], ['spectacle', 'intro~3'], ['easy', 'intro~3'], ['monster', 'programs.1.text']] },
   { kind: '豊前神楽', evidence: [['monster', 'tagline'], ['together', 'programs.2.text'], ['laugh', 'programs.3.text'], ['yudate', 'features.2'], ['rite', 'features.1']] },
   { kind: '豊後神楽', evidence: [['drama', 'intro~1'], ['rite', 'features.0'], ['easy', 'viewing.1']] },
   { kind: '江戸里神楽', evidence: [['drama', 'tagline'], ['spectacle', 'tagline'], ['rite', 'features.2']] },

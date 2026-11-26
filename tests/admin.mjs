@@ -632,7 +632,7 @@ export async function adminTests({ ok, section }) {
     {
       const K = await import("../scripts/admin/kagura-draft.mjs");
       const { nearKinds } = await import("../scripts/admin/kinds.js");
-      const goodInfo = { tagline: "長崎県平戸市 ・ テスト用のひとこと", intro: "長崎県平戸市に伝わる神楽です。テストのための紹介文で、六十字を超えるように、少し長めに書いています。種類のページの冒頭に出ます。", source: "テスト市「テスト神楽」",
+      const goodInfo = { tagline: "長崎県平戸市 ・ テスト用のひとこと", naming: "「テスト神楽」は、長崎県平戸市に伝わる神楽の呼び名です。", intro: "長崎県平戸市に伝わる神楽です。テストのための紹介文で、六十字を超えるように、少し長めに書いています。種類のページの冒頭に出ます。", source: "テスト市「テスト神楽」",
         history: ["起源には諸説あります。"], features: ["特徴の文です。"], programs: [{ name: "演目", text: "説明です。" }], viewing: ["観賞のコツです。"], refs: [{ name: "テスト市", url: "https://example.jp/kagura" }] };
       writeFileSync(join(ROOT, "data/kagura-info.json"), JSON.stringify({ 石見神楽: { ...goodInfo, tagline: "島根県西部 ・ x" } }, null, 2) + "\n");
       const evs = JSON.parse(read(join(ROOT, "data/events.json")));
@@ -644,6 +644,8 @@ export async function adminTests({ ok, section }) {
       ok(v({ ...goodInfo, intro: "短い紹介文です。" }).errors.some((e) => e.includes("60字以上")) && v({ ...goodInfo, tagline: "長崎県" }).errors.some((e) => e.includes("地域 ・ ひとこと")) && v({ ...goodInfo, source: "" }).errors.some((e) => e.includes("出典"))
         && v({ ...goodInfo, refs: [{ name: "x", url: "http://example.jp" }] }).errors.some((e) => e.includes("https")) && v({ ...goodInfo, extra: 1 }).errors.some((e) => e.includes("extra")) && v({ ...goodInfo, history: [] }).errors.some((e) => e.includes("歴史")),
       "解説の形: 紹介文60字以上・「地域 ・ ひとこと」・出典・参考のページ(https)・歴史がないもの、知らない項目は通さない(npm test と種類のページの決まり)");
+      ok(v({ ...goodInfo, naming: "" }).errors.some((e) => e.includes("呼び名の説明")) && v({ ...goodInfo, refs: [{ name: "x", url: "https://ja.wikipedia.org/wiki/x" }] }).errors.some((e) => e.includes("Wikipedia")) && v({ ...goodInfo, refs: [{ name: "x", url: "https://example.jp/" }] }).errors.some((e) => e.includes("トップページ")) && v({ ...goodInfo, checked: "2026-11-26" }).errors.length === 0,
+        "解説の形: 呼び名の説明(naming)がないもの、参考が Wikipedia・トップページだけのものは通さない(2026-11-26 の決まり)");
       ok(v({ ...goodInfo, programs: [], viewing: [] }).errors.length === 0 && v({ ...goodInfo, programs: [], viewing: [] }).warnings.length === 2, "確かめられない演目・観賞のコツは空でもよい(「情報がありません。」と出ることを知らせる)");
       const st0 = (await req("/api/state")).json;
       ok(st0.kaguraKinds.includes("平戸神楽") && st0.kaguraKinds.includes("石見神楽") && !st0.kaguraKinds.includes("保留だけの神楽") && st0.kaguraGaps.map((g) => g.kind).join() === "平戸神楽" && st0.kaguraGaps[0].draft === null && st0.kaguraGaps[0].items[0].url === "https://iimori.example.jp",

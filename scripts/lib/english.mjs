@@ -10,8 +10,8 @@ import { figure, flow, table, icon, stageDiagram } from "./figures.mjs";
 import { regularStatus } from "./dates.mjs";
 import { infoFresh, regularFresh } from "./english-data.mjs";
 
-export const CHECKED = "2026-10-20"; // ガイド・歴史・トップの出典を確かめた日
-export const UPDATED = "2026-11-24"; // 英語ページの中身を最後に変えた日(日程・定期公演・種類のページを加えた)
+export const CHECKED = "2026-11-26"; // ガイド・歴史・トップの出典を確かめた日
+export const UPDATED = "2026-11-26"; // 英語ページの中身を最後に変えた日(日程・定期公演・種類のページを加えた)
 export const SITE_EN = "Kagura Meguri";
 
 const EXTRA_SOURCES = [];
@@ -176,7 +176,7 @@ export function englishPages({ esc, upcoming, regular = [], kaguraHref, styles: 
 <h2>Why see kagura?</h2>
 <div class="gcards">
 <section class="gcard"><h3>${icon("eye")}Close to the stage</h3><p>Many performances take place in small shrines and halls. Visitors are welcomed as part of the community, and you are often just a few steps from the dancers.${cite("jta")}</p></section>
-<section class="gcard"><h3>${icon("calendar")}Easy to follow</h3><p>Most plays are based on myths and folk tales, with clear-cut heroes and monsters. The costumes and masks tell you who's who, and some shows feature lightning-fast costume changes and fire-breathing serpents.${cite("hiroshima")}</p></section>
+<section class="gcard"><h3>${icon("calendar")}Easy to follow</h3><p>Most plays are based on myths and folk tales, with clear-cut heroes and monsters. The costumes and masks tell you who's who, and some shows feature lightning-fast costume changes and fire-breathing serpents.${cite("hiroshima", "akitakata-koho")}</p></section>
 <section class="gcard"><h3>${icon("car")}Different in every region</h3><p>The rhythm, costumes and plays change from one valley to the next, and travelling to see different styles is half the fun.</p></section>
 </div>
 
@@ -282,7 +282,7 @@ ${sourcesHtml()}`,
       body: () => `
 <p>Kagura takes many forms. The music, costumes and plays differ from region to region, and often from one village to the next.</p>
 <h2>The main lineages</h2>
-<p>Kagura is broadly divided into mikagura, performed at the imperial court, and sato-kagura, performed at shrines and in communities throughout Japan. Sato-kagura is usually grouped into four lineages, although the categories and names vary between dictionaries and researchers.${cite("kotobank")}</p>
+<p>Kagura is broadly divided into mikagura, performed at the imperial court, and sato-kagura, performed at shrines and in communities throughout Japan. Sato-kagura is usually grouped into four lineages, following the classification of the folklorist Honda Yasuji (1906-2001). This is one way of organising them; other researchers divide and name them differently.${cite("kb-minzokugeino", "kotobank")}</p>
 ${table(["Lineage", "Characteristics"], [
   ["Miko kagura", "Based on rites of possession, oracles and the calming of spirits performed by priests and shrine maidens."],
   ["Izumo style", "Typified by the Shichiza rites and shinno plays of Sada Shrine in Shimane, combining dances with ritual objects and myth plays."],
@@ -308,14 +308,14 @@ ${sourcesHtml()}`,
   {
     const { cite, sourcesHtml } = makeCiter(esc);
     const items = [
-      ["Myth", "The sun goddess Amaterasu hides in a cave, and the world is plunged into darkness. The goddess Ame-no-Uzume dances, the gods laugh, and light returns. This story is told as the origin of kagura.", ["wiki-iwato", "kotobank"]],
+      ["Myth", "The sun goddess Amaterasu hides in a cave, and the world is plunged into darkness. The goddess Ame-no-Uzume dances, the gods laugh, and light returns. This story is told as the origin of kagura.", ["kojiki-iwaya2", "kotobank"]],
       ["807", "The word 'kagura' appears in writing for the first time (in the Kogo Shui).", ["kotobank"]],
-      ["1002", "The imperial court's kagura ceremony begins (some sources say 1005). It later becomes an annual event held every December.", ["kotobank", "wiki-mikagura"]],
-      ["1608", "At Sada Shrine, priests are said to have created 'shinno', kagura plays modelled on noh theatre.", ["wiki-sada"]],
+      ["1002", "The imperial court's kagura ceremony begins (some sources say 1005). It later becomes an annual event held every December.", ["kotobank"]],
+      ["1608", "At Sada Shrine, priests are said to have created 'shinno', kagura plays modelled on noh theatre.", ["matsue-sada"]],
       ["Edo period", "Ise's 'daidai kagura' spreads across the country, and Edo (now Tokyo) develops its own village kagura.", ["kotobank"]],
-      ["Early Meiji", "Priests are banned from performing kagura, and in many areas villagers take over as dancers.", ["wiki-iwami", "matsue", "kotobank"]],
-      ["1976", "Japan begins designating Important Intangible Folk Cultural Properties, and kagura from many regions come under national protection.", ["wiki-juyo"]],
-      ["2025", "Kagura is selected as Japan's candidate for UNESCO's list, with the nomination planned for 2028.", ["wiki-kagura"]],
+      ["Meiji era", "The government bans priests from performing kagura, and ordinary people also come to perform it.", ["jh-iwami", "matsue", "kotobank"]],
+      ["1976", "Sada Shinno and other traditions are designated Important Intangible Folk Cultural Properties, and kagura from many regions come under national protection.", ["mext-120", "bunka-sada"]],
+      ["2025", "Kagura is selected as Japan's new candidate for UNESCO's list. The decision is expected around December 2028.", ["bunka-unesco-r7"]],
     ];
     pages.push({
       key: "history", path: "/en/history.html", ja: "/history/",

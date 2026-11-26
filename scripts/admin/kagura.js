@@ -42,7 +42,7 @@ export function draftCard(g) {
     d.note ? note("info", h("b", null, "予定タスクから: "), d.note) : "",
     d.warnings?.length ? note("warn", h("ul", { class: "reasons" }, d.warnings.map((w) => h("li", null, w)))) : "",
     h("p", { class: "kd-tagline" }, v.tagline),
-    sec(`${g.kind}とは`, h("p", null, v.intro)),
+    sec(`${g.kind}とは`, [h("p", { class: "mut small" }, h("b", null, "呼び名の説明: "), v.naming || EMPTY), h("p", null, v.intro)]),
     sec("歴史", (v.history || []).map((t) => h("p", null, t))),
     sec("特徴", lines(v.features)),
     sec("主な演目", v.programs?.length ? h("ul", null, v.programs.map((p) => h("li", null, h("b", null, p.name), " ", p.text))) : h("p", { class: "mut small" }, EMPTY)),

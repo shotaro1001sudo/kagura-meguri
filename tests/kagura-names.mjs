@@ -7,6 +7,8 @@ import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from "no
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import * as cheerio from "cheerio";
+import { SOURCES as HISTORY_SOURCES } from "../scripts/lib/history.mjs";
+import { SOURCES as GUIDE_SOURCES } from "../scripts/lib/guide.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 const json = (p) => JSON.parse(read(p).replace(/^﻿/, ""));
@@ -24,6 +26,20 @@ export function kaguraNamesTests({ ok, section, build }) {
   const groups = prefInfo["広島県"]?.groups ?? [];
   ok(groups.length === 5 && prefInfo["広島県"].groupsLead.includes("観光連盟") && groups.filter((g) => g.kind).every((g) => g.kind in info) && prefInfo["広島県"].en?.groups?.length === 5, "広島県の神楽の分け方: 5つの分け方と、誰の分け方か(観光連盟)を書く。英語の訳もそろえる");
   ok(!/「八調子」とも呼ばれ、速い囃子/.test(JSON.stringify(info)) && !JSON.stringify(info["芸北神楽"]).includes("鍾馗"), "「旧舞は八調子」の記述を残さない。県の指定名は「鐘馗」と書く");
+
+  // 出典と呼び名の説明(全種類)
+  const kinds = Object.entries(info);
+  const noName = kinds.filter(([k, v]) => !(v.naming?.includes(`「${k}」`) && /。$/.test(v.naming)));
+  ok(!noName.length, "どの種類の解説にも、呼び名の説明(「〇〇」は、… 。)がある", noName.map(([k]) => k).join());
+  const noEn = Object.keys(infoEn).filter((k) => !infoEn[k].naming);
+  ok(!noEn.length, "英語の訳にも、呼び名の説明がある", noEn.join());
+  const isTop = (u) => { const x = new URL(u); return x.pathname.length <= 1 && !x.search && !x.hash; };
+  const allRefs = [...kinds.flatMap(([k, v]) => (v.refs ?? []).map((r) => [k, r.url])), ...Object.entries(json("data/pref-leads.json")).flatMap(([k, v]) => (v.refs ?? []).map((r) => [k, r.url])), ...Object.entries(prefInfo).flatMap(([k, v]) => (v.refs ?? []).map((r) => [k, r.url])), ...HISTORY_SOURCES.map((s) => ["神楽の歴史", s.url]), ...GUIDE_SOURCES.map((s) => ["ガイド", s.url])];
+  const wiki = allRefs.filter(([, u]) => /wikipedia\.org/i.test(u));
+  ok(allRefs.length > 100 && !wiki.length, "解説・県の概要・歴史・ガイドの出典に、Wikipedia を使わない", wiki.map(([k]) => k).join());
+  const topOnly = kinds.filter(([, v]) => !(v.refs ?? []).some((r) => !isTop(r.url)));
+  ok(!topOnly.length && !Object.values(json("data/pref-leads.json")).some((v) => (v.refs ?? []).some((r) => isTop(r.url))), "どの種類の解説にも、内容を確かめられる個別のページの参考がある(トップページだけにしない)。県の概要の参考も個別のページ", topOnly.map(([k]) => k).join());
+  ok(HISTORY_SOURCES.some((s) => s.id === "kb-minzokugeino") && Object.values(prefInfo).every((v) => v.groups?.length), "歴史の出典に、分類のもとの資料(民俗芸能の項)がある。県の解説(pref-info)は、分け方の欄のある県だけ");
 
   section("神楽の呼び名: ページ");
   const dir = mkdtempSync(join(tmpdir(), "kagura-names-")), out = "dist-test-kagura-names";
@@ -79,6 +95,9 @@ export function kaguraNamesTests({ ok, section, build }) {
     const corr = json("data/corrections.json");
     ok($e("h1").text().trim() === "解説の編集方針" && $e("#corrections").length === 1 && $e(".corrections > div").length === corr.length && corr.every((c) => /^\d{4}-\d{2}-\d{2}$/.test(c.date) && c.text) && $e('a[href="/contact.html"]').length >= 1, "解説の編集方針のページ: 資料の基準・指摘の窓口と、訂正の記録");
     ok(page("about.html")('a[href="/editorial-policy.html"]').length === 1 && sitemap.includes("/editorial-policy.html"), "運営者情報から編集方針へたどれ、サイトマップに載せる");
+    // 神楽の歴史: 分類は本田安次のものだと書く。出典に Wikipedia を出さない
+    const $h = page("history/index.html"), $kin = page("history/kinsei.html");
+    ok($h("main").text().includes("本田安次") && $kin("main").text().includes("本田安次の分類") && !/Wikipedia/i.test($h("main").text() + $kin("main").text() + page("history/kodai.html")("main").text() + page("history/kindai.html")("main").text()), "神楽の歴史: 里神楽の4つの分け方と「出雲流」「伊勢流」の呼び名は、本田安次の分類だと書く。出典に Wikipedia を出さない");
 
     // 英語版
     const $ek = page("en/kagura.html"), $eg = page("en/kagura/geihoku-kagura.html");

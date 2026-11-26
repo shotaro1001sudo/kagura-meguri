@@ -26,7 +26,9 @@ export const saveKaguraInfo = (root, info) => { const f = infoPath(root); writeF
 function records(root) {
   const events = readJson(join(root, "data/events.json"), []).filter((e) => e.status === "published");
   const regular = readJson(join(root, "data/regular.json"), []).filter((r) => !r.status || r.status === "published");
-  return [...events, ...regular].filter((x) => x.kagura);
+  // 系統を確かめられていない開催の、県単位の呼び名(「広島県の神楽」。data/kagura-names.json の prefOnly)は、種類として数えない(種類のページを作らないので、解説も要らない)
+  const prefOnly = readJson(join(root, "data/kagura-names.json"), {}).prefOnly ?? {};
+  return [...events, ...regular].filter((x) => x.kagura && !prefOnly[x.kagura]);
 }
 
 /** サイトにある神楽の種類(解説のあるもの + 掲載している開催・定期公演の種類)。入力の候補に使う */
@@ -43,7 +45,7 @@ export function kaguraGaps(root) {
   });
 }
 
-const ALLOWED = new Set(["tagline", "intro", "source", "history", "features", "programs", "viewing", "refs"]);
+const ALLOWED = new Set(["tagline", "naming", "intro", "source", "checked", "history", "features", "programs", "viewing", "refs"]);
 const str = (v) => typeof v === "string" && v.trim().length > 0;
 /**
  * 解説の形を確かめる(サイトの種類のページと、npm test の決まりに合わせる)。
@@ -54,6 +56,10 @@ export function validateKaguraInfo(v) {
   if (!v || typeof v !== "object" || Array.isArray(v)) return { errors: ["解説が、項目の集まり(オブジェクト)になっていません"], warnings };
   for (const k of Object.keys(v)) if (!ALLOWED.has(k)) errors.push(`知らない項目「${k}」があります(使えるのは ${[...ALLOWED].join("・")})`);
   if (!str(v.tagline) || !/^\S.*\S ・ \S/.test(v.tagline)) errors.push("一言紹介(tagline)は「地域 ・ ひとこと」の形にします(例: 長崎県平戸市 ・ …)");
+  // 呼び名の説明(2026-11-26 神楽の関係者からの指摘を受けて必須にした): その名前が何を指し、誰の呼び名かを、種類のページの冒頭に出す
+  if (!str(v.naming)) errors.push("呼び名の説明(naming)がありません(その名前が何を指し、誰が使っている呼び名かを1〜2文で。例: 「〇〇神楽」は、△△市に伝わる神楽の呼び名で、市の文化財の案内で使われています。)");
+  else if (!/。$/.test(v.naming.trim())) errors.push("呼び名の説明(naming)は「。」で終えます");
+  if (v.checked != null && !/^\d{4}-\d{2}-\d{2}$/.test(v.checked)) errors.push("確認日(checked)は YYYY-MM-DD の形にします");
   if (!str(v.intro)) errors.push("紹介文(intro)がありません");
   else {
     if ([...v.intro].length < 60) errors.push("紹介文(intro)は60字以上にします(検索結果と種類のページの冒頭に出るため)");
@@ -72,6 +78,11 @@ export function validateKaguraInfo(v) {
   else if (!Array.isArray(v.programs) || !v.programs.every((p) => p && str(p.name) && str(p.text))) errors.push("主な演目(programs)は { name, text } の並びにします");
   if (!Array.isArray(v.refs) || !v.refs.length) errors.push("参考にしたページ(refs)を1つ以上書きます(確かめるときに開きます)");
   else if (!v.refs.every((r) => r && str(r.name) && /^https:\/\/\S+$/.test(r.url ?? ""))) errors.push("参考にしたページ(refs)は { name, url(https) } の並びにします");
+  // 参考は、記述を確かめられる個別のページだけ(Wikipedia と、サイトのトップページだけのリンクは使わない)
+  else {
+    if (v.refs.some((r) => /wikipedia\.org/i.test(r.url))) errors.push("参考にしたページ(refs)に Wikipedia は使いません(文化庁・自治体・保存会などの個別のページにします)");
+    if (v.refs.some((r) => { try { const u = new URL(r.url); return u.pathname.length <= 1 && !u.search && !u.hash; } catch { return false; } })) errors.push("参考にしたページ(refs)は、サイトのトップページではなく、その内容が書いてある個別のページにします");
+  }
   return { errors, warnings };
 }
 
@@ -83,7 +94,7 @@ export function putDrafts(root, input, today) {
     if (info[kind]) { rejected.push({ kind, errors: ["この種類には、もう解説があります"] }); continue; }
     const { errors, warnings } = validateKaguraInfo(body);
     if (errors.length) { rejected.push({ kind, errors }); continue; }
-    drafts[kind] = { status: "draft", createdAt: today, info: body, note: String(note), warnings, ...(drafts[kind]?.redoNote ? { prevRedoNote: drafts[kind].redoNote } : {}) };
+    drafts[kind] = { status: "draft", createdAt: today, info: { ...body, checked: body.checked ?? today }, note: String(note), warnings, ...(drafts[kind]?.redoNote ? { prevRedoNote: drafts[kind].redoNote } : {}) };
     added.push(kind);
   }
   if (added.length) saveDrafts(root, drafts);

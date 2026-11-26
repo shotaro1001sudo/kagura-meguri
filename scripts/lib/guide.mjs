@@ -15,6 +15,7 @@ export const SOURCES = [
   { id: "shimane", name: "石見神楽とは", by: "島根県観光連盟(しまね観光ナビ)", url: "https://www.kankou-shimane.com/pickup/46684.html" },
   { id: "hiroshima", name: "迫力満点！広島神楽の見どころチェック", by: "広島県(徹底解剖！ひろしまラボ)", url: "https://www.pref.hiroshima.lg.jp/lab/topics/20201204/01/" },
   { id: "akitakata", name: "ひろしま安芸高田神楽", by: "安芸高田市観光協会(あきたかたNAVI)", url: "https://akitakata-kankou.jp/main/kagura/" },
+  { id: "akitakata-koho", name: "広報あきたかた「神楽鑑賞の楽しみ方」(PDF)", by: "安芸高田市", url: "https://www.akitakata.jp/akitakata-media/filer_public/d2/74/d27481d0-d2e2-4f5d-a558-5146fcd679fe/kouhou-akitakata-7gatsugou-4-5how_to_kagura-kanshou.pdf" },
   { id: "ondake", name: "御嶽神楽", by: "文化庁 文化遺産オンライン", url: "https://online.bunka.go.jp/heritages/detail/160038" },
   { id: "noh", name: "能楽", by: "文化庁 文化遺産オンライン", url: "https://online.bunka.go.jp/heritages/detail/214083" },
   { id: "kabuki", name: "歌舞伎", by: "京都市観光協会(京都観光Navi)", url: "https://ja.kyoto.travel/traditionalculture/kabuki.php" },
@@ -84,7 +85,7 @@ ${chapter(1)}
 <tbody>
 <tr><th scope="row">始まり</th><td data-k="神楽">神様に奉納する歌と舞。神事として受け継がれてきた${cite("iwamiqa", "hiroshima")}</td><td data-k="能">14世紀ごろに大成された歌舞劇${cite("noh")}</td><td data-k="歌舞伎">1603年、出雲阿国の「かぶき踊り」が始まりとされる${cite("kabuki")}</td></tr>
 <tr><th scope="row">表現</th><td data-k="神楽">勧善懲悪の分かりやすい筋。衣装と面を見れば、役柄がすぐ分かる${cite("hiroshima")}</td><td data-k="能">様式化された簡素な表現で、人の感情を繊細に表す${cite("noh")}</td><td data-k="歌舞伎">隈取(くまどり)の色で役柄を表し、要所で「見得」を切る${cite("kabuki")}</td></tr>
-<tr><th scope="row">見せ場</th><td data-k="神楽">演目によっては、一瞬で衣装が変わる「早変わり」や、火や煙を吹く大蛇が登場する${cite("hiroshima", "shimane")}</td><td data-k="能">謡と囃子を伴奏に、舞うような所作で物語が進む${cite("noh")}</td><td data-k="歌舞伎">回り舞台、セリ、客席を通る花道${cite("kabuki")}</td></tr>
+<tr><th scope="row">見せ場</th><td data-k="神楽">演目によっては、一瞬で衣装が変わる「早変わり」や、火や煙を吹く大蛇が登場する${cite("akitakata-koho", "shimane")}</td><td data-k="能">謡と囃子を伴奏に、舞うような所作で物語が進む${cite("noh")}</td><td data-k="歌舞伎">回り舞台、セリ、客席を通る花道${cite("kabuki")}</td></tr>
 </tbody></table></div>
 ${cards(
   card("観る人との距離が近い", `<p>観光で訪れた人も「参列者」として迎えてくれる神楽があります。${cite("jta")}</p>

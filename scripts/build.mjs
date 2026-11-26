@@ -1586,14 +1586,14 @@ doc("/privacy.html", "プライバシーポリシー", `${cfg.siteName}のプラ
 const corrections = existsSync("data/corrections.json") ? readJson("data/corrections.json") : [];
 doc("/editorial-policy.html", "解説の編集方針", `${cfg.siteName}の、神楽の種類・地域・歴史の解説の書き方です。使う資料の基準、呼び名の書き方、起源の説の扱い、確認日、誤りのご指摘の受け付けかたと、これまでの訂正の記録を載せています。`, `
 <p>神楽の種類、都道府県ごとの概要、神楽の歴史の解説は、編集部が公開されている資料を読んでまとめています。研究者や保存団体による監修は受けていません。</p>
-<dl class="about-points"><div><dt>使う資料</dt><dd>文化庁や自治体の文化財の解説、調査報告書、研究論文、保存会・神社・神楽団の公式の案内を優先します。観光協会や広報の説明を使うときは、「〇〇によると」と出どころを書きます。個人のサイトや、まとめサイトは使いません。</dd></div>
+<dl class="about-points"><div><dt>使う資料</dt><dd>文化庁や自治体の文化財の解説、調査報告書、研究論文、保存会・神社・神楽団の公式の案内を優先します。観光協会や広報の説明を使うときは、「〇〇によると」と出どころを書きます。Wikipedia、個人のサイト、まとめサイトは出典にしません。</dd></div>
 <div><dt>呼び名</dt><dd>神楽の呼び名は、地域や立場によって違います。種類のページの冒頭に、その名前が何を指し、誰が使っている呼び名かを書きます。「種類で探す」に並ぶ名前には、地域の呼び名、祭りの名前、舞の形式の名前が混じっていて、どれも同じ意味の「流派」ではありません。</dd></div>
 <div><dt>起源や成り立ち</dt><dd>説が分かれるものは、断定しません。誰の説明かを書き、複数の説明があるときは並べて書きます。</dd></div>
 <div><dt>確認日</dt><dd>解説ごとに、資料を確かめた日を載せます。</dd></div>
 <div><dt>誤りのご指摘</dt><dd><a href="/contact.html">お問い合わせフォーム</a>で受け付けています。資料で確かめたうえで直し、下の「訂正の記録」に残します。地域の方、保存団体の方、研究者の方からの情報をお待ちしています。</dd></div>
 <div><dt>協力・監修</dt><dd>ご協力いただいた方のお名前は、ご本人の承諾を得た場合だけ載せます。</dd></div></dl>
 <h2 id="corrections">訂正の記録</h2>
-${corrections.length ? `<dl class="about-points corrections">${[...corrections].sort((a, b) => b.date.localeCompare(a.date)).map((c) => `<div><dt>${esc(jpDate(c.date))}</dt><dd>${esc(c.text)}</dd></div>`).join("")}</dl>` : `<p>まだありません。</p>`}`);
+${corrections.length ? `<dl class="about-points corrections">${corrections.map((c, i) => [c, i]).sort((a, b) => b[0].date.localeCompare(a[0].date) || a[1] - b[1]).map(([c]) => c).map((c) => `<div><dt>${esc(jpDate(c.date))}</dt><dd>${esc(c.text)}</dd></div>`).join("")}</dl>` : `<p>まだありません。</p>`}`);
 doc("/terms.html", "利用規約", `${cfg.siteName}の利用規約です。サイトの利用条件、開催情報の投稿の扱い、禁止事項、免責、規約の変更、準拠法と管轄裁判所について定めています。サイトをご利用の前にお読みください。`, termsHtml(policyCtx));
 doc("/disclaimer.html", "免責事項・情報の取り扱い", `${cfg.siteName}の免責事項です。開催情報の集め方と自動処理、掲載の停止、外部サイトへのリンク、損害についての責任の範囲を説明しています。お出かけの前には、主催者の公式情報をご確認ください。`, disclaimerHtml(policyCtx));
 // ---------- sitemap / robots / ads.txt / security.txt / 404 ----------
