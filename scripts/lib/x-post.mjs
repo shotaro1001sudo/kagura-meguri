@@ -116,7 +116,7 @@ export function composeReading({ label, title, body, url, tags, hook, extra = nu
  * config.json の social.pauseKinds に入れた種類は、読み物(紹介・演目・歴史・見どころ・見学のコツ)を出さず、
  * 開催のお知らせにも「▼〇〇とは」の紹介文を付けない(開催の日時・場所・公式の説明は、そのまま出す)。
  * 解説を見直している間に、直す前の文や、確かめている途中の文が出ないようにするため(2026-11-26 運営者の判断: 広島神楽・安芸高田神楽。
- * 同じ日に解説を「芸北神楽」「十二神祇神楽」に組み替えたので、いまはその2つを止めている。呼び方と分け方を関係者に確かめ終えたら外す)
+ * 同じ日に解説を「芸北神楽」「十二神祇神楽」に組み替えて止めていたが、2026-11-27 運営者の判断で再開)
  */
 export function postableInfo(info, social = {}) {
   const paused = new Set(social?.pauseKinds ?? []);
