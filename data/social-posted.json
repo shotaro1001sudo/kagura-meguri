@@ -1193,5 +1193,29 @@
     "bufferId": "6b0756e6b96dd8d351644eef",
     "date": "2026-11-27",
     "hash": "4036281ace763292"
+  },
+  {
+    "id": "r:kind:飯南神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-27T14:00:00.000Z",
+    "bufferId": "6b07fef8bfa140308ddfa722",
+    "date": "2026-11-27",
+    "hash": "3533e0a08216bd14"
+  },
+  {
+    "id": "r:history:湯立神楽:0",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-27T18:00:00.000Z",
+    "bufferId": "6b07fef810c0f7816e96539f",
+    "date": "2026-11-27",
+    "hash": "36cfde8fabab9151"
   }
 ]
