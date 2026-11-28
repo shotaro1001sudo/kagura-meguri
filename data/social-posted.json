@@ -1337,5 +1337,77 @@
     "bufferId": "6b09f47fb5cd052fe29155eb",
     "date": "2026-11-29",
     "hash": "c9a96fc2a198e9a9"
+  },
+  {
+    "id": "r:kind:岩手の神楽",
+    "type": "reading",
+    "style": "hook",
+    "link": "tail",
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-29T14:00:00.000Z",
+    "bufferId": "6b0b35331a50ad4050637e78",
+    "date": "2026-11-29",
+    "hash": "1faaa6b24913f89f"
+  },
+  {
+    "id": "r:history:湯立神楽:1",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-29T18:00:00.000Z",
+    "bufferId": "6b0b35345e276ead9fce33bd",
+    "date": "2026-11-29",
+    "hash": "952422aadff6ad5f"
+  },
+  {
+    "id": "takachiho-yokagura-1dd6592dff",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "long",
+    "dueAt": "2026-11-29T22:00:00.000Z",
+    "bufferId": "6b0b3534c2c05b6cf49b19be",
+    "date": "2026-11-30",
+    "hash": "585ecd533ac9a51c"
+  },
+  {
+    "id": "izushi-eirakukan-iwami-kagura-2026",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-30T02:00:00.000Z",
+    "bufferId": "6b0b35345d4376bde3d58aca",
+    "date": "2026-11-30",
+    "hash": "f71bf0636e5ccb74"
+  },
+  {
+    "id": "r:program:豊後神楽:2",
+    "type": "reading",
+    "style": "label",
+    "link": false,
+    "long": false,
+    "format": "short",
+    "dueAt": "2026-11-30T06:00:00.000Z",
+    "bufferId": "6b0b35345e276ead9fce3411",
+    "date": "2026-11-30",
+    "hash": "c3eb6f07e6daef1b"
+  },
+  {
+    "id": "shiiba-kagura-2026-1205-2",
+    "type": "event",
+    "style": "event",
+    "link": true,
+    "long": true,
+    "format": "medium",
+    "dueAt": "2026-11-30T10:00:00.000Z",
+    "bufferId": "6b0b35345e276ead9fce3438",
+    "date": "2026-11-30",
+    "hash": "37d36069783beb11"
   }
 ]
